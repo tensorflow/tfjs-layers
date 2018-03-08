@@ -16,11 +16,11 @@ import * as _ from 'underscore';
 
 import * as K from '../backend/deeplearnjs_backend';
 import * as constraints from '../constraints';
-import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
+import {AttributeError, RuntimeError, ValueError} from '../errors';
 import * as initializers from '../initializers';
 import {deserialize as deserializeLayer} from '../layers/serialization';
 import * as regularizers from '../regularizers';
-import {ConcreteTensor, ConfigDict, DType, JsonDict, LayerVariable, Shape, SymbolicTensor, TensorInterface} from '../types';
+import {ConcreteTensor, ConfigDict, DType, JsonDict, LayerVariable, NamedTensorMap, Shape, SymbolicTensor, TensorInterface} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
 // tslint:enable:max-line-length
@@ -1851,11 +1851,22 @@ export class Container extends Layer {
   }
 
   get nonTrainableWeights(): LayerVariable[] {
-    throw new NotImplementedError();
+    const weights: LayerVariable[] = [];
+    for (const layer of this.layers) {
+      weights.push(...layer.nonTrainableWeights);
+    }
+    if (!this.trainable) {
+      const trainableWeights: LayerVariable[] = [];
+      for (const layer of this.layers) {
+        trainableWeights.push(...layer.trainableWeights);
+      }
+      return trainableWeights.concat(weights);
+    }
+    return weights;
   }
 
   get weights(): LayerVariable[] {
-    throw new NotImplementedError();
+    return this.trainableWeights.concat(this.nonTrainableWeights);
   }
 
   /**
@@ -1873,8 +1884,17 @@ export class Container extends Layer {
    *   mismatch in the number of weights, or a mismatch in the shape of the
    *   weight (only valid when `by_name`=True).
    */
-  loadWeights(weightsJSON: JsonDict, skipMismatch = false) {
-    loadWeightsFromJson(weightsJSON, this.layers, skipMismatch);
+  loadWeights(
+      weightsJSON: JsonDict|NamedTensorMap, skipMismatch = false,
+      isNamedTensorMap = false) {
+    // TODO(cais): The JsonDict support should be removed after serving weights
+    //   XHR is working. The `loadWeightsFromJson` flag should be
+    //   removed as well. (b/74015805)
+    if (isNamedTensorMap) {
+      loadWeightsFromNamedTensorMap(weightsJSON as NamedTensorMap, this.layers);
+    } else {
+      loadWeightsFromJson(weightsJSON as JsonDict, this.layers, skipMismatch);
+    }
   }
 
   /**
@@ -2574,6 +2594,54 @@ function preprocessWeightsForLoading(
   return weights;
 }
 
+/**
+ * Load weights from a named tensor map.
+ *
+ * Porting Note: This is ported from the Python function
+ *   load_weights_from_hdf5_group_by_name()
+ *
+ * @param weights The named tensor map mapping names of weights to weight
+ *   values.
+ * @param layers An array of target layers.
+ */
+export function loadWeightsFromNamedTensorMap(
+    weights: NamedTensorMap, layers: Layer[]): void {
+  // Make a dictionary mapping weight name to weight.
+  const nameToWeight: {[name: string]: LayerVariable} = {};
+  let totalWeightsCount = 0;
+  for (const layer of layers) {
+    const weights = layer.weights;
+    for (const weight of weights) {
+      if (nameToWeight[weight.name] != null) {
+        throw new ValueError(`Duplicate weight name: ${weight.name}`);
+      }
+      nameToWeight[weight.name] = weight;
+      totalWeightsCount++;
+    }
+  }
+
+  const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
+  for (const name in weights) {
+    weightValueTuples.push([nameToWeight[name], weights[name]]);
+    delete nameToWeight[name];
+  }
+
+  // Check that all weights are set.
+  const unsetNames: string[] = [];
+  for (const name in nameToWeight) {
+    unsetNames.push(name);
+  }
+  if (unsetNames.length > 0) {
+    throw new ValueError(
+        `${unsetNames.length} of ${totalWeightsCount} weights are not set: ` +
+        `${unsetNames}`);
+  }
+
+  K.batchSetValue(weightValueTuples);
+}
+
+
+// TODO(cais): Remove the following (b/74015805).
 /**
  * Load weights from a weights JSON object to an array of layers.
  *
