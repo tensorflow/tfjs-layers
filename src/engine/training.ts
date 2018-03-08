@@ -579,8 +579,8 @@ export interface ModelCompileConfig {
  * of `Model`.
  *
  * To create a `Model`, specify its input(s) and output(s). Inputs are
- * `SymoblicTensor`s provided by `Input` layers. Outputs are `SymbolicTensor`s
- * provided by other layers tha perform mathematical and neural-network
+ * `SymbolicTensor`s provided by `Input` layers. Outputs are `SymbolicTensor`s
+ * provided by other layers that perform mathematical and neural-network
  * operations.
  *
  * For example, the following code snippet defines a model consisting of
