@@ -43,10 +43,6 @@ Pacman.FPS = PACMAN_FPS;
 tf.ENV.set('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', false);
 
 // TODO(nsthorat): Move these to GCP when they are no longer JSON.
-const modelConfigPath = '../../dist/demo/mobilenet.keras.model.json';
-const modelWeightsPath = '../../dist/demo/mobilenet.keras.weights.json';
-const imagenetClassesPath = '../../dist/demo/imagenet_class_names.json';
-let imagenetClasses: string[];
 
 const CONTROLS = ['up', 'down', 'left', 'right'];
 const CONTROL_CODES = ['ARROW_UP', 'ARROW_DOWN', 'ARROW_LEFT', 'ARROW_RIGHT'];
@@ -142,15 +138,9 @@ function getActivation(): tf.Tensor4D {
 }
 
 async function loadMobilenet(): Promise<tfl.Model> {
-  const modelConfigRequest = await fetch(modelConfigPath);
-  const modelConfig = await modelConfigRequest.json();
-  const modelWeightsRequest = await fetch(modelWeightsPath);
-  const modelWeights = await modelWeightsRequest.json();
-  const imagenetClassesRequest = await fetch(imagenetClassesPath);
-  imagenetClasses = await imagenetClassesRequest.json();
-
-  const model = tfl.modelFromJSON(modelConfig);
-  model.loadWeights(modelWeights);
+  console.log('Loading mobilenet...');
+  const model = await tfl.loadModel('../../dist/demo/mobilenet');
+  console.log('Done loading mobilenet.');
 
   // Return a model that outputs an internal activation.
   const layer = model.getLayer('conv_pw_13_relu');
