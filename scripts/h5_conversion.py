@@ -35,6 +35,8 @@ class HDF5Converter(object):
     Args:
       group: The HDF5 group data.
       names: The names of the sub-fields within the group.
+    Returns:
+      An array of weight groups. (see write_weights in TFJS).
     """
     if not names:
       return None
@@ -116,11 +118,11 @@ class HDF5Converter(object):
     """
     h5file = self._ensure_h5file(h5file)
     self._check_version(h5file)
-    out = self._initialize_output_dictionary(h5file)
+    json = self._initialize_output_dictionary(h5file)
 
-    out['model_config'] = h5file.attrs['model_config']
+    json['model_config'] = h5file.attrs['model_config']
     if 'training_config' in h5file.attrs:
-      out['training_config'] = h5file.attrs['training_config']
+      json['training_config'] = h5file.attrs['training_config']
     groups = []
 
     layer_names = [n.decode('utf8') for n in h5file['model_weights']]
@@ -131,7 +133,7 @@ class HDF5Converter(object):
           [name.decode('utf8') for name in layer.attrs['weight_names']])
       if group is not None:
         groups.append(group)
-    return out, groups
+    return json, groups
 
 
   def h5_weights_to_tfjs_format(self, h5file):
