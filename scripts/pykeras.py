@@ -31,7 +31,7 @@ def dispatch_pykeras_conversion(pykeras_file):
   Returns:
     (json, groups)
       json: a json dictionary (empty if unused)
-      groups: an array of weight_groups as defined in tfjs write_weights
+      groups: an array of weight_groups as defined in tfjs weights_writer
   """
   converter = h5_conversion.HDF5Converter()
 

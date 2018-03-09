@@ -4,7 +4,11 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 # =============================================================================
+<<<<<<< HEAD
 """Library for converting from hdf5 to json + binary weights.
+=======
+"""Library for converting from hdf5 to json + binary wirghts.
+>>>>>>> 488fae149550b3ddcc9675816d25bb4fdc82d0cc
 
 Used primarily to convert saved weights, or saved_models from their
 hdf5 format to a JSON + binary weights format that the TS codebase can use.
