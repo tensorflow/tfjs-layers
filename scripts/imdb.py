@@ -50,11 +50,33 @@ def get_word_index(reverse=False):
 
 
 def indices_to_words(reverse_index, indices):
+  """Convert an iterable of word indices into words.
+
+  Args:
+    reverse_index: An `dict` mapping word index (as `int`) to word (as `str`).
+    indices: An iterable of word indices.
+
+  Returns:
+    Mapped words as a `list` of `str`s.
+  """
   return [reverse_index[i - INDEX_FROM] if i >= INDEX_FROM else 'OOV'
           for i in indices]
 
 
 def get_imdb_data(vocabulary_size, max_len):
+  """Get IMDB data for training and validation.
+
+  Args:
+    vocabulary_size: Size of the vocabulary, as an `int`.
+    max_len: Cut text after this number of words.
+
+  Returns:
+    x_train: An int array of shape `(num_exapmles, max_len)`: index-encoded
+      sentences.
+    y_train: An int array of shape `(num_exapmles,)`: labels for the sentences.
+    x_test: Same as `x_train`, but for test.
+    y_test: Same as `y_train`, but for test.
+  """
   print("Getting IMDB data with vocabulary_size %d" % vocabulary_size)
   (x_train, y_train), (x_test, y_test) = keras.datasets.imdb.load_data(
       num_words=vocabulary_size)
@@ -72,6 +94,26 @@ def train_model(model_type,
                 y_test,
                 epochs,
                 batch_size):
+  """Train a model for IMDB sentiment classification.
+
+  Args:
+    model_type: Type of the model to train, as a `str`.
+    vocabulary_size: Vocabulary size.
+    embedding_size: Embedding dimensions.
+    x_train: An int array of shape `(num_exapmles, max_len)`: index-encoded
+      sentences.
+    y_train: An int array of shape `(num_exapmles,)`: labels for the sentences.
+    x_test: Same as `x_train`, but for test.
+    y_test: Same as `y_train`, but for test.
+    epochs: Number of epochs to train the model for.
+    batch_size: Batch size to use during trainng.
+
+  Returns:
+    The trained model instance.
+
+  Raises:
+    ValueError: on invalid model type.
+  """
 
   model = keras.Sequential()
   model.add(keras.layers.Embedding(vocabulary_size, embedding_size))
