@@ -816,7 +816,7 @@ export class SimpleRNNCell extends RNNCell {
         this.kernelInitializer, this.kernelRegularizer, true,
         this.kernelConstraint);
     this.recurrentKernel = this.addWeight(
-        'recurrentKernel', [this.units, this.units], null,
+        'recurrent_kernel', [this.units, this.units], null,
         this.recurrentInitializer, this.recurrentRegularizer, true,
         this.recurrentConstraint);
     if (this.useBias) {
@@ -1194,7 +1194,7 @@ export class GRUCell extends RNNCell {
         'kernel', [inputDim, this.units * 3], null, this.kernelInitializer,
         this.kernelRegularizer, true, this.kernelConstraint);
     this.recurrentKernel = this.addWeight(
-        'recurrentKernel', [this.units, this.units * 3], null,
+        'recurrent_kernel', [this.units, this.units * 3], null,
         this.recurrentInitializer, this.recurrentRegularizer, true,
         this.recurrentConstraint);
     if (this.useBias) {
@@ -1590,7 +1590,7 @@ export class LSTMCell extends RNNCell {
         'kernel', [inputDim, this.units * 4], null, this.kernelInitializer,
         this.kernelRegularizer, true, this.kernelConstraint);
     this.recurrentKernel = this.addWeight(
-        'recurrentKernel', [this.units, this.units * 4], null,
+        'recurrent_kernel', [this.units, this.units * 4], null,
         this.recurrentInitializer, this.recurrentRegularizer, true,
         this.recurrentConstraint);
     let biasInitializer: initializers.Initializer;

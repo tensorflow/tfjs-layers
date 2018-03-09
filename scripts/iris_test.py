@@ -31,40 +31,24 @@ class IrisTest(unittest.TestCase):
     super(IrisTest, self).tearDown()
 
   def testTrainAndSaveNonSequential(self):
-    model_json_path = os.path.join(self._tmp_dir, 'iris.keras.model.json')
-    weights_json_path = os.path.join(self._tmp_dir, 'iris.keras.weights.json')
-    merged_json_path = os.path.join(self._tmp_dir, 'iris.keras.merged.json')
-    final_train_accuracy = iris.train(
-        100, model_json_path, weights_json_path, merged_json_path,
-        sequential=False)
+    final_train_accuracy = iris.train(100, self._tmp_dir)
     self.assertGreater(final_train_accuracy, 0.9)
 
     # Check that the model json file is created.
-    json.load(open(model_json_path, 'rt'))
+    json.load(open(os.path.join(self._tmp_dir, 'topology.json'), 'rt'))
 
-    # Check that the weights json file is created.
-    json.load(open(weights_json_path, 'rt'))
-
-    # Check that the merged json file is created.
-    json.load(open(merged_json_path, 'rt'))
+    # Check that the weights manifests json file is created.
+    json.load(open(os.path.join(self._tmp_dir, 'weights_manifest.json'), 'rt'))
 
   def testTrainAndSaveSequential(self):
-    model_json_path = os.path.join(self._tmp_dir, 'iris.keras.model.json')
-    weights_json_path = os.path.join(self._tmp_dir, 'iris.keras.weights.json')
-    merged_json_path = os.path.join(self._tmp_dir, 'iris.keras.merged.json')
-    final_train_accuracy = iris.train(
-        100, model_json_path, weights_json_path, merged_json_path,
-        sequential=True)
+    final_train_accuracy = iris.train(100, self._tmp_dir, sequential=True)
     self.assertGreater(final_train_accuracy, 0.9)
 
     # Check that the model json file is created.
-    json.load(open(model_json_path, 'rt'))
+    json.load(open(os.path.join(self._tmp_dir, 'topology.json'), 'rt'))
 
-    # Check that the weights json file is created.
-    json.load(open(weights_json_path, 'rt'))
-
-    # Check that the merged json file is created.
-    json.load(open(merged_json_path, 'rt'))
+    # Check that the weights manifests json file is created.
+    json.load(open(os.path.join(self._tmp_dir, 'weights_manifest.json'), 'rt'))
 
 
 if __name__ == '__main__':

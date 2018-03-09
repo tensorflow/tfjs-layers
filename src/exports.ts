@@ -44,8 +44,8 @@ export class ModelExports {
     return new Sequential(config);
   }
 
-  static async loadModel(modelAndWeights: ModelAndWeightsConfig):
-      Promise<Model> {
+  static async loadModel(modelAndWeights: string|
+                         ModelAndWeightsConfig): Promise<Model> {
     return loadModelInternal(modelAndWeights);
   }
 
