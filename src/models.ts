@@ -53,10 +53,10 @@ export type ModelAndWeightsConfig = {
  *
  * @param modelAndWeights An instance of `ModelAndWeightsConfig`, a JSON object
  *   consisting of two fields:
- *     modelTopology: A JSON configuration for the model topology. It follows
+ *     - modelTopology: A JSON configuration for the model topology. It follows
  *       the format of the return value of Keras
  *       [Model.to_json()](https://keras.io/models/about-keras-models/)
- *     weightsManifest: An instance of `WeightsManifestConfig`, which consists
+ *     - weightsManifest: An instance of `WeightsManifestConfig`, which consists
  *       of an `Array` of Weights.
  * @param pathPrefix Path prefix to be prepended to the paths in the weights
  *   manifest before fetching from the paths.
