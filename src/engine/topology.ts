@@ -1872,24 +1872,28 @@ export class Container extends Layer {
   /**
    * Loads all layer weights from a JSON object.
    *
-   * The JSON object has a format defined in the type WeightsJSON.
-   *
    * Porting Note: HDF5 weight files cannot be directly loaded in JavaScript /
    *   TypeScript. The utility script at `scripts/pykeras.py` offers means
    *   to convert them into JSON strings compatible with this method.
    * Porting Note: TensorFlow.js Layers supports only loading by name currently.
    *
-   * @param weightsJSON
+   * @param weightsJSON A JSON mapping weight names to weight values as nested
+   *   arrays of numbers, or a `NamedTensorMap`, i.e., a JSON mapping weight
+   *   names to `Tensor` objects.
    * @param skipMismatch Whether to skip loading of layers where there is a
    *   mismatch in the number of weights, or a mismatch in the shape of the
    *   weight (only valid when `by_name`=True).
+   * @param isNamedTensorMap Whether the 1st argument (`weightsJSON`) is a
+   *   `NamedTensorMap`.
    */
   loadWeights(
       weightsJSON: JsonDict|NamedTensorMap, skipMismatch = false,
       isNamedTensorMap = false) {
-    // TODO(cais): The JsonDict support should be removed after serving weights
-    //   XHR is working. The `loadWeightsFromJson` flag should be
-    //   removed as well. (b/74015805)
+    // TODO(cais): Maybe the JsonDict support should be removed after serving
+    //   weights from XHR is working. If so, the `loadWeightsFromJson` flag
+    //   should be removed as well. (b/74015805)
+    // TODO(cais): See if we can use smarter type resolution to avoid sending
+    //   the type info as a separate arg (isNamedTensormap).
     if (isNamedTensorMap) {
       loadWeightsFromNamedTensorMap(weightsJSON as NamedTensorMap, this.layers);
     } else {
@@ -2610,8 +2614,7 @@ export function loadWeightsFromNamedTensorMap(
   const nameToWeight: {[name: string]: LayerVariable} = {};
   let totalWeightsCount = 0;
   for (const layer of layers) {
-    const weights = layer.weights;
-    for (const weight of weights) {
+    for (const weight of layer.weights) {
       if (nameToWeight[weight.name] != null) {
         throw new ValueError(`Duplicate weight name: ${weight.name}`);
       }
@@ -2641,7 +2644,7 @@ export function loadWeightsFromNamedTensorMap(
 }
 
 
-// TODO(cais): Remove the following (b/74015805).
+// TODO(cais): Maybe remove the following (b/74015805).
 /**
  * Load weights from a weights JSON object to an array of layers.
  *

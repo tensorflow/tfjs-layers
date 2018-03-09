@@ -49,8 +49,6 @@ export type ModelAndWeightsConfig = {
 /**
  * Load a model, including its topology and weights.
  *
- * This is an async function.
- *
  * @param modelAndWeights An instance of `ModelAndWeightsConfig`, a JSON object
  *   consisting of two fields:
  *     - modelTopology: A JSON configuration for the model topology. It follows
@@ -70,7 +68,10 @@ export async function loadModel(
       await loadWeights(
           modelAndWeights.weightsManifest, pathPrefix,
           model.weights.map(weight => weight.name)) as NamedTensorMap;
-  model.loadWeights(weightValues, null, true);
+
+  const skipMismatches: boolean = null;
+  const isNamedTensorMap = true;
+  model.loadWeights(weightValues, skipMismatches, isNamedTensorMap);
   return model;
 }
 

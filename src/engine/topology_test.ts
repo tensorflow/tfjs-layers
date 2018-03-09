@@ -1348,7 +1348,7 @@ describe('getSourceInputs()', () => {
   });
 });
 
-// TODO(cais): Remove this test once loadWeightsFromJson is removed
+// TODO(cais): Maybe remove this test once loadWeightsFromJson is removed
 //   (b/74015805).
 describeMathCPUAndGPU('loadWeightsFromJson', () => {
   const inputTensor =
