@@ -129,11 +129,14 @@ export class Embedding extends Layer {
     }
     this.inputDim = config.inputDim;
     this.outputDim = config.outputDim;
-    this.embeddingsInitializer = initializers.get(
+    this.embeddingsInitializer = initializers.getInitializer(
         config.embeddingsInitializer || this.DEFAULT_EMBEDDINGS_INITIALIZER);
-    this.embeddingsRegularizer = regularizers.get(config.embeddingsRegularizer);
-    this.activityRegularizer = regularizers.get(config.activityRegularizer);
-    this.embeddingsConstraint = constraints.get(config.embeddingsConstraint);
+    this.embeddingsRegularizer =
+        regularizers.getRegularizer(config.embeddingsRegularizer);
+    this.activityRegularizer =
+        regularizers.getRegularizer(config.activityRegularizer);
+    this.embeddingsConstraint =
+        constraints.getConstraint(config.embeddingsConstraint);
     this.maskZero = config.maskZero;
     this.inputLength = config.inputLength;
   }
@@ -195,10 +198,14 @@ export class Embedding extends Layer {
     const config = {
       inputDim: this.inputDim,
       outputDim: this.outputDim,
-      embeddingsInitializer: initializers.serialize(this.embeddingsInitializer),
-      embeddingsRegularizer: regularizers.serialize(this.embeddingsRegularizer),
-      activityRegularizer: regularizers.serialize(this.activityRegularizer),
-      embeddingsConstraint: constraints.serialize(this.embeddingsConstraint),
+      embeddingsInitializer:
+          initializers.serializeInitializer(this.embeddingsInitializer),
+      embeddingsRegularizer:
+          regularizers.serializeRegularizer(this.embeddingsRegularizer),
+      activityRegularizer:
+          regularizers.serializeRegularizer(this.activityRegularizer),
+      embeddingsConstraint:
+          constraints.serializeConstraint(this.embeddingsConstraint),
       maskZero: this.maskZero,
       inputLength: this.inputLength
     };

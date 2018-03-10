@@ -81,10 +81,12 @@ export class DepthwiseConv2D extends Conv2D {
     super(config);
     this.depthMultiplier =
         config.depthMultiplier == null ? 1 : config.depthMultiplier;
-    this.depthwiseInitializer = initializers.get(
+    this.depthwiseInitializer = initializers.getInitializer(
         config.depthwiseInitializer || this.DEFAULT_KERNEL_INITIALIZER);
-    this.depthwiseConstraint = constraints.get(config.depthwiseConstraint);
-    this.depthwiseRegularizer = regularizers.get(config.depthwiseRegularizer);
+    this.depthwiseConstraint =
+        constraints.getConstraint(config.depthwiseConstraint);
+    this.depthwiseRegularizer =
+        regularizers.getRegularizer(config.depthwiseRegularizer);
   }
 
   build(inputShape: Shape|Shape[]): void {

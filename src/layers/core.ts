@@ -233,15 +233,17 @@ export class Dense extends Layer {
     if (config.useBias != null) {
       this.useBias = config.useBias;
     }
-    this.kernelInitializer = initializers.get(
+    this.kernelInitializer = initializers.getInitializer(
         config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
-    this.biasInitializer = initializers.get(
+    this.biasInitializer = initializers.getInitializer(
         config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
-    this.kernelConstraint = constraints.get(config.kernelConstraint);
-    this.biasConstraint = constraints.get(config.biasConstraint);
-    this.kernelRegularizer = regularizers.get(config.kernelRegularizer);
-    this.biasRegularizer = regularizers.get(config.biasRegularizer);
-    this.activityRegularizer = regularizers.get(config.activityRegularizer);
+    this.kernelConstraint = constraints.getConstraint(config.kernelConstraint);
+    this.biasConstraint = constraints.getConstraint(config.biasConstraint);
+    this.kernelRegularizer =
+        regularizers.getRegularizer(config.kernelRegularizer);
+    this.biasRegularizer = regularizers.getRegularizer(config.biasRegularizer);
+    this.activityRegularizer =
+        regularizers.getRegularizer(config.activityRegularizer);
 
     this.inputSpec = [{minNDim: 2}];
   }
@@ -291,13 +293,16 @@ export class Dense extends Layer {
       units: this.units,
       activation: activations.serialize(this.activation),
       useBias: this.useBias,
-      kernelInitializer: initializers.serialize(this.kernelInitializer),
-      biasInitializer: initializers.serialize(this.biasInitializer),
-      kernelRegularizer: regularizers.serialize(this.kernelRegularizer),
-      biasRegularizer: regularizers.serialize(this.biasRegularizer),
-      activityRegularizer: regularizers.serialize(this.activityRegularizer),
-      kernelConstraint: constraints.serialize(this.kernelConstraint),
-      biasConstraint: constraints.serialize(this.biasConstraint)
+      kernelInitializer:
+          initializers.serializeInitializer(this.kernelInitializer),
+      biasInitializer: initializers.serializeInitializer(this.biasInitializer),
+      kernelRegularizer:
+          regularizers.serializeRegularizer(this.kernelRegularizer),
+      biasRegularizer: regularizers.serializeRegularizer(this.biasRegularizer),
+      activityRegularizer:
+          regularizers.serializeRegularizer(this.activityRegularizer),
+      kernelConstraint: constraints.serializeConstraint(this.kernelConstraint),
+      biasConstraint: constraints.serializeConstraint(this.biasConstraint)
     };
     const baseConfig = super.getConfig();
     Object.assign(config, baseConfig);
@@ -393,9 +398,8 @@ export interface RepeatVectorLayerConfig extends LayerConfig {
 
 /**
  * Repeat the input n times.
- *
- * TODO(cais): Add example.
  */
+// TODO(cais): Add example.
 export class RepeatVector extends Layer {
   readonly n: number;
 

@@ -301,7 +301,7 @@ export interface LayerConfig {
   name?: string;
   /** Whether this layer is trainable. If not specified, defaults to true. */
   trainable?: boolean;
-  /** TODO(michaelterry): Document this. */
+  // TODO(cais): Document this.
   updatable?: boolean;
   /**
    * If defined, the layer's initial weight values will be set to this argument.

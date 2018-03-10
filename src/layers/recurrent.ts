@@ -781,20 +781,23 @@ export class SimpleRNNCell extends RNNCell {
                                           config.activation);
     this.useBias = config.useBias === undefined ? true : config.useBias;
 
-    this.kernelInitializer = initializers.get(
+    this.kernelInitializer = initializers.getInitializer(
         config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
-    this.recurrentInitializer = initializers.get(
+    this.recurrentInitializer = initializers.getInitializer(
         config.recurrentInitializer || this.DEFAULT_RECURRENT_INITIALIZER);
-    this.biasInitializer = initializers.get(
+    this.biasInitializer = initializers.getInitializer(
         config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
 
-    this.kernelRegularizer = regularizers.get(config.kernelRegularizer);
-    this.recurrentRegularizer = regularizers.get(config.recurrentRegularizer);
-    this.biasRegularizer = regularizers.get(config.biasRegularizer);
+    this.kernelRegularizer =
+        regularizers.getRegularizer(config.kernelRegularizer);
+    this.recurrentRegularizer =
+        regularizers.getRegularizer(config.recurrentRegularizer);
+    this.biasRegularizer = regularizers.getRegularizer(config.biasRegularizer);
 
-    this.kernelConstraint = constraints.get(config.kernelConstraint);
-    this.recurrentConstraint = constraints.get(config.recurrentConstraint);
-    this.biasConstraint = constraints.get(config.biasConstraint);
+    this.kernelConstraint = constraints.getConstraint(config.kernelConstraint);
+    this.recurrentConstraint =
+        constraints.getConstraint(config.recurrentConstraint);
+    this.biasConstraint = constraints.getConstraint(config.biasConstraint);
 
     this.dropout = math_utils.min(
         [1, math_utils.max([0, config.dropout == null ? 0 : config.dropout])]);
@@ -871,16 +874,22 @@ export class SimpleRNNCell extends RNNCell {
       units: this.units,
       activation: activations.serialize(this.activation),
       useBias: this.useBias,
-      kernelInitializer: initializers.serialize(this.kernelInitializer),
-      recurrentInitializer: initializers.serialize(this.recurrentInitializer),
-      biasInitializer: initializers.serialize(this.biasInitializer),
-      kernelRegularizer: regularizers.serialize(this.kernelRegularizer),
-      recurrentRegularizer: regularizers.serialize(this.recurrentRegularizer),
-      biasRegularizer: regularizers.serialize(this.biasRegularizer),
-      activityRegularizer: regularizers.serialize(this.activityRegularizer),
-      kernelConstraint: constraints.serialize(this.kernelConstraint),
-      recurrentConstraint: constraints.serialize(this.recurrentConstraint),
-      biasConstraint: constraints.serialize(this.biasConstraint),
+      kernelInitializer:
+          initializers.serializeInitializer(this.kernelInitializer),
+      recurrentInitializer:
+          initializers.serializeInitializer(this.recurrentInitializer),
+      biasInitializer: initializers.serializeInitializer(this.biasInitializer),
+      kernelRegularizer:
+          regularizers.serializeRegularizer(this.kernelRegularizer),
+      recurrentRegularizer:
+          regularizers.serializeRegularizer(this.recurrentRegularizer),
+      biasRegularizer: regularizers.serializeRegularizer(this.biasRegularizer),
+      activityRegularizer:
+          regularizers.serializeRegularizer(this.activityRegularizer),
+      kernelConstraint: constraints.serializeConstraint(this.kernelConstraint),
+      recurrentConstraint:
+          constraints.serializeConstraint(this.recurrentConstraint),
+      biasConstraint: constraints.serializeConstraint(this.biasConstraint),
       dropout: this.dropout,
       recurrentDropout: this.recurrentDropout,
     };
@@ -1060,16 +1069,22 @@ export class SimpleRNN extends RNN {
       units: this.units,
       activation: activations.serialize(this.activation),
       useBias: this.useBias,
-      kernelInitializer: initializers.serialize(this.kernelInitializer),
-      recurrentInitializer: initializers.serialize(this.recurrentInitializer),
-      biasInitializer: initializers.serialize(this.biasInitializer),
-      kernelRegularizer: regularizers.serialize(this.kernelRegularizer),
-      recurrentRegularizer: regularizers.serialize(this.recurrentRegularizer),
-      biasRegularizer: regularizers.serialize(this.biasRegularizer),
-      activityRegularizer: regularizers.serialize(this.activityRegularizer),
-      kernelConstraint: constraints.serialize(this.kernelConstraint),
-      recurrentConstraint: constraints.serialize(this.recurrentConstraint),
-      biasConstraint: constraints.serialize(this.biasConstraint),
+      kernelInitializer:
+          initializers.serializeInitializer(this.kernelInitializer),
+      recurrentInitializer:
+          initializers.serializeInitializer(this.recurrentInitializer),
+      biasInitializer: initializers.serializeInitializer(this.biasInitializer),
+      kernelRegularizer:
+          regularizers.serializeRegularizer(this.kernelRegularizer),
+      recurrentRegularizer:
+          regularizers.serializeRegularizer(this.recurrentRegularizer),
+      biasRegularizer: regularizers.serializeRegularizer(this.biasRegularizer),
+      activityRegularizer:
+          regularizers.serializeRegularizer(this.activityRegularizer),
+      kernelConstraint: constraints.serializeConstraint(this.kernelConstraint),
+      recurrentConstraint:
+          constraints.serializeConstraint(this.recurrentConstraint),
+      biasConstraint: constraints.serializeConstraint(this.biasConstraint),
       dropout: this.dropout,
       recurrentDropout: this.recurrentDropout,
     };
@@ -1159,20 +1174,23 @@ export class GRUCell extends RNNCell {
                                           config.recurrentActivation);
     this.useBias = config.useBias == null ? true : config.useBias;
 
-    this.kernelInitializer = initializers.get(
+    this.kernelInitializer = initializers.getInitializer(
         config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
-    this.recurrentInitializer = initializers.get(
+    this.recurrentInitializer = initializers.getInitializer(
         config.recurrentInitializer || this.DEFAULT_RECURRENT_INITIALIZER);
-    this.biasInitializer = initializers.get(
+    this.biasInitializer = initializers.getInitializer(
         config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
 
-    this.kernelRegularizer = regularizers.get(config.kernelRegularizer);
-    this.recurrentRegularizer = regularizers.get(config.recurrentRegularizer);
-    this.biasRegularizer = regularizers.get(config.biasRegularizer);
+    this.kernelRegularizer =
+        regularizers.getRegularizer(config.kernelRegularizer);
+    this.recurrentRegularizer =
+        regularizers.getRegularizer(config.recurrentRegularizer);
+    this.biasRegularizer = regularizers.getRegularizer(config.biasRegularizer);
 
-    this.kernelConstraint = constraints.get(config.kernelConstraint);
-    this.recurrentConstraint = constraints.get(config.recurrentConstraint);
-    this.biasConstraint = constraints.get(config.biasConstraint);
+    this.kernelConstraint = constraints.getConstraint(config.kernelConstraint);
+    this.recurrentConstraint =
+        constraints.getConstraint(config.recurrentConstraint);
+    this.biasConstraint = constraints.getConstraint(config.biasConstraint);
 
     this.dropout = math_utils.min(
         [1, math_utils.max([0, config.dropout == null ? 0 : config.dropout])]);
@@ -1311,16 +1329,22 @@ export class GRUCell extends RNNCell {
       units: this.units,
       activation: activations.serialize(this.activation),
       useBias: this.useBias,
-      kernelInitializer: initializers.serialize(this.kernelInitializer),
-      recurrentInitializer: initializers.serialize(this.recurrentInitializer),
-      biasInitializer: initializers.serialize(this.biasInitializer),
-      kernelRegularizer: regularizers.serialize(this.kernelRegularizer),
-      recurrentRegularizer: regularizers.serialize(this.recurrentRegularizer),
-      biasRegularizer: regularizers.serialize(this.biasRegularizer),
-      activityRegularizer: regularizers.serialize(this.activityRegularizer),
-      kernelConstraint: constraints.serialize(this.kernelConstraint),
-      recurrentConstraint: constraints.serialize(this.recurrentConstraint),
-      biasConstraint: constraints.serialize(this.biasConstraint),
+      kernelInitializer:
+          initializers.serializeInitializer(this.kernelInitializer),
+      recurrentInitializer:
+          initializers.serializeInitializer(this.recurrentInitializer),
+      biasInitializer: initializers.serializeInitializer(this.biasInitializer),
+      kernelRegularizer:
+          regularizers.serializeRegularizer(this.kernelRegularizer),
+      recurrentRegularizer:
+          regularizers.serializeRegularizer(this.recurrentRegularizer),
+      biasRegularizer: regularizers.serializeRegularizer(this.biasRegularizer),
+      activityRegularizer:
+          regularizers.serializeRegularizer(this.activityRegularizer),
+      kernelConstraint: constraints.serializeConstraint(this.kernelConstraint),
+      recurrentConstraint:
+          constraints.serializeConstraint(this.recurrentConstraint),
+      biasConstraint: constraints.serializeConstraint(this.biasConstraint),
       dropout: this.dropout,
       recurrentDropout: this.recurrentDropout,
       implementation: this.implementation,
@@ -1436,16 +1460,22 @@ export class GRU extends RNN {
       units: this.units,
       activation: activations.serialize(this.activation),
       useBias: this.useBias,
-      kernelInitializer: initializers.serialize(this.kernelInitializer),
-      recurrentInitializer: initializers.serialize(this.recurrentInitializer),
-      biasInitializer: initializers.serialize(this.biasInitializer),
-      kernelRegularizer: regularizers.serialize(this.kernelRegularizer),
-      recurrentRegularizer: regularizers.serialize(this.recurrentRegularizer),
-      biasRegularizer: regularizers.serialize(this.biasRegularizer),
-      activityRegularizer: regularizers.serialize(this.activityRegularizer),
-      kernelConstraint: constraints.serialize(this.kernelConstraint),
-      recurrentConstraint: constraints.serialize(this.recurrentConstraint),
-      biasConstraint: constraints.serialize(this.biasConstraint),
+      kernelInitializer:
+          initializers.serializeInitializer(this.kernelInitializer),
+      recurrentInitializer:
+          initializers.serializeInitializer(this.recurrentInitializer),
+      biasInitializer: initializers.serializeInitializer(this.biasInitializer),
+      kernelRegularizer:
+          regularizers.serializeRegularizer(this.kernelRegularizer),
+      recurrentRegularizer:
+          regularizers.serializeRegularizer(this.recurrentRegularizer),
+      biasRegularizer: regularizers.serializeRegularizer(this.biasRegularizer),
+      activityRegularizer:
+          regularizers.serializeRegularizer(this.activityRegularizer),
+      kernelConstraint: constraints.serializeConstraint(this.kernelConstraint),
+      recurrentConstraint:
+          constraints.serializeConstraint(this.recurrentConstraint),
+      biasConstraint: constraints.serializeConstraint(this.biasConstraint),
       dropout: this.dropout,
       recurrentDropout: this.recurrentDropout,
       implementation: this.implementatin,
@@ -1554,21 +1584,24 @@ export class LSTMCell extends RNNCell {
                                           config.recurrentActivation);
     this.useBias = config.useBias == null ? true : config.useBias;
 
-    this.kernelInitializer = initializers.get(
+    this.kernelInitializer = initializers.getInitializer(
         config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
-    this.recurrentInitializer = initializers.get(
+    this.recurrentInitializer = initializers.getInitializer(
         config.recurrentInitializer || this.DEFAULT_RECURRENT_INITIALIZER);
-    this.biasInitializer = initializers.get(
+    this.biasInitializer = initializers.getInitializer(
         config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
     this.unitForgetBias = config.unitForgetBias;
 
-    this.kernelRegularizer = regularizers.get(config.kernelRegularizer);
-    this.recurrentRegularizer = regularizers.get(config.recurrentRegularizer);
-    this.biasRegularizer = regularizers.get(config.biasRegularizer);
+    this.kernelRegularizer =
+        regularizers.getRegularizer(config.kernelRegularizer);
+    this.recurrentRegularizer =
+        regularizers.getRegularizer(config.recurrentRegularizer);
+    this.biasRegularizer = regularizers.getRegularizer(config.biasRegularizer);
 
-    this.kernelConstraint = constraints.get(config.kernelConstraint);
-    this.recurrentConstraint = constraints.get(config.recurrentConstraint);
-    this.biasConstraint = constraints.get(config.biasConstraint);
+    this.kernelConstraint = constraints.getConstraint(config.kernelConstraint);
+    this.recurrentConstraint =
+        constraints.getConstraint(config.recurrentConstraint);
+    this.biasConstraint = constraints.getConstraint(config.biasConstraint);
 
     this.dropout = math_utils.min(
         [1, math_utils.max([0, config.dropout == null ? 0 : config.dropout])]);
@@ -1732,17 +1765,23 @@ export class LSTMCell extends RNNCell {
       units: this.units,
       activation: activations.serialize(this.activation),
       useBias: this.useBias,
-      kernelInitializer: initializers.serialize(this.kernelInitializer),
-      recurrentInitializer: initializers.serialize(this.recurrentInitializer),
-      biasInitializer: initializers.serialize(this.biasInitializer),
+      kernelInitializer:
+          initializers.serializeInitializer(this.kernelInitializer),
+      recurrentInitializer:
+          initializers.serializeInitializer(this.recurrentInitializer),
+      biasInitializer: initializers.serializeInitializer(this.biasInitializer),
       unitForgetBias: this.unitForgetBias,
-      kernelRegularizer: regularizers.serialize(this.kernelRegularizer),
-      recurrentRegularizer: regularizers.serialize(this.recurrentRegularizer),
-      biasRegularizer: regularizers.serialize(this.biasRegularizer),
-      activityRegularizer: regularizers.serialize(this.activityRegularizer),
-      kernelConstraint: constraints.serialize(this.kernelConstraint),
-      recurrentConstraint: constraints.serialize(this.recurrentConstraint),
-      biasConstraint: constraints.serialize(this.biasConstraint),
+      kernelRegularizer:
+          regularizers.serializeRegularizer(this.kernelRegularizer),
+      recurrentRegularizer:
+          regularizers.serializeRegularizer(this.recurrentRegularizer),
+      biasRegularizer: regularizers.serializeRegularizer(this.biasRegularizer),
+      activityRegularizer:
+          regularizers.serializeRegularizer(this.activityRegularizer),
+      kernelConstraint: constraints.serializeConstraint(this.kernelConstraint),
+      recurrentConstraint:
+          constraints.serializeConstraint(this.recurrentConstraint),
+      biasConstraint: constraints.serializeConstraint(this.biasConstraint),
       dropout: this.dropout,
       recurrentDropout: this.recurrentDropout,
       implementation: this.implementation,
@@ -1871,17 +1910,23 @@ export class LSTM extends RNN {
       units: this.units,
       activation: activations.serialize(this.activation),
       useBias: this.useBias,
-      kernelInitializer: initializers.serialize(this.kernelInitializer),
-      recurrentInitializer: initializers.serialize(this.recurrentInitializer),
-      biasInitializer: initializers.serialize(this.biasInitializer),
+      kernelInitializer:
+          initializers.serializeInitializer(this.kernelInitializer),
+      recurrentInitializer:
+          initializers.serializeInitializer(this.recurrentInitializer),
+      biasInitializer: initializers.serializeInitializer(this.biasInitializer),
       unitForgetBias: this.unitForgetBias,
-      kernelRegularizer: regularizers.serialize(this.kernelRegularizer),
-      recurrentRegularizer: regularizers.serialize(this.recurrentRegularizer),
-      biasRegularizer: regularizers.serialize(this.biasRegularizer),
-      activityRegularizer: regularizers.serialize(this.activityRegularizer),
-      kernelConstraint: constraints.serialize(this.kernelConstraint),
-      recurrentConstraint: constraints.serialize(this.recurrentConstraint),
-      biasConstraint: constraints.serialize(this.biasConstraint),
+      kernelRegularizer:
+          regularizers.serializeRegularizer(this.kernelRegularizer),
+      recurrentRegularizer:
+          regularizers.serializeRegularizer(this.recurrentRegularizer),
+      biasRegularizer: regularizers.serializeRegularizer(this.biasRegularizer),
+      activityRegularizer:
+          regularizers.serializeRegularizer(this.activityRegularizer),
+      kernelConstraint: constraints.serializeConstraint(this.kernelConstraint),
+      recurrentConstraint:
+          constraints.serializeConstraint(this.recurrentConstraint),
+      biasConstraint: constraints.serializeConstraint(this.biasConstraint),
       dropout: this.dropout,
       recurrentDropout: this.recurrentDropout,
       implementation: this.implementatin,
