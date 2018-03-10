@@ -15,13 +15,13 @@
 import {Scalar, Tensor} from 'deeplearn';
 import * as _ from 'underscore';
 
-import * as activations from '../activations';
+import {ActivationFn, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/deeplearnjs_backend';
-import * as constraints from '../constraints';
+import {Constraint, getConstraint, serializeConstraint} from '../constraints';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import * as initializers from '../initializers';
-import * as regularizers from '../regularizers';
+import {getInitializer, Initializer, serializeInitializer} from '../initializers';
+import {getRegularizer, Regularizer, serializeRegularizer} from '../regularizers';
 import {Shape} from '../types';
 import {ConfigDict, LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -140,11 +140,11 @@ export interface DenseLayerConfig extends LayerConfig {
    * Initializer for the `kernel` weights matrix (see
    * [initializers](../initializers.md)).
    */
-  kernelInitializer?: string|initializers.Initializer;
+  kernelInitializer?: string|Initializer;
   /**
    * Initializer for the bias vector (see [initializers](../initializers.md)).
    */
-  biasInitializer?: string|initializers.Initializer;
+  biasInitializer?: string|Initializer;
   /**
    * If inputShape is not specified, and inputDim is, then the expected
    * inputShape is [inputDim].
@@ -154,28 +154,28 @@ export interface DenseLayerConfig extends LayerConfig {
   /**
    * kernelConstraint: Constraint for the kernel weights
    */
-  kernelConstraint?: string|constraints.Constraint;
+  kernelConstraint?: string|Constraint;
 
   /**
    * biasConstraint: Constraint for the bias vector
    */
-  biasConstraint?: string|constraints.Constraint;
+  biasConstraint?: string|Constraint;
 
   /**
    * kernelRegularizer:  Regularizer function applied to the `kernel` weights
    * matrix
    */
-  kernelRegularizer?: string|regularizers.Regularizer;
+  kernelRegularizer?: string|Regularizer;
 
   /**
    * biasRegularizer:  Regularizer function applied to the bias vector
    */
-  biasRegularizer?: string|regularizers.Regularizer;
+  biasRegularizer?: string|Regularizer;
 
   /**
    * activityRegularizer:  Regularizer function applied to the activation
    */
-  activityRegularizer?: string|regularizers.Regularizer;
+  activityRegularizer?: string|Regularizer;
 }
 
 /**
@@ -201,19 +201,19 @@ export interface DenseLayerConfig extends LayerConfig {
 export class Dense extends Layer {
   private units: number;
   // Default activation: Linear (none).
-  private activation: activations.ActivationFn = null;
+  private activation: ActivationFn = null;
   private useBias = true;
-  private kernelInitializer: initializers.Initializer;
-  private biasInitializer: initializers.Initializer;
+  private kernelInitializer: Initializer;
+  private biasInitializer: Initializer;
   private kernel: LayerVariable = null;
   private bias: LayerVariable = null;
 
   readonly DEFAULT_KERNEL_INITIALIZER = 'GlorotNormal';
   readonly DEFAULT_BIAS_INITIALIZER = 'Zeros';
-  private readonly kernelConstraint?: constraints.Constraint;
-  private readonly biasConstraint?: constraints.Constraint;
-  private readonly kernelRegularizer?: regularizers.Regularizer;
-  private readonly biasRegularizer?: regularizers.Regularizer;
+  private readonly kernelConstraint?: Constraint;
+  private readonly biasConstraint?: Constraint;
+  private readonly kernelRegularizer?: Regularizer;
+  private readonly biasRegularizer?: Regularizer;
 
   constructor(config: DenseLayerConfig) {
     super(config);
@@ -229,21 +229,19 @@ export class Dense extends Layer {
     }
 
     this.units = config.units;
-    this.activation = activations.get(config.activation);
+    this.activation = getActivation(config.activation);
     if (config.useBias != null) {
       this.useBias = config.useBias;
     }
-    this.kernelInitializer = initializers.getInitializer(
+    this.kernelInitializer = getInitializer(
         config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
-    this.biasInitializer = initializers.getInitializer(
-        config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
-    this.kernelConstraint = constraints.getConstraint(config.kernelConstraint);
-    this.biasConstraint = constraints.getConstraint(config.biasConstraint);
-    this.kernelRegularizer =
-        regularizers.getRegularizer(config.kernelRegularizer);
-    this.biasRegularizer = regularizers.getRegularizer(config.biasRegularizer);
-    this.activityRegularizer =
-        regularizers.getRegularizer(config.activityRegularizer);
+    this.biasInitializer =
+        getInitializer(config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
+    this.kernelConstraint = getConstraint(config.kernelConstraint);
+    this.biasConstraint = getConstraint(config.biasConstraint);
+    this.kernelRegularizer = getRegularizer(config.kernelRegularizer);
+    this.biasRegularizer = getRegularizer(config.biasRegularizer);
+    this.activityRegularizer = getRegularizer(config.activityRegularizer);
 
     this.inputSpec = [{minNDim: 2}];
   }
@@ -291,18 +289,15 @@ export class Dense extends Layer {
   getConfig(): ConfigDict {
     const config: ConfigDict = {
       units: this.units,
-      activation: activations.serialize(this.activation),
+      activation: serializeActivation(this.activation),
       useBias: this.useBias,
-      kernelInitializer:
-          initializers.serializeInitializer(this.kernelInitializer),
-      biasInitializer: initializers.serializeInitializer(this.biasInitializer),
-      kernelRegularizer:
-          regularizers.serializeRegularizer(this.kernelRegularizer),
-      biasRegularizer: regularizers.serializeRegularizer(this.biasRegularizer),
-      activityRegularizer:
-          regularizers.serializeRegularizer(this.activityRegularizer),
-      kernelConstraint: constraints.serializeConstraint(this.kernelConstraint),
-      biasConstraint: constraints.serializeConstraint(this.biasConstraint)
+      kernelInitializer: serializeInitializer(this.kernelInitializer),
+      biasInitializer: serializeInitializer(this.biasInitializer),
+      kernelRegularizer: serializeRegularizer(this.kernelRegularizer),
+      biasRegularizer: serializeRegularizer(this.biasRegularizer),
+      activityRegularizer: serializeRegularizer(this.activityRegularizer),
+      kernelConstraint: serializeConstraint(this.kernelConstraint),
+      biasConstraint: serializeConstraint(this.biasConstraint)
     };
     const baseConfig = super.getConfig();
     Object.assign(config, baseConfig);
@@ -367,12 +362,12 @@ export interface ActivationLayerConfig extends LayerConfig {
  * Applies an activation function to an output.
  */
 export class Activation extends Layer {
-  activation: activations.ActivationFn;
+  activation: ActivationFn;
 
   constructor(config: ActivationLayerConfig) {
     super(config);
     this.supportsMasking = true;
-    this.activation = activations.get(config.activation);
+    this.activation = getActivation(config.activation);
   }
 
   // tslint:disable-next-line:no-any

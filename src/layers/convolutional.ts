@@ -15,7 +15,7 @@
 import {Tensor} from 'deeplearn';
 import * as _ from 'underscore';
 
-import * as activations from '../activations';
+import {ActivationFn, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/deeplearnjs_backend';
 import {DataFormat, PaddingMode} from '../common';
 import {Constraint, getConstraint, serializeConstraint} from '../constraints';
@@ -137,7 +137,7 @@ export abstract class Conv extends Layer {
   protected readonly padding: PaddingMode;
   protected readonly dataFormat: DataFormat;
   protected readonly dilationRate: number|number[];
-  protected readonly activation: activations.ActivationFn;
+  protected readonly activation: ActivationFn;
   protected readonly useBias: boolean;
   protected readonly kernelInitializer?: Initializer;
   protected readonly biasInitializer?: Initializer;
@@ -177,7 +177,7 @@ export abstract class Conv extends Layer {
           'Non-default dilation is not implemented for convolution layers ' +
           'yet.');
     }
-    this.activation = activations.get(config.activation);
+    this.activation = getActivation(config.activation);
     this.useBias = config.useBias == null ? true : config.useBias;
     this.kernelInitializer = getInitializer(
         config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
@@ -273,7 +273,7 @@ export abstract class Conv extends Layer {
       padding: this.padding,
       dataFormat: this.dataFormat,
       dilationRate: this.dilationRate,
-      activation: activations.serialize(this.activation),
+      activation: serializeActivation(this.activation),
       useBias: this.useBias,
       kernelInitializer: serializeInitializer(this.kernelInitializer),
       biasInitializer: serializeInitializer(this.biasInitializer),

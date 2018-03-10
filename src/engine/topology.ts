@@ -343,7 +343,7 @@ export class Layer {
   inboundNodes: Node[];
   outboundNodes: Node[];
 
-  activityRegularizer: regularizers.Regularizer;
+  activityRegularizer: Regularizer;
 
   protected _trainableWeights: LayerVariable[];
   private _nonTrainableWeights: LayerVariable[];
@@ -957,9 +957,9 @@ export class Layer {
    */
   protected addWeight(
       name: string, shape: Shape, dtype?: DType,
-      initializer?: initializers.Initializer,
-      regularizer?: regularizers.Regularizer, trainable?: boolean,
-      constraint?: constraints.Constraint): LayerVariable {
+      initializer?: Initializer,
+      regularizer?: Regularizer, trainable?: boolean,
+      constraint?: Constraint): LayerVariable {
     if (dtype == null) {
       dtype = K.floatx();
     }
