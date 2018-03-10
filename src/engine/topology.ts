@@ -15,11 +15,11 @@ import {Tensor} from 'deeplearn';
 import * as _ from 'underscore';
 
 import * as K from '../backend/deeplearnjs_backend';
-import * as constraints from '../constraints';
+import {Constraint} from '../constraints';
 import {AttributeError, RuntimeError, ValueError} from '../errors';
-import * as initializers from '../initializers';
+import {Initializer} from '../initializers';
 import {deserialize as deserializeLayer} from '../layers/serialization';
-import * as regularizers from '../regularizers';
+import {Regularizer} from '../regularizers';
 import {ConcreteTensor, ConfigDict, DType, JsonDict, LayerVariable, NamedTensorMap, Shape, SymbolicTensor, TensorInterface} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
@@ -956,8 +956,7 @@ export class Layer {
    * @return The created weight variable.
    */
   protected addWeight(
-      name: string, shape: Shape, dtype?: DType,
-      initializer?: Initializer,
+      name: string, shape: Shape, dtype?: DType, initializer?: Initializer,
       regularizer?: Regularizer, trainable?: boolean,
       constraint?: Constraint): LayerVariable {
     if (dtype == null) {
