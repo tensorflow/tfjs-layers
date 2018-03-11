@@ -151,7 +151,7 @@ export interface SequentialConfig {
 /**
  * A model with a stack of layers, feeding linearly from one to the next.
  *
- * `tf.sequential` is a factory function that creates an instance of
+ * `sequential` is a factory function that creates an instance of
  * `Sequential`.
  *
  * # Arguments

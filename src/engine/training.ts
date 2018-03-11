@@ -575,8 +575,7 @@ export interface ModelCompileConfig {
  * The `Model` class adds training & evaluation routines to a `Container`.
  *
  * A `Model` is the basic unit of training, inference and evaluation in
- * TensorFlow.js. `tf.model` is a factory function that creates an instance
- * of `Model`.
+ * TensorFlow.js. To create a `Model, use `model`.
  *
  * To create a `Model`, specify its input(s) and output(s). Inputs are
  * `SymbolicTensor`s provided by `Input` layers. Outputs are `SymbolicTensor`s
