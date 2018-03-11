@@ -82,7 +82,7 @@ export interface ModelAndWeightsConfig {
  *   This provides the most convenient way to load a TensorFlow.js saved model.
  *   The path may optionally end in a slash ('/').
  *
- *   The canonical format obeys the following contracts:
+ *   The canonical format obeys the following contract:
  *   - A model topology JSON can be accessed from the relative path 'topology'
  *     under the path. This JSON can be a model architecture JSON consistent
  *     in the format of the return value of `keras.Model.to_json()`, or a full
@@ -99,8 +99,6 @@ export interface ModelAndWeightsConfig {
 // TODO(cais): Add link to the core's documentation of `WeightManifestConfig`.
 export async function loadModel(modelAndWeights: string|
                                 ModelAndWeightsConfig): Promise<Model> {
-  // TODO(cais): Perhaps pathPrefix should be a part of ModelAndWeightsConfig
-  //   instead.
   if (typeof modelAndWeights === 'string') {
     const pathPrefix =
         modelAndWeights.endsWith('/') ? modelAndWeights : modelAndWeights + '/';
