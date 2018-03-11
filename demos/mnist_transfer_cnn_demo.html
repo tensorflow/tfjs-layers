@@ -150,7 +150,7 @@ https://opensource.org/licenses/MIT.
 
       console.log('Loading model...');
       $('#retrainStatus').text('Loading model...');
-      const model = await tfjs_layers.loadModel(artifactsDir);
+      const model = await tfjs_layers.loadModel(artifactsDir + 'model.json');
       console.log('Done loading model.');
       $('#retrainStatus').text('');
 

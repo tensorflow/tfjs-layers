@@ -94,7 +94,7 @@ https://opensource.org/licenses/MIT.
       async function runBenchmark(modelName) {
         const modelPath = artifactsDir + modelName + '/';
         console.log('Loading model "' + modelName + '" and benchmark data...');
-        const model = await tfjs_layers.loadModel(modelPath);
+        const model = await tfjs_layers.loadModel(modelPath + 'model.json');
         console.log('Done loading model "' + modelName + '" and benchmark data.');
 
         const benchmarkData = await (await fetch(modelPath + 'data.json')).json();
@@ -163,7 +163,6 @@ https://opensource.org/licenses/MIT.
             await tfjs_layers.dl.nextFrame();
             console.log('Benchmarking model: ' + modelName);
             const result = await runBenchmark(modelName);
-            console.log('result:', result);
             $('#resultsTable').find('tbody')
                 .append($('<tr>')
                     .append($('<td>').append(modelName))

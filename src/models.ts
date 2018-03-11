@@ -76,21 +76,24 @@ export interface ModelAndWeightsConfig {
  * @param modelAndWeights A path `string` or an instance of
  *   `ModelAndWeightsConfig`.
  *
- * - If `modelAndWeights` is a `string`, it is a path to a saved model in the
- *   canonical TensorFlow.js format.
+ * - If `modelAndWeights` is a `string`, it is a path to a the `model.json` file
+ *   in canonical TensorFlow.js format.
  *
  *   This provides the most convenient way to load a TensorFlow.js saved model.
  *   The path may optionally end in a slash ('/').
  *
- *   The canonical format obeys the following contract:
- *   - A model topology JSON can be accessed from the relative path 'topology'
- *     under the path. This JSON can be a model architecture JSON consistent
- *     in the format of the return value of `keras.Model.to_json()`, or a full
- *     model JSON in the format of `keras.models.save_model()`.
- *   - A TensorFlow.js weights manifest can be accessed from the relative
- *     path 'weights_manifest' under the path.
- *   - Model weights can be accessed from relative paths described by the
- *     `paths` fields in weights manifest under this path.
+ *   The content of `model.json` is assumed to be a JSON object with the
+ *   following fields and values:
+ *   - 'modelTopology': A JSON object that can be
+ *     - a model architecture JSON consistent with the format of the return
+ *      value of `keras.Model.to_json()`, or
+ *     - a full model JSON in the format of `keras.models.save_model()`.
+ *   - 'weightsManifest': A TensorFlow.js weights manifest.
+ *   See the Python converter function `save_model()` for more details.
+ *
+ *   It is also assumed that model weights can be accessed from relative paths
+ *     described by the `paths` fields in weights manifest.
+ *
  * - For more fine-grained control over the model loading process, use a
  *   `ModelAndWeightsConfig` object as the input to this function.
  *
@@ -100,14 +103,22 @@ export interface ModelAndWeightsConfig {
 export async function loadModelInternal(modelAndWeights: string|
                                         ModelAndWeightsConfig): Promise<Model> {
   if (typeof modelAndWeights === 'string') {
-    const pathPrefix =
-        modelAndWeights.endsWith('/') ? modelAndWeights : modelAndWeights + '/';
-    const modelTopologyRequest = await fetch(pathPrefix + 'topology.json');
-    const modelTopology = await modelTopologyRequest.json();
-    const weightsManifestRequest =
-        await fetch(pathPrefix + 'weights_manifest.json');
-    const weightsManifest = await weightsManifestRequest.json();
-    modelAndWeights = {modelTopology, weightsManifest, pathPrefix};
+    const modelJSONPath = modelAndWeights;
+    const modelJSONRequest = await fetch(modelJSONPath);
+    const modelJSON = await modelJSONRequest.json();
+    if (modelJSON['modelTopology'] == null) {
+      throw new ValueError(
+          'Missing field "modelTopology" from model JSON at path' +
+          modelJSONPath);
+    }
+    if (modelJSON['weightsManifest'] == null) {
+      throw new ValueError(
+          'Missing field "weightsManifest" from model JSON at path' +
+          modelJSONPath);
+    }
+    modelAndWeights = modelJSON as ModelAndWeightsConfig;
+    modelAndWeights.pathPrefix =
+        modelJSONPath.substring(0, modelJSONPath.lastIndexOf('/'));
   }
   let modelTopology = typeof modelAndWeights.modelTopology === 'string' ?
       JSON.parse(modelAndWeights.modelTopology) as JsonDict :

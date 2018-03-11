@@ -107,7 +107,8 @@ https://opensource.org/licenses/MIT.
 
       console.log('Loading model...');
       $('#demo-status').text('Loadinng model...');
-      const model = await tfjs_layers.loadModel('../../dist/demo/iris/');
+      const model =
+          await tfjs_layers.loadModel('../../dist/demo/iris/model.json');
       console.log('Done loading model.');
       $('#demo-status').text('');
 

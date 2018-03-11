@@ -24,6 +24,13 @@ import numpy as np
 
 import write_weights  # pylint: disable=import-error
 
+# File name for the indexing JSON file in an artifact directory.
+ARTIFACT_MODEL_JSON_FILE_NAME = 'model.json'
+
+# JSON string keys for fields of the indexing JSON.
+ARTIFACT_MODEL_TOPOLOGY_KEY = 'modelTopology'
+ARTIFACT_WEIGHTS_MANIFEST_KEY = 'weightsManifest'
+
 
 class HDF5Converter(object):
   """Helper class to convert HDF5 format to JSON + binary weights format
@@ -299,27 +306,32 @@ class HDF5Converter(object):
   def write_artifacts(self,
                       topology,
                       weights,
-                      output_dir,
-                      topology_filename='topology.json'):
+                      output_dir):
     """Writes weights and topology to the output_dir.
 
-    If `topology` is empty, only emit weights to output_dir.
+    If `topology` is Falsy (e.g., `None`), only emit weights to output_dir.
 
     Args:
       topology: a JSON dictionary, representing the Keras config.
       weights: an array of weight groups (as defined in tfjs write_weights).
       output_dir: the directory to hold all the contents.
-      topology_filename: filename for the topology json file.
     """
     # TODO(cais, nielsene): This method should allow optional arguments of
     #   `write_weights.write_weights` (e.g., shard size) and forward them.
     # We write the topology after since write_weights makes no promises about
     # preserving directory contents.
-    if topology:
-      json_path = os.path.join(output_dir, topology_filename)
-      with open(json_path, 'wt') as json_file:
-        json_file.write(json.dumps(topology))
-    write_weights.write_weights(weights, output_dir)
+    model_json = {}
+    model_json[ARTIFACT_MODEL_TOPOLOGY_KEY] = topology or None
+    weights_manifest = write_weights.write_weights(
+        weights, output_dir, write_manifest=False)
+    if not isinstance(weights_manifest, list):
+      weights_manifest = json.loads(weights_manifest)
+    assert isinstance(weights_manifest, list)
+    model_json[ARTIFACT_WEIGHTS_MANIFEST_KEY] = weights_manifest
+
+    model_json_path = os.path.join(output_dir, ARTIFACT_MODEL_JSON_FILE_NAME)
+    with open(model_json_path, 'wt') as f:
+      json.dump(model_json, f)
 
 
 def save_model(model, artifacts_dir):
@@ -329,10 +341,13 @@ def save_model(model, artifacts_dir):
     model: An instance of `keras.Model`.
     artifacts_dir: The directory in which the artifacts will be saved.
       The artifacts to be saved include:
-        - topology.json: A JSON representing the model. This JSON is obtained
-          through calling `keras.models.save_model`.
-        - weights_manifest.json: A TensorFlow.js-format JSON manifest for the
-          model's weights.
+        - model.json: A JSON representing the model. It has the following
+          fields:
+          - 'modelTopology': A JSON object describing the topology of the model,
+            along with additional information such as training. It is obtained
+            through calling `keras.models.save_model`.
+          - 'weightsManifest': A TensorFlow.js-format JSON manifest for the
+            model's weights.
         - files containing weight values in groups, with the file name pattern
           group(\d+)-shard(\d+)of(\d+).
       If the directory does not exist, this function will attempt to create it.

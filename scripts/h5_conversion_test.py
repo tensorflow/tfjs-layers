@@ -276,13 +276,15 @@ class ConvertH5WeightsTest(unittest.TestCase):
     # Verify the content of the artifacts output directory.
     self.assertTrue(
         os.path.isfile(os.path.join(self._tmp_dir, 'group1-shard1of1')))
-    with open(os.path.join(self._tmp_dir, 'topology.json'), 'rt') as f:
-      topology_json = json.loads(f.read())
+    model_json = json.load(
+        open(os.path.join(self._tmp_dir, 'model.json'), 'rt'))
+
+    topology_json = model_json['modelTopology']
     self.assertIn('keras_version', topology_json)
     self.assertIn('backend', topology_json)
     self.assertIn('model_config', topology_json)
-    with open(os.path.join(self._tmp_dir, 'weights_manifest.json'), 'rt') as f:
-      weights_manifest = json.loads(f.read())
+
+    weights_manifest = model_json['weightsManifest']
     self.assertTrue(isinstance(weights_manifest, list))
     self.assertEqual(1, len(weights_manifest))
     self.assertIn('paths', weights_manifest[0])
@@ -297,13 +299,15 @@ class ConvertH5WeightsTest(unittest.TestCase):
     # Verify the content of the artifacts output directory.
     self.assertTrue(
         os.path.isfile(os.path.join(artifacts_dir, 'group1-shard1of1')))
-    with open(os.path.join(artifacts_dir, 'topology.json'), 'rt') as f:
-      topology_json = json.loads(f.read())
+    model_json = json.load(
+        open(os.path.join(artifacts_dir, 'model.json'), 'rt'))
+
+    topology_json = model_json['modelTopology']
     self.assertIn('keras_version', topology_json)
     self.assertIn('backend', topology_json)
     self.assertIn('model_config', topology_json)
-    with open(os.path.join(artifacts_dir, 'weights_manifest.json'), 'rt') as f:
-      weights_manifest = json.loads(f.read())
+
+    weights_manifest = model_json['weightsManifest']
     self.assertTrue(isinstance(weights_manifest, list))
     self.assertEqual(1, len(weights_manifest))
     self.assertIn('paths', weights_manifest[0])

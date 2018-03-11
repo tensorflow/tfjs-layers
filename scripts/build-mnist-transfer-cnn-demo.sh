@@ -51,7 +51,7 @@ export PYTHONPATH="${SCRIPTS_DIR}/..:${SCRIPTS_DIR}/../node_modules/deeplearn-sr
 python "${SCRIPTS_DIR}/mnist_transfer_cnn.py" \
     --epochs "${TRAIN_EPOCHS}" \
     --artifacts_dir "${ARTIFACTS_DIR}" \
-    --gte5_data_path_prefix "${ARTIFACTS_DIR}/mnist_transfer_cnn" \
+    --gte5_data_path_prefix "${ARTIFACTS_DIR}/gte5" \
     --gte5_cutoff 1024
 
 echo

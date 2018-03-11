@@ -62,7 +62,7 @@ https://opensource.org/licenses/MIT.
       const reverseTargetCharIndex = _.invert(targetTokenIndex);
 
       console.log('Loading model...');
-      const model = await tfjs_layers.loadModel(artifactsDir);
+      const model = await tfjs_layers.loadModel(artifactsDir + 'model.json');
       console.log('Done loading model.');
 
       const numEncoderTokens = model.input[0].shape[2];

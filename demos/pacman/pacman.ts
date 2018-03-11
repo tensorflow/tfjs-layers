@@ -42,8 +42,6 @@ Pacman.FPS = PACMAN_FPS;
 // and deeplearn.js has a bug.
 tf.ENV.set('WEBGL_GET_BUFFER_SUB_DATA_ASYNC_EXTENSION_ENABLED', false);
 
-// TODO(nsthorat): Move these to GCP when they are no longer JSON.
-
 const CONTROLS = ['up', 'down', 'left', 'right'];
 const CONTROL_CODES = ['ARROW_UP', 'ARROW_DOWN', 'ARROW_LEFT', 'ARROW_RIGHT'];
 
@@ -139,7 +137,8 @@ function getActivation(): tf.Tensor4D {
 
 async function loadMobilenet(): Promise<tfl.Model> {
   console.log('Loading mobilenet...');
-  const model = await tfl.loadModel('../../dist/demo/mobilenet');
+  // TODO(nsthorat): Move these to GCP when they are no longer JSON.
+  const model = await tfl.loadModel('../../dist/demo/mobilenet/model.json');
   console.log('Done loading mobilenet.');
 
   // Return a model that outputs an internal activation.
