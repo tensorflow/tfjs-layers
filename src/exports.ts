@@ -27,7 +27,7 @@ import {AvgPooling1D, AvgPooling2D, GlobalAveragePooling1D, GlobalAveragePooling
 import {GRU, GRUCell, GRUCellLayerConfig, GRULayerConfig, LSTM, LSTMCell, LSTMCellLayerConfig, LSTMLayerConfig, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig} from './layers/recurrent';
 import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, WrapperLayerConfig} from './layers/wrappers';
 import {loadModelInternal, ModelAndWeightsConfig, modelFromJSONInternal, Sequential, SequentialConfig} from './models';
-import {ConfigDict, SymbolicTensor} from './types';
+import {ConfigDict, JsonValue, SymbolicTensor} from './types';
 
 // tslint:enable:max-line-length
 
@@ -73,7 +73,8 @@ export class ModelExports {
     subheading: 'Loading',
     useDocsFrom: 'modelFromJSONInternal'
   })
-  static modelFromJSON(jsonString: string, customObjects?: ConfigDict): Model {
+  static modelFromJSON(
+      jsonString: JsonValue|string, customObjects?: ConfigDict): Model {
     return modelFromJSONInternal(jsonString, customObjects);
   }
 
