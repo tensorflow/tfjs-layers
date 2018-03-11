@@ -61,8 +61,7 @@ export class ModelExports {
   @doc({
     heading: 'Models',
     subheading: 'Loading',
-    useDocsFrom: 'loadModelInternal',
-    configParamIndices: [0]
+    useDocsFrom: 'loadModelInternal'
   })
   static loadModel(modelPath: string): Promise<Model> {
     return loadModelInternal(modelPath);

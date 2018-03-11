@@ -641,6 +641,7 @@ export class Model extends Container {
     super(config);
   }
 
+  @doc({heading: 'Models', subheading: 'Classes'})
   compile(config: ModelCompileConfig): void {
     if (config.loss == null) {
       config.loss = [];
@@ -882,6 +883,7 @@ export class Model extends Container {
    *   metrics). The attribute `model.metricsNames` will give you the display
    *   labels for the scalar outputs.
    */
+  @doc({heading: 'Models', subheading: 'Classes'})
   evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[], batchSize = 32,
       verbose?: ModelLoggingVerbosity, sampleWeight?: Tensor,
@@ -1018,6 +1020,7 @@ export class Model extends Container {
    *   and the model's expectations, or in case a stateful model receives a
    *   number of samples that is not a multiple of the batch size.
    */
+  @doc({heading: 'Models', subheading: 'Classes'})
   predict(x: Tensor|Tensor[], batchSize = 32, verbose = false): Tensor
       |Tensor[] {
     checkInputData(x, this.inputNames, this.feedInputShapes, false);
@@ -1034,6 +1037,7 @@ export class Model extends Container {
    * @param x: Input samples, as an Tensor
    * @return Tensor(s) of predictions
    */
+  @doc({heading: 'Models', subheading: 'Classes'})
   predictOnBatch(x: Tensor): Tensor|Tensor[] {
     checkInputData(x, this.inputNames, this.feedInputShapes, true);
     // TODO(cais): Take care of the learning_phase boolean flag.
@@ -1377,6 +1381,7 @@ export class Model extends Container {
    * @exception ValueError In case of mismatch between the provided input data
    *   and what the model expects.
    */
+  @doc({heading: 'Models', subheading: 'Classes'})
   async fit(config: ModelFitConfig): Promise<History> {
     if (config.batchSize == null) {
       config.batchSize = 32;

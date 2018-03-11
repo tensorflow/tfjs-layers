@@ -241,6 +241,7 @@ export class Sequential extends Model {
    *   tensors, or is already connected somewhere else (forbidden in
    *   `Sequential` models).
    */
+  @doc({heading: 'Models', subheading: 'Classes'})
   add(layer: Layer): void {
     if (this.outputs.length === 0) {
       // first layer in model: check that it is an input layer
@@ -433,6 +434,7 @@ export class Sequential extends Model {
    *   metrics). The attribute `model.metricsNames` will give you the display
    *   labels for the scalar outputs.
    */
+  @doc({heading: 'Models', subheading: 'Classes'})
   evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[], batchSize = 32,
       verbose?: ModelLoggingVerbosity, sampleWeight?: Tensor,
@@ -455,6 +457,7 @@ export class Sequential extends Model {
    *
    * @return Tensor(s) of predictions.
    */
+  @doc({heading: 'Models', subheading: 'Classes'})
   predict(x: Tensor|Tensor[], batchSize = 32, verbose = false): Tensor
       |Tensor[] {
     if (this.model == null) {
@@ -501,6 +504,7 @@ export class Sequential extends Model {
    * @exception ValueError In case of mismatch between the provided input data
    *   and what the model expects.
    */
+  @doc({heading: 'Models', subheading: 'Classes'})
   async fit(config: ModelFitConfig): Promise<History> {
     if (!this.built) {
       throw new RuntimeError(
