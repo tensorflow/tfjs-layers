@@ -141,7 +141,7 @@ describeMathCPU('loadModel', () => {
         fileBufferMap[path1] = ones([32], 'float32').dataSync() as Float32Array;
         setupFakeWeightFiles(fileBufferMap);
         // Use a randomly generated layer name to prevent interaction with
-        // other unite tests that load the same sample JSON.
+        // other unit tests that load the same sample JSON.
         const denseLayerName = 'dense_' + Math.floor(Math.random() * 1e9);
         const weightsManifest: WeightsManifestConfig = [
           {
@@ -162,16 +162,16 @@ describeMathCPU('loadModel', () => {
           }
         ];
         // JSON.parse and stringify to deep copy fakeSequentialModel.
-        let configJson =
+        let modelTopology =
             JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
-        configJson['config']['layers'][1]['config']['name'] = denseLayerName;
+        modelTopology['config']['layers'][1]['config']['name'] = denseLayerName;
         if (isModelConfigNested) {
           // Simulate case in which `configJson` contains not only
           // `model_config`, but also other data, such as training.
-          configJson = {'model_config': configJson};
+          modelTopology = {'model_config': modelTopology};
         }
         modelFromJSONInternal({
-          modelTopology: configJson,
+          modelTopology,
           weightsManifest,
           pathPrefix,
         }).then(model => {
@@ -188,7 +188,7 @@ describeMathCPU('loadModel', () => {
       './weight_1': ones([32], 'float32').dataSync() as Float32Array,
     });
     // Use a randomly generated layer name to prevent interaction with other
-    // unite tests that load the same sample JSON.
+    // unit tests that load the same sample JSON.
     const denseLayerName = 'dense_' + Math.floor(Math.random() * 1e9);
     const weightsManifest: WeightsManifestConfig = [
       {
@@ -207,7 +207,7 @@ describeMathCPU('loadModel', () => {
     modelFromJSONInternal({
       modelTopology: configJson,
       weightsManifest,
-    }).then(() => done.fail()).catch(done);
+    }).then(() => done.fail).catch(done);
   });
 });
 

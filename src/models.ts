@@ -37,12 +37,16 @@ import {convertPythonicToTs} from './utils/serialization_utils';
 export async function modelFromJSONInternal(
     modelAndWeightsConfig: ModelAndWeightsConfig,
     customObjects?: ConfigDict): Promise<Model> {
-  const pythonicConfig = typeof modelAndWeightsConfig === 'string' ?
-      JSON.parse(modelAndWeightsConfig) as ModelAndWeightsConfig :
-      modelAndWeightsConfig;
-
-  const tsConfig =
-      convertPythonicToTs(pythonicConfig.modelTopology) as ConfigDict;
+  let modelTopology = modelAndWeightsConfig.modelTopology;
+  if (modelTopology['model_config'] != null) {
+    // If the model-topology JSON contains a 'model_config' field, then it is
+    // a full model JSON (e.g., from `keras.models.save_model`), which contains
+    // not only the model's architecture in its 'model_config' field, but
+    // additional information such as the model's optimizer. We use only the
+    // 'model_config' field currently.
+    modelTopology = modelTopology['model_config'] as JsonDict;
+  }
+  const tsConfig = convertPythonicToTs(modelTopology) as ConfigDict;
   const model = deserialize(tsConfig, customObjects) as Model;
 
   if (modelAndWeightsConfig.weightsManifest != null) {
