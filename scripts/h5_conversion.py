@@ -335,10 +335,10 @@ def save_model(model, artifacts_dir):
           model's weights.
         - files containing weight values in groups, with the file name pattern
           group(\d+)-shard(\d+)of(\d+).
-      If the directory does not exist, this function will attempt to create.
+      If the directory does not exist, this function will attempt to create it.
 
   Raises:
-    ValueError: If `artifacts_dir` already exists as a file (not directory).
+    ValueError: If `artifacts_dir` already exists as a file (not a directory).
   """
   temp_h5_path = tempfile.mktemp() + '.h5'
   keras.models.save_model(model, temp_h5_path)
