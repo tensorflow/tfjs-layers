@@ -20,25 +20,43 @@ import {Model, ModelCompileConfig, ModelFitConfig, ModelLoggingVerbosity} from '
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
 import {NamedTensorMap, Shape} from './types';
-import {ConfigDict, ConfigDictArray, JsonDict, JsonValue, SymbolicTensor} from './types';
+import {ConfigDict, ConfigDictArray, JsonDict, SymbolicTensor} from './types';
 import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 // tslint:enable:max-line-length
 
 /**
  * Parses a JSON model configuration file and returns a model instance.
- *  @param json_string JSON object or string encoding a model configuration.
+ *  @param modelAndWeightsConfig JSON object or string encoding a model and
+ *       weights configuration.
  *  @param custom_objects Optional dictionary mapping names
  *       (strings) to custom classes or functions to be
  *       considered during deserialization.
  * @returns A TensorFlow.js Layers `Model` instance (uncompiled).
  */
-export function modelFromJSONInternal(
-    json: JsonValue|string, customObjects?: ConfigDict): Model {
-  const pythonicConfig =
-      typeof json === 'string' ? JSON.parse(json) as JsonValue : json;
-  const tsConfig = convertPythonicToTs(pythonicConfig) as ConfigDict;
-  return deserialize(tsConfig, customObjects);
+export async function modelFromJSONInternal(
+    modelAndWeightsConfig: ModelAndWeightsConfig,
+    customObjects?: ConfigDict): Promise<Model> {
+  const pythonicConfig = typeof modelAndWeightsConfig === 'string' ?
+      JSON.parse(modelAndWeightsConfig) as ModelAndWeightsConfig :
+      modelAndWeightsConfig;
+
+  const tsConfig =
+      convertPythonicToTs(pythonicConfig.modelTopology) as ConfigDict;
+  const model = deserialize(tsConfig, customObjects) as Model;
+
+  if (modelAndWeightsConfig.weightsManifest != null) {
+    const weightValues =
+        await loadWeights(
+            modelAndWeightsConfig.weightsManifest,
+            modelAndWeightsConfig.pathPrefix,
+            model.weights.map(weight => weight.name)) as NamedTensorMap;
+
+    const skipMismatches: boolean = null;
+    const isNamedTensorMap = true;
+    model.loadWeights(weightValues, skipMismatches, isNamedTensorMap);
+  }
+  return model;
 }
 
 /**
@@ -55,12 +73,12 @@ export interface ModelAndWeightsConfig {
    *     training options and state, i.e., a format consistent with the return
    *     value of `keras.models.save_model().
    */
-  modelTopology: JsonDict|string;
+  modelTopology: JsonDict;
 
   /**
    * A weights manifest in TensorFlow.js format.
    */
-  weightsManifest: WeightsManifestConfig;
+  weightsManifest?: WeightsManifestConfig;
 
   /**
    * Path to prepend to the paths in `weightManifest` before fetching.
@@ -71,16 +89,12 @@ export interface ModelAndWeightsConfig {
 }
 
 /**
- * Load a model, including its topology and weights.
+ * Load a model, including its topology and optionally weights.
  *
- * @param modelAndWeights A path `string` or an instance of
- *   `ModelAndWeightsConfig`.
- *
- * - If `modelAndWeights` is a `string`, it is a path to a the `model.json` file
- *   in canonical TensorFlow.js format.
+ * @param modelConfigPath A path to the `ModelAndWeightsConfig` JSON describing
+ * the model in the canonical TensorFlow.js format.
  *
  *   This provides the most convenient way to load a TensorFlow.js saved model.
- *   The path may optionally end in a slash ('/').
  *
  *   The content of `model.json` is assumed to be a JSON object with the
  *   following fields and values:
@@ -94,53 +108,29 @@ export interface ModelAndWeightsConfig {
  *   It is also assumed that model weights can be accessed from relative paths
  *     described by the `paths` fields in weights manifest.
  *
- * - For more fine-grained control over the model loading process, use a
- *   `ModelAndWeightsConfig` object as the input to this function.
- *
  * @returns A `Promise` of `Model`, with the topology and weights loaded.
  */
 // TODO(cais): Add link to the core's documentation of `WeightManifestConfig`.
-export async function loadModelInternal(modelAndWeights: string|
-                                        ModelAndWeightsConfig): Promise<Model> {
-  if (typeof modelAndWeights === 'string') {
-    const modelJSONPath = modelAndWeights;
-    const modelJSONRequest = await fetch(modelJSONPath);
-    const modelJSON = await modelJSONRequest.json();
-    if (modelJSON['modelTopology'] == null) {
-      throw new ValueError(
-          'Missing field "modelTopology" from model JSON at path' +
-          modelJSONPath);
-    }
-    if (modelJSON['weightsManifest'] == null) {
-      throw new ValueError(
-          'Missing field "weightsManifest" from model JSON at path' +
-          modelJSONPath);
-    }
-    modelAndWeights = modelJSON as ModelAndWeightsConfig;
-    modelAndWeights.pathPrefix =
-        modelJSONPath.substring(0, modelJSONPath.lastIndexOf('/'));
+export async function loadModelInternal(modelConfigPath: string):
+    Promise<Model> {
+  const modelConfigRequest = await fetch(modelConfigPath);
+  const modelConfig = await modelConfigRequest.json() as ModelAndWeightsConfig;
+  if (modelConfig['modelTopology'] == null) {
+    throw new ValueError(
+        'Missing field "modelTopology" from model JSON at path' +
+        modelConfigPath);
   }
-  let modelTopology = typeof modelAndWeights.modelTopology === 'string' ?
-      JSON.parse(modelAndWeights.modelTopology) as JsonDict :
-      modelAndWeights.modelTopology;
-  if (modelTopology['model_config'] != null) {
-    // If the model-topology JSON contains a 'model_config' field, then it is
-    // a full model JSON (e.g., from `keras.models.save_model`), which contains
-    // not only the model's architecture in its 'model_config' field, but
-    // additional information such as the model's optimizer. We use only the
-    // 'model_config' field currently.
-    modelTopology = modelTopology['model_config'] as JsonDict;
+  // TODO(cais): Remove this check as it's okay to load just the topology of a
+  // model.
+  if (modelConfig['weightsManifest'] == null) {
+    throw new ValueError(
+        'Missing field "weightsManifest" from model JSON at path' +
+        modelConfigPath);
   }
-  const model = modelFromJSONInternal(modelTopology);
-  const weightValues =
-      await loadWeights(
-          modelAndWeights.weightsManifest, modelAndWeights.pathPrefix,
-          model.weights.map(weight => weight.name)) as NamedTensorMap;
+  modelConfig.pathPrefix =
+      modelConfigPath.substring(0, modelConfigPath.lastIndexOf('/'));
 
-  const skipMismatches: boolean = null;
-  const isNamedTensorMap = true;
-  model.loadWeights(weightValues, skipMismatches, isNamedTensorMap);
-  return model;
+  return modelFromJSONInternal(modelConfig);
 }
 
 /**
