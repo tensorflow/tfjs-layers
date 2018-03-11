@@ -63,8 +63,8 @@ export class ModelExports {
     subheading: 'Loading',
     useDocsFrom: 'loadModelInternal'
   })
-  static loadModel(modelPath: string): Promise<Model> {
-    return loadModelInternal(modelPath);
+  static loadModel(modelConfigPath: string): Promise<Model> {
+    return loadModelInternal(modelConfigPath);
   }
 
   @doc({

@@ -1409,7 +1409,6 @@ export class Model extends Container {
     let doValidation = false;
     let valX: Tensor|Tensor[];
     let valY: Tensor|Tensor[];
-    let valSampleWeight: Tensor|Tensor[];
     let valIns: Tensor[];
     if (config.validationData != null && config.validationData.length > 0) {
       doValidation = true;
@@ -1417,7 +1416,6 @@ export class Model extends Container {
         // config.validationData consists of valX and valY.
         valX = config.validationData[0];
         valY = config.validationData[1];
-        valSampleWeight = null;
       } else if (config.validationData.length === 3) {
         throw new NotImplementedError(
             'validationData including sample weights is not supported yet.');

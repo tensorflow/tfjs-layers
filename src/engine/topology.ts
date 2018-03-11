@@ -11,7 +11,7 @@
 /* Original source: keras/engine/topology.py */
 
 // tslint:disable:max-line-length
-import {Tensor} from 'deeplearn';
+import {doc, Tensor} from 'deeplearn';
 import * as _ from 'underscore';
 
 import * as K from '../backend/deeplearnjs_backend';
@@ -768,6 +768,7 @@ export class Layer {
    * @exception ValueError error in case the layer is missing shape information
    *   for its `build` call.
    */
+  @doc({heading: 'Models', 'subheading': 'Classes'})
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
       // tslint:disable-next-line:no-any
