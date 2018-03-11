@@ -35,20 +35,14 @@ class IrisTest(unittest.TestCase):
     self.assertGreater(final_train_accuracy, 0.9)
 
     # Check that the model json file is created.
-    json.load(open(os.path.join(self._tmp_dir, 'topology.json'), 'rt'))
-
-    # Check that the weights manifests json file is created.
-    json.load(open(os.path.join(self._tmp_dir, 'weights_manifest.json'), 'rt'))
+    json.load(open(os.path.join(self._tmp_dir, 'model.json'), 'rt'))
 
   def testTrainAndSaveSequential(self):
     final_train_accuracy = iris.train(100, self._tmp_dir, sequential=True)
     self.assertGreater(final_train_accuracy, 0.9)
 
     # Check that the model json file is created.
-    json.load(open(os.path.join(self._tmp_dir, 'topology.json'), 'rt'))
-
-    # Check that the weights manifests json file is created.
-    json.load(open(os.path.join(self._tmp_dir, 'weights_manifest.json'), 'rt'))
+    json.load(open(os.path.join(self._tmp_dir, 'model.json'), 'rt'))
 
 
 if __name__ == '__main__':

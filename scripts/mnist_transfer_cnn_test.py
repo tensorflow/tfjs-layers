@@ -64,10 +64,7 @@ class MnistTest(unittest.TestCase):
         self._tmp_dir, optimizer='adam')
 
     # Check that the model json file is created.
-    json.load(open(os.path.join(self._tmp_dir, 'topology.json'), 'rt'))
-
-    # Check that the weights manifests json file is created.
-    json.load(open(os.path.join(self._tmp_dir, 'weights_manifest.json'), 'rt'))
+    json.load(open(os.path.join(self._tmp_dir, 'model.json'), 'rt'))
 
 
 if __name__ == '__main__':
