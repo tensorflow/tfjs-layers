@@ -11,16 +11,18 @@ import setuptools
 
 REQUIRED_PACKAGES = [
     'h5py >= 2.7.1',
+    'keras >= 2.1.4',
+    'numpy >= 1.14.1',
 ]
 
 CONSOLE_SCRIPTS = [
-    'model_converter = model_converter:main',
+    'keras_model_converter = keras_model_converter:main',
 ]
 
 setuptools.setup(
-    name='model_converter',
+    name='keras_model_converter',
     version='0.1.0',
-    py_modules=['h5_conversion', 'model_converter', 'write_weights'],
+    py_modules=['h5_conversion', 'keras_model_converter', 'write_weights'],
     install_requires=REQUIRED_PACKAGES,
     entry_points={
         'console_scripts': CONSOLE_SCRIPTS,

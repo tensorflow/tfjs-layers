@@ -7,7 +7,7 @@
 # https://opensource.org/licenses/MIT.
 # =============================================================================
 
-# Build pip package for model_converter.
+# Build pip package for keras_model_converter.
 
 set -e
 
@@ -15,7 +15,7 @@ SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ $# != 1 ]]; then
   echo "Usage:"
-  echo "  build-pip-pacakges.sh <OUTPUT_DIR>"
+  echo "  build-pip-packages.sh <OUTPUT_DIR>"
   echo
   echo "Args:"
   echo "  OUTPUT_DIR: Directory where the pip (.whl) file will be written."
@@ -29,9 +29,10 @@ yarn run prep
 
 TMP_DIR=$(mktemp -d)
 
-cp "${SCRIPTS_DIR}/../node_modules/deeplearn-src/scripts/write_weights.py" "${TMP_DIR}/"
+cp "${SCRIPTS_DIR}/../node_modules/deeplearn-src/scripts/write_weights.py" \
+    "${TMP_DIR}/"
 cp "${SCRIPTS_DIR}/h5_conversion.py" "${TMP_DIR}/"
-cp "${SCRIPTS_DIR}/model_converter.py" "${TMP_DIR}/"
+cp "${SCRIPTS_DIR}/keras_model_converter.py" "${TMP_DIR}/"
 cp "${SCRIPTS_DIR}/setup.py" "${TMP_DIR}/"
 
 pushd "${TMP_DIR}" > /dev/null
