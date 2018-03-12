@@ -79,6 +79,8 @@ export function l1_l2(l1 = 0.01, l2 = 0.01): Regularizer {
   return new L1L2(l1, l2);
 }
 
+export type RegularizerLabel = 'L1L2'|string;
+
 export function serializeRegularizer(constraint: Regularizer): ConfigDictValue {
   return serializeKerasObject(constraint);
 }

@@ -16,13 +16,13 @@ import {Scalar, Tensor} from 'deeplearn';
 import * as _ from 'underscore';
 
 // tslint:disable:max-line-length
-import {ActivationFn, getActivation, serializeActivation} from '../activations';
+import {ActivationFn, ActivationLabel, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/deeplearnjs_backend';
-import {Constraint, getConstraint, serializeConstraint} from '../constraints';
+import {Constraint, ConstraintLabel, getConstraint, serializeConstraint} from '../constraints';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {getInitializer, Initializer, serializeInitializer} from '../initializers';
-import {getRegularizer, Regularizer, serializeRegularizer} from '../regularizers';
+import {getInitializer, Initializer, InitializerLabel, serializeInitializer} from '../initializers';
+import {getRegularizer, Regularizer, RegularizerLabel, serializeRegularizer} from '../regularizers';
 import {Shape} from '../types';
 import {ConfigDict, LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -135,18 +135,18 @@ export interface DenseLayerConfig extends LayerConfig {
    * If you don't specify anything, no activation is applied (ie. "linear"
    * activation: `a(x) = x`).
    */
-  activation?: string;
+  activation?: ActivationLabel;
   /** Whether the layer uses a bias vector. */
   useBias?: boolean;
   /**
    * Initializer for the `kernel` weights matrix (see
    * [initializers](../initializers.md)).
    */
-  kernelInitializer?: string|Initializer;
+  kernelInitializer?: InitializerLabel|Initializer;
   /**
    * Initializer for the bias vector (see [initializers](../initializers.md)).
    */
-  biasInitializer?: string|Initializer;
+  biasInitializer?: InitializerLabel|Initializer;
   /**
    * If inputShape is not specified, and inputDim is, then the expected
    * inputShape is [inputDim].
@@ -156,28 +156,28 @@ export interface DenseLayerConfig extends LayerConfig {
   /**
    * kernelConstraint: Constraint for the kernel weights
    */
-  kernelConstraint?: string|Constraint;
+  kernelConstraint?: ConstraintLabel|Constraint;
 
   /**
    * biasConstraint: Constraint for the bias vector
    */
-  biasConstraint?: string|Constraint;
+  biasConstraint?: ConstraintLabel|Constraint;
 
   /**
    * kernelRegularizer:  Regularizer function applied to the `kernel` weights
    * matrix
    */
-  kernelRegularizer?: string|Regularizer;
+  kernelRegularizer?: RegularizerLabel|Regularizer;
 
   /**
    * biasRegularizer:  Regularizer function applied to the bias vector
    */
-  biasRegularizer?: string|Regularizer;
+  biasRegularizer?: RegularizerLabel|Regularizer;
 
   /**
    * activityRegularizer:  Regularizer function applied to the activation
    */
-  activityRegularizer?: string|Regularizer;
+  activityRegularizer?: RegularizerLabel|Regularizer;
 }
 
 /**
