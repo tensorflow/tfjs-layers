@@ -152,9 +152,8 @@ class HDF5Converter(object):
     self._check_version(h5file)
     model_json = self._initialize_output_dictionary(h5file)
 
-    if 'model_config' in h5file.attrs:
-      model_json['model_config'] = self._ensure_json_dict(
-          h5file.attrs['model_config'])
+    model_json['model_config'] = self._ensure_json_dict(
+        h5file.attrs['model_config'])
     if 'training_config' in h5file.attrs:
       model_json['training_config'] = self._ensure_json_dict(
           h5file.attrs['training_config'])
