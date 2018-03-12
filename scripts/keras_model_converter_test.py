@@ -79,7 +79,7 @@ class ConvertH5WeightsTest(unittest.TestCase):
     # check the model topology was stored
     self.assertIsInstance(model_json['model_config'], dict)
     self.assertIsInstance(model_json['model_config']['config'], dict)
-    self.assertTrue('layers' in model_json['model_config']['config'])
+    self.assertIn('layers', model_json['model_config']['config'])
 
     # Check the loaded weights.
     self.assertEqual(keras.__version__, model_json['keras_version'])
