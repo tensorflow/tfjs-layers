@@ -34,7 +34,7 @@ import {convertPythonicToTs} from './utils/serialization_utils';
  *       considered during deserialization.
  * @returns A TensorFlow.js Layers `Model` instance (uncompiled).
  */
-export async function modelFromJSONInternal(
+export async function modelFromJSON(
     modelAndWeightsConfig: ModelAndWeightsConfig,
     customObjects?: ConfigDict): Promise<Model> {
   let modelTopology = modelAndWeightsConfig.modelTopology;
@@ -134,7 +134,7 @@ export async function loadModelInternal(modelConfigPath: string):
   modelConfig.pathPrefix =
       modelConfigPath.substring(0, modelConfigPath.lastIndexOf('/'));
 
-  return modelFromJSONInternal(modelConfig);
+  return modelFromJSON(modelConfig);
 }
 
 /**

@@ -17,7 +17,7 @@ import {Scalar, scalar, Tensor, tensor2d, tensor3d} from 'deeplearn';
 
 import * as K from '../backend/deeplearnjs_backend';
 import * as metrics from '../metrics';
-import {ModelAndWeightsConfig, modelFromJSONInternal} from '../models';
+import {ModelAndWeightsConfig, modelFromJSON} from '../models';
 import * as optimizers from '../optimizers';
 import {DType} from '../types';
 import {SymbolicTensor} from '../types';
@@ -980,7 +980,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
 
 describeMathCPU('LSTM-deserialization', () => {
   it('modelFromConfig', done => {
-    modelFromJSONInternal(fakeLSTMModel).then(model => {
+    modelFromJSON(fakeLSTMModel).then(model => {
       const encoderInputs = K.zeros([1, 3, 71], DType.float32);
       const decoderInputs = K.zeros([1, 3, 94], DType.float32);
       const outputs = model.predict([encoderInputs, decoderInputs]) as Tensor;

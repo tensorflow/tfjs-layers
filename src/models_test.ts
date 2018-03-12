@@ -13,7 +13,7 @@ import {ones, Scalar, scalar, Tensor, WeightsManifestConfig, zeros} from 'deeple
 
 import * as K from './backend/deeplearnjs_backend';
 import {Dense, Reshape} from './layers/core';
-import {ModelAndWeightsConfig, modelFromJSONInternal, Sequential} from './models';
+import {ModelAndWeightsConfig, modelFromJSON, Sequential} from './models';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 
 describeMathCPU('model_from_json', () => {
@@ -24,7 +24,7 @@ describeMathCPU('model_from_json', () => {
         model = Model(inputs=a, outputs=b, name="test")
         model.to_json())
     */
-    modelFromJSONInternal(fakeSequentialModel)
+    modelFromJSON(fakeSequentialModel)
         .then(model => {
           expect(model.name).toEqual('test');
           const allZeros = zeros([1, 32]);
@@ -61,7 +61,7 @@ describeMathCPU('model_from_json', () => {
     model = Model(inputs=input_layer, outputs=layer8_result, name='mnist')
     model.to_json()
       */
-    modelFromJSONInternal(fakeNonSequentialModel)
+    modelFromJSON(fakeNonSequentialModel)
         .then(model => {
           expect(model.name).toEqual('mnist');
           expect(model.layers.length).toEqual(9);
@@ -92,7 +92,7 @@ describeMathCPU('model_from_json', () => {
     model.to_json())
     */
 
-    modelFromJSONInternal(fakeMnistModel).then(model => {
+    modelFromJSON(fakeMnistModel).then(model => {
       expect(model.layers.length).toEqual(8);
       const prediction = model.predict(K.zeros([1, 28, 28, 1])) as Tensor;
       expect(prediction.shape).toEqual([1, 10]);
@@ -101,7 +101,7 @@ describeMathCPU('model_from_json', () => {
   });
 
   it('Serialization round-tripping', done => {
-    modelFromJSONInternal(fakeRoundtripModel)
+    modelFromJSON(fakeRoundtripModel)
         .then(model => {
           const serializedModel = model.toJSON();
           const reparsedJson = JSON.parse(serializedModel);
@@ -170,7 +170,7 @@ describeMathCPU('loadModel', () => {
           // `model_config`, but also other data, such as training.
           modelTopology = {'model_config': modelTopology};
         }
-        modelFromJSONInternal({
+        modelFromJSON({
           modelTopology,
           weightsManifest,
           pathPrefix,
@@ -204,7 +204,7 @@ describeMathCPU('loadModel', () => {
     const configJson =
         JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
     configJson['config']['layers'][1]['config']['name'] = denseLayerName;
-    modelFromJSONInternal({
+    modelFromJSON({
       modelTopology: configJson,
       weightsManifest,
     }).then(() => done.fail).catch(done);
