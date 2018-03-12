@@ -53,7 +53,6 @@ py_test(
     name = "pykeras_test",
     srcs = ["pykeras_test.py"],
     deps = [
-        ":expect_h5py_installed",
         ":expect_keras_installed",
         ":pykeras",
     ],
