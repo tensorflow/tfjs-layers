@@ -7,7 +7,7 @@
 # https://opensource.org/licenses/MIT.
 # =============================================================================
 
-# Build pip package for model_conveter.
+# Build pip package for model_converter.
 
 set -e
 
