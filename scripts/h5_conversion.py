@@ -110,7 +110,6 @@ class HDF5Converter(object):
       ValueError: if the KerasVersion of the HDF5 file is unsupported.
     """
     keras_version = as_text(h5file.attrs['keras_version'])
-    print(type(keras_version))  # DEBUG
     if keras_version.split('.')[0] != '2':
       raise ValueError(
           'Expected Keras version 2; got Keras version %s' % keras_version)
@@ -353,7 +352,6 @@ class HDF5Converter(object):
 
     model_json_path = os.path.join(output_dir, ARTIFACT_MODEL_JSON_FILE_NAME)
     with open(model_json_path, 'wt') as f:
-      print("model_json = %s" % model_json)  # DEBUG
       json.dump(model_json, f)
 
 
