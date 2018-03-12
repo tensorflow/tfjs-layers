@@ -321,7 +321,6 @@ class HDF5Converter(object):
     # We write the topology after since write_weights makes no promises about
     # preserving directory contents.
     if os.path.isfile(output_dir):
-      # TODO(cais): Test coverage. Do not submit.
       raise ValueError(
           'Path "%d" already exists as a file (not a directory).' % output_dir)
 
