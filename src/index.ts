@@ -14,8 +14,6 @@ import * as dl from 'deeplearn';
 
 import * as backend from './backend/deeplearnjs_backend';
 import {LayerExports, ModelExports} from './exports';
-// TODO(cais): Use dl optimizers (b/73762416).
-import * as optimizers from './optimizers';
 
 // tslint:disable:max-line-length
 export {Callback, CallbackList, CustomCallback, CustomCallbackConfig, Logs} from './callbacks';
@@ -24,7 +22,7 @@ export {Model} from './engine/training';
 export {ModelAndWeightsConfig, Sequential} from './models';
 export {SymbolicTensor} from './types';
 export {dl};  // TODO(cais): Remove this export (b/74099819).
-export {backend, optimizers};
+export {backend};
 // tslint:enable:max-line-length
 
 export const model = ModelExports.model;

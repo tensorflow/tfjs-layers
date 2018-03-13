@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {Scalar, scalar, Tensor, tensor1d, tensor2d, tensor3d, zeros} from 'deeplearn';
+import {Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, zeros} from 'deeplearn';
 import * as _ from 'underscore';
 
 import * as K from '../backend/deeplearnjs_backend';
@@ -21,7 +21,6 @@ import {CustomCallback, CustomCallbackConfig, Logs} from '../callbacks';
 import {Dense, Dropout, Flatten, Reshape} from '../layers/core';
 import {SimpleRNN} from '../layers/recurrent';
 import {TimeDistributed} from '../layers/wrappers';
-import * as optimizers from '../optimizers';
 import {DType, SymbolicTensor} from '../types';
 import {pyListRepeat} from '../utils/generic_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
@@ -690,7 +689,7 @@ describeMathCPUAndGPU('Model.fit', () => {
     const layers = createTwoLayerDenseModelAndData();
     const layer1 = layers[0];
     const layer2 = layers[1];
-    const optimizer = new optimizers.SGD({lr: 1e-2});
+    const optimizer = new SGDOptimizer(1e-2);
     model.compile({optimizer, loss: 'meanSquaredError'});
     let history = await model.fit({
       x: inputs,
@@ -778,7 +777,7 @@ describeMathCPUAndGPU('Model.fit', () => {
        // Use a custom learning rate for SGD.
        const lr = 0.025;
        model.compile(
-           {optimizer: new optimizers.SGD({lr}), loss: 'meanSquaredError'});
+           {optimizer: new SGDOptimizer(lr), loss: 'meanSquaredError'});
        model.fit({x: inputs, y: targets, batchSize: numSamples, epochs: 1})
            .then(history => {
              expect(history.epoch).toEqual([0]);
@@ -797,7 +796,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 
     const lr = 0.01;
     twoOutputModel.compile({
-      optimizer: new optimizers.SGD({lr}),
+      optimizer: new SGDOptimizer(lr),
       loss: ['meanSquaredError', 'meanSquaredError']
     });
     const trainableWeights = twoOutputModel.trainableWeights;
