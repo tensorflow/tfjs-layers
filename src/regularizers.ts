@@ -34,12 +34,12 @@ export interface L1L2Config {
 
 export interface L1Config {
   /** L1 regularization rate. Defaults to 0.01. */
-  l1?: number;
+  l1: number;
 }
 
 export interface L2Config {
   /** L2 regularization rate. Defaults to 0.01. */
-  l2?: number;
+  l2: number;
 }
 
 /**
@@ -97,8 +97,8 @@ ClassNameMap.register('L1L2', L1L2);
  * loss += sum(l1 * abs(x))
  * @param config l1 config.
  */
-export function l1(config: L1Config) {
-  return new L1L2({l1: config.l1, l2: 0});
+export function l1(config?: L1Config) {
+  return new L1L2({l1: config != null ? config.l1 : null, l2: 0});
 }
 
 /**
@@ -109,7 +109,7 @@ export function l1(config: L1Config) {
  * @param config l2 config.
  */
 export function l2(config: L2Config) {
-  return new L1L2({l2: config.l2, l1: 0});
+  return new L1L2({l2: config != null ? config.l2 : null, l1: 0});
 }
 
 
