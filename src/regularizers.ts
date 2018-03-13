@@ -56,10 +56,12 @@ export class L1L2 extends Regularizer {
   private readonly hasL2: boolean;
   constructor(config?: L1L2Config) {
     super();
-    this.hasL1 = config != null && config.l1 != null && config.l1 !== 0;
-    this.hasL2 = config != null && config.l2 != null && config.l2 !== 0;
+
     const l1 = config == null || config.l1 == null ? 0.01 : config.l1;
     const l2 = config == null || config.l2 == null ? 0.01 : config.l2;
+    this.hasL1 = l1 !== 0;
+    this.hasL2 = l2 !== 0;
+
     this.l1 = K.getScalar(l1);
     this.l2 = K.getScalar(l2);
   }
