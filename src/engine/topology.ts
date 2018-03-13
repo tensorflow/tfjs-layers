@@ -1361,7 +1361,7 @@ export interface InputConfig {
  *     // this is a logistic regression in TF.js Layers:
  *     x = new Input(shape=[32]);
  *     y = new Dense(16, activation='softmax').apply(x);
- *     model = new Model(x, y);
+ *     model = tfl.model(x, y);
  */
 export function Input(config: InputConfig): SymbolicTensor {
   if (config.batchShape == null && config.shape == null) {

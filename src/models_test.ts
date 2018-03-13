@@ -10,10 +10,11 @@
 
 // tslint:disable:max-line-length
 import {ones, Scalar, scalar, Tensor, WeightsManifestConfig, zeros} from 'deeplearn';
+import * as tfl from './index';
 
 import * as K from './backend/deeplearnjs_backend';
 import {Dense, Reshape} from './layers/core';
-import {ModelAndWeightsConfig, modelFromJSON, Sequential} from './models';
+import {ModelAndWeightsConfig, modelFromJSON} from './models';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 
 describeMathCPU('model_from_json', () => {
@@ -231,18 +232,18 @@ describeMathCPUAndGPU('Sequential', () => {
 
   it('throws an exception if the first layer is not an input layer', () => {
     const layer = new Reshape({targetShape: firstReshape});
-    expect(() => new Sequential({layers: [layer]}))
+    expect(() => tfl.sequential({layers: [layer]}))
         .toThrowError(
             /The first layer in a Sequential model must get an `inputShape`/);
   });
 
   it('can accept a list of layers in constructor', () => {
-    const model = new Sequential({layers});
+    const model = tfl.sequential({layers});
     expect(model.layers).toEqual(layers);
   });
 
   it('can add layers', () => {
-    const model = new Sequential({});
+    const model = tfl.sequential();
     for (const layer of layers) {
       model.add(layer);
     }
@@ -250,24 +251,24 @@ describeMathCPUAndGPU('Sequential', () => {
   });
 
   it('can pop layers', () => {
-    const model = new Sequential({layers});
+    const model = tfl.sequential({layers});
     model.pop();
     expect(model.layers).toEqual(layers.slice(0, 1));
   });
 
   it('throws error if try to pop too many layers', () => {
-    const model = new Sequential({});
+    const model = tfl.sequential();
     expect(() => model.pop()).toThrowError(/There are no layers in the model/);
   });
 
   it('apply() threads data through the model.', () => {
-    const model = new Sequential({layers});
+    const model = tfl.sequential({layers});
     expectTensorsClose(
         model.apply(getInputs()) as Tensor, getExpectedOutputs());
   });
 
   it('predict() threads data through the model.', () => {
-    const model = new Sequential({layers});
+    const model = tfl.sequential({layers});
     expectTensorsClose(
         model.predict(getInputs()) as Tensor, getExpectedOutputs());
   });
@@ -284,7 +285,7 @@ describeMathCPUAndGPU('Sequential', () => {
     ];
     const inputBatch = K.ones([batchSize].concat(inputShape));
     const expectedOutput = K.ones([batchSize].concat(secondReshape));
-    const model = new Sequential({layers});
+    const model = tfl.sequential({layers});
     expectTensorsClose(
         model.predictOnBatch(inputBatch) as Tensor, expectedOutput);
   });
@@ -302,7 +303,7 @@ describeMathCPUAndGPU('Sequential', () => {
     });
     const denseLayer2 =
         new Dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
-    const model = new Sequential({layers: [denseLayer1, denseLayer2]});
+    const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     const history = await model.fit({x: xs, y: ys, batchSize, epochs: 2});
     expectTensorsClose(history.history['loss'][0] as Scalar, scalar(121));
@@ -314,7 +315,7 @@ describeMathCPUAndGPU('Sequential', () => {
     const batchSize = 5;
     const inputSize = 4;
     const denseLayer1 = new Dense({units: 3, inputShape: [inputSize]});
-    const model = new Sequential({layers: [denseLayer1]});
+    const model = tfl.sequential({layers: [denseLayer1]});
     const xs = K.ones([batchSize, inputSize]);
     const ys = K.ones([batchSize, 1]);
     expect(() => model.evaluate(xs, ys))
@@ -334,7 +335,7 @@ describeMathCPUAndGPU('Sequential', () => {
     });
     const denseLayer2 =
         new Dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
-    const model = new Sequential({layers: [denseLayer1, denseLayer2]});
+    const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     const losses = model.evaluate(xs, ys, batchSize) as Scalar;
     expectTensorsClose(losses, scalar(121));
