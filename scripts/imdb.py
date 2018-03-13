@@ -23,7 +23,6 @@ import argparse
 import json
 import os
 
-import h5py
 import keras
 
 from scripts import h5_conversion
@@ -193,23 +192,15 @@ def main():
       'epochs': FLAGS.epochs,
       'batch_size': FLAGS.batch_size,
   }
-  with open(FLAGS.metadata_json_path, 'wt') as f:
-    f.write(json.dumps(metadata))
-  print('\nSaved model metadata at: %s' % FLAGS.metadata_json_path)
 
-  # TODO(cais): Use new serialization paradigm (b/74015805).
-  with open(FLAGS.model_json_path, 'wt') as f:
-    f.write(model.to_json())
-  print('Saved topology at: %s' % FLAGS.model_json_path)
+  if not os.path.isdir(FLAGS.artifacts_dir):
+    os.makedirs(FLAGS.artifacts_dir)
+  metadata_json_path = os.path.join(FLAGS.artifacts_dir, 'imdb.metadata.json')
+  json.dump(metadata, open(metadata_json_path, 'wt'))
+  print('\nSaved model metadata at: %s' % metadata_json_path)
 
-  weights_h5_path = FLAGS.weights_json_path + '.h5'
-  model.save_weights(weights_h5_path)
-  with open(FLAGS.weights_json_path, 'wt') as f:
-    f.write(json.dumps(
-        h5_conversion.HDF5Converter().h5_weights_to_json(
-            h5py.File(weights_h5_path))))
-  os.remove(weights_h5_path)
-  print('Saved weights at: %s' % FLAGS.weights_json_path)
+  h5_conversion.save_model(model, FLAGS.artifacts_dir)
+  print('\nSaved model artifcats in directory: %s' % FLAGS.artifacts_dir)
 
 
 if __name__ == '__main__':
@@ -250,20 +241,10 @@ if __name__ == '__main__':
       default=5,
       help='Number of sentences to show perdiction score on after training.')
   parser.add_argument(
-      '--metadata_json_path',
+      '--artifacts_dir',
       type=str,
-      default='/tmp/imdb.metadata.json',
-      help='Local path for the IMDB metadata JSON file.')
-  parser.add_argument(
-      '--model_json_path',
-      type=str,
-      default='/tmp/imdb.keras.model.json',
-      help='Local path for the Keras model definition JSON file.')
-  parser.add_argument(
-      '--weights_json_path',
-      type=str,
-      default='/tmp/imdb.keras.weights.json',
-      help='Local path for the model weights JSON file.')
+      default='/tmp/mnist.keras',
+      help='Local path for saving the TensorFlow.js artifacts.')
 
   FLAGS, _ = parser.parse_known_args()
   main()

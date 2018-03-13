@@ -18,7 +18,7 @@ set -e
 
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [[ $# != 1 ]]; then
+if [[ $# -lt 1 ]]; then
   echo "Usage:"
   echo "  build-imdb-demo.sh <MODEL_TYPE>"
   echo
@@ -26,8 +26,25 @@ if [[ $# != 1 ]]; then
   exit 1
 fi
 MODEL_TYPE=$1
+shift
 echo "Using model type: ${MODEL_TYPE}"
 
+DEMO_PORT=8000
+TRAIN_EPOCHS=5
+while true; do
+  if [[ "$1" == "--port" ]]; then
+    DEMO_PORT=$2
+    shift 2
+  elif [[ "$1" == "--epochs" ]]; then
+    TRAIN_EPOCHS=$2
+    shift 2
+  elif [[ -z "$1" ]]; then
+    break
+  else
+    echo "ERROR: Unrecognized argument: $1"
+    exit 1
+  fi
+done
 
 # Build TensorFlow.js Layers standalone.
 "${SCRIPTS_DIR}/build-standalone.sh"
@@ -35,32 +52,18 @@ echo "Using model type: ${MODEL_TYPE}"
 DEMO_PATH="${SCRIPTS_DIR}/../dist/demo"
 mkdir -p "${DEMO_PATH}"
 
-# Run Python script to generate the model and weights JSON files.
-# The extension names are ".js" because they will later be converted into
-# sourceable JavaScript files.
+export PYTHONPATH="${SCRIPTS_DIR}/..:${SCRIPTS_DIR}/../node_modules/deeplearn-src/scripts:${PYTHONPATH}"
 PYTHONPATH="${SCRIPTS_DIR}/.." python "${SCRIPTS_DIR}/imdb.py" \
     "${MODEL_TYPE}" \
-    --metadata_json_path "${DEMO_PATH}/imdb.metadata.json" \
-    --model_json_path "${DEMO_PATH}/imdb.keras.model.json" \
-    --weights_json_path "${DEMO_PATH}/imdb.keras.weights.json"
-
-# Prepend "const * = " to the json files.
-printf "const imdbMetadataJSON = " > "${DEMO_PATH}/imdb.metadata.js"
-cat "${DEMO_PATH}/imdb.metadata.json" >> "${DEMO_PATH}/imdb.metadata.js"
-printf ";" >> "${DEMO_PATH}/imdb.metadata.js"
-rm "${DEMO_PATH}/imdb.metadata.json"
-
-printf "const imdbModelJSON = " > "${DEMO_PATH}/imdb.keras.model.js"
-cat "${DEMO_PATH}/imdb.keras.model.json" >> "${DEMO_PATH}/imdb.keras.model.js"
-printf ";" >> "${DEMO_PATH}/imdb.keras.model.js"
-rm "${DEMO_PATH}/imdb.keras.model.json"
-
-printf "const imdbWeightsJSON = " > "${DEMO_PATH}/imdb.keras.weights.js"
-cat "${DEMO_PATH}/imdb.keras.weights.json" >> "${DEMO_PATH}/imdb.keras.weights.js"
-printf ";" >> "${DEMO_PATH}/imdb.keras.weights.js"
-rm "${DEMO_PATH}/imdb.keras.weights.json"
+    --epochs "${TRAIN_EPOCHS}" \
+    --artifacts_dir "${DEMO_PATH}/imdb"
 
 echo
-echo "Now you can open the demo by:"
-echo "  google-chrome demos/imdb_demo.html &"
+echo "-----------------------------------------------------------"
+echo "Once the HTTP server has started, you can view the demo at:"
+echo "  http://localhost:${DEMO_PORT}/demos/imdb_demo.html"
+echo "-----------------------------------------------------------"
+echo
 
+cd "${SCRIPTS_DIR}/.."
+node_modules/http-server/bin/http-server -p "${DEMO_PORT}"
