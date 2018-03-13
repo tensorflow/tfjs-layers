@@ -13,7 +13,7 @@ import {ones, Scalar, scalar, Tensor, WeightsManifestConfig, zeros} from 'deeple
 import * as tfl from './index';
 
 import * as K from './backend/deeplearnjs_backend';
-import {Dense, Reshape} from './layers/core';
+import {Reshape} from './layers/core';
 import {ModelAndWeightsConfig, modelFromJSON} from './models';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 
@@ -295,14 +295,14 @@ describeMathCPUAndGPU('Sequential', () => {
     const inputSize = 4;
     const xs = K.ones([batchSize, inputSize]);
     const ys = K.ones([batchSize, 1]);
-    const denseLayer1 = new Dense({
+    const denseLayer1 = tfl.layers.dense({
       units: 3,
       useBias: false,
       kernelInitializer: 'Ones',
       inputShape: [inputSize]
     });
     const denseLayer2 =
-        new Dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
     const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     const history = await model.fit({x: xs, y: ys, batchSize, epochs: 2});
@@ -314,7 +314,7 @@ describeMathCPUAndGPU('Sequential', () => {
   it('Calling evaluate before compile leads to error', () => {
     const batchSize = 5;
     const inputSize = 4;
-    const denseLayer1 = new Dense({units: 3, inputShape: [inputSize]});
+    const denseLayer1 = tfl.layers.dense({units: 3, inputShape: [inputSize]});
     const model = tfl.sequential({layers: [denseLayer1]});
     const xs = K.ones([batchSize, inputSize]);
     const ys = K.ones([batchSize, 1]);
@@ -327,14 +327,14 @@ describeMathCPUAndGPU('Sequential', () => {
     const inputSize = 4;
     const xs = K.ones([batchSize, inputSize]);
     const ys = K.ones([batchSize, 1]);
-    const denseLayer1 = new Dense({
+    const denseLayer1 = tfl.layers.dense({
       units: 3,
       useBias: false,
       kernelInitializer: 'Ones',
       inputShape: [inputSize]
     });
     const denseLayer2 =
-        new Dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
     const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     const losses = model.evaluate(xs, ys, batchSize) as Scalar;

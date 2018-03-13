@@ -34,6 +34,7 @@ export const input = ModelExports.input;
 export const inputLayer = ModelExports.inputLayer;
 
 export const layers = LayerExports;
+
 export const constraints = ConstraintExports;
 export const initializers = InitializerExports;
 export const regularizers = RegularizerExports;
