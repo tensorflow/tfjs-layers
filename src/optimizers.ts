@@ -81,7 +81,7 @@ export abstract class LayersOptimizer {
           'getConfig() for a LayersOptimizer constructed from a core ' +
           'Optimizer is not supported yet.');
       // TODO(cais): Once the hyperparameters of CoreOptimizers are public or
-      //   have getters avialable, use them to implement the logic here.
+      //   have getters available, use them to implement the logic here.
     }
 
     const config: ConfigDict = {};
