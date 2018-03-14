@@ -196,7 +196,17 @@ export class SGD extends LayersOptimizer {
     this.optimizer = optimizer;
   }
 
-  // TODO(michaelterry): Add getConfig()
+  getConfig(): ConfigDict {
+    const config: ConfigDict = {
+      lr: this.lr,
+      momentum: this.momentum,
+      decay: this.decay,
+      nestorv: this.nesterov,
+    };
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
 }
 
 export interface AdamConfig extends OptimizerConfig {
