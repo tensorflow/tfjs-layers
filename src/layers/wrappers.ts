@@ -158,7 +158,7 @@ export abstract class Wrapper extends Layer {
  * You can then use `TimeDistributed` to apply a `Dense` layer to each of the 10
  * timesteps, independently:
  *
- * ```typescript
+ * ```js
  * const model = new Sequential();
  * model.add(new TimeDistributed({
  *   layer: new Dense({units: 8}),
@@ -170,7 +170,7 @@ export abstract class Wrapper extends Layer {
  * The output will then have shape `[32, 10, 8]`.
  *
  * In subsequent layers, there is no need for `inputShape`:
- * ```typescript
+ * ```js
  * model.add(new TimeDistributed({layer: new Dense(32)});
  * // Now model.outputShape = [null, 10, 32].
  * ```
@@ -180,7 +180,7 @@ export abstract class Wrapper extends Layer {
  * `TimeDistributed` can be used with arbitrary layers, not just `Dense`, for
  * instance a `Conv2D` layer.
  *
- * ```typescript
+ * ```js
  * const model = new Sequential();
  * model.add(new TimeDistributed({
  *   layer: new Conv2D({filter: 64, kernelSize: [3, 3]}),

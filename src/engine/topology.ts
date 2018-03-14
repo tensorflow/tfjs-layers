@@ -320,7 +320,7 @@ let _nextLayerID = 0;
 /**
  * Abstract base layer class.
  */
-@doc({heading: 'Layers', subheading: 'Classes'})
+@doc({heading: 'Layers', subheading: 'Core'})
 export class Layer {
   /** Name for this layer. Must be unique within a model. */
   name: string;
@@ -1217,10 +1217,9 @@ export interface InputLayerConfig {
   dtype?: DType;
   /**
    * Whether the placeholder created is meant to be sparse.
-   *
-   * TODO(michaelterry): Not clear whether we'll need this or not.
    */
-  sparse?: boolean;
+  sparse?: boolean;  // TODO(michaelterry): Not clear whether we'll need this.
+
   /** Name of the layer. */
   name?: string;
 }
@@ -1357,11 +1356,12 @@ export interface InputConfig {
  * the input to a model.
  *
  * Example:
- *
+ * ```js
  *     // this is a logistic regression in TF.js Layers:
  *     x = new Input(shape=[32]);
  *     y = new Dense(16, activation='softmax').apply(x);
  *     model = new Model(x, y);
+ * ```
  */
 export function Input(config: InputConfig): SymbolicTensor {
   if (config.batchShape == null && config.shape == null) {
