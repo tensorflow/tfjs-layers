@@ -104,7 +104,7 @@ export function l1(config?: L1Config) {
 }
 
 /**
- * Regularizer for L1 regularization.
+ * Regularizer for L2 regularization.
  *
  * Adds a term to the loss to penalize large weights:
  * loss += sum(l2 * x^2)

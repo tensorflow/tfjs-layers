@@ -1362,7 +1362,7 @@ export interface InputConfig {
  * // Simple logistic regression:
  * x = tf.input({shape: [32]});
  * y = tf.layers.dense({units: 16, activation: 'softmax'}).apply(x);
- * model = tf.model(x, y);
+ * model = tf.model({inputs: x, outputs: y});
  * ```
  */
 export function Input(config: InputConfig): SymbolicTensor {
