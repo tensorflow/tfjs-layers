@@ -12,22 +12,22 @@
  * Optimizers.
  *
  * These optimizers are wrappers around the core optimizers, with
- * layers-specific support for constraint-compatible variable sna
+ * layers-specific support for constraint-compatible variable and
  * (de)serialization.
  *
- * TODO(cais, nsthorat): maybe these additoinal features should be pushed down
+ * TODO(cais, nsthorat): maybe these additional features should be pushed down
  *   to core optimizers, so there is no need for these wrappers.
  */
 
 // tslint:disable:max-line-length
-import {AdagradOptimizer, AdamOptimizer, Optimizer as CoreOptimizer, RMSPropOptimizer, Scalar, SGDOptimizer, Variable} from 'deeplearn';
+import {AdagradOptimizer, AdamOptimizer, Optimizer as CoreOptimizer, RMSPropOptimizer, Scalar, SGDOptimizer, train, Variable} from 'deeplearn';
 
 // tslint:enable:max-line-length
 
 import * as K from './backend/deeplearnjs_backend';
 import {NotImplementedError, ValueError} from './errors';
 import {ConfigDict, LayerVariable} from './types';
-import * as generic_utils from './utils/generic_utils';
+import {ClassNameMap, Constructor} from './utils/generic_utils';
 
 /**
  * Base configuration for optimizers.
@@ -110,8 +110,7 @@ export abstract class LayersOptimizer {
     this.optimizer.minimize(lossFn, false, variables);
   }
 
-  static fromConfig<T>(cls: generic_utils.Constructor<T>, config: ConfigDict):
-      T {
+  static fromConfig<T>(cls: Constructor<T>, config: ConfigDict): T {
     return new cls(config);
   }
 }
@@ -177,15 +176,15 @@ export class SGD extends LayersOptimizer {
           `Invalid decay (${this.decay}). Must be >= 0 or undefined.`);
     }
     if (this.decay !== 0) {
-      throw new NotImplementedError('SGD decay is not implemente yet');
+      throw new NotImplementedError('SGD decay is not implemented yet');
     }
 
     this.nesterov = (config.nesterov == null) ? false : config.nesterov;
     if (this.nesterov !== false) {
-      throw new NotImplementedError('SGD nesterov is not implemente yet');
+      throw new NotImplementedError('SGD nesterov is not implemented yet');
     }
 
-    this.optimizer = new SGDOptimizer(this.lr);
+    this.optimizer = train.sgd(this.lr);
   }
 
   protected constructFromCoreOptimizer(optimizer: CoreOptimizer) {
@@ -208,6 +207,7 @@ export class SGD extends LayersOptimizer {
     return config;
   }
 }
+ClassNameMap.register('SGD', SGD);
 
 export interface AdamConfig extends OptimizerConfig {
   /** float >= 0. Learning rate. Defaults to 0.001 if not specified. */
@@ -280,8 +280,7 @@ export class Adam extends LayersOptimizer {
       throw new NotImplementedError('Adam amsgrad is not implemented yet');
     }
 
-    this.optimizer =
-        new AdamOptimizer(this.lr, this.beta1, this.beta2, this.epsilon);
+    this.optimizer = train.adam(this.lr, this.beta1, this.beta2, this.epsilon);
   }
 
   protected constructFromCoreOptimizer(optimizer: CoreOptimizer) {
@@ -306,6 +305,7 @@ export class Adam extends LayersOptimizer {
     return config;
   }
 }
+ClassNameMap.register('Adam', Adam);
 
 export interface RMSPropConfig extends OptimizerConfig {
   /** float >= 0. Learning rate. Defaults to 0.001 if not specified. */
@@ -351,11 +351,10 @@ export class RMSProp extends LayersOptimizer {
     this.epsilon = config.epsilon == null ? K.epsilon() : config.epsilon;
 
     if (config.decay != null) {
-      throw new NotImplementedError('RMSProp decay is not implemente yet');
+      throw new NotImplementedError('RMSProp decay is not implemented yet');
     }
 
-    this.optimizer =
-        new RMSPropOptimizer(this.lr, this.rho, null, this.epsilon);
+    this.optimizer = train.rmsprop(this.lr, this.rho, null, this.epsilon);
   }
 
   protected constructFromCoreOptimizer(optimizer: CoreOptimizer) {
@@ -378,6 +377,7 @@ export class RMSProp extends LayersOptimizer {
     return config;
   }
 }
+ClassNameMap.register('RMSProp', RMSProp);
 
 export interface AdagradConfig extends OptimizerConfig {
   /** Learning rate. Defaults to 0.01. */
@@ -406,10 +406,10 @@ export class Adagrad extends LayersOptimizer {
 
     this.decay = config.decay == null ? 0 : config.decay;
     if (this.decay !== 0) {
-      throw new NotImplementedError('Adagrad decay is not implemente yet');
+      throw new NotImplementedError('Adagrad decay is not implemented yet');
     }
 
-    this.optimizer = new AdagradOptimizer(this.lr);
+    this.optimizer = train.adagrad(this.lr);
   }
 
   constructFromCoreOptimizer(optimizer: CoreOptimizer) {
@@ -431,6 +431,7 @@ export class Adagrad extends LayersOptimizer {
     return config;
   }
 }
+ClassNameMap.register('Adagrad', Adagrad);
 
 export const adagrad = Adagrad;
 export const adam = Adam;
@@ -442,19 +443,17 @@ export const sgd = SGD;
 // Porting note: This diverges from the PyKeras implementation and may need to
 // change based on (de)serialization requirements.
 export function get(identifier: string|
-                    CoreOptimizer): generic_utils.Constructor<LayersOptimizer> {
-  const coreOptimizerToConstructorMap: {
-    [coreOptimizerTypeName: string]: generic_utils.Constructor<LayersOptimizer>
-  } = {
-    'AdagradOptimizer': Adagrad,
-    'AdamOptimizer': Adam,
-    'RMSPropOptimizer': RMSProp,
-    'SGDOptimizer': SGD
-  };
+                    CoreOptimizer): Constructor<LayersOptimizer> {
+  const coreOptimizerToConstructorMap:
+      {[coreOptimizerTypeName: string]: Constructor<LayersOptimizer>} = {
+        'AdagradOptimizer': Adagrad,
+        'AdamOptimizer': Adam,
+        'RMSPropOptimizer': RMSProp,
+        'SGDOptimizer': SGD
+      };
 
-  const optimizerMap:
-      {[optimizerName: string]: generic_utils.Constructor<LayersOptimizer>} =
-          {Adagrad, Adam, RMSProp, SGD, adagrad, adam, rmsprop, sgd};
+  const optimizerMap: {[optimizerName: string]: Constructor<LayersOptimizer>} =
+      {Adagrad, Adam, RMSProp, SGD, adagrad, adam, rmsprop, sgd};
 
   if (typeof identifier === 'string') {
     if (identifier in optimizerMap) {

@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {AdagradOptimizer, AdamOptimizer, RMSPropOptimizer, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d} from 'deeplearn';
+import {Scalar, scalar, Tensor, tensor1d, tensor2d, train} from 'deeplearn';
 
 import * as K from './backend/deeplearnjs_backend';
 import {Dense} from './layers/core';
@@ -37,10 +37,6 @@ function mockGradients(
       (p, index) => K.scalarTimesArray(
           scalar(value * Math.pow(-1, index)), K.ones(K.shape(p))));
 }
-
-// function createFakeLossFunction(valueToReturn: number): () => Scalar {
-//   return () => scalar(valueToReturn);
-// }
 
 describeMathCPUAndGPU('SGD', () => {
   // Install a mock K.gradients function.
@@ -93,8 +89,7 @@ describeMathCPUAndGPU('SGD', () => {
         `updates variables with no decay or momentum: fromConfig=${fromConfig}`;
     it(testTitle, () => {
       const lr = 2;
-      const optimizer =
-          fromConfig ? new SGD({lr}) : new SGD(new SGDOptimizer(lr));
+      const optimizer = fromConfig ? new SGD({lr}) : new SGD(train.sgd(lr));
       const [x, y] = createVariables();
       const lossFn = () => {
         return K.add(x.read(), y.read()) as Scalar;
@@ -148,7 +143,7 @@ describeMathGPU('Adam optimizer', () => {
       const beta1 = 0.9;
       const beta2 = 0.999;
       const adam = fromConfig ? new Adam({lr, beta1, beta2}) :
-                                new Adam(new AdamOptimizer(lr, beta1, beta2));
+                                new Adam(train.adam(lr, beta1, beta2));
 
       const x = tensor2d([[1, 2, 3, 4], [5, 6, 7, 8]], [batchSize, inputSize]);
       const y = tensor2d([[-10], [-20]], [batchSize, 1]);
@@ -245,8 +240,8 @@ describeMathGPU('RMSProp optimizer', () => {
       const denseLayer = new Dense(
           {units: 1, kernelInitializer: 'Ones', biasInitializer: 'Ones'});
       const lr = 0.2;
-      const rmsProp = fromConfig ? new RMSProp({lr}) :
-                                   new RMSProp(new RMSPropOptimizer(lr));
+      const rmsProp =
+          fromConfig ? new RMSProp({lr}) : new RMSProp(train.rmsprop(lr));
 
       const x = tensor2d([[1, 2, 3, 4], [5, 6, 7, 8]], [batchSize, inputSize]);
       const y = tensor2d([[-10], [-20]], [batchSize, 1]);
@@ -323,8 +318,8 @@ describeMathGPU('Adagrad optimizer', () => {
       const denseLayer = new Dense(
           {units: 1, kernelInitializer: 'Ones', biasInitializer: 'Ones'});
       const lr = 0.2;
-      const adagrad = fromConfig ? new Adagrad({lr}) :
-                                   new Adagrad(new AdagradOptimizer(lr));
+      const adagrad =
+          fromConfig ? new Adagrad({lr}) : new Adagrad(train.adagrad(lr));
 
       const x = tensor2d([[1, 2, 3, 4], [5, 6, 7, 8]], [batchSize, inputSize]);
       const y = tensor2d([[-10], [-20]], [batchSize, 1]);
