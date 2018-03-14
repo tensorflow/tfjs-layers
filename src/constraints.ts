@@ -244,7 +244,7 @@ export function deserializeConstraint(
       'constraint');
 }
 
-export function getConstraint(identifier: string|ConfigDict|
+export function getConstraint(identifier: ConstraintIdentifier|ConfigDict|
                               Constraint): Constraint {
   if (identifier == null) {
     return null;

@@ -524,7 +524,7 @@ export function serializeInitializer(initializer: Initializer):
   return serializeKerasObject(initializer);
 }
 
-export function getInitializer(identifier: string|Initializer|
+export function getInitializer(identifier: InitializerIdentifier|Initializer|
                                ConfigDict): Initializer {
   if (typeof identifier === 'string') {
     const config = {className: identifier, config: {}};

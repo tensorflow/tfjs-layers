@@ -128,7 +128,7 @@ export function deserializeRegularizer(
       'regularizer');
 }
 
-export function getRegularizer(identifier: string|ConfigDict|
+export function getRegularizer(identifier: RegularizerIdentifier|ConfigDict|
                                Regularizer): Regularizer {
   if (identifier == null) {
     return null;

@@ -205,6 +205,7 @@ export abstract class Conv extends Layer {
     const inputDim = inputShape[channelAxis];
 
     const kernelShape = this.kernelSize.concat([inputDim, this.filters]);
+
     this.kernel = this.addWeight(
         'kernel', kernelShape, null, this.kernelInitializer,
         this.kernelRegularizer, true, this.kernelConstraint);
