@@ -215,14 +215,6 @@ export class LayerVariable {
     return this.val;
   }
 
-  // TODO(cais): Decide.
-  // /**
-  //  * TODO(cais): Documentation.
-  //  */
-  // get coreVariable(): dl.Variable {
-  //   return this.val;
-  // }
-
   /**
    * Update the value of the Variable.
    *
