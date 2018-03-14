@@ -16,10 +16,10 @@ import {Tensor} from 'deeplearn';
 
 import * as K from '../backend/deeplearnjs_backend';
 import {DataFormat} from '../common';
-import {Constraint, ConstraintLabel, getConstraint} from '../constraints';
+import {Constraint, ConstraintIdentifier, getConstraint} from '../constraints';
 import {ValueError} from '../errors';
-import {getInitializer, Initializer, InitializerLabel} from '../initializers';
-import {getRegularizer, Regularizer, RegularizerLabel} from '../regularizers';
+import {getInitializer, Initializer, InitializerIdentifier} from '../initializers';
+import {getRegularizer, Regularizer, RegularizerIdentifier} from '../regularizers';
 import {LayerVariable, Shape} from '../types';
 import {convOutputLength} from '../utils/conv_utils';
 import * as generic_utils from '../utils/generic_utils';
@@ -48,17 +48,17 @@ export interface DepthwiseConv2DLayerConfig extends ConvLayerConfig {
    * Initializer for the depthwise kernel matrix.
    * Default: GlorotNormal.
    */
-  depthwiseInitializer?: InitializerLabel|Initializer;
+  depthwiseInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Constraint for the depthwise kernel matrix.
    */
-  depthwiseConstraint?: ConstraintLabel|Constraint;
+  depthwiseConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Regulzarizer function for the depthwise kernel matrix.
    */
-  depthwiseRegularizer?: RegularizerLabel|Regularizer;
+  depthwiseRegularizer?: RegularizerIdentifier|Regularizer;
 }
 
 /**

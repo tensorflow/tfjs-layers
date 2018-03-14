@@ -115,7 +115,7 @@ export function l2(config: L2Config) {
 }
 
 
-export type RegularizerLabel = 'L1L2'|string;
+export type RegularizerIdentifier = 'L1L2'|string;
 
 export function serializeRegularizer(constraint: Regularizer): ConfigDictValue {
   return serializeKerasObject(constraint);

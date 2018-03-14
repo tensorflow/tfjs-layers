@@ -17,11 +17,11 @@ import * as _ from 'underscore';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/deeplearnjs_backend';
-import {Constraint, ConstraintLabel, getConstraint, serializeConstraint} from '../constraints';
+import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {getInitializer, Initializer, InitializerLabel, serializeInitializer} from '../initializers';
-import {getRegularizer, Regularizer, RegularizerLabel, serializeRegularizer} from '../regularizers';
+import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
+import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Shape} from '../types';
 import {ConfigDict, LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -68,45 +68,45 @@ export interface BatchNormalizationLayerConfig extends LayerConfig {
    * Initializer for the beta weight.
    * Default: 'Zeros'.
    */
-  betaInitializer?: InitializerLabel|Initializer;
+  betaInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the gamma weight.
    * Default: 'Ones'.
    */
-  gammaInitializer?: InitializerLabel|Initializer;
+  gammaInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the moving mean.
    * Default: 'Zeros'
    */
-  movingMeanInitializer?: InitializerLabel|Initializer;
+  movingMeanInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the moving variance.
    * Default: 'Ones'.
    */
-  movingVarianceInitializer?: InitializerLabel|Initializer;
+  movingVarianceInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Optional constraint for the beta weight.
    */
-  betaConstraint?: ConstraintLabel|Constraint;
+  betaConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Optional constraint for gamma weight.
    */
-  gammaConstraint?: ConstraintLabel|Constraint;
+  gammaConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Optional regularizer for the beta weight.
    */
-  betaRegularizer?: RegularizerLabel|Regularizer;
+  betaRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Optional regularizer for the gamma weight.
    */
-  gammaRegularizer?: RegularizerLabel|Regularizer;
+  gammaRegularizer?: RegularizerIdentifier|Regularizer;
 }
 
 

@@ -16,14 +16,14 @@ import {Tensor} from 'deeplearn';
 import * as _ from 'underscore';
 
 // tslint:disable:max-line-length
-import {ActivationFn, ActivationLabel, getActivation, serializeActivation} from '../activations';
+import {ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/deeplearnjs_backend';
-import {Constraint, ConstraintLabel, getConstraint, serializeConstraint} from '../constraints';
+import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec} from '../engine/topology';
 import {Layer, LayerConfig} from '../engine/topology';
 import {AttributeError, NotImplementedError, ValueError} from '../errors';
-import {getInitializer, Initializer, InitializerLabel, Ones, serializeInitializer} from '../initializers';
-import {getRegularizer, Regularizer, RegularizerLabel, serializeRegularizer} from '../regularizers';
+import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
+import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {DType, Shape, SymbolicTensor} from '../types';
 import {ConfigDict, LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -664,7 +664,7 @@ export interface SimpleRNNCellLayerConfig extends LayerConfig {
    * Default: hyperbolic tangent (`tanh`).
    * If you pass `null`,  'linear' activation will be applied.
    */
-  activation?: ActivationLabel;
+  activation?: ActivationIdentifier;
 
   /**
    * Whether the layer uses a bias vector.
@@ -675,55 +675,55 @@ export interface SimpleRNNCellLayerConfig extends LayerConfig {
    * Initializer for the `kernel` weights matrix, used for the linear
    * transformation of the inputs (see [initializers](../initializers.md)).
    */
-  kernelInitializer?: InitializerLabel|Initializer;
+  kernelInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the `recurrentKernel` weights matrix, used for
    * linear transformation of the recurrent state
    * (see [initializers](../initializers.md)).
    */
-  recurrentInitializer?: InitializerLabel|Initializer;
+  recurrentInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the bias vector (see [initializers](../initializers.md)).
    */
-  biasInitializer?: InitializerLabel|Initializer;
+  biasInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Regularizer function applied to the `kernel` weights matrix
    * (see [regularizer](../regularizers.md)).
    */
-  kernelRegularizer?: RegularizerLabel|Regularizer;
+  kernelRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Regularizer function applied to the `recurrent_kernel` weights matrix.
    * (see [regularizer](../regularizers.md))
    */
-  recurrentRegularizer?: RegularizerLabel|Regularizer;
+  recurrentRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Regularizer function applied to the bias vector.
    * (see [regularizer](../regularizers.md))
    */
-  biasRegularizer?: RegularizerLabel|Regularizer;
+  biasRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Constraint function applied to the `kernel` weights matrix.
    * (see [constraints](../constraints.md)).
    */
-  kernelConstraint?: ConstraintLabel|Constraint;
+  kernelConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Constraint function applied to the `recurrentKernel` weights matrix.
    * (see [constraints](../constraints.md)).
    */
-  recurrentConstraint?: ConstraintLabel|Constraint;
+  recurrentConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Constraintfunction applied to the bias vector.
    * (see [constraints](../constraints.md)).
    */
-  biasConstraint?: ConstraintLabel|Constraint;
+  biasConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Float number between 0 and 1. Fraction of the units to drop for the linear
@@ -906,7 +906,7 @@ export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
    * If you pass `null`, no activation will be applied
    * (i.e., "linear" activation: `a(x) = x`).
    */
-  activation?: ActivationLabel;
+  activation?: ActivationIdentifier;
 
   /**
    * Whether the layer uses a bias vector.
@@ -917,55 +917,55 @@ export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
    * Initializer for the `kernel` weights matrix, used for the linear
    * transformation of the inputs (see [initializers](../initializers.md)).
    */
-  kernelInitializer?: InitializerLabel|Initializer;
+  kernelInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the `recurrentKernel` weights matrix, used for
    * linear transformation of the recurrent state
    * (see [initializers](../initializers.md)).
    */
-  recurrentInitializer?: InitializerLabel|Initializer;
+  recurrentInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the bias vector (see [initializers](../initializers.md)).
    */
-  biasInitializer?: InitializerLabel|Initializer;
+  biasInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Regularizer function applied to the `kernel` weights matrix
    * (see [regularizer](../regularizers.md)).
    */
-  kernelRegularizer?: RegularizerLabel|Regularizer;
+  kernelRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Regularizer function applied to the `recurrent_kernel` weights matrix.
    * (see [regularizer](../regularizers.md))
    */
-  recurrentRegularizer?: RegularizerLabel|Regularizer;
+  recurrentRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Regularizer function applied to the bias vector.
    * (see [regularizer](../regularizers.md))
    */
-  biasRegularizer?: RegularizerLabel|Regularizer;
+  biasRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Constraint function applied to the `kernel` weights matrix.
    * (see [constraints](../constraints.md)).
    */
-  kernelConstraint?: ConstraintLabel|Constraint;
+  kernelConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Constraint function applied to the `recurrentKernel` weights matrix.
    * (see [constraints](../constraints.md)).
    */
-  recurrentConstraint?: ConstraintLabel|Constraint;
+  recurrentConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Constraintfunction applied to the bias vector.
    * (see [constraints](../constraints.md)).
    */
-  biasConstraint?: ConstraintLabel|Constraint;
+  biasConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Float number between 0 and 1. Fraction of the units to drop for the linear
@@ -1478,7 +1478,7 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
    * If you pass `null`, no activation is applied
    * (ie. "linear" activation: `a(x) = x`).
    */
-  recurrentActivation?: ActivationLabel;
+  recurrentActivation?: ActivationIdentifier;
 
   /**
    * If `true`, add 1 to the bias of the forget gate at initialization.

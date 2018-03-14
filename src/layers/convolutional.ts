@@ -19,11 +19,11 @@ import * as _ from 'underscore';
 import {ActivationFn, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/deeplearnjs_backend';
 import {DataFormat, PaddingMode} from '../common';
-import {Constraint, ConstraintLabel, getConstraint, serializeConstraint} from '../constraints';
+import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {getInitializer, Initializer, InitializerLabel, serializeInitializer} from '../initializers';
-import {getRegularizer, Regularizer, RegularizerLabel, serializeRegularizer} from '../regularizers';
+import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
+import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Shape} from '../types';
 import {ConfigDict, LayerVariable} from '../types';
 import {convOutputLength, normalizeArray} from '../utils/conv_utils';
@@ -95,37 +95,37 @@ export interface ConvLayerConfig extends LayerConfig {
   /**
    * Initializer for the `kernel` weights matrix.
    */
-  kernelInitializer?: InitializerLabel|Initializer;
+  kernelInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the bias vector.
    */
-  biasInitializer?: InitializerLabel|Initializer;
+  biasInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Constraint for the kernel weights.
    */
-  kernelConstraint?: ConstraintLabel|Constraint;
+  kernelConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Constraint for the bias vector.
    */
-  biasConstraint?: ConstraintLabel|Constraint;
+  biasConstraint?: ConstraintIdentifier|Constraint;
 
   /**
    * Regularizer function applied to the `kernel` weights matrix.
    */
-  kernelRegularizer?: RegularizerLabel|Regularizer;
+  kernelRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Regularizer function applied to the bias vector.
    */
-  biasRegularizer?: RegularizerLabel|Regularizer;
+  biasRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Regularizer function applied to the activation.
    */
-  activityRegularizer?: RegularizerLabel|Regularizer;
+  activityRegularizer?: RegularizerIdentifier|Regularizer;
 }
 
 /**

@@ -18,11 +18,11 @@ import * as _ from 'underscore';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/deeplearnjs_backend';
-import {Constraint, ConstraintLabel, getConstraint, serializeConstraint} from '../constraints';
+import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {getInitializer, Initializer, InitializerLabel, serializeInitializer} from '../initializers';
-import {getRegularizer, Regularizer, RegularizerLabel, serializeRegularizer} from '../regularizers';
+import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
+import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Shape} from '../types';
 import {ConfigDict, LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -45,23 +45,23 @@ export interface EmbeddingLayerConfig extends LayerConfig {
    *     Initializer for the `embeddings` matrix
    *     (see [initializers](../initializers.md)).
    */
-  embeddingsInitializer?: InitializerLabel|Initializer;
+  embeddingsInitializer?: InitializerIdentifier|Initializer;
   /**
    * embeddingsRegularizer:
    *     Regularizer function applied to the `embeddings` matrix.
    */
-  embeddingsRegularizer?: RegularizerLabel|Regularizer;
+  embeddingsRegularizer?: RegularizerIdentifier|Regularizer;
   /**
    * activityRegularizer:
    *     Regularizer function applied to the activation.
    */
-  activityRegularizer?: RegularizerLabel|Regularizer;
+  activityRegularizer?: RegularizerIdentifier|Regularizer;
   /**
    *  embeddingsConstraint: Constraint function applied to
    *     the `embeddings` matrix
    *     (see [constraints](../constraints.md)).
    */
-  embeddingsConstraint?: ConstraintLabel|Constraint;
+  embeddingsConstraint?: ConstraintIdentifier|Constraint;
   /**
    * mask_zero: Whether or not the input value 0 is a special "padding"
    *     value that should be masked out.

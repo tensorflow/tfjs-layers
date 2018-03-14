@@ -16,15 +16,17 @@ import {ValueError} from './errors';
 import {ConfigDictValue} from './types';
 
 export type ActivationFn = (tensor: Tensor, axis?: number) => Tensor;
-export type ActivationLabel = 'linear'|'elu'|'relu'|'relu6'|'selu'|'sigmoid'|
-    'hardsigmoid'|'softmax'|'softplus'|'softsign'|'tanh'|string;
+export type ActivationIdentifier = 'elu'|'hardsigmoid'|'linear'|'relu'|'relu6'|
+    'selu'|'sigmoid'|'softmax'|'softplus'|'softsign'|'tanh'|string;
 
 // TODO(cais): Consider switching arg type from string to Enum.
 export function getActivation(activationType: string): ActivationFn {
-  if (activationType == null || activationType.toLowerCase() === 'linear') {
-    return linear;
-  } else if (activationType.toLowerCase() === 'elu') {
+  if (activationType == null || activationType.toLowerCase() === 'elu') {
     return elu;
+  } else if (activationType.toLowerCase() === 'hardsigmoid') {
+    return hardSigmoid;
+  } else if (activationType.toLowerCase() === 'linear') {
+    return linear;
   } else if (activationType.toLowerCase() === 'relu') {
     return relu;
   } else if (activationType.toLowerCase() === 'relu6') {
@@ -33,8 +35,6 @@ export function getActivation(activationType: string): ActivationFn {
     return selu;
   } else if (activationType.toLowerCase() === 'sigmoid') {
     return sigmoid;
-  } else if (activationType.toLowerCase() === 'hardsigmoid') {
-    return hardSigmoid;
   } else if (activationType.toLowerCase() === 'softmax') {
     return softmax;
   } else if (activationType.toLowerCase() === 'softplus') {
