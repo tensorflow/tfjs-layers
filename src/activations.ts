@@ -22,7 +22,9 @@ export type ActivationIdentifier = 'elu'|'hardsigmoid'|'linear'|'relu'|'relu6'|
 // TODO(cais): Consider switching arg type from string to Enum.
 export function getActivation(activationType: ActivationIdentifier):
     ActivationFn {
-  if (activationType == null || activationType.toLowerCase() === 'elu') {
+  if (activationType == null) {
+    return linear;
+  } else if (activationType.toLowerCase() === 'elu') {
     return elu;
   } else if (activationType.toLowerCase() === 'hardsigmoid') {
     return hardSigmoid;
