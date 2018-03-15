@@ -194,8 +194,34 @@ describeMathCPUAndGPU('Model.predict', () => {
     const model =
         new Model({inputs: [inputTensor], outputs: [output], name: 'model1x1'});
     const xs = K.ones([10, 3, 4]);
-    const ys = model.predict(xs, 4) as Tensor;
+    const ys = model.predict({x: xs, batchSize: 4}) as Tensor;
     expectTensorsClose(ys, K.ones([10, 2, 6]));
+  });
+
+  it('1 input, 1 output, tensor as input argument', () => {
+    const inputTensor =
+        Input({shape: [3, 4], name: 'inputLayer1', dtype: DType.float32});
+    const layer = new Reshape({targetShape: [2, 6]});
+    const output = layer.apply(inputTensor) as SymbolicTensor;
+    const model =
+        new Model({inputs: [inputTensor], outputs: [output], name: 'model1x1'});
+    const xs = K.ones([10, 3, 4]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(ys, K.ones([10, 2, 6]));
+  });
+
+  it('1 input, 1 output, tensor as input argument', () => {
+    const inputTensor =
+        Input({shape: [3, 4], name: 'inputLayer1', dtype: DType.float32});
+    const layer = new Reshape({targetShape: [2, 6]});
+    const output = layer.apply(inputTensor) as SymbolicTensor;
+    const model =
+        new Model({inputs: [inputTensor], outputs: [output], name: 'model1x1'});
+    const xs = K.ones([10, 3, 4]);
+    // tslint:disable-next-line:no-any
+    expect(() => (model.predict as any)(xs, 32))
+        .toThrowError(
+            /.*first argument .*Tensor.*no other arguments should be provided/);
   });
 
   it('1 input as Array, 1 output', () => {
@@ -206,7 +232,7 @@ describeMathCPUAndGPU('Model.predict', () => {
     const model =
         new Model({inputs: [inputTensor], outputs: [output], name: 'model1x1'});
     const xs = K.ones([10, 3, 4]);
-    const ys = model.predict([xs], 4) as Tensor;
+    const ys = model.predict({x: [xs], batchSize: 4}) as Tensor;
     expectTensorsClose(ys, K.ones([10, 2, 6]));
   });
 
@@ -220,7 +246,7 @@ describeMathCPUAndGPU('Model.predict', () => {
     const model = new Model(
         {inputs: [inputTensor], outputs: [output1, output2], name: 'model1x2'});
     const xs = K.ones([10, 3, 4]);
-    const ys = model.predict(xs, 4) as Tensor[];
+    const ys = model.predict({x: xs, batchSize: 4}) as Tensor[];
     expect(ys.length).toEqual(2);
     expectTensorsClose(ys[0], K.ones([10, 2, 6]));
     expectTensorsClose(ys[1], K.ones([10, 12]));
@@ -242,7 +268,7 @@ describeMathCPUAndGPU('Model.predict', () => {
     });
     const xs1 = K.ones([10, 3, 4]);
     const xs2 = K.ones([10, 3, 3]);
-    const ys = model.predict([xs1, xs2], 4) as Tensor[];
+    const ys = model.predict({x: [xs1, xs2], batchSize: 4}) as Tensor[];
     expect(ys.length).toEqual(2);
     expectTensorsClose(ys[0], K.ones([10, 2, 6]));
     expectTensorsClose(ys[1], K.ones([10, 9]));
@@ -384,6 +410,31 @@ describeMathCPUAndGPU('Model.fit', () => {
              done();
            });
      });
+
+  it('Using x and y input arguments', async done => {
+    createDenseModelAndData();
+
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    model.fit(inputs, targets).then(history => {
+      expect(history.epoch.length).toEqual(100);
+      // 100 is the default number of epochs.
+      for (let i = 0; i < 100; ++i) {
+        expect(history.epoch[i]).toEqual(i);
+      }
+      done();
+    });
+  });
+
+  it('Using ModelFitConfig and y leads to error', async done => {
+    createDenseModelAndData();
+
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    model.fit({x: inputs, y: targets}, targets).catch(err => {
+      expect(err.message)
+          .toMatch(/no other input arguments should be provided/);
+      done();
+    });
+  });
 
   it('1 input, 1 output, dense, 1 weight, string optimizer, 2 epochs',
      async done => {
@@ -974,7 +1025,7 @@ describeMathCPUAndGPU('Model.evaluate', () => {
         prepModel();
         prepData();
         model.compile({optimizer: 'sgd', loss: 'meanSquaredError', metrics});
-        const losses = model.evaluate(x, y, batchSize);
+        const losses = model.evaluate({x, y, batchSize});
         if (metrics == null) {
           expectTensorsClose(losses as Scalar, scalar(1));
         } else {
@@ -986,6 +1037,23 @@ describeMathCPUAndGPU('Model.evaluate', () => {
       });
     }
   }
+
+  it('Calling evaluate with only x data leads to error', () => {
+    prepModel();
+    prepData();
+    model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+    expect(() => model.evaluate(x))
+        .toThrowError(
+            /.*first argument.*Tensor.*exactly 2 arguments, but received 1.*/);
+  });
+
+  it('Calling evaluate with config and y data leads to error', () => {
+    prepModel();
+    prepData();
+    model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+    expect(() => model.evaluate({x, y}, y))
+        .toThrowError(/.*no other input arguments should be provided.*/);
+  });
 });
 
 describeMathCPUAndGPU('Load weights', () => {

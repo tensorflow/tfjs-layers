@@ -12,6 +12,7 @@
  * TensorFlow.js Layers: Depthwise Convolutional Layers
  */
 
+// tslint:disable:max-line-length
 import {Tensor} from 'deeplearn';
 
 import * as K from '../backend/deeplearnjs_backend';
@@ -26,6 +27,7 @@ import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/generic_utils';
 
 import {Conv2D, ConvLayerConfig} from './convolutional';
+// tslint:enable:max-line-length
 
 export interface DepthwiseConv2DLayerConfig extends ConvLayerConfig {
   /**

@@ -16,7 +16,7 @@ import {doc, loadWeights, Scalar, Tensor, WeightsManifestConfig} from 'deeplearn
 import * as K from './backend/deeplearnjs_backend';
 import {History} from './callbacks';
 import {getSourceInputs, Input, Layer, Node} from './engine/topology';
-import {Model, ModelCompileConfig, ModelFitConfig, ModelLoggingVerbosity} from './engine/training';
+import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
 import {NamedTensorMap, Shape} from './types';
@@ -419,33 +419,31 @@ export class Sequential extends Model {
    *
    * Computation is done in batches.
    *
-   * @param x Tensor of test data, or list of Tensors if the model has
-   *   multiple inputs.
+   * @param xOrConfig Either of the following two formants:
+   *   - Tensor of test data, or list of Tensors if the model has
+   *     multiple inputs.
+   *   - A `ModelEvaluateConfig`, containing `x` and `y` data, in additional
+   *     to optional fields.
    * @param y Tensor of target data, or list of Tensors if the model has
-   *   multiple outputs.
-   * @param batchSize If unspecified, it will default to 32.
-   * @param verbose Verbosity mode. Defaults to true.
-   * @param sampleWeight Tensor of weights to weight the contribution
-   *   of different samples to the loss and metrics.
-   * @param steps Optional integer: total number of steps (batches of samples)
-   *   before declaring the evaluation round finished. Ignored with the default
-   *   value of `undefined`.
+   *   multiple outputs. This input argument is valid if and only if the first
+   *   input argument is a Tensor or Array or Tensors. If provided with the
+   *   first input argument being a `ModelEvaluateConfig` object, a `ValueError`
+   *   will be thrown.
    *
    * @return Scalar test loss (if the model has a single output and no
    *   metrics) or list of scalars (if the model has multiple outputs and/or
    *   metrics). The attribute `model.metricsNames` will give you the display
    *   labels for the scalar outputs.
    */
+  // TODO(nsthorat): Do we need @doc/configParamIndices here?
   @doc({heading: 'Models', subheading: 'Classes'})
-  evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[], batchSize = 32,
-      verbose?: ModelLoggingVerbosity, sampleWeight?: Tensor,
-      steps?: number): Scalar|Scalar[] {
+  evaluate(xOrConfig: Tensor|Tensor[]|ModelEvaluateConfig, y?: Tensor|Tensor[]):
+      Scalar|Scalar[] {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before being used.');
     }
-    return this.model.evaluate(x, y, batchSize, verbose, sampleWeight, steps);
+    return this.model.evaluate(xOrConfig, y);
   }
   /**
    * Generates output predictions for the input samples.
@@ -460,12 +458,11 @@ export class Sequential extends Model {
    * @return Tensor(s) of predictions.
    */
   @doc({heading: 'Models', subheading: 'Classes'})
-  predict(x: Tensor|Tensor[], batchSize = 32, verbose = false): Tensor
-      |Tensor[] {
+  predict(xOrConfig: Tensor|Tensor[]): Tensor|Tensor[] {
     if (this.model == null) {
       this.build();
     }
-    return this.model.predict(x, batchSize, verbose);
+    return this.model.predict(xOrConfig);
   }
 
   /**
@@ -482,6 +479,11 @@ export class Sequential extends Model {
     return this.model.predictOnBatch(x);
   }
 
+  /**
+   * See `Model.compile()`.
+   *
+   * @param config
+   */
   compile(config: ModelCompileConfig): void {
     this.build();
     this.model.compile(config);
@@ -498,7 +500,19 @@ export class Sequential extends Model {
   /**
    * Trains the model for a fixed number of epochs (iterations on a dataset).
    *
-   * @param config
+   * See `Model.fit()` for more details.
+   *
+   * @param xOrConfig Either of the following two formants:
+   *   - Tensor of test data, or list of Tensors if the model has
+   *     multiple inputs. Or if the inputs to the model are named, this can
+   *     also be an `Object` mapping input names to Tensors.
+   *   - A `ModelFitConfig`, containing `x` and `y` data, in additional
+   *     to optional fields.
+   * @param y Tensor of target data, or list of Tensors if the model has
+   *   multiple outputs. This input argument is valid if and only if the first
+   *   input argument is a Tensor or Array or Tensors. If provided with the
+   *   first input argument being a `ModelFitConfig` object, a `ValueError`
+   *   will be thrown.
    *
    * @return A `History` instance. Its `history` attribute contains all
    *   information collected during training.
@@ -507,13 +521,15 @@ export class Sequential extends Model {
    *   and what the model expects.
    */
   @doc({heading: 'Models', subheading: 'Classes'})
-  async fit(config: ModelFitConfig): Promise<History> {
+  async fit(
+      xOrConfig: ModelFitConfig,
+      y?: Tensor|Tensor[]|{[inputName: string]: Tensor}): Promise<History> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before ' +
           'being used.');
     }
-    return this.model.fit(config);
+    return this.model.fit(xOrConfig, y);
   }
 
   /* See parent class for JsDoc */
