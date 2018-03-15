@@ -13,15 +13,15 @@
  */
 
 // tslint:disable:max-line-length
-import {Scalar, scalar, Tensor, tensor1d, tensor2d, tensor3d, zeros} from 'deeplearn';
+import {Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, zeros} from 'deeplearn';
 import * as _ from 'underscore';
 
 import * as K from '../backend/deeplearnjs_backend';
 import {CustomCallback, CustomCallbackConfig, Logs} from '../callbacks';
-import {Dense, Dropout, Flatten, Reshape} from '../layers/core';
+import * as tfl from '../index';
+import {Dropout, Flatten, Reshape} from '../layers/core';
 import {SimpleRNN} from '../layers/recurrent';
 import {TimeDistributed} from '../layers/wrappers';
-import * as optimizers from '../optimizers';
 import {DType, SymbolicTensor} from '../types';
 import {pyListRepeat} from '../utils/generic_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
@@ -321,7 +321,8 @@ describeMathCPUAndGPU('Model.fit', () => {
   let targets2: Tensor;
 
   function createDenseModelAndData(useBias = false): void {
-    const layer = new Dense({units: 1, useBias, kernelInitializer: 'Ones'});
+    const layer =
+        tfl.layers.dense({units: 1, useBias, kernelInitializer: 'Ones'});
     const output = layer.apply(inputTensor) as SymbolicTensor;
     model = new Model({inputs: [inputTensor], outputs: [output]});
     inputs = K.ones([numSamples, inputSize]);
@@ -329,7 +330,8 @@ describeMathCPUAndGPU('Model.fit', () => {
   }
 
   function createDenseCategoricalModelAndData(useBias = false): void {
-    const layer = new Dense({units: 2, useBias, kernelInitializer: 'Ones'});
+    const layer =
+        tfl.layers.dense({units: 2, useBias, kernelInitializer: 'Ones'});
     const output = layer.apply(inputTensor) as SymbolicTensor;
     model = new Model({inputs: [inputTensor], outputs: [output]});
     inputs = K.ones([numSamples, inputSize]);
@@ -337,8 +339,10 @@ describeMathCPUAndGPU('Model.fit', () => {
   }
 
   function createTwoLayerDenseModelAndData(useBias = false): [Layer, Layer] {
-    const layer1 = new Dense({units: 10, useBias, kernelInitializer: 'Ones'});
-    const layer2 = new Dense({units: 1, useBias, kernelInitializer: 'Ones'});
+    const layer1 =
+        tfl.layers.dense({units: 10, useBias, kernelInitializer: 'Ones'});
+    const layer2 =
+        tfl.layers.dense({units: 1, useBias, kernelInitializer: 'Ones'});
     const output = layer2.apply(layer1.apply(inputTensor)) as SymbolicTensor;
     model = new Model({inputs: [inputTensor], outputs: [output]});
     inputs = K.ones([numSamples, inputSize]);
@@ -348,9 +352,9 @@ describeMathCPUAndGPU('Model.fit', () => {
 
   function createDenseModelWithTwoOutputsAndData(): void {
     const layer1 =
-        new Dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
     const layer2 =
-        new Dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
     const output1 = layer1.apply(inputTensor1) as SymbolicTensor;
     const output2 = layer2.apply(inputTensor2) as SymbolicTensor;
     twoOutputModel = new Model(
@@ -398,10 +402,10 @@ describeMathCPUAndGPU('Model.fit', () => {
     const batchSize = 4;
     const input = Input({shape: [inputSize]});
     const dense1 =
-        new Dense({units: 2, kernelInitializer: 'Ones', useBias: false});
+        tfl.layers.dense({units: 2, kernelInitializer: 'Ones', useBias: false});
     const dropout = new Dropout({rate: 0.5});
     const dense2 =
-        new Dense({units: 1, kernelInitializer: 'Ones', useBias: false});
+        tfl.layers.dense({units: 1, kernelInitializer: 'Ones', useBias: false});
     const output =
         dense2.apply(dropout.apply(dense1.apply(input))) as SymbolicTensor;
     const model = new Model({inputs: input, outputs: output});
@@ -572,7 +576,7 @@ describeMathCPUAndGPU('Model.fit', () => {
       returnSequences: true,
     });
     const timeDistributed = new TimeDistributed({
-      layer: new Dense(
+      layer: tfl.layers.dense(
           {units: outputSize, kernelInitializer: 'Ones', useBias: false})
     });
     const input = Input({shape: [sequenceLength, inputSize]});
@@ -690,7 +694,7 @@ describeMathCPUAndGPU('Model.fit', () => {
     const layers = createTwoLayerDenseModelAndData();
     const layer1 = layers[0];
     const layer2 = layers[1];
-    const optimizer = new optimizers.SGD({lr: 1e-2});
+    const optimizer = new SGDOptimizer(1e-2);
     model.compile({optimizer, loss: 'meanSquaredError'});
     let history = await model.fit({
       x: inputs,
@@ -778,7 +782,7 @@ describeMathCPUAndGPU('Model.fit', () => {
        // Use a custom learning rate for SGD.
        const lr = 0.025;
        model.compile(
-           {optimizer: new optimizers.SGD({lr}), loss: 'meanSquaredError'});
+           {optimizer: new SGDOptimizer(lr), loss: 'meanSquaredError'});
        model.fit({x: inputs, y: targets, batchSize: numSamples, epochs: 1})
            .then(history => {
              expect(history.epoch).toEqual([0]);
@@ -797,7 +801,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 
     const lr = 0.01;
     twoOutputModel.compile({
-      optimizer: new optimizers.SGD({lr}),
+      optimizer: new SGDOptimizer(lr),
       loss: ['meanSquaredError', 'meanSquaredError']
     });
     const trainableWeights = twoOutputModel.trainableWeights;
@@ -943,7 +947,7 @@ describeMathCPUAndGPU('Model.evaluate', () => {
   let y: Tensor;
   function prepModel() {
     const input = Input({shape: [inputSize]});
-    const dense = new Dense(
+    const dense = tfl.layers.dense(
         {units: outputSize, kernelInitializer: 'Ones', useBias: false});
     const output = dense.apply(input) as SymbolicTensor;
     model = new Model({inputs: input, outputs: output});
@@ -988,7 +992,8 @@ describeMathCPUAndGPU('Load weights', () => {
   it('Simple functional model', () => {
     const inputTensor =
         Input({shape: [3], name: 'inputLayer', dtype: DType.float32});
-    const denseLayer = new Dense({units: 2, useBias: true, name: 'denseLayer'});
+    const denseLayer =
+        tfl.layers.dense({units: 2, useBias: true, name: 'denseLayer'});
     const output = denseLayer.apply(inputTensor) as SymbolicTensor;
     const model = new Model({
       inputs: [inputTensor],

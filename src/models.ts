@@ -162,7 +162,7 @@ export interface SequentialConfig {
  * Examples:
  *
  * ```js
- * const model = tf.sequential({});
+ * const model = tf.sequential();
  *
  * // First layer must have a defined input shape
  * model.add(tf.layers.dense({units: 32, inputShape: [50]}));
@@ -180,7 +180,7 @@ export interface SequentialConfig {
  * following example is equivalent to the above:
  *
  * ```js
- * const model = tf.sequential({});
+ * const model = tf.sequential();
  *
  * // First layer must have a defined input shape
  * model.add(tf.layers.dense({units: 32, batchInputShape: [null, 50]}));
@@ -206,8 +206,10 @@ export interface SequentialConfig {
 export class Sequential extends Model {
   private model: Model;
   private _updatable: boolean;
-  constructor(config: SequentialConfig) {
+  constructor(config?: SequentialConfig) {
     super({inputs: [], outputs: []});
+    config = config || {};
+
     this.trainable = true;
     this._updatable = true;
     this.built = false;

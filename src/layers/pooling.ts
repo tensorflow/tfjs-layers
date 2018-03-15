@@ -148,7 +148,7 @@ export interface Pooling2DLayerConfig extends LayerConfig {
    * If only one integer is specified, the same window length
    * will be used for both dimensions.
    */
-  poolSize?: [number, number];
+  poolSize?: number|[number, number];
 
   /**
    * Integer, tuple of 2 integers, or None.
@@ -175,7 +175,9 @@ export abstract class Pooling2D extends Layer {
       config.poolSize = [2, 2];
     }
     super(config);
-    this.poolSize = config.poolSize;
+    this.poolSize = Array.isArray(config.poolSize) ?
+        config.poolSize :
+        [config.poolSize, config.poolSize];
     this.strides = config.strides == null ? this.poolSize : config.strides;
     this.padding = config.padding == null ? PaddingMode.VALID : config.padding;
     this.dataFormat =

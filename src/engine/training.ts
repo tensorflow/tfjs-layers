@@ -12,7 +12,7 @@
 
 // tslint:disable:max-line-length
 import * as dl from 'deeplearn';
-import {doc, Scalar, Tensor, Tensor1D, tensor1d} from 'deeplearn';
+import {doc, Optimizer, Scalar, Tensor, Tensor1D, tensor1d} from 'deeplearn';
 import * as _ from 'underscore';
 
 import * as K from '../backend/deeplearnjs_backend';
@@ -546,9 +546,9 @@ export interface ModelFitConfig {
  */
 export interface ModelCompileConfig {
   /**
-   * An instance of Optimizer or a string name for an Optimizer.
+   * An instance of `tf.train.Optimizer` or a string name for an Optimizer.
    */
-  optimizer: string|optimizers.Optimizer;
+  optimizer: string|Optimizer;
 
   /**
    * String (name of objective function) or objective function.
@@ -577,7 +577,7 @@ export interface ModelCompileConfig {
  * A `Model` is the basic unit of training, inference and evaluation in
  * TensorFlow.js. To create a `Model, use `model`.
  *
- * To create a `Model`, specify its input(s) and output(s). Inputs are
+ * When creating a `Model`, specify its input(s) and output(s). Inputs are
  * `SymbolicTensor`s provided by `Input` layers. Outputs are `SymbolicTensor`s
  * provided by other layers that perform mathematical and neural-network
  * operations.
@@ -607,11 +607,11 @@ export interface ModelCompileConfig {
  * ```
  *
  * See also:
- *   `Sequential`, `modelFromJSON`, `loadModel`.
+ *   `Sequential`, `loadModel`.
  */
 @doc({heading: 'Models', subheading: 'Classes'})
 export class Model extends Container {
-  optimizer: optimizers.Optimizer;
+  optimizer: optimizers.LayersOptimizer;
   loss: string|string[]|{[outputName: string]: string};
   lossFunctions: LossOrMetricFn[];
 
@@ -645,13 +645,15 @@ export class Model extends Container {
     if (config.loss == null) {
       config.loss = [];
     }
+    this.loss = config.loss;
+
+    const optimizerConstructor = optimizers.get(config.optimizer);
     if (typeof config.optimizer === 'string') {
-      const optimizerConstructor = optimizers.get(config.optimizer);
       this.optimizer = new optimizerConstructor({});
     } else {
-      this.optimizer = config.optimizer;
+      this.optimizer = new optimizerConstructor(config.optimizer);
+      // TODO(cais): This should call a factory method.
     }
-    this.loss = config.loss;
     // TODO(cais): Add lossWeights.
     // TODO(cais): Add sampleWeightMode.
 

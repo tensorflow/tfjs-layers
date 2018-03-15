@@ -159,19 +159,17 @@ export abstract class Wrapper extends Layer {
  * timesteps, independently:
  *
  * ```js
- * const model = new Sequential();
- * model.add(new TimeDistributed({
+ * const model = tf.sequential();
+ * model.add(tf.layers.timeDistributed({
  *   layer: new Dense({units: 8}),
  *   inputShape: [10, 16],
  * });
+ *
  * // Now model.outputShape = [null, 10, 8].
- * ```
+ * // The output will then have shape `[32, 10, 8]`.
  *
- * The output will then have shape `[32, 10, 8]`.
- *
- * In subsequent layers, there is no need for `inputShape`:
- * ```js
- * model.add(new TimeDistributed({layer: new Dense(32)});
+ * // In subsequent layers, there is no need for `inputShape`:
+ * model.add(tf.layers.timeDistributed({layer: tf.layers.dense({units: 32})});
  * // Now model.outputShape = [null, 10, 32].
  * ```
  *
@@ -181,8 +179,8 @@ export abstract class Wrapper extends Layer {
  * instance a `Conv2D` layer.
  *
  * ```js
- * const model = new Sequential();
- * model.add(new TimeDistributed({
+ * const model = tf.sequential();
+ * model.add(tf.layers.timeDistributed({
  *   layer: new Conv2D({filter: 64, kernelSize: [3, 3]}),
  *   inputShape: [10, 299, 299, 3]
  * });
