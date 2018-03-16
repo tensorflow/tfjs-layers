@@ -925,9 +925,9 @@ export class Model extends Container {
    *   labels for the scalar outputs.
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
-  evaluate(
+  async evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
-      Scalar|Scalar[] {
+      Promise<Scalar|Scalar[]> {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
@@ -1060,15 +1060,15 @@ export class Model extends Container {
    *   the model has multiple inputs.
    * @param conifg A `ModelPredictConfig` object containing optional fields.
    *
-   * @return Tensor(s) of predictions.
+   * @return Prediction results as a `Promise` of `Tensor`(s).
    *
    * @exception ValueError In case of mismatch between the provided input data
    *   and the model's expectations, or in case a stateful model receives a
    *   number of samples that is not a multiple of the batch size.
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [1]})
-  predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
-      |Tensor[] {
+  async predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}):
+      Promise<Tensor|Tensor[]> {
     checkInputData(x, this.inputNames, this.feedInputShapes, false);
     // TODO(cais): Take care of stateful models.
     //   if (this.stateful) ...
@@ -1293,7 +1293,7 @@ export class Model extends Container {
                 }
               }
             }
-            return outs;  // TODO(cais): Confirm.
+            return outs;
           });
           await callbackList.onBatchEnd(batchIndex, batchLogs);
           // TODO(cais): return outs as list of Tensor.

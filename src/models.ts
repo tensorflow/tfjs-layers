@@ -429,13 +429,13 @@ export class Sequential extends Model {
    *
    * @return Scalar test loss (if the model has a single output and no
    *   metrics) or list of scalars (if the model has multiple outputs and/or
-   *   metrics). The attribute `model.metricsNames` will give you the display
-   *   labels for the scalar outputs.
+   *   metrics), as a `Promise`. The attribute `model.metricsNames` will give
+   *   you the display labels for the scalar outputs.
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
-  evaluate(
+  async evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
-      Scalar|Scalar[] {
+      Promise<Scalar|Scalar[]> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before being used.');
@@ -462,15 +462,15 @@ export class Sequential extends Model {
    *   the model has multiple inputs.
    * @param conifg A `ModelPredictConfig` object containing optional fields.
    *
-   * @return Tensor(s) of predictions.
+   * @return `Tensor`(s) of predictions, as a `Promise`.
    *
    * @exception ValueError In case of mismatch between the provided input data
    *   and the model's expectations, or in case a stateful model receives a
    *   number of samples that is not a multiple of the batch size.
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [1]})
-  predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
-      |Tensor[] {
+  async predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}):
+      Promise<Tensor|Tensor[]> {
     if (this.model == null) {
       this.build();
     }

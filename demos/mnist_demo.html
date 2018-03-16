@@ -142,7 +142,7 @@ https://opensource.org/licenses/MIT.
       }
 
       // Perform prediction on the input image using the loaded model.
-      function predict() {
+      async function predict() {
         let batchInput = null;
         try {
           batchInput = textToImageArray(imageInput.val());
@@ -153,7 +153,8 @@ https://opensource.org/licenses/MIT.
           $('#predict-values').empty();
         }
         // TODO(cais): Maybe use a tidy().
-        const predictOut = Array.from(model.predict(batchInput).dataSync());
+        const predictOut =
+            Array.from((await model.predict(batchInput)).dataSync());
         const winner = _.indexOf(predictOut, _.max(predictOut));
 
         $('#predict-header').empty();
