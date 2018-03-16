@@ -15,6 +15,7 @@
 // tslint:disable:max-line-length
 import {Tensor} from 'deeplearn';
 
+// tslint:disable:max-line-length
 import * as K from '../backend/deeplearnjs_backend';
 import {DataFormat} from '../common';
 import {Constraint, ConstraintIdentifier, getConstraint} from '../constraints';

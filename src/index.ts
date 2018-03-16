@@ -22,6 +22,8 @@ export {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig, ModelPre
 export {GRUCellLayerConfig, GRULayerConfig, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNCell, RNNLayerConfig, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig} from './layers/recurrent';
 export {ModelAndWeightsConfig, Sequential, SequentialConfig} from './models';
 export {SymbolicTensor} from './types';
+export {version as version_layers} from './version';
+
 export {dl};  // TODO(cais): Remove this export (b/74099819).
 export {backend};
 
