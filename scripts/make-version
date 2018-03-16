@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+// Copyright 2018 Google LLC
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+// =============================================================================
+
+
+// Run this script from the base directory (not the script directory):
+// ./scripts/make-version
+
+var fs = require('fs');
+
+var version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+var tag = `v${version}`;
+
+const versionCode =
+`/** @license See the LICENSE file. */
+
+// This code is auto-generated, do not modify this file!
+const version = '${version}';
+export {version};
+`
+
+fs.writeFile('src/version.ts', versionCode, err => {
+  if (err != null) {
+    return console.error(`Could not save version file ${version}: ${err}`);
+  } else {
+    console.log(`Version file for version ${version} saved sucessfully.`);
+  }
+});
