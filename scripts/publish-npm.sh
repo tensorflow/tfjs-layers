@@ -8,7 +8,7 @@
 # Before you publish a new version:
 # 1) Update the version in package.json
 # 2) Run ./scripts/make-version from the base dir of the project.
-# 3) Commit to github.
+# 3) Commit to the master branch.
 # 4) Run `yarn publish-npm` from the base dir of the project.
 
 set -e
