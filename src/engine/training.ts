@@ -458,12 +458,6 @@ export enum ModelLoggingVerbosity {
 
 export interface ModelPredictConfig {
   /**
-   * The input data, as an Tensor (or `Array` of `Tensor`s if
-   *   the model has multiple inputs)
-   */
-  x: Tensor|Tensor[];
-
-  /**
    * Batch size (Integer). If unspecified, it will default to 32.
    */
   batchSize?: number;
@@ -475,18 +469,6 @@ export interface ModelPredictConfig {
 }
 
 export interface ModelEvaluateConfig {
-  /**
-   * Tensor of test data, or list of Tensors if the model has
-   * multiple inputs.
-   */
-  x: Tensor|Tensor[];
-
-  /**
-   * Tensor of target data, or list of Tensors if the model has
-   * multiple outputs.
-   */
-  y: Tensor|Tensor[];
-
   /**
    * Batch size (Integer). If unspecified, it will default to 32.
    */
@@ -515,20 +497,6 @@ export interface ModelEvaluateConfig {
  * Interface for specifying data to fit a model to data.
  */
 export interface ModelFitConfig {
-  /**
-   * Tensor of training data, or an array of Tensors if the model has
-   * multiple inputs. If all inputs in the model are named, you can also pass
-   * a dictionary mapping input names to Tensors.
-   */
-  x: Tensor|Tensor[]|{[inputName: string]: Tensor};
-
-  /**
-   * Tensor array of target (label) data, or an array of Tensors if the
-   * model has multiple outputs. If all outputs in the model are named, you
-   * can also pass a dictionary mapping output names to Tensors.
-   */
-  y: Tensor|Tensor[]|{[inputName: string]: Tensor};
-
   /**
    * Number of samples per gradient update. If unspecified, it
    * will default to 32.
@@ -935,96 +903,33 @@ export class Model extends Container {
    *
    * Computation is done in batches.
    *
-   * You can either specify the input and targets data as two input arguments:
-   *
    * ```js
    * const model = tf.sequential({
    *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
    * });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * model.evaluate(tf.ones([8, 10]), tf.ones([8, 1])).print();
-   * ```
-   *
-   * or provide a `ModelEvaluateConfig` object with possibly more optional
-   * fields:
-   *
-   * ```js
-   * const model = tf.sequential({
-   *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
-   * });
-   * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * model.evaluate({
-   *   x: tf.ones([8, 10]),
-   *   y: tf.ones([8, 1]),
+   * model.evaluate(tf.ones([8, 10]), tf.ones([8, 1]), {
    *   batchSize: 4,
    * }).print();
    * ```
    *
-   * @param xOrConfig Either of the following two formants:
-   *   - Tensor of test data, or list of Tensors if the model has
-   *     multiple inputs.
-   *   - A `ModelEvaluateConfig`, containing `x` and `y` data, in additional
-   *     to optional fields.
-   * @param y Tensor of target data, or list of Tensors if the model has
-   *   multiple outputs. This input argument is valid if and only if the first
-   *   input argument is a Tensor or Array or Tensors. If provided with the
-   *   first input argument being a `ModelEvaluateConfig` object, a `ValueError`
-   *   will be thrown.
+   * @param x `Tensor` of test data, or an `Array` of `Tensor`s if the model has
+   *   multiple inputs.
+   * @param y `Tensor` of target data, or an `Array` of `Tensor`s if the model
+   *   has multiple outputs.
+   * @param config A `ModelEvaluateConfig`, containing optional fields.
    *
    * @return Scalar test loss (if the model has a single output and no
    *   metrics) or list of scalars (if the model has multiple outputs and/or
    *   metrics). The attribute `model.metricsNames` will give you the display
    *   labels for the scalar outputs.
    */
-  // TODO(nsthorat): Need to add @doc.configParamIndices on first argument?
-  @doc({heading: 'Models', subheading: 'Classes'})
-  evaluate(xOrConfig: Tensor|Tensor[]|ModelEvaluateConfig, y?: Tensor|Tensor[]):
+  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
+  evaluate(
+      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
       Scalar|Scalar[] {
-    let x: Tensor|Tensor[];
-    let batchSize = 32;
-    let verbose: ModelLoggingVerbosity;
-    let steps: number = null;
-    if (Array.isArray(xOrConfig) || xOrConfig instanceof Tensor) {
-      if (arguments.length !== 2) {
-        throw new ValueError(
-            'When the first argument to Model.evaluate() is a Tensor or ' +
-            'an Array of Tensors, Model.evaluate() expects exactly 2 ' +
-            `arguments, but received ${arguments.length}.`);
-      }
-      if (y == null) {
-        throw new ValueError(
-            'When the first argument to Model.evaluate() is a Tensor or ' +
-            'an Array of Tensors, Model.evaluate() expects the 2nd ' +
-            'argument to be the targets as a Tensor or an Array of Tensors.');
-      }
-    } else {
-      // xOrConfig is a ModelEvaluateConfig object.
-      if (arguments.length > 1 && y != null) {
-        throw new ValueError(
-            'When the first argument to Model.evaluate() is a ' +
-            'ModelEvaluateConfig object, no other input arguments should ' +
-            'be provided.');
-      }
-      x = xOrConfig.x;
-      y = xOrConfig.y;
-      if (xOrConfig.batchSize != null) {
-        batchSize = xOrConfig.batchSize;
-      }
-      if (xOrConfig.verbose != null) {
-        verbose = xOrConfig.verbose;
-      }
-      if (xOrConfig.sampleWeight != null) {
-        throw new NotImplementedError(
-            'Model.evaluate() does not suppose sample weights yet.');
-      }
-      if (xOrConfig.steps != null) {
-        steps = xOrConfig.steps;
-      }
-    }
+    const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
-    if (batchSize == null) {
-      batchSize = 32;
-    }
     // TODO(cais): Standardize `config.sampleWeights` as well.
     // Validate user data.
     const standardizedOuts = this.standardizeUserData(x, y, true, batchSize);
@@ -1033,7 +938,8 @@ export class Model extends Container {
     const ins = standardizedOuts[0].concat(standardizedOuts[1]);
     this.makeTestFunction();
     const f = this.testFunction;
-    const testOuts = this.testLoop(f, ins, batchSize, verbose, steps);
+    const testOuts =
+        this.testLoop(f, ins, batchSize, config.verbose, config.steps);
     return singletonOrArray(testOuts);
   }
 
@@ -1140,35 +1046,19 @@ export class Model extends Container {
    *
    * Computation is done in batches.
    *
-   * Porting Note: the "step" mode of predict() is currently not supported.
-   * This is because the TensorFow.js core backend is imperative only.
-   *
-   * You can either provide a single argument containing the input data:
+   * Note: the "step" mode of predict() is currently not supported.
+   *   This is because the TensorFow.js core backend is imperative only.
    *
    * ```js
    * const model = tf.sequential({
    *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
    * });
-   * model.predict(tf.ones([8, 10])).print();
+   * model.predict(tf.ones([8, 10]), {batchSize: 4}).print();
    * ```
    *
-   * or provide a `ModelPredictConfig` object with possibly more optional
-   * fields:
-   *
-   * ```js
-   * const model = tf.sequential({
-   *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
-   * });
-   * model.predict({
-   *   x: tf.ones([8, 10]),
-   *   batchSize: 4
-   * }).print();
-   * ```
-   *
-   * @param xOrConfig Either of the following two formats:
-   *   - The input data, as an Tensor (or `Array` of `Tensor`s if
-   *     the model has multiple inputs)
-   *   - A `ModelPredictConfig` object containing `x` and optional fields.
+   * @param x The input data, as an Tensor, or an `Array` of `Tensor`s if
+   *   the model has multiple inputs.
+   * @param conifg A `ModelPredictConfig` object containing optional fields.
    *
    * @return Tensor(s) of predictions.
    *
@@ -1176,31 +1066,15 @@ export class Model extends Container {
    *   and the model's expectations, or in case a stateful model receives a
    *   number of samples that is not a multiple of the batch size.
    */
-  // TODO(nsthorat): Need @doc.configParamIndices()?
-  @doc({heading: 'Models', subheading: 'Classes'})
-  predict(xOrConfig: Tensor|Tensor[]|ModelPredictConfig): Tensor|Tensor[] {
-    let x: Tensor|Tensor[];
-    let batchSize = 32;
-    if (Array.isArray(xOrConfig) || xOrConfig instanceof Tensor) {
-      x = xOrConfig;
-      if (arguments.length > 1) {
-        throw new ValueError(
-            'When the first argument to Model.predict() is a Tensor or ' +
-            'an Array of Tensors, no other arguments should be provided.' +
-            'If you wish to specify other options such as batch size, use a ' +
-            '`ModelPredictConfig` object as the only input argument.');
-      }
-    } else {
-      x = xOrConfig.x;
-      if (xOrConfig.batchSize != null) {
-        batchSize = xOrConfig.batchSize;
-      }
-    }
+  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [1]})
+  predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
+      |Tensor[] {
     checkInputData(x, this.inputNames, this.feedInputShapes, false);
     // TODO(cais): Take care of stateful models.
     //   if (this.stateful) ...
     // TODO(cais): Take care of the learning_phase boolean flag.
     //   if (this.useLearningPhase) ...
+    const batchSize = config.batchSize == null ? 32 : config.batchSize;
     return this.predictLoop(x, batchSize);
   }
 
@@ -1289,11 +1163,17 @@ export class Model extends Container {
    */
   private async fitLoop(
       f: (data: Tensor[]) => Scalar[], ins: Tensor[], outLabels?: string[],
-      batchSize?: number, epochs = 100, verbose?: number,
+      batchSize?: number, epochs?: number, verbose?: number,
       callbacks?: Callback[], valF?: (data: Tensor[]) => Scalar[],
       valIns?: Tensor[], shuffle?: boolean|string, callbackMetrics?: string[],
       initialEpoch = 0, stepsPerEpoch?: number,
       validationSteps?: number): Promise<History> {
+    if (batchSize == null) {
+      batchSize = 32;
+    }
+    if (epochs == null) {
+      epochs = 100;
+    }
     if (shuffle == null) {
       shuffle = true;
     }
@@ -1546,42 +1426,23 @@ export class Model extends Container {
   /**
    * Trains the model for a fixed number of epochs (iterations on a dataset).
    *
-   * You can either specify the input data and targets as two input arguments:
-   *
    * ```js
    * const model = tf.sequential({
    *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
    * });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * const history = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]));
-   * ```
-   *
-   * or provide a `ModelEvaluateConfig` object with possibly more optional
-   * fields:
-   *
-   * ```js
-   * const model = tf.sequential({
-   *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
-   * });
-   * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * const history = model.fit({
-   *   x: tf.ones([8, 10]),
-   *   y: tf.ones([8, 1]),
+   * const history = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
    *   batchSize: 4,
    *   epochs: 3
-   * }).print();
-   * ```
-   * @param xOrConfig Either of the following two formants:
-   *   - Tensor of test data, or list of Tensors if the model has
-   *     multiple inputs. Or if the inputs to the model are named, this can
-   *     also be an `Object` mapping input names to Tensors.
-   *   - A `ModelFitConfig`, containing `x` and `y` data, in additional
-   *     to optional fields.
-   * @param y Tensor of target data, or list of Tensors if the model has
-   *   multiple outputs. This input argument is valid if and only if the first
-   *   input argument is a Tensor or Array or Tensors. If provided with the
-   *   first input argument being a `ModelFitConfig` object, a `ValueError`
-   *   will be thrown.
+   * });
+   *
+   * @param x `Tensor` of training data, or an array of `Tensor`s if the model
+   *   has multiple inputs. If all inputs in the model are named, you can also
+   *   pass a dictionary mapping input names to `Tensor`s.
+   * @param y `Tensor` of target (label) data, or an array of `Tensor`s if the
+   *   model has multiple outputs. If all outputs in the model are named, you
+   *  can also pass a dictionary mapping output names to `Tensor`s.
+   * @param config A `ModelFitConfig`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
    *   information collected during training.
@@ -1589,44 +1450,16 @@ export class Model extends Container {
    * @exception ValueError In case of mismatch between the provided input data
    *   and what the model expects.
    */
-  @doc({heading: 'Models', subheading: 'Classes'})
+  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   async fit(
-      xOrConfig: Tensor|Tensor[]|{[inputName: string]: Tensor}|ModelFitConfig,
-      y?: Tensor|Tensor[]|{[inputName: string]: Tensor}): Promise<History> {
-    let config: ModelFitConfig;
-    const isFirstArgConfig = 'x' in xOrConfig;
-    if (y != null) {
-      if (isFirstArgConfig) {
-        throw new ValueError(
-            'When the first input argument to Model.fit() is a ' +
-            'ModelFitConfig object, no other input arguments should be ' +
-            'provided.');
-      }
-      config = {
-        x: xOrConfig as Tensor | Tensor[] | {[inputName: string]: Tensor},
-        y
-      };
-    } else {
-      config = xOrConfig as ModelFitConfig;
-    }
-
-    if (config.batchSize == null) {
-      config.batchSize = 32;
-    }
-    // Porting Note: because our backend is imperative, tfjs-layers does not
-    //   support fitting from symbolic data tensors. Therefore config.x and
-    //   config.y are always required.
-    if (config.x == null) {
-      throw new ValueError('x data is missing from ModelFitConfig.');
-    }
-    if (config.y == null) {
-      throw new ValueError('y data is missing from ModelFitConfig.');
-    }
+      x: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      y: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      config: ModelFitConfig = {}): Promise<History> {
+    const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // Validate user data.
     // TOOD(cais): Add sampleWeight and  classWeight.
-    const standardizedOuts =
-        this.standardizeUserData(config.x, config.y, false, config.batchSize);
+    const standardizedOuts = this.standardizeUserData(x, y, false, batchSize);
     let inputs = standardizedOuts[0];
     let targets = standardizedOuts[1];
     // TODO(cais): Make use of sampleWeights in standardizedOuts[2] when
@@ -1654,7 +1487,7 @@ export class Model extends Container {
       }
 
       const valStandardized =
-          this.standardizeUserData(valX, valY, true, config.batchSize);
+          this.standardizeUserData(valX, valY, true, batchSize);
       valX = valStandardized[0] as Tensor[];
       valY = valStandardized[1] as Tensor[];
       // TODO(cais): Use validation sample weights in valStandardized[2] once
@@ -1795,9 +1628,9 @@ export class Model extends Container {
 
     const callbacks = standardizeCallbacks(config.callbacks);
     return this.fitLoop(
-        trainFunction, ins, outLabels, config.batchSize, config.epochs,
-        config.verbose, callbacks, valFunction, valIns, config.shuffle,
-        callbackMetrics, null, null, null);
+        trainFunction, ins, outLabels, batchSize, config.epochs, config.verbose,
+        callbacks, valFunction, valIns, config.shuffle, callbackMetrics, null,
+        null, null);
     // TOOD(cais): Add value to outLabels.
     // TODO(cais): Add initialEpoch.
   }

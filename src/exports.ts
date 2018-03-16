@@ -448,7 +448,7 @@ export class LayerExports {
     useDocsFrom: 'RNN',
     configParamIndices: [0]
   })
-  static rnn(config: RNNLayerConfig) {
+  static rnn(config: RNNLayerConfig): RNN {
     return new RNN(config);
   }
 
