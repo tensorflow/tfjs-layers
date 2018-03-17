@@ -395,42 +395,42 @@ export class CustomCallback extends Callback {
     this.batchEnd = config.onBatchEnd;
   }
 
-  async onEpochBegin(epoch: number, logs?: UnresolvedLogs) {
+  async onEpochBegin(epoch: number, logs?: UnresolvedLogs): Promise<void> {
     if (this.epochBegin != null) {
       await resolveScalarsInLogs(logs);
       await this.epochBegin(epoch, logs as Logs);
     }
   }
 
-  async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {
+  async onEpochEnd(epoch: number, logs?: UnresolvedLogs): Promise<void> {
     if (this.epochEnd != null) {
       await resolveScalarsInLogs(logs);
       await this.epochEnd(epoch, logs as Logs);
     }
   }
 
-  async onBatchBegin(batch: number, logs?: UnresolvedLogs) {
+  async onBatchBegin(batch: number, logs?: UnresolvedLogs): Promise<void> {
     if (this.batchBegin != null) {
       await resolveScalarsInLogs(logs);
       await this.batchBegin(batch, logs as Logs);
     }
   }
 
-  async onBatchEnd(batch: number, logs?: UnresolvedLogs) {
+  async onBatchEnd(batch: number, logs?: UnresolvedLogs): Promise<void> {
     if (this.batchEnd != null) {
       await resolveScalarsInLogs(logs);
       await this.batchEnd(batch, logs as Logs);
     }
   }
 
-  async onTrainBegin(logs?: UnresolvedLogs) {
+  async onTrainBegin(logs?: UnresolvedLogs): Promise<void> {
     if (this.trainBegin != null) {
       await resolveScalarsInLogs(logs);
       await this.trainBegin(logs as Logs);
     }
   }
 
-  async onTrainEnd(logs?: UnresolvedLogs) {
+  async onTrainEnd(logs?: UnresolvedLogs): Promise<void> {
     if (this.trainEnd != null) {
       await resolveScalarsInLogs(logs);
       await this.trainEnd(logs as Logs);
