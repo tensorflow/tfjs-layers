@@ -416,9 +416,10 @@ export class Sequential extends Model {
    *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
    * });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * (await model.evaluate(tf.ones([8, 10]), tf.ones([8, 1]), {
+   * const result = await model.evaluate(tf.ones([8, 10]), tf.ones([8, 1]), {
    *   batchSize: 4,
-   * })).print();
+   * });
+   * result.print();
    * ```
    *
    * @param x `Tensor` of test data, or an `Array` of `Tensor`s if the model has
