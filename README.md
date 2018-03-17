@@ -12,7 +12,7 @@ load saved models from those libraries.
 ## Installation
 
 You can access TensorFlow.js through the
-[@tensorflow/tfjs NPM package](https://www.npmjs.com/package/@tensorflow/tfjs-layers)
+[@tensorflow/tfjs NPM package](https://www.npmjs.com/package/@tensorflow/tfjs)
 
 ```sh
 npm install @tensorflow/tfjs
