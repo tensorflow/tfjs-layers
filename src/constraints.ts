@@ -11,7 +11,7 @@
 /* Original source: keras/contraints.py */
 
 // tslint:disable:max-line-length
-import {Tensor} from 'deeplearn';
+import {Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/deeplearnjs_backend';
 import {ConfigDict, ConfigDictValue} from './types';

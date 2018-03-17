@@ -9,8 +9,7 @@
  */
 
 // This file lists all exports of TensorFlow.js Layers
-
-import * as dl from 'deeplearn';
+import * as dl from '@tensorflow/tfjs-core';
 
 import * as backend from './backend/deeplearnjs_backend';
 import {LayerExports, ModelExports} from './exports';

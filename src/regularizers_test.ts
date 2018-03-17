@@ -10,7 +10,7 @@
 
 /* Unit tests for constraints */
 
-import {tensor1d} from 'deeplearn';
+import {tensor1d} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import {deserializeRegularizer, getRegularizer, l1, l1_l2, L1L2, l2, serializeRegularizer} from './regularizers';

@@ -11,8 +11,8 @@
 /** Defines allowable data types for tensors. */
 
 // tslint:disable:max-line-length
-import * as dl from 'deeplearn';
-import {doc, Tensor, variable} from 'deeplearn';
+import * as tfc from '@tensorflow/tfjs-core';
+import {doc, Tensor, variable} from '@tensorflow/tfjs-core';
 
 import {getUniqueTensorName} from './common';
 import {Constraint} from './constraints';
@@ -172,7 +172,7 @@ export class LayerVariable {
   readonly name: string;
   readonly trainable: boolean;
 
-  protected val: dl.Variable;
+  protected val: tfc.Variable;
   readonly constraint: Constraint;
   /**
    * Construct Variable from a Tensor or a ConcreteTensor.

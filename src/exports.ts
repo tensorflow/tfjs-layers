@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {doc} from 'deeplearn';
+import {doc} from '@tensorflow/tfjs-core';
 
 import {ContainerConfig, Input, InputConfig, InputLayer, InputLayerConfig, LayerConfig} from './engine/topology';
 import {Model} from './engine/training';

@@ -10,7 +10,7 @@
 
 /* Original source: keras/optimizers.py */
 
-import {Scalar, scalar, Tensor} from 'deeplearn';
+import {Scalar, scalar, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/deeplearnjs_backend';
 import {NotImplementedError, ValueError} from './errors';

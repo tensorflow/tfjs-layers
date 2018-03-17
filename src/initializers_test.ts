@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {tensor2d} from 'deeplearn';
+import {tensor2d} from '@tensorflow/tfjs-core';
 
 import {Distribution, FanMode, getInitializer, GlorotUniform, serializeInitializer, Zeros} from './initializers';
 import {DType} from './types';

@@ -12,7 +12,7 @@
  * TensorFlow.js Layers: Depthwise Convolutional Layers
  */
 
-import {Tensor} from 'deeplearn';
+import {Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/deeplearnjs_backend';
 import {DataFormat} from '../common';
