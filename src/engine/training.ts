@@ -640,7 +640,7 @@ export interface ModelCompileConfig {
  * // The model can be used for training, evaluation and prediction.
  * // For example, the following line runs prediction with the model on
  * // some fake data.
- * model.predict(tf.ones([2, 5])).print();
+ * (await model.predict(tf.ones([2, 5]))).print();
  * ```
  *
  * See also:
@@ -908,9 +908,9 @@ export class Model extends Container {
    *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
    * });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * model.evaluate(tf.ones([8, 10]), tf.ones([8, 1]), {
+   * (await model.evaluate(tf.ones([8, 10]), tf.ones([8, 1]), {
    *   batchSize: 4,
-   * }).print();
+   * })).print();
    * ```
    *
    * @param x `Tensor` of test data, or an `Array` of `Tensor`s if the model has
@@ -919,10 +919,10 @@ export class Model extends Container {
    *   has multiple outputs.
    * @param config A `ModelEvaluateConfig`, containing optional fields.
    *
-   * @return Scalar test loss (if the model has a single output and no
-   *   metrics) or list of scalars (if the model has multiple outputs and/or
-   *   metrics). The attribute `model.metricsNames` will give you the display
-   *   labels for the scalar outputs.
+   * @return `Scalar` test loss (if the model has a single output and no
+   *   metrics) or `Array` of `Scalar`s (if the model has multiple outputs
+   *   and/or metrics), as a `Promise`. The attribute `model.metricsNames`
+   *   will give you the display labels for the scalar outputs.
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   async evaluate(

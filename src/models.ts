@@ -416,9 +416,9 @@ export class Sequential extends Model {
    *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
    * });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * model.evaluate(tf.ones([8, 10]), tf.ones([8, 1]), {
+   * (await model.evaluate(tf.ones([8, 10]), tf.ones([8, 1]), {
    *   batchSize: 4,
-   * }).print();
+   * })).print();
    * ```
    *
    * @param x `Tensor` of test data, or an `Array` of `Tensor`s if the model has
@@ -427,10 +427,10 @@ export class Sequential extends Model {
    *   has multiple outputs.
    * @param config A `ModelEvaluateConfig`, containing optional fields.
    *
-   * @return Scalar test loss (if the model has a single output and no
-   *   metrics) or list of scalars (if the model has multiple outputs and/or
-   *   metrics), as a `Promise`. The attribute `model.metricsNames` will give
-   *   you the display labels for the scalar outputs.
+   * @return `Scalar` test loss (if the model has a single output and no
+   *   metrics) or `Array` of `Scalar`s (if the model has multiple outputs
+   *   and/or metrics), as a `Promise`. The attribute `model.metricsNames`
+   *   will give you the display labels for the scalar outputs.
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   async evaluate(
@@ -455,7 +455,7 @@ export class Sequential extends Model {
    * const model = tf.sequential({
    *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
    * });
-   * model.predict(tf.ones([8, 10]), {batchSize: 4}).print();
+   * (await model.predict(tf.ones([2, 5]))).print();
    * ```
    *
    * @param x The input data, as an Tensor, or an `Array` of `Tensor`s if
