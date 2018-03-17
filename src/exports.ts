@@ -447,9 +447,7 @@ export class LayerExports {
   })
   static rnn(config: RNNLayerConfig): RNN {
     return new RNN(config);
-    useDocsFrom: 'StackedRNNCells',
-    configParamIndices: [0]
-  })
+  }
 
   @doc({
     heading: 'Layers',
@@ -458,7 +456,7 @@ export class LayerExports {
     useDocsFrom: 'RNN',
     configParamIndices: [0]
   })
-  static stackedRNNCells(config: StackedRNNCellsConfig): StackedRNNCells {
+  static stackedRNNCells(config: StackedRNNCellsConfig): RNNCell {
     return new StackedRNNCells(config);
   }
 
