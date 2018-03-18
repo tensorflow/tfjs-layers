@@ -26,18 +26,6 @@ Option 1 is the most convenient, but leads to a larger bundle size (we will be
 adding more packages to it in the future). Use option 2 if you care about bundle
 size.
 
-```sh
-npm install @tensorflow/tfjs
-```
-
-To configure this in your `package.json`:
-
-```js
-"dependencies": {
-  "@tensorflow/tfjs": "0.1.0"
-}
-```
-
 ## Getting started
 
 ### Building, training and executing a model
