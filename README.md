@@ -1,18 +1,30 @@
-# TensorFlow.js Layers: Easy-to-Use Machine Learning in the Browser
+# TensorFlow.js Layers: High-Level Machine Learning Model API
 
-TensorFlow.js Layers is built on
-[TensorFlow.js Core](https://github.com/tensorflow/tfjs-core), enabling users to
-build, train and execute deep learning models in the browser with
-an API that is easy-to-use and at a higher level of abstraction than
-the core. TensorFlow.js Layers is largely compatible with
+A part of the TensorFlow.js ecosystem, TensorFlow.js Layers is a high-level
+API built on [TensorFlow.js Core](https://github.com/tensorflow/tfjs-core),
+enabling users to build, train and execute deep learning models in the browser.
+TensorFlow.js Layers is modeleds after
 [Keras](https://keras.io/) and
 [tf.keras](https://www.tensorflow.org/api_docs/python/tf/keras) and can
-load saved models from those libraries.
+load models saved from those libraries.
 
-## Installation
+## Importing
 
-You can access TensorFlow.js through the
-[@tensorflow/tfjs NPM package](https://www.npmjs.com/package/@tensorflow/tfjs-layers)
+There are three ways to import TensorFlow.js Layers
+
+1. You can access TensorFlow.js Layers through the union package
+   between the TensorFlow.js Core and Layers:
+   [@tensorflow/tfjs](https://www.npmjs.com/package/@tensorflow/tfjs)
+2. You can get [TensorFlow.js] Layers as a module:
+   [@tensorflow/tfjs-layers](https://www.npmjs.com/package/@tensorflow/tfjs-layers).
+   Note that `tfjs-layers` has peer dependency on core, so if you import
+   `@tensorflow/tfjs-layers`, you also need to import
+   `@tensorflow/tfjs-core`.
+3. As a standalone through [unpkg](https://unpkg.com/).
+
+Option 1 is the most convenient, but leads to a larger bundle size (we will be
+adding more packages to it in the future). Use option 2 if you care about bundle
+size.
 
 ```sh
 npm install @tensorflow/tfjs
@@ -57,12 +69,16 @@ const output = await model.predict(tf.tensor2d([[5]], [1, 1]));
 output.print();
 ```
 
-### Loading a pretrained model
+### Loading a pretrained Keras model
 
 You can also load a model previously trained and saved from elsewhere (e.g.,
 from Python Keras) and use it for inference or transfer learning in the browser.
 
-For example, in Python, save your Keras model using `tensorflowjs.converter`
+For example, in Python, save your Keras model using
+[tensorflowjs](https://pypi.org/project/tensorflowjs/),
+which can be installed using `pip install tensorflowjs`.
+
+
 ```python
 import tensorflowjs as tfjs
 
