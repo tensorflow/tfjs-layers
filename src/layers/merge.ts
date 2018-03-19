@@ -33,7 +33,7 @@ export class Merge extends Layer {
   protected reshapeRequired: boolean;
 
   constructor(config?: MergeLayerConfig) {
-    super(config);
+    super(config || {});
     this.supportsMasking = true;
   }
 
