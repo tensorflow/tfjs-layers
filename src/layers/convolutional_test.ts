@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {Tensor, tensor3d, tensor4d} from 'deeplearn';
+import {Tensor, tensor3d, tensor4d} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/deeplearnjs_backend';
 import {DataFormat, PaddingMode} from '../common';
@@ -22,8 +22,7 @@ import {SymbolicTensor} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {Conv1D, Conv2D} from './convolutional';
-
-// tslint:enable
+// tslint:enable:max-line-length
 
 describeMathCPU('Conv2D Layers: Symbolic', () => {
   const filtersArray = [1, 64];

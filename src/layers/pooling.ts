@@ -12,7 +12,7 @@
  * TensorFlow.js Layers: Pooling Layers.
  */
 
-import {Tensor} from 'deeplearn';
+import {Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/deeplearnjs_backend';
 import {DataFormat, PaddingMode, PoolMode} from '../common';
@@ -25,12 +25,13 @@ import * as generic_utils from '../utils/generic_utils';
 
 export interface Pooling1DLayerConfig extends LayerConfig {
   /**
-   * Integer size of the window to pool over.
+   * Size of the window to pool over, should be an integer.
    */
   poolSize?: number;
   /**
    * Period at which to sample the pooled values.
-   *   If None, it will default to `poolSize`.
+   *
+   * If `null`, defaults to `poolSize`.
    */
   strides?: number;
   /** PaddingMode.VALID or PaddingMode.SAME */
@@ -99,8 +100,10 @@ export abstract class Pooling1D extends Layer {
 
 /**
  * Max pooling operation for temporal data.
- *   Input shape:  `[batchSize, inLength, channels]`
- *   Output shape: `[batchSize, pooledLength, channels]`
+ *
+ * Input shape:  `[batchSize, inLength, channels]`
+ *
+ * Output shape: `[batchSize, pooledLength, channels]`
  */
 export class MaxPooling1D extends Pooling1D {
   constructor(config: Pooling1DLayerConfig) {
@@ -118,8 +121,10 @@ generic_utils.ClassNameMap.register('MaxPooling1D', MaxPooling1D);
 
 /**
  * Average pooling operation for spatial data.
- *   Input shape:  `[batchSize, inLength, channels]`
- *   Output shape: `[batchSize, pooledLength, channels]`
+ *
+ * Input shape: `[batchSize, inLength, channels]`
+ *
+ * Output shape: `[batchSize, pooledLength, channels]`
  */
 export class AvgPooling1D extends Pooling1D {
   constructor(config: Pooling1DLayerConfig) {
@@ -137,22 +142,26 @@ generic_utils.ClassNameMap.register('AvgPooling1D', AvgPooling1D);
 
 export interface Pooling2DLayerConfig extends LayerConfig {
   /**
-   * poolSize: integer or tuple of 2 integers,
-   *   factors by which to downscale [vertical, horizontal].
-   *   [2, 2] will halve the input in both spatial dimension.
-   *   If only one integer is specified, the same window length
-   *   will be used for both dimensions.
+   * Factors by which to downscale in each dimension [vertical, horizontal].
+   * Expects an integer or an array of 2 integers.
+   *
+   * For example, `[2, 2]` will halve the input in both spatial dimension.
+   * If only one integer is specified, the same window length
+   * will be used for both dimensions.
    */
   poolSize?: number|[number, number];
 
   /**
-   * strides: Integer, tuple of 2 integers, or None.
-   *   Strides values.
-   *   If None, it will default to `poolSize`.
+   * The size of the stride in each dimension of the pooling window. Expects an
+   * integer or an array of 2 integers. Integer, tuple of 2 integers, or None.
+   *
+   * If `null`, defaults to `poolSize`.
    */
   strides?: [number, number];
 
+  /** The padding type to use for the pooling layer. */
   padding?: PaddingMode;
+  /** The data format to use for the pooling layer. */
   dataFormat?: DataFormat;
 }
 
@@ -224,20 +233,22 @@ export abstract class Pooling2D extends Layer {
 
 /**
  * Max pooling operation for spatial data.
- *   Input shape
- *      - If `dataFormat === CHANNEL_LAST`:
- *          4D tensor with shape:
- *          `[batchSize, rows, cols, channels]`
- *      - If `dataFormat === CHANNEL_FIRST`:
- *         4D tensor with shape:
- *          `[batchSize, channels, rows, cols]`
- *   Output shape
- *      - If `dataFormat=CHANNEL_LAST`:
- *          4D tensor with shape:
- *          `[batchSize, pooleRows, pooledCols, channels]`
- *      - If `dataFormat=CHANNEL_FIRST`:
- *          4D tensor with shape:
- *          `[batchSize, channels, pooleRows, pooledCols]`
+ *
+ * Input shape
+ *   - If `dataFormat === CHANNEL_LAST`:
+ *       4D tensor with shape:
+ *       `[batchSize, rows, cols, channels]`
+ *   - If `dataFormat === CHANNEL_FIRST`:
+ *      4D tensor with shape:
+ *       `[batchSize, channels, rows, cols]`
+ *
+ * Output shape
+ *   - If `dataFormat=CHANNEL_LAST`:
+ *       4D tensor with shape:
+ *       `[batchSize, pooleRows, pooledCols, channels]`
+ *   - If `dataFormat=CHANNEL_FIRST`:
+ *       4D tensor with shape:
+ *       `[batchSize, channels, pooleRows, pooledCols]`
  */
 export class MaxPooling2D extends Pooling2D {
   constructor(config: Pooling2DLayerConfig) {
@@ -255,20 +266,22 @@ generic_utils.ClassNameMap.register('MaxPooling2D', MaxPooling2D);
 
 /**
  * Average pooling operation for spatial data.
- *   Input shape
- *      - If `dataFormat === CHANNEL_LAST`:
- *          4D tensor with shape:
- *          `[batchSize, rows, cols, channels]`
- *      - If `dataFormat === CHANNEL_FIRST`:
- *          4D tensor with shape:
- *          `[batchSize, channels, rows, cols]`
- *   Output shape
- *      - If `dataFormat === CHANNEL_LAST`:
- *          4D tensor with shape:
- *          `[batchSize, pooleRows, pooledCols, channels]`
- *      - If `dataFormat === CHANNEL_FIRST`:
- *          4D tensor with shape:
- *          `[batchSize, channels, pooleRows, pooledCols]`
+ *
+ * Input shape:
+ *  - If `dataFormat === CHANNEL_LAST`:
+ *      4D tensor with shape:
+ *      `[batchSize, rows, cols, channels]`
+ *  - If `dataFormat === CHANNEL_FIRST`:
+ *      4D tensor with shape:
+ *      `[batchSize, channels, rows, cols]`
+ *
+ * Output shape
+ *  - If `dataFormat === CHANNEL_LAST`:
+ *      4D tensor with shape:
+ *      `[batchSize, pooleRows, pooledCols, channels]`
+ *  - If `dataFormat === CHANNEL_FIRST`:
+ *      4D tensor with shape:
+ *      `[batchSize, channels, pooleRows, pooledCols]`
  */
 export class AvgPooling2D extends Pooling2D {
   constructor(config: Pooling2DLayerConfig) {
@@ -305,10 +318,10 @@ export abstract class GlobalPooling1D extends Layer {
 
 /**
  * Global average pooling operation for temporal data.
- * Input Shape:
- *   3D tensor with shape: `[batchSize, steps, features]`.
- * Output Shape:
- *   2D tensor with shape: `[batchSize, features]`.
+ *
+ * Input Shape: 3D tensor with shape: `[batchSize, steps, features]`.
+ *
+ * Output Shape:2D tensor with shape: `[batchSize, features]`.
  */
 export class GlobalAveragePooling1D extends GlobalPooling1D {
   constructor(config: LayerConfig) {
@@ -325,10 +338,10 @@ generic_utils.ClassNameMap.register(
 
 /**
  * Global max pooling operation for temporal data.
- * Input Shape:
- *   3D tensor with shape: `[batchSize, steps, features]`.
- * Output Shape:
- *   2D tensor with shape: `[batchSize, features]`.
+ *
+ * Input Shape: 3D tensor with shape: `[batchSize, steps, features]`.
+ *
+ * Output Shape:2D tensor with shape: `[batchSize, features]`.
  */
 export class GlobalMaxPooling1D extends GlobalPooling1D {
   constructor(config: LayerConfig) {
@@ -345,6 +358,7 @@ generic_utils.ClassNameMap.register('GlobalMaxPooling1D', GlobalMaxPooling1D);
 export interface GlobalPooling2DLayerConfig extends LayerConfig {
   /**
    * One of `CHANNEL_LAST` (default) or `CHANNEL_FIRST`.
+   *
    * The ordering of the dimensions in the inputs. `CHANNEL_LAST` corresponds
    * to inputs with shape `[batch, height, width, channels[` while
    * `CHANNEL_FIRST` corresponds to inputs with shape
@@ -391,10 +405,10 @@ export abstract class GlobalPooling2D extends Layer {
  * Global average pooling operation for spatial data.
  *
  * Input shape:
- *   If `dataFormat` is `CHANNEL_LAST`:
- *     4D tensor with shape: `[batchSize, rows, cols, channels]`.
- *   If `dataFormat` is `CHANNEL_FIRST`:
- *     4D tensor with shape: `[batchSize, channels, rows, cols]`.
+ *   - If `dataFormat` is `CHANNEL_LAST`:
+ *       4D tensor with shape: `[batchSize, rows, cols, channels]`.
+ *   - If `dataFormat` is `CHANNEL_FIRST`:
+ *       4D tensor with shape: `[batchSize, channels, rows, cols]`.
  *
  * Output shape:
  *   2D tensor with shape: `[batchSize, channels]`.
@@ -417,10 +431,10 @@ generic_utils.ClassNameMap.register(
  * Global max pooling operation for spatial data.
  *
  * Input shape:
- *   If `dataFormat` is `CHANNEL_LAST`:
- *     4D tensor with shape: `[batchSize, rows, cols, channels]`.
- *   If `dataFormat` is `CHANNEL_FIRST`:
- *     4D tensor with shape: `[batchSize, channels, rows, cols]`.
+ *   - If `dataFormat` is `CHANNEL_LAST`:
+ *       4D tensor with shape: `[batchSize, rows, cols, channels]`.
+ *   - If `dataFormat` is `CHANNEL_FIRST`:
+ *       4D tensor with shape: `[batchSize, channels, rows, cols]`.
  *
  * Output shape:
  *   2D tensor with shape: `[batchSize, channels]`.

@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, zeros} from 'deeplearn';
+import {Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, zeros} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 import * as K from '../backend/deeplearnjs_backend';
@@ -194,7 +194,19 @@ describeMathCPUAndGPU('Model.predict', () => {
     const model =
         new Model({inputs: [inputTensor], outputs: [output], name: 'model1x1'});
     const xs = K.ones([10, 3, 4]);
-    const ys = model.predict(xs, 4) as Tensor;
+    const ys = model.predict(xs, {batchSize: 4}) as Tensor;
+    expectTensorsClose(ys, K.ones([10, 2, 6]));
+  });
+
+  it('1 input, 1 output, tensor as input argument', () => {
+    const inputTensor =
+        Input({shape: [3, 4], name: 'inputLayer1', dtype: DType.float32});
+    const layer = new Reshape({targetShape: [2, 6]});
+    const output = layer.apply(inputTensor) as SymbolicTensor;
+    const model =
+        new Model({inputs: [inputTensor], outputs: [output], name: 'model1x1'});
+    const xs = K.ones([10, 3, 4]);
+    const ys = model.predict(xs) as Tensor;
     expectTensorsClose(ys, K.ones([10, 2, 6]));
   });
 
@@ -206,7 +218,7 @@ describeMathCPUAndGPU('Model.predict', () => {
     const model =
         new Model({inputs: [inputTensor], outputs: [output], name: 'model1x1'});
     const xs = K.ones([10, 3, 4]);
-    const ys = model.predict([xs], 4) as Tensor;
+    const ys = model.predict([xs], {batchSize: 4}) as Tensor;
     expectTensorsClose(ys, K.ones([10, 2, 6]));
   });
 
@@ -220,7 +232,7 @@ describeMathCPUAndGPU('Model.predict', () => {
     const model = new Model(
         {inputs: [inputTensor], outputs: [output1, output2], name: 'model1x2'});
     const xs = K.ones([10, 3, 4]);
-    const ys = model.predict(xs, 4) as Tensor[];
+    const ys = model.predict(xs, {batchSize: 4}) as Tensor[];
     expect(ys.length).toEqual(2);
     expectTensorsClose(ys[0], K.ones([10, 2, 6]));
     expectTensorsClose(ys[1], K.ones([10, 12]));
@@ -242,7 +254,7 @@ describeMathCPUAndGPU('Model.predict', () => {
     });
     const xs1 = K.ones([10, 3, 4]);
     const xs2 = K.ones([10, 3, 3]);
-    const ys = model.predict([xs1, xs2], 4) as Tensor[];
+    const ys = model.predict([xs1, xs2], {batchSize: 4}) as Tensor[];
     expect(ys.length).toEqual(2);
     expectTensorsClose(ys[0], K.ones([10, 2, 6]));
     expectTensorsClose(ys[1], K.ones([10, 9]));
@@ -256,9 +268,10 @@ describeMathCPUAndGPU('Model.predict', () => {
     const model = new Model(
         {inputs: [inputTensor], outputs: [output], name: 'model_inc_1x1'});
     const xs1 = K.ones([10, 3, 4]);
-    expect(() => {
-      model.predict([xs1, xs1]);
-    }).toThrowError(/.*Expected.*1 Tensor.*got 2 Tensor.*/);
+
+    expect(() => model.predict([
+      xs1, xs1
+    ])).toThrowError(/.*Expected.*1 Tensor.*got 2 Tensor.*/);
   });
 
   it('Incorrect number of inputs leads to exception: 2 vs 3', () => {
@@ -276,9 +289,10 @@ describeMathCPUAndGPU('Model.predict', () => {
       name: 'model_inc_2x2'
     });
     const xs1 = K.ones([10, 3, 4]);
-    expect(() => {
-      model.predict([xs1, xs1, xs1]);
-    }).toThrowError(/.*Expected.*2 Tensor.*got 3 Tensor.*/);
+
+    expect(() => model.predict([
+      xs1, xs1, xs1
+    ])).toThrowError(/.*Expected.*2 Tensor.*got 3 Tensor.*/);
   });
 
   it('Incorrect input shape leads to exception', () => {
@@ -289,9 +303,9 @@ describeMathCPUAndGPU('Model.predict', () => {
     const model = new Model(
         {inputs: [inputTensor], outputs: [output], name: 'model_inc_1x1'});
     const xs1 = K.ones([2, 4, 3]);
-    expect(() => {
-      model.predict(xs1);
-    }).toThrowError(/.*expected.* shape \[null,3,4\].*but got.*\[2,4,3\]/);
+
+    expect(() => model.predict(xs1))
+        .toThrowError(/.*expected.* shape \[null,3,4\].*but got.*\[2,4,3\]/);
   });
 });
 
@@ -371,7 +385,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 
        model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
        // Use batchSize === numSamples to get exactly one batch.
-       model.fit({x: inputs, y: targets, batchSize: numSamples, epochs: 1})
+       model.fit(inputs, targets, {batchSize: numSamples, epochs: 1})
            .then(history => {
              expect(history.epoch).toEqual([0]);
              const newWeightsValue = model.trainableWeights[0].read();
@@ -382,15 +396,36 @@ describeMathCPUAndGPU('Model.fit', () => {
              expectTensorsClose(
                  newWeightsValue, tensor2d(expectedValueArray, [inputSize, 1]));
              done();
+           })
+           .catch(err => {
+             done.fail(err.stack);
            });
      });
+
+  it('Using only x and y input arguments', async done => {
+    createDenseModelAndData();
+
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    model.fit(inputs, targets)
+        .then(history => {
+          expect(history.epoch.length).toEqual(100);
+          // 100 is the default number of epochs.
+          for (let i = 0; i < 100; ++i) {
+            expect(history.epoch[i]).toEqual(i);
+          }
+          done();
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
 
   it('1 input, 1 output, dense, 1 weight, string optimizer, 2 epochs',
      async done => {
        createDenseModelAndData();
 
        model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
-       model.fit({x: inputs, y: targets, batchSize: numSamples, epochs: 2})
+       model.fit(inputs, targets, {batchSize: numSamples, epochs: 2})
            .then(history => {
              expect(history.epoch).toEqual([0, 1]);
              done();
@@ -412,7 +447,7 @@ describeMathCPUAndGPU('Model.fit', () => {
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
     const x = K.ones([batchSize, inputSize]);
     const y = K.ones([batchSize, 1]);
-    model.fit({x, y, batchSize, epochs: 1}).then(history => {
+    model.fit(x, y, {batchSize, epochs: 1}).then(history => {
       done();
     });
   });
@@ -426,13 +461,9 @@ describeMathCPUAndGPU('Model.fit', () => {
       createDenseModelAndData();
       model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
       model
-          .fit({
-            x: inputs,
-            y: targets,
-            batchSize: numSamples,
-            epochs: 2,
-            validationSplit
-          })
+          .fit(
+              inputs, targets,
+              {batchSize: numSamples, epochs: 2, validationSplit})
           .then(history => {
             expect(history.epoch).toEqual([0, 1]);
             const losses = history.history['loss'];
@@ -470,9 +501,7 @@ describeMathCPUAndGPU('Model.fit', () => {
        createDenseModelAndData();
        model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
        model
-           .fit({
-             x: inputs,
-             y: targets,
+           .fit(inputs, targets, {
              batchSize: numSamples,
              epochs: 2,
              validationData:
@@ -497,9 +526,7 @@ describeMathCPUAndGPU('Model.fit', () => {
            {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['accuracy']});
        expect(model.metricsNames).toEqual(['loss', 'acc']);
        model
-           .fit({
-             x: inputs,
-             y: targets,
+           .fit(inputs, targets, {
              batchSize: numSamples,
              epochs: 2,
              validationSplit: 0.2,
@@ -588,13 +615,13 @@ describeMathCPUAndGPU('Model.fit', () => {
       loss: 'categoricalCrossentropy',
       metrics: ['accuracy'],
     });
-    const history = await model.fit({
-      x: K.ones([dataSize, sequenceLength, inputSize]),
-      y: K.ones([dataSize, sequenceLength, outputSize]),
-      batchSize,
-      epochs: 1,
-      validationSplit,
-    });
+    const history = await model.fit(
+        K.ones([dataSize, sequenceLength, inputSize]),
+        K.ones([dataSize, sequenceLength, outputSize]), {
+          batchSize,
+          epochs: 1,
+          validationSplit,
+        });
     expectTensorsClose(
         history.history['loss'] as number[], [1.3862943649291992]);
     expectTensorsClose(
@@ -621,13 +648,9 @@ describeMathCPUAndGPU('Model.fit', () => {
         expect(model.metricsNames).toEqual(['loss', 'acc', 'acc']);
       }
       model
-          .fit({
-            x: inputs,
-            y: targets,
-            batchSize: numSamples,
-            epochs: 2,
-            validationSplit: 0.2
-          })
+          .fit(
+              inputs, targets,
+              {batchSize: numSamples, epochs: 2, validationSplit: 0.2})
           .then(history => {
             const losses = history.history['loss'];
             expectTensorsClose(
@@ -696,13 +719,9 @@ describeMathCPUAndGPU('Model.fit', () => {
     const layer2 = layers[1];
     const optimizer = new SGDOptimizer(1e-2);
     model.compile({optimizer, loss: 'meanSquaredError'});
-    let history = await model.fit({
-      x: inputs,
-      y: targets,
-      batchSize: numSamples,
-      epochs: 2,
-      validationSplit: 0.2
-    });
+    let history = await model.fit(
+        inputs, targets,
+        {batchSize: numSamples, epochs: 2, validationSplit: 0.2});
     let losses = history.history['loss'];
     expectTensorsClose(losses as number[], [1521.0, 386.35842895507812]);
     let valLosses = history.history['val_loss'];
@@ -719,13 +738,9 @@ describeMathCPUAndGPU('Model.fit', () => {
     layer1.trainable = false;
     model.compile({optimizer, loss: 'meanSquaredError'});
 
-    history = await model.fit({
-      x: inputs,
-      y: targets,
-      batchSize: numSamples,
-      epochs: 2,
-      validationSplit: 0.2
-    });
+    history = await model.fit(
+        inputs, targets,
+        {batchSize: numSamples, epochs: 2, validationSplit: 0.2});
     losses = history.history['loss'];
     expectTensorsClose(
         losses as number[], [1808.7342529296875, 75.336509704589844]);
@@ -757,7 +772,7 @@ describeMathCPUAndGPU('Model.fit', () => {
        createDenseModelAndData(true);
 
        model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
-       model.fit({x: inputs, y: targets, batchSize: numSamples, epochs: 1})
+       model.fit(inputs, targets, {batchSize: numSamples, epochs: 1})
            .then(history => {
              expect(history.epoch).toEqual([0]);
 
@@ -783,7 +798,7 @@ describeMathCPUAndGPU('Model.fit', () => {
        const lr = 0.025;
        model.compile(
            {optimizer: new SGDOptimizer(lr), loss: 'meanSquaredError'});
-       model.fit({x: inputs, y: targets, batchSize: numSamples, epochs: 1})
+       model.fit(inputs, targets, {batchSize: numSamples, epochs: 1})
            .then(history => {
              expect(history.epoch).toEqual([0]);
              const newWeightsValue = model.trainableWeights[0].read();
@@ -808,12 +823,9 @@ describeMathCPUAndGPU('Model.fit', () => {
     let newWeightsValue1 = trainableWeights[0].read();
     let newWeightsValue2 = trainableWeights[1].read();
     twoOutputModel
-        .fit({
-          x: [inputs1, inputs2],
-          y: [targets1, targets2],
-          batchSize: numSamples,
-          epochs: 1
-        })
+        .fit(
+            [inputs1, inputs2], [targets1, targets2],
+            {batchSize: numSamples, epochs: 1})
         .then(history => {
           expect(history.epoch).toEqual([0]);
 
@@ -850,6 +862,8 @@ describeMathCPUAndGPU('Model.fit', () => {
         const epochEndEpochs: number[] = [];
         const batchBeginBatches: number[] = [];
         const batchEndBatches: number[] = [];
+        const batchEndLosses: number[] = [];
+        const epochEndLosses: number[] = [];
         const customCallbackConfig: CustomCallbackConfig = {
           onTrainBegin: async (logs?: Logs) => {
             trainBeginLogs.push(logs);
@@ -862,21 +876,21 @@ describeMathCPUAndGPU('Model.fit', () => {
           },
           onEpochEnd: async (epoch: number, logs?: Logs) => {
             epochEndEpochs.push(epoch);
+            epochEndLosses.push(logs['loss']);
           },
           onBatchBegin: async (batch: number, logs?: Logs) => {
             batchBeginBatches.push(batch);
           },
           onBatchEnd: async (batch: number, logs?: Logs) => {
             batchEndBatches.push(batch);
+            batchEndLosses.push(logs['loss']);
           }
         };
         const customCallback = isConfig ?
             customCallbackConfig :
             new CustomCallback(customCallbackConfig);
         model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-        await model.fit({
-          x: inputs,
-          y: targets,
+        await model.fit(inputs, targets, {
           batchSize: 2,
           epochs: 2,
           callbacks: isArray ? [customCallback] : customCallback,
@@ -887,10 +901,42 @@ describeMathCPUAndGPU('Model.fit', () => {
         expect(epochEndEpochs).toEqual([0, 1]);
         expect(batchBeginBatches).toEqual([0, 1, 2, 0, 1, 2]);
         expect(batchEndBatches).toEqual([0, 1, 2, 0, 1, 2]);
+
+        // The optimization problem is a convex one (a single Dense layer),
+        // the learning rate low (default 0.01 for SGD). So it should be fine to
+        // assert monotonic assert monotonic decrease in loss value.
+        expect(batchEndLosses.length).toEqual(6);
+        for (let i = 1; i < batchEndLosses.length; ++i) {
+          expect(batchEndLosses[i]).toBeLessThan(batchEndLosses[i - 1]);
+        }
+        expect(epochEndLosses.length).toEqual(2);
+        expect(epochEndLosses[1]).toBeLessThan(epochEndLosses[0]);
         done();
       });
     }
   }
+
+  // TODO(cais): Uncommment the test below once the 1-tensor leak during
+  // //   `updateVariable` is fixed.
+  // it('Repeated fit calls leads to no memory leak: no validation',
+  //    async done => {
+  //      createDenseModelAndData();
+
+  //      model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+  //      // Use batchSize === numSamples to get exactly one batch.
+  //      await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
+  //      const numTensors1 = memory().numTensors;
+  //      await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
+  //      const numTensors2 = memory().numTensors;
+  //      if (numTensors2 > numTensors1) {
+  //        done.fail(
+  //            `Memory leak detected during fit(): Leaked ` +
+  //            `${numTensors2 - numTensors1} tensor(s) after the ` +
+  //            `second fit() call.`);
+  //      } else {
+  //        done();
+  //      }
+  //    });
 
   it('Invalid dict loss: nonexistent output name', () => {
     createDenseModelAndData();
@@ -908,30 +954,10 @@ describeMathCPUAndGPU('Model.fit', () => {
     })).toThrowError(/should have one entry per model output.*has 2 output/);
   });
 
-  it('Missing x data leads to error', () => {
-    createDenseModelAndData(true);
-    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
-    const fitPromise =
-        model.fit({x: null, y: targets, batchSize: numSamples, epochs: 1});
-    fitPromise.catch(error => {
-      expect(error.message).toEqual('x data is missing from ModelFitConfig.');
-    });
-  });
-
-  it('Missing y data leads to error', () => {
-    createDenseModelAndData(true);
-    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
-    const fitPromise =
-        model.fit({x: inputs, y: null, batchSize: numSamples, epochs: 1});
-    fitPromise.catch(error => {
-      expect(error.message).toEqual('y data is missing from ModelFitConfig.');
-    });
-  });
-
   it('Calling fit without compile leads to error', () => {
     createDenseModelAndData(true);
     const fitPromise =
-        model.fit({x: inputs, y: targets, batchSize: numSamples, epochs: 1});
+        model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
     fitPromise.catch(error => {
       expect(error.message).toContain('You must compile a model before');
     });
@@ -960,6 +986,7 @@ describeMathCPUAndGPU('Model.evaluate', () => {
   it('Calling evaluate before compile leads to error', () => {
     prepModel();
     prepData();
+
     expect(() => model.evaluate(x, y))
         .toThrowError(/must compile a model before/);
   });
@@ -974,7 +1001,7 @@ describeMathCPUAndGPU('Model.evaluate', () => {
         prepModel();
         prepData();
         model.compile({optimizer: 'sgd', loss: 'meanSquaredError', metrics});
-        const losses = model.evaluate(x, y, batchSize);
+        const losses = model.evaluate(x, y, {batchSize});
         if (metrics == null) {
           expectTensorsClose(losses as Scalar, scalar(1));
         } else {

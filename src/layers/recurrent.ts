@@ -12,7 +12,7 @@
  * TensorFlow.js Layers: Recurrent Neural Network Layers.
  */
 
-import {Tensor} from 'deeplearn';
+import {doc, Tensor} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 // tslint:disable:max-line-length
@@ -28,6 +28,8 @@ import {DType, Shape, SymbolicTensor} from '../types';
 import {ConfigDict, LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
+
+import {deserialize} from './serialization';
 
 // tslint:enable:max-line-length
 
@@ -190,19 +192,21 @@ export class RNN extends Layer {
 
   constructor(config: RNNLayerConfig) {
     super(config);
+    let cell: RNNCell;
     if (config.cell == null) {
       throw new ValueError(
           'cell property is missing for the constructor of RNN.');
     } else if (Array.isArray(config.cell)) {
-      throw new NotImplementedError(
-          'StackedRNNCells has not been implemented yet.');
+      cell = new StackedRNNCells({cells: config.cell});
+    } else {
+      cell = config.cell;
     }
-    if ((config.cell as RNNCell).stateSize == null) {
+    if ((cell as RNNCell).stateSize == null) {
       throw new ValueError(
           'The RNN cell should have an attribute `stateSize` (tuple of ' +
           'integers, one integer per RNN state).');
     }
-    this.cell = config.cell;
+    this.cell = cell;
     this.returnSequences =
         config.returnSequences == null ? false : config.returnSequences;
     this.returnState = config.returnState == null ? false : config.returnState;
@@ -641,10 +645,12 @@ export class RNN extends Layer {
 generic_utils.ClassNameMap.register('RNN', RNN);
 
 /**
- * Porting Note: This is a common parent class for RNN cells. There is no
- *   equivalent of this in PyKeras. Having a common parent class forgoes the
- *   need for `has_attr(cell, ...)` checks or its TypeScript equivalent.
+ * An RNNCell layer.
  */
+// Porting Note: This is a common parent class for RNN cells. There is no
+// equivalent of this in PyKeras. Having a common parent class forgoes the
+//  need for `has_attr(cell, ...)` checks or its TypeScript equivalent.
+@doc({heading: 'Layers', subheading: 'Classes'})
 export abstract class RNNCell extends Layer {
   /**
    * Size(s) of the states.
@@ -896,15 +902,16 @@ generic_utils.ClassNameMap.register('SimpleRNNCell', SimpleRNNCell);
 
 export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   /**
-   * units: Positive integer, dimensionality of the output space.
+   * Positive integer, dimensionality of the output space.
    */
   units: number;
 
   /**
-   * Activation function to use (see [activations](../activations.md)).
-   * Default: hyperbolic tangent (`tanh`).
-   * If you pass `null`, no activation will be applied
-   * (i.e., "linear" activation: `a(x) = x`).
+   * Activation function to use.
+   *
+   * Defaults to  hyperbolic tangent (`tanh`)
+   *
+   * If you pass `null`, no activation will be applied.
    */
   activation?: ActivationIdentifier;
 
@@ -915,66 +922,59 @@ export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
 
   /**
    * Initializer for the `kernel` weights matrix, used for the linear
-   * transformation of the inputs (see [initializers](../initializers.md)).
+   * transformation of the inputs.
    */
   kernelInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the `recurrentKernel` weights matrix, used for
-   * linear transformation of the recurrent state
-   * (see [initializers](../initializers.md)).
+   * linear transformation of the recurrent state.
    */
   recurrentInitializer?: InitializerIdentifier|Initializer;
 
   /**
-   * Initializer for the bias vector (see [initializers](../initializers.md)).
+   * Initializer for the bias vector.
    */
   biasInitializer?: InitializerIdentifier|Initializer;
 
   /**
-   * Regularizer function applied to the `kernel` weights matrix
-   * (see [regularizer](../regularizers.md)).
+   * Regularizer function applied to the kernel weights matrix.
    */
   kernelRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
-   * Regularizer function applied to the `recurrent_kernel` weights matrix.
-   * (see [regularizer](../regularizers.md))
+   * Regularizer function applied to the recurrentKernel weights matrix.
    */
   recurrentRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Regularizer function applied to the bias vector.
-   * (see [regularizer](../regularizers.md))
    */
   biasRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
-   * Constraint function applied to the `kernel` weights matrix.
-   * (see [constraints](../constraints.md)).
+   * Constraint function applied to the kernel weights matrix.
    */
   kernelConstraint?: ConstraintIdentifier|Constraint;
 
   /**
-   * Constraint function applied to the `recurrentKernel` weights matrix.
-   * (see [constraints](../constraints.md)).
+   * Constraint function applied to the recurrentKernel weights matrix.
    */
   recurrentConstraint?: ConstraintIdentifier|Constraint;
 
   /**
-   * Constraintfunction applied to the bias vector.
-   * (see [constraints](../constraints.md)).
+   * Constraint function applied to the bias vector.
    */
   biasConstraint?: ConstraintIdentifier|Constraint;
 
   /**
-   * Float number between 0 and 1. Fraction of the units to drop for the linear
+   * Number between 0 and 1. Fraction of the units to drop for the linear
    * transformation of the inputs.
    */
   dropout?: number;
 
   /**
-   * Float number between 0 and 1. Fraction of the units to drop for the linear
+   * Number between 0 and 1. Fraction of the units to drop for the linear
    * transformation of the recurrent state.
    */
   recurrentDropout?: number;
@@ -1088,20 +1088,22 @@ generic_utils.ClassNameMap.register('SimpleRNN', SimpleRNN);
 export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
   /**
    * Activation function to use for the recurrent step.
-   * (see [activations](../activations.md)).
-   * Default: hard sigmoid (`hardSigomid`).
-   * If you pass `null`, no activation is applied
-   * (ie. "linear" activation: `a(x) = x`).
+   *
+   * Defaults to hard sigmoid (`hardSigomid`).
+   *
+   * If `null`, no activation is applied.
    */
   recurrentActivation?: string;
 
   /**
    * Implementation mode, either 1 or 2.
-   *   Mode 1 will structure its operations as a larger number of
-   *   smaller dot products and additions, whereas mode 2 will
-   *   batch them into fewer, larger operations. These modes will
-   *   have different performance profiles on different hardware and
-   *   for different applications.
+   *
+   * Mode 1 will structure its operations as a larger number of
+   *   smaller dot products and additions.
+   *
+   * Mode 2 will batch them into fewer, larger operations. These modes will
+   * have different performance profiles on different hardware and
+   * for different applications.
    */
   implementation?: number;
 }
@@ -1340,11 +1342,13 @@ generic_utils.ClassNameMap.register('GRUCell', GRUCell);
 export interface GRULayerConfig extends SimpleRNNLayerConfig {
   /**
    * Implementation mode, either 1 or 2.
-   *   Mode 1 will structure its operations as a larger number of
-   *   smaller dot products and additions, whereas mode 2 will
-   *   batch them into fewer, larger operations. These modes will
-   *   have different performance profiles on different hardware and
-   *   for different applications.
+   *
+   * Mode 1 will structure its operations as a larger number of
+   * smaller dot products and additions.
+   *
+   * Mode 2 will batch them into fewer, larger operations. These modes will
+   * have different performance profiles on different hardware and
+   * for different applications.
    */
   implementation?: number;
 }
@@ -1473,10 +1477,10 @@ generic_utils.ClassNameMap.register('GRU', GRU);
 export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
   /**
    * Activation function to use for the recurrent step.
-   * (see [activations](../activations.md)).
-   * Default: hard sigmoid (`hardSigomid`).
-   * If you pass `null`, no activation is applied
-   * (ie. "linear" activation: `a(x) = x`).
+   *
+   * Defaults to hard sigmoid (`hardSigomid`).
+   *
+   * If `null`, no activation is applied.
    */
   recurrentActivation?: ActivationIdentifier;
 
@@ -1491,17 +1495,19 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
 
   /**
    * Implementation mode, either 1 or 2.
-   *   Mode 1 will structure its operations as a larger number of
-   *   smaller dot products and additions, whereas mode 2 will
-   *   batch them into fewer, larger operations. These modes will
-   *   have different performance profiles on different hardware and
-   *   for different applications.
+   *
+   * Mode 1 will structure its operations as a larger number of
+   *   smaller dot products and additions.
+   *
+   * Mode 2 will batch them into fewer, larger operations. These modes will
+   * have different performance profiles on different hardware and
+   * for different applications.
    */
   implementation?: number;
 }
 
 /**
- * Cell class for the LSTM layer.
+ * LSTMCell layer.
  */
 export class LSTMCell extends RNNCell {
   readonly units: number;
@@ -1902,3 +1908,185 @@ export class LSTM extends RNN {
   }
 }
 generic_utils.ClassNameMap.register('LSTM', LSTM);
+
+export interface StackedRNNCellsConfig extends LayerConfig {
+  /**
+   * A `Array` of `RNNCell` instances.
+   */
+  cells: RNNCell[];
+}
+
+/**
+ * Wrapper allowing a stack of RNN cells to behave as a single cell.
+ *
+ * Used to implement efficient stacked RNNs.
+ */
+export class StackedRNNCells extends RNNCell {
+  protected cells: RNNCell[];
+
+  constructor(config: StackedRNNCellsConfig) {
+    super(config);
+    this.cells = config.cells;
+  }
+
+  get stateSize(): number[] {
+    // States are a flat list in reverse order of the cell stack.
+    // This allows perserving the requirement `stack.statesize[0] ===
+    // outputDim`. E.g., states of a 2-layer LSTM would be `[h2, c2, h1, c1]`,
+    // assuming one LSTM has states `[h, c]`.
+    const stateSize: number[] = [];
+    for (const cell of this.cells.slice().reverse()) {
+      if (Array.isArray(cell.stateSize)) {
+        stateSize.push(...cell.stateSize);
+      } else {
+        stateSize.push(cell.stateSize);
+      }
+    }
+    return stateSize;
+  }
+
+  // tslint:disable-next-line:no-any
+  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+    inputs = inputs as Tensor[];
+    let states = inputs.slice(1);
+
+    // Recover per-cell states.
+    const nestedStates: Tensor[][] = [];
+    for (const cell of this.cells.slice().reverse()) {
+      if (Array.isArray(cell.stateSize)) {
+        nestedStates.push(states.splice(0, cell.stateSize.length));
+      } else {
+        nestedStates.push(states.splice(0, 1));
+      }
+    }
+    nestedStates.reverse();
+
+    // Call the cells in order and store the returned states.
+    const newNestedStates: Tensor[][] = [];
+    let callInputs: Tensor[];
+    for (let i = 0; i < this.cells.length; ++i) {
+      const cell = this.cells[i];
+      states = nestedStates[i];
+      // TODO(cais): Take care of constants.
+      if (i === 0) {
+        callInputs = [inputs[0]].concat(states);
+      } else {
+        callInputs = [callInputs[0]].concat(states);
+      }
+      callInputs = cell.call(callInputs, kwargs) as Tensor[];
+      newNestedStates.push(callInputs.slice(1));
+    }
+
+    // Format the new states as a flat list in reverse cell order.
+    states = [];
+    for (const cellStates of newNestedStates.slice().reverse()) {
+      states.push(...cellStates);
+    }
+    return [callInputs[0]].concat(states);
+  }
+
+  public build(inputShape: Shape|Shape[]): void {
+    if (generic_utils.isArrayOfShapes(inputShape)) {
+      // TODO(cais): Take care of input constants.
+      // const constantShape = inputShape.slice(1);
+      inputShape = (inputShape as Shape[])[0];
+    }
+    inputShape = inputShape as Shape;
+    let outputDim: number;
+    for (const cell of this.cells) {
+      // TODO(cais): Take care of input constants.
+      cell.build(inputShape);
+      if (Array.isArray(cell.stateSize)) {
+        outputDim = cell.stateSize[0];
+      } else {
+        outputDim = cell.stateSize;
+      }
+      inputShape = [inputShape[0], outputDim];
+    }
+    this.built = true;
+  }
+
+  getConfig(): ConfigDict {
+    const cellConfigs: ConfigDict[] = [];
+    for (const cell of this.cells) {
+      cellConfigs.push({
+        'className': this.constructor.name,
+        'config': cell.getConfig(),
+      });
+    }
+    const config: ConfigDict = {'cells': cellConfigs};
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+
+  static fromConfig<T>(
+      cls: generic_utils.Constructor<T>, config: ConfigDict,
+      customObjects = {} as ConfigDict): T {
+    const cells: RNNCell[] = [];
+    for (const cellConfig of (config['cells'] as ConfigDict[])) {
+      cells.push(deserialize(cellConfig, customObjects));
+    }
+    return new cls({cells});
+  }
+
+  get trainableWeights(): LayerVariable[] {
+    if (!this.trainable) {
+      return [];
+    }
+    const weights: LayerVariable[] = [];
+    for (const cell of this.cells) {
+      weights.push(...cell.trainableWeights);
+    }
+    return weights;
+  }
+
+  get nonTrainableWeights(): LayerVariable[] {
+    const weights: LayerVariable[] = [];
+    for (const cell of this.cells) {
+      weights.push(...cell.nonTrainableWeights);
+    }
+    if (!this.trainable) {
+      const trainableWeights: LayerVariable[] = [];
+      for (const cell of this.cells) {
+        trainableWeights.push(...cell.trainableWeights);
+      }
+      return trainableWeights.concat(weights);
+    }
+    return weights;
+  }
+
+  /**
+   * Retrieve the weights of a the model.
+   *
+   * @returns A flat `Array` of `Tensor`s.
+   */
+  getWeights(): Tensor[] {
+    const weights: LayerVariable[] = [];
+    for (const cell of this.cells) {
+      weights.push(...cell.weights);
+    }
+    return K.batchGetValue(weights);
+  }
+
+  /**
+   * Set the weights of the model.
+   *
+   * @param weights An `Array` of `Tensor`s with shapes and types matching the
+   *   output of `getWeights()`.
+   */
+  setWeights(weights: Tensor[]): void {
+    const tuples: Array<[LayerVariable, Tensor]> = [];
+    for (const cell of this.cells) {
+      const numParams = cell.weights.length;
+      const inputWeights = weights.splice(numParams);
+      for (let i = 0; i < cell.weights.length; ++i) {
+        tuples.push([cell.weights[i], inputWeights[i]]);
+      }
+    }
+    K.batchSetValue(tuples);
+  }
+
+  // TODO(cais): Maybe implemnt `losses` and `getLossesFor`.
+}
+generic_utils.ClassNameMap.register('StackedRNNCells', StackedRNNCells);

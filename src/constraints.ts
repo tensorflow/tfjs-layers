@@ -11,7 +11,7 @@
 /* Original source: keras/contraints.py */
 
 // tslint:disable:max-line-length
-import {doc, Tensor} from 'deeplearn';
+import {doc, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/deeplearnjs_backend';
 import {ConfigDict, ConfigDictValue} from './types';
@@ -230,6 +230,7 @@ export class MinMaxNorm extends Constraint {
 }
 ClassNameMap.register('MinMaxNorm', MinMaxNorm);
 
+/** @docinline */
 export type ConstraintIdentifier =
     'MaxNorm'|'MinMaxNorm'|'NonNeg'|'UnitNorm'|string;
 

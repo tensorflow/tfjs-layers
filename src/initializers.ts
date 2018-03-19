@@ -9,7 +9,7 @@
  */
 
 // tslint:disable:max-line-length
-import {doc, scalar, Scalar, Tensor} from 'deeplearn';
+import {doc, scalar, Scalar, Tensor} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 import * as K from './backend/deeplearnjs_backend';
@@ -508,6 +508,7 @@ ClassNameMap.register('LeCunNormal', LeCunNormal);
 // TODO(cais): Implement Orthogonal once the deeplearn.js feature is fulfilled:
 //   https://github.com/PAIR-code/deeplearnjs/issues/245
 
+/** @docinline */
 export type InitializerIdentifier = 'Constant'|'GlorotNormal'|'GlorotUniform'|
     'HeNormal'|'Identity'|'LeCunNormal'|'Ones'|'RandomNormal'|'RandomUniform'|
     'TruncatedNormal'|'VarianceScaling'|'Zeros'|string;

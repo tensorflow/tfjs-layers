@@ -9,13 +9,14 @@
  */
 
 // Layer activation functions
-import {scalar, Tensor} from 'deeplearn';
+import {scalar, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/deeplearnjs_backend';
 import {ValueError} from './errors';
 import {ConfigDictValue} from './types';
 
 export type ActivationFn = (tensor: Tensor, axis?: number) => Tensor;
+/** @docinline */
 export type ActivationIdentifier = 'elu'|'hardsigmoid'|'linear'|'relu'|'relu6'|
     'selu'|'sigmoid'|'softmax'|'softplus'|'softsign'|'tanh'|string;
 

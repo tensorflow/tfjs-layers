@@ -11,7 +11,7 @@
 /* original source: keras/regularizers.py */
 
 // tslint:disable:max-line-length
-import {doc, Scalar, Tensor, zeros} from 'deeplearn';
+import {doc, Scalar, Tensor, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/deeplearnjs_backend';
 import {LayerVariable} from './types';
@@ -114,7 +114,7 @@ export function l2(config: L2Config) {
   return new L1L2({l2: config != null ? config.l2 : null, l1: 0});
 }
 
-
+/** @docinline */
 export type RegularizerIdentifier = 'L1L2'|string;
 
 export function serializeRegularizer(constraint: Regularizer): ConfigDictValue {
