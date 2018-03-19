@@ -95,12 +95,12 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
           const x = tensor4d(x4by4Data, [1, 1, 4, 4]);
           const conv2dLayer = new DepthwiseConv2D({
             kernelSize: [2, 2],
-            depthMultiplier: depthMultiplier,
+            depthMultiplier,
             strides: [2, 2],
             dataFormat: 'channelFirst',
-            useBias: useBias,
+            useBias,
             depthwiseInitializer: 'Ones',
-            biasInitializer: biasInitializer,
+            biasInitializer,
             activation: 'relu',
           });
           const y = conv2dLayer.apply(x) as Tensor;
