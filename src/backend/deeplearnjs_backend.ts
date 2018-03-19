@@ -17,7 +17,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, tensor2d, Tensor3D, Tensor4D, variableGrads} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
-import {DataFormat, nameScope as commonNameScope, PaddingMode, PoolMode} from '../common';
+import {checkDataFormat, DataFormat, nameScope as commonNameScope, PaddingMode, PoolMode} from '../common';
 import {Constraint} from '../constraints';
 import {NotImplementedError, ValueError} from '../errors';
 import {ConcreteTensor, DType, LayerVariable, RnnStepFunction, Shape, SymbolicTensor, TensorInterface} from '../types';
@@ -1158,6 +1158,7 @@ export function batchNormalization(
  */
 export function biasAdd(
     x: Tensor, bias: Tensor, dataFormat?: DataFormat): Tensor {
+  checkDataFormat(dataFormat);
   if (ndim(bias) !== 1 && ndim(bias) !== ndim(x)) {
     throw new ValueError(
         'Unexpected bias dimensions: ' + ndim(bias) +
@@ -1292,6 +1293,7 @@ export function l2Normalize(x: Tensor, axis?: number): Tensor {
  */
 function preprocessConv2DInput(x: Tensor, dataFormat: DataFormat): Tensor {
   // TODO(cais): Cast type to float32 if not.
+  checkDataFormat(dataFormat);
   if (dataFormat === 'channelFirst') {
     return tfc.transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
   } else {
@@ -1322,6 +1324,7 @@ export function conv1dWithBias(
   if (dataFormat == null) {
     dataFormat = imageDataFormat();
   }
+  checkDataFormat(dataFormat);
   if (dilationRate !== 1) {
     throw new NotImplementedError(
         `dilationRate = ${dilationRate} is not implemented for 1D ` +
@@ -1379,6 +1382,7 @@ export function conv1dWithBias(
 export function conv1d(
     x: Tensor, kernel: Tensor, strides = 1, padding = PaddingMode.VALID,
     dataFormat?: DataFormat, dilationRate = 1): Tensor {
+  checkDataFormat(dataFormat);
   return conv1dWithBias(
       x, kernel, null, strides, padding, dataFormat, dilationRate);
 }
@@ -1396,6 +1400,7 @@ export function conv1d(
 export function conv2d(
     x: Tensor, kernel: Tensor, strides = [1, 1], padding = PaddingMode.VALID,
     dataFormat?: DataFormat, dilationRate?: [number, number]): Tensor {
+  checkDataFormat(dataFormat);
   return conv2dWithBias(
       x, kernel, null, strides, padding, dataFormat, dilationRate);
 }
@@ -1412,6 +1417,7 @@ export function conv2dWithBias(
   if (dataFormat == null) {
     dataFormat = imageDataFormat();
   }
+  checkDataFormat(dataFormat);
   if (dilationRate != null) {
     throw new NotImplementedError(
         'Support for non-default dilation rate is not implemented yet.');
@@ -1463,6 +1469,7 @@ export function depthwiseConv2d(
   if (dataFormat == null) {
     dataFormat = imageDataFormat();
   }
+  checkDataFormat(dataFormat);
   let y = preprocessConv2DInput(x, dataFormat);
   if (ndim(x) !== 4) {
     throw new ValueError(
@@ -1497,6 +1504,7 @@ export function pool2d(
     x: Tensor, poolSize: [number, number], strides?: [number, number],
     padding?: PaddingMode, dataFormat?: DataFormat,
     poolMode?: PoolMode): Tensor {
+  checkDataFormat(dataFormat);
   if (strides == null) {
     strides = [1, 1];
   }

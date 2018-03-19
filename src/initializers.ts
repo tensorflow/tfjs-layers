@@ -13,7 +13,7 @@ import {doc, scalar, Scalar, Tensor} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 import * as K from './backend/deeplearnjs_backend';
-import {DataFormat} from './common';
+import {checkDataFormat, DataFormat} from './common';
 import {ValueError} from './errors';
 import {DType, Shape} from './types';
 import {ConfigDict, ConfigDictValue} from './types';
@@ -284,6 +284,7 @@ function computeFans(
     shape: Shape, dataFormat: DataFormat = 'channelLast'): number[] {
   let fanIn: number;
   let fanOut: number;
+  checkDataFormat(dataFormat);
   if (shape.length === 2) {
     fanIn = shape[0];
     fanOut = shape[1];
@@ -296,8 +297,6 @@ function computeFans(
       const receptiveFieldSize = arrayProd(shape, 0, shape.length - 2);
       fanIn = shape[shape.length - 2] * receptiveFieldSize;
       fanOut = shape[shape.length - 1] * receptiveFieldSize;
-    } else {
-      throw new ValueError(`Invalid dataFormat: ${dataFormat}`);
     }
   } else {
     const shapeProd = arrayProd(shape);

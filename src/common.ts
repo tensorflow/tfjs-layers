@@ -11,6 +11,7 @@
 /**
  * Common functions for TensorFlow.js Layers.
  */
+import {ValueError} from './errors';
 import {SerializableEnumRegistry} from './utils/generic_utils';
 
 const nameMap: Map<string, number> = new Map<string, number>();
@@ -21,6 +22,18 @@ export type DataFormat = 'channelFirst'|'channelLast';
 SerializableEnumRegistry.register(
     'data_format',
     {'channels_first': 'channelFirst', 'channels_last': 'channelLast'});
+
+export function checkDataFormat(value?: DataFormat): void {
+  if (value === undefined) {
+    return;
+  }
+  const valid = ['channelFirst', 'channelLast'];
+  if (valid.indexOf(value) < 0) {
+    throw new ValueError(
+        `${value} is not a valid DataFormat.  Valid values as ${valid}`);
+  }
+}
+
 
 export enum PaddingMode {
   VALID,
