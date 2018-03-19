@@ -185,7 +185,7 @@ export interface DenseLayerConfig extends LayerConfig {
  *
  * `kernel` is a weights matrix created by the layer.
  *
- *  `bias` is a bias vector created by the layer (only applicable if `useBias`
+ * `bias` is a bias vector created by the layer (only applicable if `useBias`
  * is `true`).
  *
  * **Input shape:**
