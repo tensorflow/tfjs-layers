@@ -645,10 +645,11 @@ export class RNN extends Layer {
 generic_utils.ClassNameMap.register('RNN', RNN);
 
 /**
- * Porting Note: This is a common parent class for RNN cells. There is no
- *   equivalent of this in PyKeras. Having a common parent class forgoes the
- *   need for `has_attr(cell, ...)` checks or its TypeScript equivalent.
+ * An RNNCell layer.
  */
+// Porting Note: This is a common parent class for RNN cells. There is no
+// equivalent of this in PyKeras. Having a common parent class forgoes the
+//  need for `has_attr(cell, ...)` checks or its TypeScript equivalent.
 @doc({heading: 'Layers', subheading: 'Classes'})
 export abstract class RNNCell extends Layer {
   /**
@@ -1093,20 +1094,22 @@ generic_utils.ClassNameMap.register('SimpleRNN', SimpleRNN);
 export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
   /**
    * Activation function to use for the recurrent step.
-   * (see [activations](../activations.md)).
-   * Default: hard sigmoid (`hardSigomid`).
-   * If you pass `null`, no activation is applied
-   * (ie. "linear" activation: `a(x) = x`).
+   *
+   * Defaults to hard sigmoid (`hardSigomid`).
+   *
+   * If `null`, no activation is applied.
    */
   recurrentActivation?: string;
 
   /**
    * Implementation mode, either 1 or 2.
-   *   Mode 1 will structure its operations as a larger number of
-   *   smaller dot products and additions, whereas mode 2 will
-   *   batch them into fewer, larger operations. These modes will
-   *   have different performance profiles on different hardware and
-   *   for different applications.
+   *
+   * Mode 1 will structure its operations as a larger number of
+   *   smaller dot products and additions.
+   *
+   * Mode 2 will batch them into fewer, larger operations. These modes will
+   * have different performance profiles on different hardware and
+   * for different applications.
    */
   implementation?: number;
 }
@@ -1345,11 +1348,13 @@ generic_utils.ClassNameMap.register('GRUCell', GRUCell);
 export interface GRULayerConfig extends SimpleRNNLayerConfig {
   /**
    * Implementation mode, either 1 or 2.
-   *   Mode 1 will structure its operations as a larger number of
-   *   smaller dot products and additions, whereas mode 2 will
-   *   batch them into fewer, larger operations. These modes will
-   *   have different performance profiles on different hardware and
-   *   for different applications.
+   *
+   * Mode 1 will structure its operations as a larger number of
+   * smaller dot products and additions.
+   *
+   * Mode 2 will batch them into fewer, larger operations. These modes will
+   * have different performance profiles on different hardware and
+   * for different applications.
    */
   implementation?: number;
 }
@@ -1478,10 +1483,10 @@ generic_utils.ClassNameMap.register('GRU', GRU);
 export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
   /**
    * Activation function to use for the recurrent step.
-   * (see [activations](../activations.md)).
-   * Default: hard sigmoid (`hardSigomid`).
-   * If you pass `null`, no activation is applied
-   * (ie. "linear" activation: `a(x) = x`).
+   *
+   * Defaults to hard sigmoid (`hardSigomid`).
+   *
+   * If `null`, no activation is applied.
    */
   recurrentActivation?: ActivationIdentifier;
 
@@ -1496,17 +1501,19 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
 
   /**
    * Implementation mode, either 1 or 2.
-   *   Mode 1 will structure its operations as a larger number of
-   *   smaller dot products and additions, whereas mode 2 will
-   *   batch them into fewer, larger operations. These modes will
-   *   have different performance profiles on different hardware and
-   *   for different applications.
+   *
+   * Mode 1 will structure its operations as a larger number of
+   *   smaller dot products and additions.
+   *
+   * Mode 2 will batch them into fewer, larger operations. These modes will
+   * have different performance profiles on different hardware and
+   * for different applications.
    */
   implementation?: number;
 }
 
 /**
- * Cell class for the LSTM layer.
+ * LSTMCell layer.
  */
 export class LSTMCell extends RNNCell {
   readonly units: number;
