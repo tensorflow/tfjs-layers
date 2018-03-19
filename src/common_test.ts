@@ -12,7 +12,36 @@
  * Unit tests for common.ts.
  */
 
-import {isValidTensorName} from './common';
+import {checkDataFormat, isValidTensorName, VALID_DATA_FORMAT_VALUES} from './common';
+
+describe('checkDataForamt', () => {
+  it('Valid values', () => {
+    for (const validValue of VALID_DATA_FORMAT_VALUES) {
+      // Using implicit "expect().toNotThrow()" for valid values
+      checkDataFormat(validValue);
+    }
+  });
+  it('Invalid values', () => {
+    // Test invalid values are rejected, and reported in the error.
+    expect(function() {
+      checkDataFormat('foo')
+    }).toThrowError(/foo/);
+    expect(function() {
+      checkDataFormat(null)
+    }).toThrowError(/null/);
+    try {
+      checkDataFormat('bad');
+    } catch (e) {
+      // Test that the error message contains the list of valid values.
+      for (const validValue of VALID_DATA_FORMAT_VALUES) {
+        if (validValue === undefined) {
+          continue;
+        }
+        expect(e).toMatch(validValue);
+      }
+    }
+  });
+});
 
 describe('isValidTensorName', () => {
   it('Valid tensor names', () => {
