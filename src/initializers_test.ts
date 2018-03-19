@@ -321,15 +321,12 @@ describe('checkFanMode', () => {
     expect(function() {
       checkFanMode('foo')
     }).toThrowError(/foo/);
-    expect(function() {
-      checkFanMode(null)
-    }).toThrowError(/null/);
     try {
       checkFanMode('bad');
     } catch (e) {
       // Test that the error message contains the list of valid values.
       for (const validValue of VALID_FAN_MODE_VALUES) {
-        if (validValue === undefined) {
+        if (validValue == null) {
           continue;
         }
         expect(e).toMatch(validValue);
@@ -350,15 +347,12 @@ describe('checkDistribution', () => {
     expect(function() {
       checkDistribution('foo')
     }).toThrowError(/foo/);
-    expect(function() {
-      checkDistribution(null)
-    }).toThrowError(/null/);
     try {
       checkDistribution('bad');
     } catch (e) {
       // Test that the error message contains the list of valid values.
       for (const validValue of VALID_DISTRIBUTION_VALUES) {
-        if (validValue === undefined) {
+        if (validValue == null) {
           continue;
         }
         expect(e).toMatch(validValue);

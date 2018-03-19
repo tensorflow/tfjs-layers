@@ -26,15 +26,12 @@ describe('checkDataFormat', () => {
     expect(function() {
       checkDataFormat('foo')
     }).toThrowError(/foo/);
-    expect(function() {
-      checkDataFormat(null)
-    }).toThrowError(/null/);
     try {
       checkDataFormat('bad');
     } catch (e) {
       // Test that the error message contains the list of valid values.
       for (const validValue of VALID_DATA_FORMAT_VALUES) {
-        if (validValue === undefined) {
+        if (validValue == null) {
           continue;
         }
         expect(e).toMatch(validValue);
@@ -55,15 +52,12 @@ describe('checkPaddingMode', () => {
     expect(function() {
       checkPaddingMode('foo')
     }).toThrowError(/foo/);
-    expect(function() {
-      checkPaddingMode(null)
-    }).toThrowError(/null/);
     try {
       checkPaddingMode('bad');
     } catch (e) {
       // Test that the error message contains the list of valid values.
       for (const validValue of VALID_PADDING_MODE_VALUES) {
-        if (validValue === undefined) {
+        if (validValue == null) {
           continue;
         }
         expect(e).toMatch(validValue);
@@ -84,15 +78,12 @@ describe('checkPoolMode', () => {
     expect(function() {
       checkPoolMode('foo')
     }).toThrowError(/foo/);
-    expect(function() {
-      checkPoolMode(null)
-    }).toThrowError(/null/);
     try {
       checkPoolMode('bad');
     } catch (e) {
       // Test that the error message contains the list of valid values.
       for (const validValue of VALID_POOL_MODE_VALUES) {
-        if (validValue === undefined) {
+        if (validValue == null) {
           continue;
         }
         expect(e).toMatch(validValue);

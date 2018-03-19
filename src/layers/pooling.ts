@@ -34,7 +34,7 @@ export interface Pooling1DLayerConfig extends LayerConfig {
    * If `null`, defaults to `poolSize`.
    */
   strides?: number;
-  /** 'valid' or 'same' */
+  /** How to fill in data that's not an integer multiple of poolSize. */
   padding?: PaddingMode;
 }
 

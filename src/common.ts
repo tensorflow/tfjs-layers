@@ -18,6 +18,7 @@ const nameMap: Map<string, number> = new Map<string, number>();
 
 // TODO(cais): Perhaps move the enums to a more suitable place, e.g.,
 //   constants.ts.
+/** @docinline */
 export type DataFormat = 'channelFirst'|'channelLast';
 SerializableEnumRegistry.register(
     'data_format',
@@ -25,9 +26,9 @@ SerializableEnumRegistry.register(
 // TODO(nielsene): Unify the registry with the valid constant list for
 // less repetition.
 export const VALID_DATA_FORMAT_VALUES =
-    ['channelFirst', 'channelLast', undefined];
+    ['channelFirst', 'channelLast', undefined, null];
 export function checkDataFormat(value?: string): void {
-  if (value === undefined) {
+  if (value == null) {
     return;
   }
   if (VALID_DATA_FORMAT_VALUES.indexOf(value) < 0) {
@@ -37,13 +38,14 @@ export function checkDataFormat(value?: string): void {
   }
 }
 
-
+/** @docinline */
 export type PaddingMode = 'valid'|'same'|'casual';
 SerializableEnumRegistry.register(
     'padding', {'valid': 'valid', 'same': 'same', 'casual': 'casual'});
-export const VALID_PADDING_MODE_VALUES = ['valid', 'same', 'casual', undefined];
+export const VALID_PADDING_MODE_VALUES =
+    ['valid', 'same', 'casual', undefined, null];
 export function checkPaddingMode(value?: string): void {
-  if (value === undefined) {
+  if (value == null) {
     return;
   }
   if (VALID_PADDING_MODE_VALUES.indexOf(value) < 0) {
@@ -53,10 +55,11 @@ export function checkPaddingMode(value?: string): void {
   }
 }
 
+/** @docinline */
 export type PoolMode = 'max'|'avg';
-export const VALID_POOL_MODE_VALUES = ['max', 'avg', undefined];
+export const VALID_POOL_MODE_VALUES = ['max', 'avg', undefined, null];
 export function checkPoolMode(value?: string): void {
-  if (value === undefined) {
+  if (value == null) {
     return;
   }
   if (VALID_POOL_MODE_VALUES.indexOf(value) < 0) {

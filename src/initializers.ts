@@ -22,12 +22,14 @@ import {arrayProd} from './utils/math_utils';
 
 // tslint:enable:max-line-length
 
+/** @docinline */
 export type FanMode = 'fanIn'|'fanOut'|'fanAvg';
 SerializableEnumRegistry.register(
     'mode', {'fan_in': 'fanIn', 'fan_out': 'fanOut', 'fan_avg': 'fanAvg'});
-export const VALID_FAN_MODE_VALUES = ['fanIn', 'fanOut', 'fanAvg', undefined];
+export const VALID_FAN_MODE_VALUES =
+    ['fanIn', 'fanOut', 'fanAvg', undefined, null];
 export function checkFanMode(value?: string): void {
-  if (value === undefined) {
+  if (value == null) {
     return;
   }
   if (VALID_FAN_MODE_VALUES.indexOf(value) < 0) {
@@ -36,12 +38,13 @@ export function checkFanMode(value?: string): void {
   }
 }
 
+/** @docinline */
 export type Distribution = 'normal'|'uniform';
 SerializableEnumRegistry.register(
     'distribution', {'normal': 'normal', 'uniform': 'uniform'});
-export const VALID_DISTRIBUTION_VALUES = ['normal', 'uniform', undefined];
+export const VALID_DISTRIBUTION_VALUES = ['normal', 'uniform', undefined, null];
 export function checkDistribution(value?: string): void {
-  if (value === undefined) {
+  if (value == null) {
     return;
   }
   if (VALID_DISTRIBUTION_VALUES.indexOf(value) < 0) {
