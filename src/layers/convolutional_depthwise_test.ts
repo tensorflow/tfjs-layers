@@ -26,7 +26,7 @@ import {DepthwiseConv2D} from './convolutional_depthwise';
 // tslint:enable:max-line-length
 
 describeMathCPU('DepthwiseConv2D-Symbolic', () => {
-  const dataFormats = [DataFormat.CHANNEL_FIRST, DataFormat.CHANNEL_LAST];
+  const dataFormats: DataFormat[] = ['channelFirst', 'channelLast'];
   const kernelSizes: [number|[number, number]] = [2, [2, 2]];
   const depthMultipliers = [1, 3];
   const paddingModes = [PaddingMode.VALID, PaddingMode.SAME];
@@ -35,16 +35,15 @@ describeMathCPU('DepthwiseConv2D-Symbolic', () => {
     for (const kernelSize of kernelSizes) {
       for (const depthMultiplier of depthMultipliers) {
         for (const padding of paddingModes) {
-          const testTitle = `dataFormat=${DataFormat[dataFormat]}, ` +
+          const testTitle = `dataFormat=${dataFormat}, ` +
               `kernelSize=${JSON.stringify(kernelSize)}, ` +
               `depthMultiplier=${depthMultiplier}, ` +
               `paddingMode=${PaddingMode[padding]}`;
           it(testTitle, () => {
             const depthwiseConvLayer = new DepthwiseConv2D(
                 {dataFormat, kernelSize, depthMultiplier, padding});
-            const inputShape = dataFormat === DataFormat.CHANNEL_FIRST ?
-                [1, 8, 10, 10] :
-                [1, 10, 10, 8];
+            const inputShape =
+                dataFormat === 'channelFirst' ? [1, 8, 10, 10] : [1, 10, 10, 8];
             const symbolicInput =
                 new SymbolicTensor(DType.float32, inputShape, null, [], null);
             const symbolicOutput =
@@ -52,7 +51,7 @@ describeMathCPU('DepthwiseConv2D-Symbolic', () => {
 
             const outputImageSize = padding === PaddingMode.VALID ? 9 : 10;
             let expectedShape: [number, number, number, number];
-            if (dataFormat === DataFormat.CHANNEL_FIRST) {
+            if (dataFormat === 'channelFirst') {
               expectedShape =
                   [1, 8 * depthMultiplier, outputImageSize, outputImageSize];
             } else {
@@ -99,7 +98,7 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
             kernelSize: [2, 2],
             depthMultiplier,
             strides: [2, 2],
-            dataFormat: DataFormat.CHANNEL_FIRST,
+            dataFormat: 'channelFirst',
             useBias,
             depthwiseInitializer: 'Ones',
             biasInitializer,
@@ -136,7 +135,7 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
       depthMultiplier: 2,
       kernelSize: [2, 2],
       strides: [2, 2],
-      dataFormat: DataFormat.CHANNEL_LAST,
+      dataFormat: 'channelLast',
       useBias: false,
       depthwiseInitializer: 'Ones',
       activation: 'linear',

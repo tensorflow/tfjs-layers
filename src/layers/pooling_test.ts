@@ -144,7 +144,7 @@ describe('Pooling Layers 2D: Symbolic', () => {
   const poolSizes = [2, 3];
   const poolModes = [PoolMode.AVG, PoolMode.MAX];
   const paddingModes = [undefined, PaddingMode.VALID, PaddingMode.SAME];
-  const dataFormats = [DataFormat.CHANNEL_FIRST, DataFormat.CHANNEL_LAST];
+  const dataFormats: DataFormat[] = ['channelFirst', 'channelLast'];
   const poolSizeIsNumberValues = [false, true];
 
   for (const poolMode of poolModes) {
@@ -153,11 +153,11 @@ describe('Pooling Layers 2D: Symbolic', () => {
         for (const poolSize of poolSizes) {
           for (const poolSizeIsNumber of poolSizeIsNumberValues) {
             const testTitle = `poolSize=${poolSize}, ` +
-                `${DataFormat[dataFormat]}, ${PaddingMode[paddingMode]}, ` +
+                `${dataFormat}, ${PaddingMode[paddingMode]}, ` +
                 `${PoolMode[poolMode]}, ` +
                 `poollSizeIsNumber=${poolSizeIsNumber}`;
             it(testTitle, () => {
-              const inputShape = dataFormat === DataFormat.CHANNEL_FIRST ?
+              const inputShape = dataFormat === 'channelFirst' ?
                   [2, 16, 11, 9] :
                   [2, 11, 9, 16];
               const symbolicInput =
@@ -184,7 +184,7 @@ describe('Pooling Layers 2D: Symbolic', () => {
               }
 
               let expectedShape: [number, number, number, number];
-              if (dataFormat === DataFormat.CHANNEL_FIRST) {
+              if (dataFormat === 'channelFirst') {
                 expectedShape = [2, 16, outputRows, outputCols];
               } else {
                 expectedShape = [2, outputRows, outputCols, 16];
@@ -229,7 +229,7 @@ describeMathCPUAndGPU('Pooling Layers 2D: Tensor', () => {
               poolSize: [2, 2],
               strides: [stride, stride],
               padding: PaddingMode.VALID,
-              dataFormat: DataFormat.CHANNEL_FIRST,
+              dataFormat: 'channelFirst',
             });
 
             const output = poolingLayer.apply(x4by4) as Tensor;
@@ -316,12 +316,11 @@ describeMathCPUAndGPU('1D Global Pooling Layers: Tensor', () => {
 
 describe('2D Global pooling Layers: Symbolic', () => {
   const globalPoolingLayers = [GlobalAveragePooling2D, GlobalMaxPooling2D];
-  const dataFormats = [DataFormat.CHANNEL_FIRST, DataFormat.CHANNEL_LAST];
+  const dataFormats: DataFormat[] = ['channelFirst', 'channelLast'];
 
   for (const globalPoolingLayer of globalPoolingLayers) {
     for (const dataFormat of dataFormats) {
-      const testTitle =
-          `layer=${globalPoolingLayer.name}, ${DataFormat[dataFormat]}`;
+      const testTitle = `layer=${globalPoolingLayer.name}, ${dataFormat}`;
       it(testTitle, () => {
         const inputShape = [2, 16, 11, 9];
         const symbolicInput =
@@ -330,8 +329,7 @@ describe('2D Global pooling Layers: Symbolic', () => {
         const layer = new globalPoolingLayer({dataFormat});
         const output = layer.apply(symbolicInput) as SymbolicTensor;
 
-        const expectedShape =
-            dataFormat === DataFormat.CHANNEL_LAST ? [2, 9] : [2, 16];
+        const expectedShape = dataFormat === 'channelLast' ? [2, 9] : [2, 16];
         expect(output.shape).toEqual(expectedShape);
         expect(output.dtype).toEqual(symbolicInput.dtype);
       });
@@ -344,13 +342,13 @@ describeMathCPUAndGPU('2D Global Pooling Layers: Tensor', () => {
     [[[4, -1], [0, -2]], [[40, -10], [0, -20]]],
     [[[4, -1], [0, -2]], [[40, -10], [0, -20]]]
   ];
-  const dataFormats = [DataFormat.CHANNEL_FIRST, DataFormat.CHANNEL_LAST];
+  const dataFormats: DataFormat[] = ['channelFirst', 'channelLast'];
 
   const globalPoolingLayers = [GlobalAveragePooling2D, GlobalMaxPooling2D];
   for (const globalPoolingLayer of globalPoolingLayers) {
     for (const dataFormat of dataFormats) {
-      const testTitle = `globalPoolingLayer=${globalPoolingLayer.name}, ${
-          DataFormat[dataFormat]}`;
+      const testTitle =
+          `globalPoolingLayer=${globalPoolingLayer.name}, ${dataFormat}`;
       it(testTitle, () => {
         const x = tensor4d(x4DimData, [2, 2, 2, 2]);
         const layer = new globalPoolingLayer({dataFormat});
@@ -358,13 +356,13 @@ describeMathCPUAndGPU('2D Global Pooling Layers: Tensor', () => {
 
         let expectedOutput: Tensor2D;
         if (globalPoolingLayer === GlobalAveragePooling2D) {
-          if (dataFormat === DataFormat.CHANNEL_FIRST) {
+          if (dataFormat === 'channelFirst') {
             expectedOutput = tensor2d([[0.25, 2.5], [0.25, 2.5]], [2, 2]);
           } else {
             expectedOutput = tensor2d([[11, -8.25], [11, -8.25]], [2, 2]);
           }
         } else {
-          if (dataFormat === DataFormat.CHANNEL_FIRST) {
+          if (dataFormat === 'channelFirst') {
             expectedOutput = tensor2d([[4, 40], [4, 40]], [2, 2]);
           } else {
             expectedOutput = tensor2d([[40, -1], [40, -1]], [2, 2]);

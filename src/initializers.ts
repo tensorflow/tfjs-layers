@@ -281,18 +281,18 @@ ClassNameMap.register('Identity', Identity);
  * @return An length-2 array: fanIn, fanOut.
  */
 function computeFans(
-    shape: Shape, dataFormat = DataFormat.CHANNEL_LAST): number[] {
+    shape: Shape, dataFormat: DataFormat = 'channelLast'): number[] {
   let fanIn: number;
   let fanOut: number;
   if (shape.length === 2) {
     fanIn = shape[0];
     fanOut = shape[1];
   } else if (_.contains([3, 4, 5], shape.length)) {
-    if (dataFormat === DataFormat.CHANNEL_FIRST) {
+    if (dataFormat === 'channelFirst') {
       const receptiveFieldSize = arrayProd(shape, 2);
       fanIn = shape[1] * receptiveFieldSize;
       fanOut = shape[0] * receptiveFieldSize;
-    } else if (dataFormat === DataFormat.CHANNEL_LAST) {
+    } else if (dataFormat === 'channelLast') {
       const receptiveFieldSize = arrayProd(shape, 0, shape.length - 2);
       fanIn = shape[shape.length - 2] * receptiveFieldSize;
       fanOut = shape[shape.length - 1] * receptiveFieldSize;

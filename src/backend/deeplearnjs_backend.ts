@@ -1292,7 +1292,7 @@ export function l2Normalize(x: Tensor, axis?: number): Tensor {
  */
 function preprocessConv2DInput(x: Tensor, dataFormat: DataFormat): Tensor {
   // TODO(cais): Cast type to float32 if not.
-  if (dataFormat === DataFormat.CHANNEL_FIRST) {
+  if (dataFormat === 'channelFirst') {
     return tfc.transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
   } else {
     return x;
@@ -1347,7 +1347,7 @@ export function conv1dWithBias(
 
   // TODO(cais): Support CASUAL padding mode.
 
-  if (dataFormat === DataFormat.CHANNEL_FIRST) {
+  if (dataFormat === 'channelFirst') {
     x = transpose(x, [0, 2, 1]);  // NCW -> NWC.
   }
   if (padding === PaddingMode.CASUAL) {
@@ -1389,7 +1389,7 @@ export function conv1d(
  * @param kernel kernel of the convolution.
  * @param strides strides array.
  * @param padding padding mode. Default to PaddingMode.VALID.
- * @param dataFormat data format. Defaults to DataFormat.CHANNEL_LAST.
+ * @param dataFormat data format. Defaults to 'channelLast'.
  * @param dilationRate dilation rate array.
  * @returns Result of the 2D pooling.
  */
@@ -1438,7 +1438,7 @@ export function conv2dWithBias(
   if (bias != null) {
     y = biasAdd(y, bias as Tensor1D);
   }
-  if (dataFormat === DataFormat.CHANNEL_FIRST) {
+  if (dataFormat === 'channelFirst') {
     y = tfc.transpose(y, [0, 3, 1, 2]);
   }
   return y;
@@ -1477,7 +1477,7 @@ export function depthwiseConv2d(
   y = tfc.depthwiseConv2d(
       y as Tensor4D, depthwiseKernel as Tensor4D, strides,
       padding === PaddingMode.SAME ? 'same' : 'valid', dilationRate);
-  if (dataFormat === DataFormat.CHANNEL_FIRST) {
+  if (dataFormat === 'channelFirst') {
     y = tfc.transpose(y, [0, 3, 1, 2]);
   }
   return y;
@@ -1489,7 +1489,7 @@ export function depthwiseConv2d(
  * @param poolSize
  * @param stridesdes strides. Defaults to [1, 1].
  * @param padding padding. Defaults to PaddingMode.VALID.
- * @param dataFormat data format. Defaults to DataFormat.CHANNEL_LAST.
+ * @param dataFormat data format. Defaults to 'channelLast'.
  * @param poolMode Mode of pooling. Defaults to PoolMode.MAX.
  * @returns Result of the 2D pooling.
  */
@@ -1525,7 +1525,7 @@ export function pool2d(
         // TODO(cais): Rank check?
         x as Tensor3D | Tensor4D, poolSize, strides, paddingString);
   }
-  if (dataFormat === DataFormat.CHANNEL_FIRST) {
+  if (dataFormat === 'channelFirst') {
     y = tfc.transpose(y, [0, 3, 1, 2]);  // NHWC -> NCHW.
   }
   return y;

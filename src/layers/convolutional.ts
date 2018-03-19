@@ -169,7 +169,7 @@ export abstract class Conv extends Layer {
         config.strides == null ? 1 : config.strides, rank, 'strides');
     this.padding = config.padding == null ? PaddingMode.VALID : config.padding;
     this.dataFormat =
-        config.dataFormat == null ? DataFormat.CHANNEL_LAST : config.dataFormat;
+        config.dataFormat == null ? 'channelLast' : config.dataFormat;
 
     this.dilationRate = config.dilationRate == null ? 1 : config.dilationRate;
     if (!(this.dilationRate === 1 ||
@@ -194,9 +194,8 @@ export abstract class Conv extends Layer {
 
   build(inputShape: Shape|Shape[]): void {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
-    const channelAxis = this.dataFormat === DataFormat.CHANNEL_FIRST ?
-        1 :
-        inputShape.length - 1;
+    const channelAxis =
+        this.dataFormat === 'channelFirst' ? 1 : inputShape.length - 1;
     if (inputShape[channelAxis] == null) {
       throw new ValueError(
           `The channel dimension of the input should be defined. ` +
@@ -245,7 +244,7 @@ export abstract class Conv extends Layer {
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
     const newSpace: number[] = [];
-    const space = (this.dataFormat === DataFormat.CHANNEL_LAST) ?
+    const space = (this.dataFormat === 'channelLast') ?
         inputShape.slice(1, inputShape.length - 1) :
         inputShape.slice(2);
     for (let i = 0; i < space.length; ++i) {
@@ -257,7 +256,7 @@ export abstract class Conv extends Layer {
     }
 
     let outputShape = [inputShape[0]];
-    if (this.dataFormat === DataFormat.CHANNEL_LAST) {
+    if (this.dataFormat === 'channelLast') {
       outputShape = outputShape.concat(newSpace);
       outputShape.push(this.filters);
     } else {
@@ -307,7 +306,7 @@ export abstract class Conv extends Layer {
  * provide the keyword argument `inputShape`
  * (Array of integers, does not include the sample axis),
  * e.g. `inputShape=[128, 128, 3]` for 128x128 RGB pictures
- * in `dataFormat=DataFormat.CHANNEL_LAST`.
+ * in `dataFormat='channelLast'`.
  */
 export class Conv2D extends Conv {
   constructor(config: ConvLayerConfig) {
