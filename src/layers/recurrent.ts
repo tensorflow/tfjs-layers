@@ -902,15 +902,16 @@ generic_utils.ClassNameMap.register('SimpleRNNCell', SimpleRNNCell);
 
 export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   /**
-   * units: Positive integer, dimensionality of the output space.
+   * Positive integer, dimensionality of the output space.
    */
   units: number;
 
   /**
-   * Activation function to use (see [activations](../activations.md)).
-   * Default: hyperbolic tangent (`tanh`).
-   * If you pass `null`, no activation will be applied
-   * (i.e., "linear" activation: `a(x) = x`).
+   * Activation function to use.
+   *
+   * Defaults to  hyperbolic tangent (`tanh`)
+   *
+   * If you pass `null`, no activation will be applied.
    */
   activation?: ActivationIdentifier;
 
@@ -921,66 +922,59 @@ export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
 
   /**
    * Initializer for the `kernel` weights matrix, used for the linear
-   * transformation of the inputs (see [initializers](../initializers.md)).
+   * transformation of the inputs.
    */
   kernelInitializer?: InitializerIdentifier|Initializer;
 
   /**
    * Initializer for the `recurrentKernel` weights matrix, used for
-   * linear transformation of the recurrent state
-   * (see [initializers](../initializers.md)).
+   * linear transformation of the recurrent state.
    */
   recurrentInitializer?: InitializerIdentifier|Initializer;
 
   /**
-   * Initializer for the bias vector (see [initializers](../initializers.md)).
+   * Initializer for the bias vector.
    */
   biasInitializer?: InitializerIdentifier|Initializer;
 
   /**
-   * Regularizer function applied to the `kernel` weights matrix
-   * (see [regularizer](../regularizers.md)).
+   * Regularizer function applied to the kernel weights matrix.
    */
   kernelRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
-   * Regularizer function applied to the `recurrent_kernel` weights matrix.
-   * (see [regularizer](../regularizers.md))
+   * Regularizer function applied to the recurrentKernel weights matrix.
    */
   recurrentRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
    * Regularizer function applied to the bias vector.
-   * (see [regularizer](../regularizers.md))
    */
   biasRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
-   * Constraint function applied to the `kernel` weights matrix.
-   * (see [constraints](../constraints.md)).
+   * Constraint function applied to the kernel weights matrix.
    */
   kernelConstraint?: ConstraintIdentifier|Constraint;
 
   /**
-   * Constraint function applied to the `recurrentKernel` weights matrix.
-   * (see [constraints](../constraints.md)).
+   * Constraint function applied to the recurrentKernel weights matrix.
    */
   recurrentConstraint?: ConstraintIdentifier|Constraint;
 
   /**
-   * Constraintfunction applied to the bias vector.
-   * (see [constraints](../constraints.md)).
+   * Constraint function applied to the bias vector.
    */
   biasConstraint?: ConstraintIdentifier|Constraint;
 
   /**
-   * Float number between 0 and 1. Fraction of the units to drop for the linear
+   * Number between 0 and 1. Fraction of the units to drop for the linear
    * transformation of the inputs.
    */
   dropout?: number;
 
   /**
-   * Float number between 0 and 1. Fraction of the units to drop for the linear
+   * Number between 0 and 1. Fraction of the units to drop for the linear
    * transformation of the recurrent state.
    */
   recurrentDropout?: number;
