@@ -330,7 +330,7 @@ describeMathCPUAndGPU('Sequential', () => {
         .toThrowError(/needs to be compiled before/);
   });
 
-  it('compile() and evaluate()', async done => {
+  it('compile() and evaluate()', () => {
     const batchSize = 5;
     const inputSize = 4;
     const xs = K.ones([batchSize, inputSize]);
@@ -347,7 +347,6 @@ describeMathCPUAndGPU('Sequential', () => {
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     const losses = model.evaluate(xs, ys, {batchSize}) as Scalar;
     expectTensorsClose(losses, scalar(121));
-    done();
   });
 });
 
