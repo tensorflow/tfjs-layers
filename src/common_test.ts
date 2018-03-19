@@ -12,7 +12,7 @@
  * Unit tests for common.ts.
  */
 
-import {checkDataFormat, checkPaddingMode, isValidTensorName, VALID_DATA_FORMAT_VALUES, VALID_PADDING_MODE_VALUES} from './common';
+import {checkDataFormat, checkPaddingMode, checkPoolMode, isValidTensorName, VALID_DATA_FORMAT_VALUES, VALID_PADDING_MODE_VALUES, VALID_POOL_MODE_VALUES} from './common';
 
 describe('checkDataFormat', () => {
   it('Valid values', () => {
@@ -63,6 +63,35 @@ describe('checkPaddingMode', () => {
     } catch (e) {
       // Test that the error message contains the list of valid values.
       for (const validValue of VALID_PADDING_MODE_VALUES) {
+        if (validValue === undefined) {
+          continue;
+        }
+        expect(e).toMatch(validValue);
+      }
+    }
+  });
+});
+
+describe('checkPoolMode', () => {
+  it('Valid values', () => {
+    for (const validValue of VALID_POOL_MODE_VALUES) {
+      // Using implicit "expect().toNotThrow()" for valid values
+      checkPoolMode(validValue);
+    }
+  });
+  it('Invalid values', () => {
+    // Test invalid values are rejected, and reported in the error.
+    expect(function() {
+      checkPoolMode('foo')
+    }).toThrowError(/foo/);
+    expect(function() {
+      checkPoolMode(null)
+    }).toThrowError(/null/);
+    try {
+      checkPoolMode('bad');
+    } catch (e) {
+      // Test that the error message contains the list of valid values.
+      for (const validValue of VALID_POOL_MODE_VALUES) {
         if (validValue === undefined) {
           continue;
         }

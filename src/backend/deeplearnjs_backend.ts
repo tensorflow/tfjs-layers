@@ -17,7 +17,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, tensor2d, Tensor3D, Tensor4D, variableGrads} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
-import {checkDataFormat, DataFormat, nameScope as commonNameScope, PaddingMode, PoolMode} from '../common';
+import {checkDataFormat, checkPaddingMode, checkPoolMode, DataFormat, nameScope as commonNameScope, PaddingMode, PoolMode} from '../common';
 import {Constraint} from '../constraints';
 import {NotImplementedError, ValueError} from '../errors';
 import {ConcreteTensor, DType, LayerVariable, RnnStepFunction, Shape, SymbolicTensor, TensorInterface} from '../types';
@@ -1496,7 +1496,7 @@ export function depthwiseConv2d(
  * @param stridesdes strides. Defaults to [1, 1].
  * @param padding padding. Defaults to 'valid'.
  * @param dataFormat data format. Defaults to 'channelLast'.
- * @param poolMode Mode of pooling. Defaults to PoolMode.MAX.
+ * @param poolMode Mode of pooling. Defaults to 'max'.
  * @returns Result of the 2D pooling.
  */
 export function pool2d(
@@ -1504,6 +1504,8 @@ export function pool2d(
     padding?: PaddingMode, dataFormat?: DataFormat,
     poolMode?: PoolMode): Tensor {
   checkDataFormat(dataFormat);
+  checkPoolMode(poolMode);
+  checkPaddingMode(padding);
   if (strides == null) {
     strides = [1, 1];
   }
@@ -1514,7 +1516,7 @@ export function pool2d(
     dataFormat = imageDataFormat();
   }
   if (poolMode == null) {
-    poolMode = PoolMode.MAX;
+    poolMode = 'max';
   }
 
   // TODO(cais): Remove the preprocessing step once deeplearn.js supports
@@ -1522,10 +1524,10 @@ export function pool2d(
   x = preprocessConv2DInput(x, dataFormat);  // x is NHWC after preprocessing.
   let y: Tensor;
   const paddingString = (padding === 'same') ? 'same' : 'valid';
-  if (poolMode === PoolMode.MAX) {
+  if (poolMode === 'max') {
     // TODO(cais): Rank check?
     y = tfc.maxPool(x as Tensor4D, poolSize, strides, paddingString);
-  } else {  // PoolMode.AVG
+  } else {  // 'avg'
     // TODO(cais): Check the dtype and rank of x and give clear error message
     //   if those are incorrect.
     y = tfc.avgPool(
