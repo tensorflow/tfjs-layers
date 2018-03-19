@@ -23,7 +23,7 @@ import {Conv1D, Conv2D, ConvLayerConfig} from './layers/convolutional';
 import {DepthwiseConv2D, DepthwiseConv2DLayerConfig} from './layers/convolutional_depthwise';
 import {Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, DropoutLayerConfig, Flatten, RepeatVector, RepeatVectorLayerConfig} from './layers/core';
 import {Embedding, EmbeddingLayerConfig} from './layers/embeddings';
-import {Add, Average, Concatenate, ConcatenateLayerConfig, Maximum, MergeLayerConfig, Minimum, Multiply} from './layers/merge';
+import {Add, Average, Concatenate, ConcatenateLayerConfig, Maximum, Minimum, Multiply} from './layers/merge';
 import {BatchNormalization, BatchNormalizationLayerConfig} from './layers/normalization';
 import {AvgPooling1D, AvgPooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerConfig, MaxPooling1D, MaxPooling2D, Pooling1DLayerConfig, Pooling2DLayerConfig} from './layers/pooling';
 import {GRU, GRUCell, GRUCellLayerConfig, GRULayerConfig, LSTM, LSTMCell, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNCell, RNNLayerConfig, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig, StackedRNNCells, StackedRNNCellsConfig} from './layers/recurrent';
@@ -92,6 +92,9 @@ export class ModelExports {
 }
 
 export class LayerExports {
+  static Layer = Layer;
+  static RNNCell = RNNCell;
+
   // TODO(cais): Add doc string to all the public static functions in this
   //   class; include exectuable JavaScript code snippets where applicable
   //   (b/74074458).
@@ -209,7 +212,7 @@ export class LayerExports {
     useDocsFrom: 'Add',
     configParamIndices: [0]
   })
-  static add(config: MergeLayerConfig): Layer {
+  static add(config: LayerConfig): Layer {
     return new Add(config);
   }
 
@@ -220,7 +223,7 @@ export class LayerExports {
     useDocsFrom: 'Average',
     configParamIndices: [0]
   })
-  static average(config: MergeLayerConfig): Layer {
+  static average(config: LayerConfig): Layer {
     return new Average(config);
   }
 
@@ -242,7 +245,7 @@ export class LayerExports {
     useDocsFrom: 'Maximum',
     configParamIndices: [0]
   })
-  static maximum(config: MergeLayerConfig): Layer {
+  static maximum(config: LayerConfig): Layer {
     return new Maximum(config);
   }
 
@@ -253,7 +256,7 @@ export class LayerExports {
     useDocsFrom: 'Minimum',
     configParamIndices: [0]
   })
-  static minimum(config: MergeLayerConfig): Layer {
+  static minimum(config: LayerConfig): Layer {
     return new Minimum(config);
   }
 
@@ -264,7 +267,7 @@ export class LayerExports {
     useDocsFrom: 'Multiply',
     configParamIndices: [0]
   })
-  static multiply(config: MergeLayerConfig): Layer {
+  static multiply(config: LayerConfig): Layer {
     return new Multiply(config);
   }
 
