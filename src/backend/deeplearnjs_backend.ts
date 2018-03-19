@@ -1318,9 +1318,8 @@ function preprocessConv2DInput(x: Tensor, dataFormat: DataFormat): Tensor {
  * @throws ValueError, if `x`, `kernel` or `bias` is not of the correct rank.
  */
 export function conv1dWithBias(
-    x: Tensor, kernel: Tensor, bias: Tensor, strides = 1,
-    padding = PaddingMode.VALID, dataFormat?: DataFormat,
-    dilationRate = 1): Tensor {
+    x: Tensor, kernel: Tensor, bias: Tensor, strides = 1, padding = 'valid',
+    dataFormat?: DataFormat, dilationRate = 1): Tensor {
   if (dataFormat == null) {
     dataFormat = imageDataFormat();
   }
@@ -1353,14 +1352,14 @@ export function conv1dWithBias(
   if (dataFormat === 'channelFirst') {
     x = transpose(x, [0, 2, 1]);  // NCW -> NWC.
   }
-  if (padding === PaddingMode.CASUAL) {
+  if (padding === 'casual') {
     throw new NotImplementedError(
         'The support for CASUAL padding mode in conv1dWithBias is not ' +
         'implemented yet.');
   }
   let y: Tensor = tfc.conv1d(
       x as Tensor2D | Tensor3D, kernel as Tensor3D, strides,
-      padding === PaddingMode.SAME ? 'same' : 'valid');
+      padding === 'same' ? 'same' : 'valid');
   if (bias != null) {
     y = biasAdd(y, bias);
   }
@@ -1380,7 +1379,7 @@ export function conv1dWithBias(
  * @throws ValueError, if `x`, `kernel` or `bias` is not of the correct rank.
  */
 export function conv1d(
-    x: Tensor, kernel: Tensor, strides = 1, padding = PaddingMode.VALID,
+    x: Tensor, kernel: Tensor, strides = 1, padding = 'valid',
     dataFormat?: DataFormat, dilationRate = 1): Tensor {
   checkDataFormat(dataFormat);
   return conv1dWithBias(
@@ -1392,13 +1391,13 @@ export function conv1d(
  * @param x
  * @param kernel kernel of the convolution.
  * @param strides strides array.
- * @param padding padding mode. Default to PaddingMode.VALID.
+ * @param padding padding mode. Default to 'valid'.
  * @param dataFormat data format. Defaults to 'channelLast'.
  * @param dilationRate dilation rate array.
  * @returns Result of the 2D pooling.
  */
 export function conv2d(
-    x: Tensor, kernel: Tensor, strides = [1, 1], padding = PaddingMode.VALID,
+    x: Tensor, kernel: Tensor, strides = [1, 1], padding = 'valid',
     dataFormat?: DataFormat, dilationRate?: [number, number]): Tensor {
   checkDataFormat(dataFormat);
   return conv2dWithBias(
@@ -1412,7 +1411,7 @@ export function conv2d(
  */
 export function conv2dWithBias(
     x: Tensor, kernel: Tensor, bias: Tensor, strides = [1, 1],
-    padding = PaddingMode.VALID, dataFormat?: DataFormat,
+    padding = 'valid', dataFormat?: DataFormat,
     dilationRate?: [number, number]): Tensor {
   if (dataFormat == null) {
     dataFormat = imageDataFormat();
@@ -1433,14 +1432,14 @@ export function conv2dWithBias(
         `${ndim(x)}.`);
   }
   let y = preprocessConv2DInput(x, dataFormat);
-  if (padding === PaddingMode.CASUAL) {
+  if (padding === 'casual') {
     throw new NotImplementedError(
         'The support for CASUAL padding mode in conv1dWithBias is not ' +
         'implemented yet.');
   }
   y = tfc.conv2d(
       y as Tensor3D | Tensor4D, kernel as Tensor4D, strides as [number, number],
-      padding === PaddingMode.SAME ? 'same' : 'valid');
+      padding === 'same' ? 'same' : 'valid');
   if (bias != null) {
     y = biasAdd(y, bias as Tensor1D);
   }
@@ -1464,7 +1463,7 @@ export function conv2dWithBias(
  */
 export function depthwiseConv2d(
     x: Tensor, depthwiseKernel: Tensor, strides: [number, number] = [1, 1],
-    padding = PaddingMode.VALID, dataFormat?: DataFormat,
+    padding = 'valid', dataFormat?: DataFormat,
     dilationRate?: [number, number]): Tensor {
   if (dataFormat == null) {
     dataFormat = imageDataFormat();
@@ -1483,7 +1482,7 @@ export function depthwiseConv2d(
   }
   y = tfc.depthwiseConv2d(
       y as Tensor4D, depthwiseKernel as Tensor4D, strides,
-      padding === PaddingMode.SAME ? 'same' : 'valid', dilationRate);
+      padding === 'same' ? 'same' : 'valid', dilationRate);
   if (dataFormat === 'channelFirst') {
     y = tfc.transpose(y, [0, 3, 1, 2]);
   }
@@ -1495,7 +1494,7 @@ export function depthwiseConv2d(
  * @param x
  * @param poolSize
  * @param stridesdes strides. Defaults to [1, 1].
- * @param padding padding. Defaults to PaddingMode.VALID.
+ * @param padding padding. Defaults to 'valid'.
  * @param dataFormat data format. Defaults to 'channelLast'.
  * @param poolMode Mode of pooling. Defaults to PoolMode.MAX.
  * @returns Result of the 2D pooling.
@@ -1509,7 +1508,7 @@ export function pool2d(
     strides = [1, 1];
   }
   if (padding == null) {
-    padding = PaddingMode.VALID;
+    padding = 'valid';
   }
   if (dataFormat == null) {
     dataFormat = imageDataFormat();
@@ -1522,7 +1521,7 @@ export function pool2d(
   // dataFormat as an input argument.
   x = preprocessConv2DInput(x, dataFormat);  // x is NHWC after preprocessing.
   let y: Tensor;
-  const paddingString = (padding === PaddingMode.SAME) ? 'same' : 'valid';
+  const paddingString = (padding === 'same') ? 'same' : 'valid';
   if (poolMode === PoolMode.MAX) {
     // TODO(cais): Rank check?
     y = tfc.maxPool(x as Tensor4D, poolSize, strides, paddingString);

@@ -12,9 +12,9 @@
  * Unit tests for common.ts.
  */
 
-import {checkDataFormat, isValidTensorName, VALID_DATA_FORMAT_VALUES} from './common';
+import {checkDataFormat, checkPaddingMode, isValidTensorName, VALID_DATA_FORMAT_VALUES, VALID_PADDING_MODE_VALUES} from './common';
 
-describe('checkDataForamt', () => {
+describe('checkDataFormat', () => {
   it('Valid values', () => {
     for (const validValue of VALID_DATA_FORMAT_VALUES) {
       // Using implicit "expect().toNotThrow()" for valid values
@@ -42,6 +42,36 @@ describe('checkDataForamt', () => {
     }
   });
 });
+
+describe('checkPaddingMode', () => {
+  it('Valid values', () => {
+    for (const validValue of VALID_PADDING_MODE_VALUES) {
+      // Using implicit "expect().toNotThrow()" for valid values
+      checkPaddingMode(validValue);
+    }
+  });
+  it('Invalid values', () => {
+    // Test invalid values are rejected, and reported in the error.
+    expect(function() {
+      checkPaddingMode('foo')
+    }).toThrowError(/foo/);
+    expect(function() {
+      checkPaddingMode(null)
+    }).toThrowError(/null/);
+    try {
+      checkPaddingMode('bad');
+    } catch (e) {
+      // Test that the error message contains the list of valid values.
+      for (const validValue of VALID_PADDING_MODE_VALUES) {
+        if (validValue === undefined) {
+          continue;
+        }
+        expect(e).toMatch(validValue);
+      }
+    }
+  });
+});
+
 
 describe('isValidTensorName', () => {
   it('Valid tensor names', () => {

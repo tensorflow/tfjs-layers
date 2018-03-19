@@ -29,7 +29,7 @@ describeMathCPU('DepthwiseConv2D-Symbolic', () => {
   const dataFormats: DataFormat[] = ['channelFirst', 'channelLast'];
   const kernelSizes: [number|[number, number]] = [2, [2, 2]];
   const depthMultipliers = [1, 3];
-  const paddingModes = [PaddingMode.VALID, PaddingMode.SAME];
+  const paddingModes: PaddingMode[] = ['valid', 'same'];
 
   for (const dataFormat of dataFormats) {
     for (const kernelSize of kernelSizes) {
@@ -38,7 +38,7 @@ describeMathCPU('DepthwiseConv2D-Symbolic', () => {
           const testTitle = `dataFormat=${dataFormat}, ` +
               `kernelSize=${JSON.stringify(kernelSize)}, ` +
               `depthMultiplier=${depthMultiplier}, ` +
-              `paddingMode=${PaddingMode[padding]}`;
+              `paddingMode=${padding}`;
           it(testTitle, () => {
             const depthwiseConvLayer = new DepthwiseConv2D(
                 {dataFormat, kernelSize, depthMultiplier, padding});
@@ -49,7 +49,7 @@ describeMathCPU('DepthwiseConv2D-Symbolic', () => {
             const symbolicOutput =
                 depthwiseConvLayer.apply(symbolicInput) as SymbolicTensor;
 
-            const outputImageSize = padding === PaddingMode.VALID ? 9 : 10;
+            const outputImageSize = padding === 'valid' ? 9 : 10;
             let expectedShape: [number, number, number, number];
             if (dataFormat === 'channelFirst') {
               expectedShape =
