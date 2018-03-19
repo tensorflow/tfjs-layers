@@ -18,7 +18,7 @@ import * as _ from 'underscore';
 // tslint:disable:max-line-length
 import {ActivationFn, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/deeplearnjs_backend';
-import {DataFormat, PaddingMode} from '../common';
+import {checkDataFormat, DataFormat, PaddingMode} from '../common';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
@@ -174,6 +174,7 @@ export abstract class Conv extends Layer {
     this.padding = config.padding == null ? PaddingMode.VALID : config.padding;
     this.dataFormat =
         config.dataFormat == null ? 'channelLast' : config.dataFormat;
+    checkDataFormat(this.dataFormat);
 
     this.dilationRate = config.dilationRate == null ? 1 : config.dilationRate;
     if (!(this.dilationRate === 1 ||
