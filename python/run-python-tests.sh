@@ -29,7 +29,6 @@ TEST_FILES=tensorflowjs/${TEST_FILES_GLOB}
 
 export PYTHONPATH=".:${PYTHONPATH}"
 for TEST_FILE in ${TEST_FILES}; do
-  #  BASE_FILE_NAME="$(realpath --relative-to="scripts" ${TEST_FILE})"
   echo "Running test: ${TEST_FILE}"
   python "${TEST_FILE}"
 done
