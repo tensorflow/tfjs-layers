@@ -22,15 +22,18 @@ export type DataFormat = 'channelFirst'|'channelLast';
 SerializableEnumRegistry.register(
     'data_format',
     {'channels_first': 'channelFirst', 'channels_last': 'channelLast'});
-
-export function checkDataFormat(value?: DataFormat): void {
+// TODO(nielsene): Unify the registry with the valid constant list for
+// less repetition.
+export const VALID_DATA_FORMAT_VALUES =
+    ['channelFirst', 'channelLast', undefined];
+export function checkDataFormat(value?: string): void {
   if (value === undefined) {
     return;
   }
-  const valid = ['channelFirst', 'channelLast'];
-  if (valid.indexOf(value) < 0) {
+  if (VALID_DATA_FORMAT_VALUES.indexOf(value) < 0) {
     throw new ValueError(
-        `${value} is not a valid DataFormat.  Valid values as ${valid}`);
+        `${value} is not a valid DataFormat.  Valid values as ${
+            VALID_DATA_FORMAT_VALUES}`);
   }
 }
 
