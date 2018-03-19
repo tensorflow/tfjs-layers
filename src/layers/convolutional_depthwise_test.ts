@@ -88,20 +88,19 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
   for (const depthMultiplier of depthMultipliers) {
     for (const useBias of useBiases) {
       for (const biasInitializer of biasInitializers) {
-        const testTitle =
-            `CHANNEL_FIRST, depthMultiplier=${depthMultiplier}, ` +
+        const testTitle = `channelFirst, depthMultiplier=${depthMultiplier}, ` +
             `useBias=${useBias}, biasInitializer=${biasInitializer}, ` +
             `activation=relu`;
         it(testTitle, () => {
           const x = tensor4d(x4by4Data, [1, 1, 4, 4]);
           const conv2dLayer = new DepthwiseConv2D({
             kernelSize: [2, 2],
-            depthMultiplier,
+            depthMultiplier: depthMultiplier,
             strides: [2, 2],
             dataFormat: 'channelFirst',
-            useBias,
+            useBias: useBias,
             depthwiseInitializer: 'Ones',
-            biasInitializer,
+            biasInitializer: biasInitializer,
             activation: 'relu',
           });
           const y = conv2dLayer.apply(x) as Tensor;
@@ -128,8 +127,8 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
     }
   }
 
-  it('CHANNEL_LAST', () => {
-    // Convert input to CHANNEL_LAST.
+  it('channelLast', () => {
+    // Convert input to channelLast.
     const x = K.transpose(tensor4d(x4by4Data, [1, 1, 4, 4]), [0, 2, 3, 1]);
     const conv2dLayer = new DepthwiseConv2D({
       depthMultiplier: 2,
