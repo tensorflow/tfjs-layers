@@ -82,7 +82,7 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
   ]]];
 
   const depthMultipliers = [1, 2];
-  const useBiases = [false, true];
+  const useBiases = [false];
   const biasInitializers = ['Zeros', 'Ones'];
 
   for (const depthMultiplier of depthMultipliers) {
