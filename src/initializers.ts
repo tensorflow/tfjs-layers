@@ -22,24 +22,34 @@ import {arrayProd} from './utils/math_utils';
 
 // tslint:enable:max-line-length
 
-export enum FanMode {
-  FAN_IN,
-  FAN_OUT,
-  FAN_AVG,
-}
-SerializableEnumRegistry.register('mode', {
-  'fan_in': FanMode.FAN_IN,
-  'fan_out': FanMode.FAN_OUT,
-  'fan_avg': FanMode.FAN_AVG
-});
-
-export enum Distribution {
-  NORMAL,
-  UNIFORM,
-}
+export type FanMode = 'fanIn'|'fanOut'|'fanAvg';
 SerializableEnumRegistry.register(
-    'distribution',
-    {'normal': Distribution.NORMAL, 'uniform': Distribution.UNIFORM});
+    'mode', {'fan_in': 'fanIn', 'fan_out': 'fanOut', 'fan_avg': 'fanAvg'});
+export const VALID_FAN_MODE_VALUES = ['fanIn', 'fanOut', 'fanAvg', undefined];
+export function checkFanMode(value?: string): void {
+  if (value === undefined) {
+    return;
+  }
+  if (VALID_FAN_MODE_VALUES.indexOf(value) < 0) {
+    throw new ValueError(`${value} is not a valid FanMode.  Valid values as ${
+        VALID_FAN_MODE_VALUES}`);
+  }
+}
+
+export type Distribution = 'normal'|'uniform';
+SerializableEnumRegistry.register(
+    'distribution', {'normal': 'normal', 'uniform': 'uniform'});
+export const VALID_DISTRIBUTION_VALUES = ['normal', 'uniform', undefined];
+export function checkDistribution(value?: string): void {
+  if (value === undefined) {
+    return;
+  }
+  if (VALID_DISTRIBUTION_VALUES.indexOf(value) < 0) {
+    throw new ValueError(
+        `${value} is not a valid Distribution.  Valid values as ${
+            VALID_DISTRIBUTION_VALUES}`);
+  }
+}
 
 /**
  * Initializer base class.
@@ -352,7 +362,9 @@ export class VarianceScaling extends Initializer {
     }
     this.scale = config.scale == null ? 1.0 : config.scale;
     this.mode = config.mode;
+    checkFanMode(this.mode);
     this.distribution = config.distribution;
+    checkDistribution(this.distribution);
     this.seed = config.seed;
   }
 
@@ -362,15 +374,15 @@ export class VarianceScaling extends Initializer {
     const fanOut = fans[1];
 
     let scale = this.scale;
-    if (this.mode === FanMode.FAN_IN) {
+    if (this.mode === 'fanIn') {
       scale /= Math.max(1, fanIn);
-    } else if (this.mode === FanMode.FAN_OUT) {
+    } else if (this.mode === 'fanOut') {
       scale /= Math.max(1, fanOut);
     } else {
       scale /= Math.max(1, (fanIn + fanOut) / 2);
     }
 
-    if (this.distribution === Distribution.NORMAL) {
+    if (this.distribution === 'normal') {
       const stddev = Math.sqrt(scale);
       return K.truncatedNormal(shape, 0, stddev, dtype, this.seed);
     } else {
@@ -418,8 +430,8 @@ export class GlorotUniform extends VarianceScaling {
   constructor(config?: SeedOnlyInitializerConfig) {
     super({
       scale: 1.0,
-      mode: FanMode.FAN_AVG,
-      distribution: Distribution.UNIFORM,
+      mode: 'fanAvg',
+      distribution: 'uniform',
       seed: config.seed
     });
   }
@@ -449,8 +461,8 @@ export class GlorotNormal extends VarianceScaling {
   constructor(config?: SeedOnlyInitializerConfig) {
     super({
       scale: 1.0,
-      mode: FanMode.FAN_AVG,
-      distribution: Distribution.NORMAL,
+      mode: 'fanAvg',
+      distribution: 'normal',
       seed: config.seed
     });
   }
@@ -470,12 +482,8 @@ ClassNameMap.register('GlorotNormal', GlorotNormal);
  */
 export class HeNormal extends VarianceScaling {
   constructor(config?: SeedOnlyInitializerConfig) {
-    super({
-      scale: 2.0,
-      mode: FanMode.FAN_IN,
-      distribution: Distribution.NORMAL,
-      seed: config.seed
-    });
+    super(
+        {scale: 2.0, mode: 'fanIn', distribution: 'normal', seed: config.seed});
   }
 }
 ClassNameMap.register('HeNormal', HeNormal);
@@ -494,12 +502,8 @@ ClassNameMap.register('HeNormal', HeNormal);
  */
 export class LeCunNormal extends VarianceScaling {
   constructor(config?: SeedOnlyInitializerConfig) {
-    super({
-      scale: 1.0,
-      mode: FanMode.FAN_IN,
-      distribution: Distribution.NORMAL,
-      seed: config.seed
-    });
+    super(
+        {scale: 1.0, mode: 'fanIn', distribution: 'normal', seed: config.seed});
   }
 }
 ClassNameMap.register('LeCunNormal', LeCunNormal);
