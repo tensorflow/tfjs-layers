@@ -15,7 +15,7 @@
 import {Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/deeplearnjs_backend';
-import {checkDataFormat, checkPaddingMode, DataFormat, PaddingMode, PoolMode} from '../common';
+import {checkDataFormat, checkPaddingMode, DataFormat, PaddingMode} from '../common';
 import {InputSpec} from '../engine/topology';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError} from '../errors';
@@ -116,8 +116,7 @@ export class MaxPooling1D extends Pooling1D {
       padding: PaddingMode, dataFormat: DataFormat): Tensor {
     checkDataFormat(dataFormat);
     checkPaddingMode(padding);
-    return K.pool2d(
-        inputs, poolSize, strides, padding, dataFormat, PoolMode.MAX);
+    return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
 generic_utils.ClassNameMap.register('MaxPooling1D', MaxPooling1D);
@@ -139,8 +138,7 @@ export class AvgPooling1D extends Pooling1D {
       padding: PaddingMode, dataFormat: DataFormat): Tensor {
     checkDataFormat(dataFormat);
     checkPaddingMode(padding);
-    return K.pool2d(
-        inputs, poolSize, strides, padding, dataFormat, PoolMode.AVG);
+    return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
 generic_utils.ClassNameMap.register('AvgPooling1D', AvgPooling1D);
@@ -268,8 +266,7 @@ export class MaxPooling2D extends Pooling2D {
       padding: PaddingMode, dataFormat: DataFormat): Tensor {
     checkDataFormat(dataFormat);
     checkPaddingMode(padding);
-    return K.pool2d(
-        inputs, poolSize, strides, padding, dataFormat, PoolMode.MAX);
+    return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
 generic_utils.ClassNameMap.register('MaxPooling2D', MaxPooling2D);
@@ -303,8 +300,7 @@ export class AvgPooling2D extends Pooling2D {
       padding: PaddingMode, dataFormat: DataFormat): Tensor {
     checkDataFormat(dataFormat);
     checkPaddingMode(padding);
-    return K.pool2d(
-        inputs, poolSize, strides, padding, dataFormat, PoolMode.AVG);
+    return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
 generic_utils.ClassNameMap.register('AvgPooling2D', AvgPooling2D);

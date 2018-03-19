@@ -53,9 +53,16 @@ export function checkPaddingMode(value?: string): void {
   }
 }
 
-export enum PoolMode {
-  MAX,
-  AVG,
+export type PoolMode = 'max'|'avg';
+export const VALID_POOL_MODE_VALUES = ['max', 'avg', undefined];
+export function checkPoolMode(value?: string): void {
+  if (value === undefined) {
+    return;
+  }
+  if (VALID_POOL_MODE_VALUES.indexOf(value) < 0) {
+    throw new ValueError(`${value} is not a valid PoolMode.  Valid values as ${
+        VALID_POOL_MODE_VALUES}`);
+  }
 }
 
 const _nameScopeStack: string[] = [];

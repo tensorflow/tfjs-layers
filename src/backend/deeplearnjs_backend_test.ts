@@ -2173,7 +2173,7 @@ describeMathCPUAndGPU('pool2d', () => {
     [0, -2, -4, -6, -8]
   ]]];
 
-  const poolModes = [undefined, PoolMode.MAX, PoolMode.AVG];
+  const poolModes: PoolMode[] = [undefined, 'max', 'avg'];
   const dataFormats:DataFormat[] =
       [undefined, 'channelFirst', 'channelLast'];
   const stridesArray = [1, 2];
@@ -2181,14 +2181,14 @@ describeMathCPUAndGPU('pool2d', () => {
     for (const dataFormat of dataFormats) {
       for (const stride of stridesArray) {
         const testTitle = `4x4, ${stride}, same, ${dataFormat}, ` +
-            `${PoolMode[poolMode]}`;
+            `${poolMode}`;
         it(testTitle, () => {
           let x: Tensor = tensor4d(x4by4Data, [1, 1, 4, 4]);
           if (dataFormat !== 'channelFirst') {
             x = K.transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
           }
           let yExpected: Tensor;
-          if (poolMode === PoolMode.AVG) {
+          if (poolMode === 'avg') {
             if (stride === 1) {
               yExpected = tensor4d(
                   [[[
@@ -2224,10 +2224,10 @@ describeMathCPUAndGPU('pool2d', () => {
   }
 
   for (const poolMode of poolModes) {
-    it(`5x5, 2, same, CHANNEL_FIRST, ${PoolMode[poolMode]}`, () => {
+    it(`5x5, 2, same, CHANNEL_FIRST, ${poolMode}`, () => {
       const x5by5 = tensor4d(x5by5Data, [1, 1, 5, 5]);
       let yExpected = tensor4d(x4by4Data, [1, 1, 4, 4]);
-      if (poolMode === PoolMode.AVG) {
+      if (poolMode === 'avg') {
         yExpected = tensor4d(
             [[[[0.75, 4.5, 3.75], [-0.25, -2, -1.75], [-0.5, -2.5, -2]]]],
             [1, 1, 3, 3]);
@@ -2243,11 +2243,11 @@ describeMathCPUAndGPU('pool2d', () => {
   }
 
   for (const poolMode of poolModes) {
-    it(`5x5, 2, valid, CHANNEL_LAST, ${PoolMode[poolMode]}`, () => {
+    it(`5x5, 2, valid, CHANNEL_LAST, ${poolMode}`, () => {
       const x5by5 =
           K.transpose(tensor4d(x5by5Data, [1, 1, 5, 5]), [0, 2, 3, 1]);
       let yExpected: Tensor4D;
-      if (poolMode === PoolMode.AVG) {
+      if (poolMode === 'avg') {
         yExpected = tensor4d([[[[0.75, 4.5], [-0.25, -2]]]], [1, 1, 2, 2]);
       } else {
         yExpected = tensor4d([[[[2, 6], [0, 0]]]], [1, 1, 2, 2]);
