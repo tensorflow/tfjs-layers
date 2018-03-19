@@ -13,7 +13,6 @@
  * Porting Note: serialization_utils is a tfjs-layers only file, not found
  * int the original PyKeras.
  */
-import {Distribution, FanMode} from '../initializers';
 import {ConfigDictValue, JsonValue} from '../types';
 
 import {convertPythonicToTs, convertTsToPythonic} from './serialization_utils';
@@ -70,11 +69,9 @@ describe('convertPythonToTs', () => {
   });
   // We promote certan fields to enums
   it('enum promotion', () => {
-    expect(convertPythonicToTs({mode: 'fan_out'})).toEqual({
-      mode: FanMode.FAN_OUT
-    });
+    expect(convertPythonicToTs({mode: 'fan_out'})).toEqual({mode: 'fanOut'});
     expect(convertPythonicToTs({distribution: 'normal'})).toEqual({
-      distribution: Distribution.NORMAL
+      distribution: 'normal'
     });
     expect(convertPythonicToTs({data_format: 'channels_last'})).toEqual({
       dataFormat: 'channelLast'
@@ -136,10 +133,8 @@ describe('convertTsToPythonic', () => {
   });
   // We need to stringify our enums
   it('enum promotion', () => {
-    expect(convertTsToPythonic({mode: FanMode.FAN_OUT})).toEqual({
-      mode: 'fan_out'
-    });
-    expect(convertTsToPythonic({distribution: Distribution.NORMAL})).toEqual({
+    expect(convertTsToPythonic({mode: 'fanOut'})).toEqual({mode: 'fan_out'});
+    expect(convertTsToPythonic({distribution: 'normal'})).toEqual({
       distribution: 'normal'
     });
     expect(convertTsToPythonic({dataFormat: 'channelLast'})).toEqual({
