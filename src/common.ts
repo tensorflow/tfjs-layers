@@ -17,14 +17,10 @@ const nameMap: Map<string, number> = new Map<string, number>();
 
 // TODO(cais): Perhaps move the enums to a more suitable place, e.g.,
 //   constants.ts.
-export enum DataFormat {
-  CHANNEL_FIRST,
-  CHANNEL_LAST
-}
-SerializableEnumRegistry.register('data_format', {
-  'channels_first': DataFormat.CHANNEL_FIRST,
-  'channels_last': DataFormat.CHANNEL_LAST
-});
+export type DataFormat = 'channelFirst'|'channelLast';
+SerializableEnumRegistry.register(
+    'data_format',
+    {'channels_first': 'channelFirst', 'channels_last': 'channelLast'});
 
 export enum PaddingMode {
   VALID,
