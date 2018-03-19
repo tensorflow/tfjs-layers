@@ -38,13 +38,20 @@ export function checkDataFormat(value?: string): void {
 }
 
 
-export enum PaddingMode {
-  VALID,
-  SAME,
-  CASUAL,
-}
+export type PaddingMode = 'valid'|'same'|'casual';
 SerializableEnumRegistry.register(
-    'padding', {'valid': PaddingMode.VALID, 'same': PaddingMode.SAME});
+    'padding', {'valid': 'valid', 'same': 'same', 'casual': 'casual'});
+export const VALID_PADDING_MODE_VALUES = ['valid', 'same', 'casual', undefined];
+export function checkPaddingMode(value?: string): void {
+  if (value === undefined) {
+    return;
+  }
+  if (VALID_PADDING_MODE_VALUES.indexOf(value) < 0) {
+    throw new ValueError(
+        `${value} is not a valid PaddingMode.  Valid values as ${
+            VALID_PADDING_MODE_VALUES}`);
+  }
+}
 
 export enum PoolMode {
   MAX,

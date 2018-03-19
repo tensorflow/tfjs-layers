@@ -15,7 +15,7 @@
 import {Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/deeplearnjs_backend';
-import {checkDataFormat, DataFormat, PaddingMode, PoolMode} from '../common';
+import {checkDataFormat, checkPaddingMode, DataFormat, PaddingMode, PoolMode} from '../common';
 import {InputSpec} from '../engine/topology';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError} from '../errors';
@@ -34,7 +34,7 @@ export interface Pooling1DLayerConfig extends LayerConfig {
    * If `null`, defaults to `poolSize`.
    */
   strides?: number;
-  /** PaddingMode.VALID or PaddingMode.SAME */
+  /** 'valid' or 'same' */
   padding?: PaddingMode;
 }
 
@@ -59,7 +59,8 @@ export abstract class Pooling1D extends Layer {
     super(config);
     this.poolSize = [config.poolSize];
     this.strides = config.strides == null ? this.poolSize : [config.strides];
-    this.padding = config.padding == null ? PaddingMode.VALID : config.padding;
+    this.padding = config.padding == null ? 'valid' : config.padding;
+    checkPaddingMode(this.padding);
     this.inputSpec = [new InputSpec({ndim: 3})];
   }
 
@@ -114,6 +115,7 @@ export class MaxPooling1D extends Pooling1D {
       inputs: Tensor, poolSize: [number, number], strides: [number, number],
       padding: PaddingMode, dataFormat: DataFormat): Tensor {
     checkDataFormat(dataFormat);
+    checkPaddingMode(padding);
     return K.pool2d(
         inputs, poolSize, strides, padding, dataFormat, PoolMode.MAX);
   }
@@ -136,6 +138,7 @@ export class AvgPooling1D extends Pooling1D {
       inputs: Tensor, poolSize: [number, number], strides: [number, number],
       padding: PaddingMode, dataFormat: DataFormat): Tensor {
     checkDataFormat(dataFormat);
+    checkPaddingMode(padding);
     return K.pool2d(
         inputs, poolSize, strides, padding, dataFormat, PoolMode.AVG);
   }
@@ -185,10 +188,11 @@ export abstract class Pooling2D extends Layer {
         config.poolSize :
         [config.poolSize, config.poolSize];
     this.strides = config.strides == null ? this.poolSize : config.strides;
-    this.padding = config.padding == null ? PaddingMode.VALID : config.padding;
+    this.padding = config.padding == null ? 'valid' : config.padding;
     this.dataFormat =
         config.dataFormat == null ? 'channelLast' : config.dataFormat;
     checkDataFormat(this.dataFormat);
+    checkPaddingMode(this.padding);
 
     this.inputSpec = [new InputSpec({ndim: 4})];
   }
@@ -263,6 +267,7 @@ export class MaxPooling2D extends Pooling2D {
       inputs: Tensor, poolSize: [number, number], strides: [number, number],
       padding: PaddingMode, dataFormat: DataFormat): Tensor {
     checkDataFormat(dataFormat);
+    checkPaddingMode(padding);
     return K.pool2d(
         inputs, poolSize, strides, padding, dataFormat, PoolMode.MAX);
   }
@@ -297,6 +302,7 @@ export class AvgPooling2D extends Pooling2D {
       inputs: Tensor, poolSize: [number, number], strides: [number, number],
       padding: PaddingMode, dataFormat: DataFormat): Tensor {
     checkDataFormat(dataFormat);
+    checkPaddingMode(padding);
     return K.pool2d(
         inputs, poolSize, strides, padding, dataFormat, PoolMode.AVG);
   }

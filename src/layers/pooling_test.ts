@@ -29,14 +29,14 @@ describe('Pooling Layers 1D: Symbolic', () => {
   const poolSizes = [2, 3];
   const stridesList = [null, 1, 2];
   const poolModes = [PoolMode.AVG, PoolMode.MAX];
-  const paddingModes = [undefined, PaddingMode.VALID, PaddingMode.SAME];
+  const paddingModes: PaddingMode[] = [undefined, 'valid', 'same'];
 
   for (const poolMode of poolModes) {
     for (const paddingMode of paddingModes) {
       for (const poolSize of poolSizes) {
         for (const strides of stridesList) {
           const testTitle = `poolSize=${poolSize}, ` +
-              `${PaddingMode[paddingMode]}, ${PoolMode[poolMode]}`;
+              `${paddingMode}, ${PoolMode[poolMode]}`;
           it(testTitle, () => {
             const inputLength = 16;
             const inputNumChannels = 11;
@@ -88,7 +88,7 @@ describeMathCPUAndGPU('Pooling Layers 1D: Tensor', () => {
           const poolingLayer = new poolConstructor({
             poolSize,
             strides: stride,
-            padding: PaddingMode.VALID,
+            padding: 'valid',
           });
           const output = poolingLayer.apply(x2by8by1) as Tensor;
           let outputLength: number;
@@ -143,7 +143,7 @@ describeMathCPUAndGPU('Pooling Layers 1D: Tensor', () => {
 describe('Pooling Layers 2D: Symbolic', () => {
   const poolSizes = [2, 3];
   const poolModes = [PoolMode.AVG, PoolMode.MAX];
-  const paddingModes = [undefined, PaddingMode.VALID, PaddingMode.SAME];
+  const paddingModes: PaddingMode[] = [undefined, 'valid', 'same'];
   const dataFormats: DataFormat[] = ['channelFirst', 'channelLast'];
   const poolSizeIsNumberValues = [false, true];
 
@@ -153,7 +153,7 @@ describe('Pooling Layers 2D: Symbolic', () => {
         for (const poolSize of poolSizes) {
           for (const poolSizeIsNumber of poolSizeIsNumberValues) {
             const testTitle = `poolSize=${poolSize}, ` +
-                `${dataFormat}, ${PaddingMode[paddingMode]}, ` +
+                `${dataFormat}, ${paddingMode}, ` +
                 `${PoolMode[poolMode]}, ` +
                 `poollSizeIsNumber=${poolSizeIsNumber}`;
             it(testTitle, () => {
@@ -175,11 +175,11 @@ describe('Pooling Layers 2D: Symbolic', () => {
                   poolingLayer.apply(symbolicInput) as SymbolicTensor;
 
               let outputRows = poolSize === 2 ? 5 : 3;
-              if (paddingMode === PaddingMode.SAME) {
+              if (paddingMode === 'same') {
                 outputRows++;
               }
               let outputCols = poolSize === 2 ? 4 : 3;
-              if (paddingMode === PaddingMode.SAME && poolSize === 2) {
+              if (paddingMode === 'same' && poolSize === 2) {
                 outputCols++;
               }
 
@@ -228,7 +228,7 @@ describeMathCPUAndGPU('Pooling Layers 2D: Tensor', () => {
             const poolingLayer = new poolConstructor({
               poolSize: [2, 2],
               strides: [stride, stride],
-              padding: PaddingMode.VALID,
+              padding: 'valid',
               dataFormat: 'channelFirst',
             });
 

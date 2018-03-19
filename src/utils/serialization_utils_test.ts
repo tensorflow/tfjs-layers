@@ -13,7 +13,6 @@
  * Porting Note: serialization_utils is a tfjs-layers only file, not found
  * int the original PyKeras.
  */
-import {PaddingMode} from '../common';
 import {Distribution, FanMode} from '../initializers';
 import {ConfigDictValue, JsonValue} from '../types';
 
@@ -80,9 +79,7 @@ describe('convertPythonToTs', () => {
     expect(convertPythonicToTs({data_format: 'channels_last'})).toEqual({
       dataFormat: 'channelLast'
     });
-    expect(convertPythonicToTs({padding: 'valid'})).toEqual({
-      padding: PaddingMode.VALID
-    });
+    expect(convertPythonicToTs({padding: 'valid'})).toEqual({padding: 'valid'});
   });
 });
 
@@ -148,8 +145,6 @@ describe('convertTsToPythonic', () => {
     expect(convertTsToPythonic({dataFormat: 'channelLast'})).toEqual({
       data_format: 'channels_last'
     });
-    expect(convertTsToPythonic({padding: PaddingMode.VALID})).toEqual({
-      padding: 'valid'
-    });
+    expect(convertTsToPythonic({padding: 'valid'})).toEqual({padding: 'valid'});
   });
 });
