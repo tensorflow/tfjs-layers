@@ -84,7 +84,7 @@ export interface BatchNormalizationLayerConfig extends LayerConfig {
 
   /**
    * Initializer for the moving variance.
-   *  Defaults to 'Ones'.
+   *  Defaults to 'ones'.
    */
   movingVarianceInitializer?: InitializerIdentifier|Initializer;
 
@@ -267,4 +267,4 @@ export class BatchNormalization extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('BatchNormalization', BatchNormalization);
+generic_utils.ClassNameMap.register('batchNormalization', BatchNormalization);

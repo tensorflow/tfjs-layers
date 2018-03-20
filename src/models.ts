@@ -574,4 +574,4 @@ export class Sequential extends Model {
 
   // TODO(cais): Override get trainableWeights() here
 }
-generic_utils.ClassNameMap.register('Sequential', Sequential);
+generic_utils.ClassNameMap.register('sequential', Sequential);

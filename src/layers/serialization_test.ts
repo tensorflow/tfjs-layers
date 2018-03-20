@@ -14,12 +14,12 @@ import {deserialize} from './serialization';
 
 describe('Deserialization', () => {
   it('Zeros Initialzer', () => {
-    const config: ConfigDict = {className: 'Zeros', config: {}};
+    const config: ConfigDict = {className: 'zeros', config: {}};
     const initializer: Zeros = deserialize(config);
     expect(initializer instanceof (Zeros)).toEqual(true);
   });
   it('Ones Initialzer', () => {
-    const config: ConfigDict = {className: 'Ones', config: {}};
+    const config: ConfigDict = {className: 'ones', config: {}};
     const initializer: Ones = deserialize(config);
     expect(initializer instanceof (Ones)).toEqual(true);
   });

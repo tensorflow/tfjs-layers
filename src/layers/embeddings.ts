@@ -201,4 +201,4 @@ export class Embedding extends Layer {
   }
 }
 
-generic_utils.ClassNameMap.register('Embedding', Embedding);
+generic_utils.ClassNameMap.register('embedding', Embedding);

@@ -235,7 +235,8 @@ export type ConstraintIdentifier =
     'MaxNorm'|'MinMaxNorm'|'NonNeg'|'UnitNorm'|string;
 
 export function serializeConstraint(constraint: Constraint): ConfigDictValue {
-  return serializeKerasObject(constraint);
+  return serializeKerasObject(
+      constraint, ClassNameMap.getMap().constructorClassNameMap);
 }
 
 export function deserializeConstraint(

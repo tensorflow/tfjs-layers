@@ -89,7 +89,7 @@ export class Zeros extends Initializer {
     return K.zeros(shape, dtype);
   }
 }
-ClassNameMap.register('Zeros', Zeros);
+ClassNameMap.register('zeros', Zeros);
 
 /**
  * Initializer that generates tensors initialized to 1.
@@ -100,7 +100,7 @@ export class Ones extends Initializer {
     return K.ones(shape, dtype);
   }
 }
-ClassNameMap.register('Ones', Ones);
+ClassNameMap.register('ones', Ones);
 
 export interface ConstantConfig {
   /** The value for each element in the variable. */
@@ -129,7 +129,7 @@ export class Constant extends Initializer {
     };
   }
 }
-ClassNameMap.register('Constant', Constant);
+ClassNameMap.register('constant', Constant);
 
 export interface RandomUniformConfig {
   /** Lower bound of the range of random values to generate. */
@@ -170,7 +170,7 @@ export class RandomUniform extends Initializer {
     return {minval: this.minval, maxval: this.maxval, seed: this.seed};
   }
 }
-ClassNameMap.register('RandomUniform', RandomUniform);
+ClassNameMap.register('randomUniform', RandomUniform);
 
 export interface RandomNormalConfig {
   /** Mean of the random values to generate. */
@@ -208,7 +208,7 @@ export class RandomNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-ClassNameMap.register('RandomNormal', RandomNormal);
+ClassNameMap.register('randomNormal', RandomNormal);
 
 export interface TruncatedNormalConfig {
   /** Mean of the random values to generate. */
@@ -250,7 +250,7 @@ export class TruncatedNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-ClassNameMap.register('TruncatedNormal', TruncatedNormal);
+ClassNameMap.register('truncatedNormal', TruncatedNormal);
 
 export interface IdentityConfig {
   /**
@@ -283,7 +283,7 @@ export class Identity extends Initializer {
     return {gain: this.gain.get()};
   }
 }
-ClassNameMap.register('Identity', Identity);
+ClassNameMap.register('identity', Identity);
 
 /**
  * Computes the number of input and output units for a weight shape.
@@ -403,7 +403,7 @@ export class VarianceScaling extends Initializer {
     };
   }
 }
-ClassNameMap.register('VarianceScaling', VarianceScaling);
+ClassNameMap.register('varianceScaling', VarianceScaling);
 
 export interface SeedOnlyInitializerConfig {
   /** Random number generator seed. */
@@ -439,7 +439,7 @@ export class GlorotUniform extends VarianceScaling {
     });
   }
 }
-ClassNameMap.register('GlorotUniform', GlorotUniform);
+ClassNameMap.register('glorotUniform', GlorotUniform);
 
 /**
  * Glorot normal initializer, also called Xavier normal initializer.
@@ -470,7 +470,7 @@ export class GlorotNormal extends VarianceScaling {
     });
   }
 }
-ClassNameMap.register('GlorotNormal', GlorotNormal);
+ClassNameMap.register('glorotNormal', GlorotNormal);
 
 /**
  * He normal initializer.
@@ -489,7 +489,7 @@ export class HeNormal extends VarianceScaling {
         {scale: 2.0, mode: 'fanIn', distribution: 'normal', seed: config.seed});
   }
 }
-ClassNameMap.register('HeNormal', HeNormal);
+ClassNameMap.register('heNormal', HeNormal);
 
 /**
  * LeCun normal initializer.
@@ -509,7 +509,7 @@ export class LeCunNormal extends VarianceScaling {
         {scale: 1.0, mode: 'fanIn', distribution: 'normal', seed: config.seed});
   }
 }
-ClassNameMap.register('LeCunNormal', LeCunNormal);
+ClassNameMap.register('leCunNormal', LeCunNormal);
 
 // TODO(cais): Implement Orthogonal once the deeplearn.js feature is fulfilled:
 //   https://github.com/PAIR-code/deeplearnjs/issues/245
@@ -519,22 +519,22 @@ export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
     'heNormal'|'identity'|'leCunNormal'|'ones'|'randomNormal'|'randomUniform'|
     'truncatedNormal'|'varianceScaling'|'zeros'|string;
 
-// Maps the JavaScript-like identifier keys to the corresponding keras symbols.
-export const INITIALIZER_IDENTIFIER_KERAS_SYMBOL_MAP:
-    {[identifier in InitializerIdentifier]: string} = {
-      'constant': 'Constant',
-      'glorotNormal': 'GlorotNormal',
-      'glorotUniform': 'GlorotUniform',
-      'heNormal': 'HeNormal',
-      'identity': 'Identity',
-      'leCunNormal': 'LeCunNormal',
-      'ones': 'Ones',
-      'randomNormal': 'RandomNormal',
-      'randomUniform': 'RandomUniform',
-      'truncatedNormal': 'TruncatedNormal',
-      'varianceScaling': 'VarianceScaling',
-      'zeros': 'Zeros'
-    };
+// // Maps the JavaScript-like identifier keys to the corresponding keras
+// symbols. export const INITIALIZER_IDENTIFIER_KERAS_SYMBOL_MAP:
+//     {[identifier in InitializerIdentifier]: string} = {
+//       'constant': 'Constant',
+//       'glorotNormal': 'GlorotNormal',
+//       'glorotUniform': 'GlorotUniform',
+//       'heNormal': 'HeNormal',
+//       'identity': 'Identity',
+//       'leCunNormal': 'LeCunNormal',
+//       'ones': 'Ones',
+//       'randomNormal': 'RandomNormal',
+//       'randomUniform': 'RandomUniform',
+//       'truncatedNormal': 'TruncatedNormal',
+//       'varianceScaling': 'VarianceScaling',
+//       'zeros': 'Zeros'
+//     };
 
 function deserializeInitializer(
     config: ConfigDict, customObjects: ConfigDict = {}): Initializer {
@@ -545,17 +545,14 @@ function deserializeInitializer(
 
 export function serializeInitializer(initializer: Initializer):
     ConfigDictValue {
-  return serializeKerasObject(initializer);
+  return serializeKerasObject(
+      initializer, ClassNameMap.getMap().constructorClassNameMap);
 }
 
 export function getInitializer(identifier: InitializerIdentifier|Initializer|
                                ConfigDict): Initializer {
   if (typeof identifier === 'string') {
-    const className =
-        INITIALIZER_IDENTIFIER_KERAS_SYMBOL_MAP[identifier] != null ?
-        INITIALIZER_IDENTIFIER_KERAS_SYMBOL_MAP[identifier] :
-        identifier;
-    const config = {className, config: {}};
+    const config = {className: identifier, config: {}};
     return deserializeInitializer(config);
   } else if (identifier instanceof Initializer) {
     return identifier;

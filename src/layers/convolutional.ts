@@ -325,7 +325,7 @@ export class Conv2D extends Conv {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Conv2D', Conv2D);
+generic_utils.ClassNameMap.register('conv2D', Conv2D);
 
 /**
  * 1D convolution layer (e.g., temporal convolution).
@@ -358,4 +358,4 @@ export class Conv1D extends Conv {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Conv1D', Conv1D);
+generic_utils.ClassNameMap.register('conv1d', Conv1D);

@@ -1027,7 +1027,7 @@ const fakeLSTMModel: ModelAndWeightsConfig = {
             'recurrent_activation': 'hard_sigmoid',
             'trainable': true,
             'recurrent_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1.0,
@@ -1040,13 +1040,13 @@ const fakeLSTMModel: ModelAndWeightsConfig = {
             'return_state': true,
             'unroll': false,
             'activation': 'tanh',
-            'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+            'bias_initializer': {'class_name': 'zeros', 'config': {}},
             'units': 256,
             'unit_forget_bias': true,
             'activity_regularizer': null,
             'recurrent_dropout': 0.0,
             'kernel_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1.0,
@@ -1075,7 +1075,7 @@ const fakeLSTMModel: ModelAndWeightsConfig = {
             'recurrent_activation': 'hard_sigmoid',
             'trainable': true,
             'recurrent_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1.0,
@@ -1088,13 +1088,13 @@ const fakeLSTMModel: ModelAndWeightsConfig = {
             'return_state': true,
             'unroll': false,
             'activation': 'tanh',
-            'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+            'bias_initializer': {'class_name': 'zeros', 'config': {}},
             'units': 256,
             'unit_forget_bias': true,
             'activity_regularizer': null,
             'recurrent_dropout': 0.0,
             'kernel_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1.0,
@@ -1123,7 +1123,7 @@ const fakeLSTMModel: ModelAndWeightsConfig = {
           'class_name': 'Dense',
           'config': {
             'kernel_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1.0,
@@ -1138,7 +1138,7 @@ const fakeLSTMModel: ModelAndWeightsConfig = {
             'activation': 'softmax',
             'trainable': true,
             'kernel_regularizer': null,
-            'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+            'bias_initializer': {'class_name': 'zeros', 'config': {}},
             'units': 94,
             'use_bias': true,
             'activity_regularizer': null

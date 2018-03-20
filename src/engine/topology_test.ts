@@ -1020,11 +1020,11 @@ describeMathCPUAndGPU('Container.fromConfig', () => {
             activation: 'linear',
             activityRegularizer: null as string,
             biasConstraint: null as string,
-            biasInitializer: {className: 'Zeros', config: {}},
+            biasInitializer: {className: 'zeros', config: {}},
             biasRegularizer: null as string,
             kernelConstraint: null as string,
             kernelInitializer: {
-              className: 'VarianceScaling',
+              className: 'varianceScaling',
               config: {
                 distribution: 'uniform',
                 mode: 'fanAvg',

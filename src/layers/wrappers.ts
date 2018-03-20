@@ -237,7 +237,7 @@ export class TimeDistributed extends Wrapper {
     return y;
   }
 }
-generic_utils.ClassNameMap.register('TimeDistributed', TimeDistributed);
+generic_utils.ClassNameMap.register('timeDistributed', TimeDistributed);
 
 export enum BidirectionalMergeMode {
   SUM,
@@ -471,4 +471,4 @@ export class Bidirectional extends Wrapper {
   // TODO(cais): Implement constraints().
   // TODO(cais): Implement getConfig().
 }
-generic_utils.ClassNameMap.register('Bidirectional', Bidirectional);
+generic_utils.ClassNameMap.register('bidirectional', Bidirectional);

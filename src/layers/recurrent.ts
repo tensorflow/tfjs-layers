@@ -642,7 +642,7 @@ export class RNN extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('RNN', RNN);
+generic_utils.ClassNameMap.register('rnn', RNN);
 
 /**
  * An RNNCell layer.
@@ -904,7 +904,7 @@ export class SimpleRNNCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('SimpleRNNCell', SimpleRNNCell);
+generic_utils.ClassNameMap.register('simpleRNNCell', SimpleRNNCell);
 
 export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   /**
@@ -1087,7 +1087,7 @@ export class SimpleRNN extends RNN {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('SimpleRNN', SimpleRNN);
+generic_utils.ClassNameMap.register('simpleRnn', SimpleRNN);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.

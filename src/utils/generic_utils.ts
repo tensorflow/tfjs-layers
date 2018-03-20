@@ -116,11 +116,8 @@ export type Constructor<T> = new (...args: any[]) => T;
 export class ClassNameMap {
   private static instance: ClassNameMap;
   // tslint:disable-next-line:no-any
-  pythonClassNameMap: {[className: string]: any};
-
-  private constructor() {
-    this.pythonClassNameMap = {};
-  }
+  pythonClassNameMap: {[className: string]: any} = {};
+  constructorClassNameMap: {[constructorName: string]: string} = {};
 
   static getMap() {
     if (ClassNameMap.instance == null) {
@@ -133,6 +130,7 @@ export class ClassNameMap {
     this.getMap().pythonClassNameMap[className] =
         // tslint:disable-next-line:no-any
         [cls, (cls as any).fromConfig];
+    this.getMap().constructorClassNameMap[cls.name] = className;
   }
 }
 
@@ -265,6 +263,7 @@ export function isAllNullOrUndefined(iterableOrElement: {}): boolean {
  * @param name
  */
 export function toSnakeCase(name: string): string {
+  console.log(name, '......');
   const intermediate = name.replace(/(.)([A-Z][a-z0-9]+)/g, '$1_$2');
   const insecure =
       intermediate.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
@@ -278,28 +277,40 @@ export function toSnakeCase(name: string): string {
   return 'private' + insecure;
 }
 
-export function toCamelCase(identifier: string): string {
-  // quick return for empty string or single character strings
-  if (identifier.length <= 1) {
-    return identifier;
-  }
-  // Check for the underscore indicating snake_case
-  if (identifier.indexOf('_') === -1) {
-    return identifier;
-  }
-  return identifier.replace(/[_]+(\w|$)/g, (m, p1) => p1.toUpperCase());
+export function toLowerCamelCase(identifier: string): string {
+  // Split by upper case letters, numbers, or underscores.
+  const words = identifier.split(/_|(?=[0-9A-Z])/).map((identifierWord, i) => {
+    const firstChar = identifierWord.charAt(0);
+    const restOfWord = identifierWord.length > 1 ?
+        identifierWord.substring(1).toLowerCase() :
+        '';
+
+    return (i === 0 ? firstChar.toLowerCase() : firstChar.toUpperCase()) +
+        restOfWord;
+  });
+  return words.join('');
 }
 
 // tslint:disable-next-line:no-any
 let _GLOBAL_CUSTOM_OBJECTS = {} as {[objName: string]: any};
 
-// tslint:disable-next-line:no-any
-export function serializeKerasObject(instance: any): ConfigDictValue {
+export function serializeKerasObject(
+    // tslint:disable-next-line:no-any
+    instance: any,
+    constructorNameSymbolMap: {[constructorName: string]: string}):
+    ConfigDictValue {
   if (instance === null || instance === undefined) {
     return null;
   }
   if (instance.getConfig != null) {
-    return {className: instance.constructor.name, config: instance.getConfig()};
+    if (constructorNameSymbolMap[instance.constructor.name] == null) {
+      throw new ValueError(
+          `Cannot find registry for ${instance.constructor.name}`);
+    }
+    return {
+      className: constructorNameSymbolMap[instance.constructor.name],
+      config: instance.getConfig()
+    };
   }
   if (instance.name != null) {
     return instance.name;

@@ -63,7 +63,7 @@ describeMathCPU('Ones initializer', () => {
 describeMathCPU('Constant initializer', () => {
   it('1D', () => {
     const initializerConfig:
-        ConfigDict = {className: 'Constant', config: {value: 5}};
+        ConfigDict = {className: 'constant', config: {value: 5}};
     const init = getInitializer(initializerConfig);
     const weights = init.apply([3], DType.float32);
     expect(weights.shape).toEqual([3]);
@@ -73,7 +73,7 @@ describeMathCPU('Constant initializer', () => {
 
   it('2D', () => {
     const initializerConfig:
-        ConfigDict = {className: 'Constant', config: {value: 5}};
+        ConfigDict = {className: 'constant', config: {value: 5}};
     const init = getInitializer(initializerConfig);
     const weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
@@ -85,7 +85,7 @@ describeMathCPU('Constant initializer', () => {
 describeMathCPU('Identity initializer', () => {
   it('1D', () => {
     const initializerConfig:
-        ConfigDict = {className: 'Identity', config: {gain: 5}};
+        ConfigDict = {className: 'identity', config: {gain: 5}};
     const init = getInitializer(initializerConfig);
     expect(() => {
       init.apply([4]);
@@ -94,7 +94,7 @@ describeMathCPU('Identity initializer', () => {
 
   it('2D', () => {
     const initializerConfig:
-        ConfigDict = {className: 'Identity', config: {gain: 5}};
+        ConfigDict = {className: 'identity', config: {gain: 5}};
     const init = getInitializer(initializerConfig);
     const weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
@@ -116,7 +116,7 @@ describeMathCPU('RandomUniform initializer', () => {
 
   it('with configured min max val', () => {
     const initializerConfig: ConfigDict = {
-      className: 'RandomUniform',
+      className: 'randomUniform',
       config: {minval: 17, maxval: 47}
     };
     const init = getInitializer(initializerConfig);
@@ -139,7 +139,7 @@ describeMathCPU('RandomNormal initializer', () => {
 
   it('with configured min max val', () => {
     const initializerConfig: ConfigDict = {
-      className: 'RandomNormal',
+      className: 'randomNormal',
       config: {mean: 1.0, stddev: 0.001}
     };
     const init = getInitializer(initializerConfig);
@@ -186,7 +186,7 @@ describeMathCPU('TruncatedNormal initializer', () => {
 
   it('with configured min max val', () => {
     const initializerConfig: ConfigDict = {
-      className: 'TruncatedNormal',
+      className: 'truncatedNormal',
       config: {mean: 1.0, stddev: 0.5}
     };
     const init = getInitializer(initializerConfig);

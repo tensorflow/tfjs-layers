@@ -248,7 +248,7 @@ export class Add extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Add', Add);
+generic_utils.ClassNameMap.register('add', Add);
 
 //  TODO(cais): Add class Subtract.
 
@@ -271,7 +271,7 @@ export class Multiply extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Multiply', Multiply);
+generic_utils.ClassNameMap.register('multiply', Multiply);
 
 /**
  * Layer that averages a list of inputs.
@@ -292,7 +292,7 @@ export class Average extends Merge {
     return K.scalarTimesArray(K.getScalar(1 / inputs.length), output);
   }
 }
-generic_utils.ClassNameMap.register('Average', Average);
+generic_utils.ClassNameMap.register('average', Average);
 
 /**
  * Layer that computes the maximum (element-wise) a list of inputs.
@@ -313,7 +313,7 @@ export class Maximum extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Maximum', Maximum);
+generic_utils.ClassNameMap.register('maximum', Maximum);
 
 /**
  * Layer that computes the minimum (element-wise) a list of inputs.
@@ -334,7 +334,7 @@ export class Minimum extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Minimum', Minimum);
+generic_utils.ClassNameMap.register('minimum', Minimum);
 
 export interface ConcatenateLayerConfig extends LayerConfig {
   /**
@@ -432,7 +432,7 @@ export class Concatenate extends Merge {
   // TODO(cais): Implement computeMask();
   // TODO(cais): Add getConfig();
 }
-generic_utils.ClassNameMap.register('Concatenate', Concatenate);
+generic_utils.ClassNameMap.register('concatenate', Concatenate);
 
 // TODO(cais): Add class Dot.
 

@@ -1630,4 +1630,4 @@ export class Model extends Container {
   }
 }
 
-ClassNameMap.register('Model', Model);
+ClassNameMap.register('model', Model);
