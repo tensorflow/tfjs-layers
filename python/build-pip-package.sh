@@ -36,7 +36,9 @@ PY_FILES=$(find ./ -name '*.py' ! -name '*_test.py')
 echo
 for PY_FILE in ${PY_FILES}; do
   echo "Copying ${PY_FILE}"
-  cp --parents "${PY_FILE}" "${TMP_DIR}/"
+  PY_DIR=`dirname ${PY_FILE}`
+  mkdir -p ${TMP_DIR}/${PY_DIR}
+  cp "${PY_FILE}" "${TMP_DIR}/${PY_DIR}"
 done
 echo
 
@@ -56,4 +58,4 @@ for WHEEL in ${WHEELS}; do
   echo "  $(basename "${WHEEL}")"
 done
 
-rm -rf "${TMP_DIR}"
+# rm -rf "${TMP_DIR}"
