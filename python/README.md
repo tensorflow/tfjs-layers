@@ -1,4 +1,4 @@
-# tensorflowjs
+# tensorflowjs: The Python Package for TensorFlow.js
 
 The **tensorflowjs** pip package contains libraries and tools for
-[tensorflow.js](https://js.tensorflow.org).
+[TensorFlow.js](https://js.tensorflow.org).
