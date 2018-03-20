@@ -965,7 +965,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 });
 
 describeMathCPUAndGPU('Model.fit with training-sensitive layers', () => {
-  it('Dropout gets correct training kwarg during fit & predict', async done => {
+  it('Correct training arg during fit/evaluate/predict', async done => {
     const inputTensor =
         Input({shape: [1], name: 'inputLayer1', dtype: DType.float32});
     const layer1 = tfl.layers.dense({units: 1});
@@ -988,7 +988,8 @@ describeMathCPUAndGPU('Model.fit with training-sensitive layers', () => {
     const xs = K.ones([4, 1]);
     const ys = K.ones([4, 1]);
 
-    // 1. Call fit: Dropout layer should be called twice, with training as true.
+    // 1. Call fit: Dropout layer should be called twice, with training as
+    // true.
     try {
       await model.fit(xs, ys, {epochs: 2, batchSize: 4});
     } catch (err) {
@@ -996,7 +997,8 @@ describeMathCPUAndGPU('Model.fit with training-sensitive layers', () => {
     }
     expect(dropoutLayerTrainingFlags).toEqual([true, true]);
 
-    // 2. Call evaluate, Dropout layer should be called once, without training
+    // 2. Call evaluate, Dropout layer should be called once, without
+    // training
     //   defined.
     model.evaluate(xs, ys, {batchSize: 4});
     expect(dropoutLayerTrainingFlags).toEqual([true, true, undefined]);
