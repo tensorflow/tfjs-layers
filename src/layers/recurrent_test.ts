@@ -839,7 +839,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   //   when it becomes available.
   // TODO(cais): Test dropout and recurrentDropout when implemented.
 
-  const implementations = [1, 2];
+  const implementations: Array<(1|2)> = [1, 2];
   const returnStateValues = [false, true];
   const returnSequencesValues = [false, true];
   for (const implementation of implementations) {

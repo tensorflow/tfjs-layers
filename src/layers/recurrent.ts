@@ -799,7 +799,8 @@ export class SimpleRNNCell extends RNNCell {
           `Currently the default 'orthogonal' intializer is not implemented. ` +
           `Please specify a recurrent kernel initializer`);
     }
-    this.recurrentInitializer = getInitializer(config.recurrentInitializer);
+    this.recurrentInitializer = getInitializer(
+        config.recurrentInitializer || this.DEFAULT_RECURRENT_INITIALIZER);
 
     this.biasInitializer =
         getInitializer(config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
@@ -1513,7 +1514,7 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
    * have different performance profiles on different hardware and
    * for different applications.
    */
-  implementation?: number;
+  implementation?: 1|2;
 }
 
 /**
@@ -1797,7 +1798,7 @@ export interface LSTMLayerConfig extends SimpleRNNLayerConfig {
    *   have different performance profiles on different hardware and
    *   for different applications.
    */
-  implementation?: number;
+  implementation?: 1|2;
 }
 
 /**
@@ -1805,7 +1806,7 @@ export interface LSTMLayerConfig extends SimpleRNNLayerConfig {
  */
 export class LSTM extends RNN {
   constructor(config: LSTMLayerConfig) {
-    if (config.implementation === 0) {
+    if (config.implementation as number === 0) {
       console.warn(
           '`implementation=0` has been deprecated, and now defaults to ' +
           '`implementation=1`. Please update your layer call.');
