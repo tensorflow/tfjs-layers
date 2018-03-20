@@ -315,8 +315,9 @@ export interface LayerConfig {
   inputDType?: DType;
 }
 
-// If necessary, add input arguments to the CallHook function, such as layer
-// and inputs. This is currently used for testing only.
+// If necessary, add `output` arguments to the CallHook function.
+// This is currently used for testing only, bug may be used for debugger-related
+// purposes in the future.
 // tslint:disable-next-line:no-any
 export type CallHook = (inputs: Tensor|Tensor[], kwargs: any) => void;
 
