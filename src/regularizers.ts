@@ -140,8 +140,7 @@ export function getRegularizer(identifier: RegularizerIdentifier|ConfigDict|
     return null;
   }
   if (typeof identifier === 'string') {
-    const className =
-        REGULARIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] != null ?
+    const className = identifier in REGULARIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP ?
         REGULARIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] :
         identifier;
     const config = {className, config: {}};

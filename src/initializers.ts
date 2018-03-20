@@ -552,8 +552,7 @@ export function serializeInitializer(initializer: Initializer):
 export function getInitializer(identifier: InitializerIdentifier|Initializer|
                                ConfigDict): Initializer {
   if (typeof identifier === 'string') {
-    const className =
-        INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] != null ?
+    const className = identifier in INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP ?
         INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] :
         identifier;
     const config = {className, config: {}};

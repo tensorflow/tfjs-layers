@@ -261,8 +261,7 @@ export function getConstraint(identifier: ConstraintIdentifier|ConfigDict|
     return null;
   }
   if (typeof identifier === 'string') {
-    const className =
-        CONSTRAINT_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] != null ?
+    const className = identifier in CONSTRAINT_IDENTIFIER_REGISTRY_SYMBOL_MAP ?
         CONSTRAINT_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] :
         identifier;
     const config = {className, config: {}};
