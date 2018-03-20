@@ -12,6 +12,7 @@
  * TensorFlow.js Layers: Pooling Layers.
  */
 
+// tslint:disable:max-line-length
 import {Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/deeplearnjs_backend';
@@ -23,6 +24,7 @@ import {NotImplementedError} from '../errors';
 import {ConfigDict, Shape} from '../types';
 import {convOutputLength} from '../utils/conv_utils';
 import * as generic_utils from '../utils/generic_utils';
+// tslint:enable:max-line-length
 
 export interface Pooling1DLayerConfig extends LayerConfig {
   /**
@@ -78,7 +80,7 @@ export abstract class Pooling1D extends Layer {
 
   // tslint:disable-next-line:no-any
   call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
-    this.invokeCallHook();
+    this.invokeCallHook(inputs, kwargs);
     // Add dummy last dimension.
     inputs = K.expandDims(generic_utils.getExactlyOneTensor(inputs), 2);
     const output = this.poolingFunction(
@@ -219,7 +221,7 @@ export abstract class Pooling2D extends Layer {
 
   // tslint:disable-next-line:no-any
   call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
-    this.invokeCallHook();
+    this.invokeCallHook(inputs, kwargs);
     return this.poolingFunction(
         generic_utils.getExactlyOneTensor(inputs), this.poolSize, this.strides,
         this.padding, this.dataFormat);

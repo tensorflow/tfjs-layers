@@ -24,8 +24,7 @@ import json
 import os
 
 import keras
-
-from scripts import h5_conversion
+import tensorflowjs as tfjs
 
 
 INDEX_FROM = 3
@@ -199,7 +198,7 @@ def main():
   json.dump(metadata, open(metadata_json_path, 'wt'))
   print('\nSaved model metadata at: %s' % metadata_json_path)
 
-  h5_conversion.save_model(model, FLAGS.artifacts_dir)
+  tfjs.converters.save_keras_model(model, FLAGS.artifacts_dir)
   print('\nSaved model artifcats in directory: %s' % FLAGS.artifacts_dir)
 
 
@@ -239,7 +238,7 @@ if __name__ == '__main__':
       '--num_show',
       type=int,
       default=5,
-      help='Number of sentences to show perdiction score on after training.')
+      help='Number of sentences to show prediction score on after training.')
   parser.add_argument(
       '--artifacts_dir',
       type=str,
