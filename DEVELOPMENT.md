@@ -4,7 +4,7 @@
 
 * As a preparatory step, run:
   ```bash
-  yarn run prep
+  yarn
   ```
 * Our TypeScript source code follows the Google
   [clang format](https://clang.llvm.org/docs/ClangFormatStyleOptions.html).
@@ -90,7 +90,7 @@ cd python
 # You need to specify a folder where the pip wheel file will be stored, e.g.,
 ./build-pip-package.sh /tmp/my_tensorflowjs_pip
 
-# If the script succeeds, you canuse `pip install` to install the pip package:
+# If the script succeeds, you can use `pip install` to install the pip package:
 
 pip install --force-reinstall \
   /tmp/my_tensorflowjs_pip/tensorflowjs-0.0.1-py2-none-any.whl
