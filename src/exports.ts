@@ -130,7 +130,7 @@ export class ModelExports {
    * });
    * console.log(model.outputs[0].shape);
    * ```
-   * */
+   */
   @doc({heading: 'Models', subheading: 'Creation', configParamIndices: [0]})
   static sequential(config?: SequentialConfig): Sequential {
     return new Sequential(config);
