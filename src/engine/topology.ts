@@ -317,7 +317,8 @@ export interface LayerConfig {
 
 // If necessary, add input arguments to the CallHook function, such as layer
 // and inputs. This is currently used for testing only.
-export type CallHook = () => void;
+// tslint:disable-next-line:no-any
+export type CallHook = (inputs: Tensor|Tensor[], kwargs: any) => void;
 
 let _nextLayerID = 0;
 
@@ -730,9 +731,10 @@ export class Layer {
     return inputs;
   }
 
-  protected invokeCallHook() {
+  // tslint:disable-next-line:no-any
+  protected invokeCallHook(inputs: Tensor|Tensor[], kwargs: any) {
     if (this._callHook != null) {
-      this._callHook();
+      this._callHook(inputs, kwargs);
     }
   }
 
