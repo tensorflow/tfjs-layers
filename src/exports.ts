@@ -72,7 +72,7 @@ export class ModelExports {
    * ```
    *
    * See also:
-   *   `Sequential`, `loadModel`.
+   *   `sequential`, `loadModel`.
    */
 
   @doc({heading: 'Models', subheading: 'Creation', configParamIndices: [0]})
