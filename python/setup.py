@@ -32,7 +32,7 @@ setuptools.setup(
         'Intended Audience :: Developers',
         'Intended Audience :: Education',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: Apache Software License',
+        'License :: OSI Approved :: MIT License',
         'Programming Language :: JavaScript',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
