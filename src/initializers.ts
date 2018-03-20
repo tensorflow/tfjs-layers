@@ -519,8 +519,9 @@ export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
     'heNormal'|'identity'|'leCunNormal'|'ones'|'randomNormal'|'randomUniform'|
     'truncatedNormal'|'varianceScaling'|'zeros'|string;
 
-// Maps the JavaScript-like identifier keys to the corresponding keras symbols.
-export const INITIALIZER_IDENTIFIER_KERAS_SYMBOL_MAP:
+// Maps the JavaScript-like identifier keys to the corresponding registry
+// symbols.
+export const INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:
     {[identifier in InitializerIdentifier]: string} = {
       'constant': 'Constant',
       'glorotNormal': 'GlorotNormal',
@@ -552,8 +553,8 @@ export function getInitializer(identifier: InitializerIdentifier|Initializer|
                                ConfigDict): Initializer {
   if (typeof identifier === 'string') {
     const className =
-        INITIALIZER_IDENTIFIER_KERAS_SYMBOL_MAP[identifier] != null ?
-        INITIALIZER_IDENTIFIER_KERAS_SYMBOL_MAP[identifier] :
+        INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] != null ?
+        INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] :
         identifier;
     const config = {className, config: {}};
     return deserializeInitializer(config);
