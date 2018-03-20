@@ -998,8 +998,7 @@ describeMathCPUAndGPU('Model.fit with training-sensitive layers', () => {
     expect(dropoutLayerTrainingFlags).toEqual([true, true]);
 
     // 2. Call evaluate, Dropout layer should be called once, without
-    // training
-    //   defined.
+    // training defined.
     model.evaluate(xs, ys, {batchSize: 4});
     expect(dropoutLayerTrainingFlags).toEqual([true, true, undefined]);
 
