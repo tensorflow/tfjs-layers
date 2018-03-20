@@ -58,4 +58,4 @@ for WHEEL in ${WHEELS}; do
   echo "  $(basename "${WHEEL}")"
 done
 
-# rm -rf "${TMP_DIR}"
+rm -rf "${TMP_DIR}"
