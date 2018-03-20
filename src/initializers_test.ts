@@ -26,7 +26,7 @@ import {describeMathCPU, expectTensorsClose, expectTensorsValuesInRange} from '.
 
 describeMathCPU('Zeros initializer', () => {
   it('1D', () => {
-    const init = getInitializer('Zeros');
+    const init = getInitializer('zeros');
     const weights = init.apply([3], DType.float32);
     expect(weights.shape).toEqual([3]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -34,7 +34,7 @@ describeMathCPU('Zeros initializer', () => {
   });
 
   it('2D', () => {
-    const init = getInitializer('Zeros');
+    const init = getInitializer('zeros');
     const weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -44,7 +44,7 @@ describeMathCPU('Zeros initializer', () => {
 
 describeMathCPU('Ones initializer', () => {
   it('1D', () => {
-    const init = getInitializer('Ones');
+    const init = getInitializer('ones');
     const weights = init.apply([3], DType.float32);
     expect(weights.shape).toEqual([3]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -52,7 +52,7 @@ describeMathCPU('Ones initializer', () => {
   });
 
   it('2D', () => {
-    const init = getInitializer('Ones');
+    const init = getInitializer('ones');
     const weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -107,7 +107,7 @@ describeMathCPU('Identity initializer', () => {
 describeMathCPU('RandomUniform initializer', () => {
   const shape = [7, 2];
   it('default', () => {
-    const init = getInitializer('RandomUniform');
+    const init = getInitializer('randomUniform');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -130,7 +130,7 @@ describeMathCPU('RandomUniform initializer', () => {
 describeMathCPU('RandomNormal initializer', () => {
   const shape = [7, 2];
   it('default', () => {
-    const init = getInitializer('RandomNormal');
+    const init = getInitializer('randomNormal');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -154,7 +154,7 @@ describeMathCPU('HeNormal initializer', () => {
   const shape = [7, 2];
   const stddev = Math.sqrt(2 / shape[0]);
   it('default', () => {
-    const init = getInitializer('HeNormal');
+    const init = getInitializer('heNormal');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -166,7 +166,7 @@ describeMathCPU('LecunNormal initializer', () => {
   const shape = [7, 2];
   const stddev = Math.sqrt(1 / shape[0]);
   it('default', () => {
-    const init = getInitializer('LeCunNormal');
+    const init = getInitializer('leCunNormal');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -177,7 +177,7 @@ describeMathCPU('LecunNormal initializer', () => {
 describeMathCPU('TruncatedNormal initializer', () => {
   const shape = [7, 2];
   it('default', () => {
-    const init = getInitializer('TruncatedNormal');
+    const init = getInitializer('truncatedNormal');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -199,7 +199,7 @@ describeMathCPU('TruncatedNormal initializer', () => {
 
 describeMathCPU('Glorot uniform initializer', () => {
   it('1D', () => {
-    const init = getInitializer('GlorotUniform');
+    const init = getInitializer('glorotUniform');
     let weights = init.apply([3], DType.float32);
     expect(weights.shape).toEqual([3]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -222,7 +222,7 @@ describeMathCPU('Glorot uniform initializer', () => {
   });
 
   it('2D', () => {
-    const init = getInitializer('GlorotUniform');
+    const init = getInitializer('glorotUniform');
     let weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -247,7 +247,7 @@ describeMathCPU('Glorot uniform initializer', () => {
 
 describeMathCPU('Glorot normal initializer', () => {
   it('1D', () => {
-    const init = getInitializer('GlorotNormal');
+    const init = getInitializer('glorotNormal');
     let weights = init.apply([30], DType.float32);
     expect(weights.shape).toEqual([30]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -262,7 +262,7 @@ describeMathCPU('Glorot normal initializer', () => {
   });
 
   it('2D', () => {
-    const init = getInitializer('GlorotNormal');
+    const init = getInitializer('glorotNormal');
     let weights = init.apply([5, 6], DType.float32);
     expect(weights.shape).toEqual([5, 6]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -279,7 +279,7 @@ describeMathCPU('Glorot normal initializer', () => {
 
 describeMathCPU('initializers.get', () => {
   it('by string', () => {
-    const initializer = getInitializer('GlorotNormal');
+    const initializer = getInitializer('glorotNormal');
     const config = serializeInitializer(initializer) as ConfigDict;
     const nestedConfig = config.config as ConfigDict;
     expect(nestedConfig.scale).toEqual(1.0);
@@ -318,9 +318,7 @@ describe('checkFanMode', () => {
   });
   it('Invalid values', () => {
     // Test invalid values are rejected, and reported in the error.
-    expect(function() {
-      checkFanMode('foo')
-    }).toThrowError(/foo/);
+    expect(() => checkFanMode('foo')).toThrowError(/foo/);
     try {
       checkFanMode('bad');
     } catch (e) {
@@ -344,9 +342,7 @@ describe('checkDistribution', () => {
   });
   it('Invalid values', () => {
     // Test invalid values are rejected, and reported in the error.
-    expect(function() {
-      checkDistribution('foo')
-    }).toThrowError(/foo/);
+    expect(() => checkDistribution('foo')).toThrowError(/foo/);
     try {
       checkDistribution('bad');
     } catch (e) {
