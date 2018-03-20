@@ -46,7 +46,7 @@ export function convertPythonicToTs(
   if (pythonicConfig === null) {
     return null;
   } else if (typeof pythonicConfig === 'string') {
-    return generic_utils.toCamelCase(pythonicConfig);
+    return generic_utils.toLowerCamelCase(pythonicConfig);
   } else if (
       (typeof pythonicConfig === 'number') ||
       (typeof pythonicConfig === 'boolean')) {
@@ -73,7 +73,7 @@ export function convertPythonicToTs(
         // camel-case conversion.
         tsDict[pythonicKey] = pythonicValue;
       } else {
-        const tsKey = generic_utils.toCamelCase(pythonicKey);
+        const tsKey = generic_utils.toLowerCamelCase(pythonicKey);
         if (generic_utils.SerializableEnumRegistry.contains(pythonicKey)) {
           const enumValue = generic_utils.SerializableEnumRegistry.lookup(
               pythonicKey, pythonicValue as string);

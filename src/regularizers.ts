@@ -118,7 +118,8 @@ export function l2(config: L2Config) {
 export type RegularizerIdentifier = 'L1L2'|string;
 
 export function serializeRegularizer(constraint: Regularizer): ConfigDictValue {
-  return serializeKerasObject(constraint);
+  return serializeKerasObject(
+      constraint, ClassNameMap.getMap().constructorClassNameMap);
 }
 
 export function deserializeRegularizer(

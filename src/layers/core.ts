@@ -122,7 +122,7 @@ export class Dropout extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Dropout', Dropout);
+generic_utils.ClassNameMap.register('dropout', Dropout);
 
 export interface DenseLayerConfig extends LayerConfig {
   /** Positive integer, dimensionality of the output space. */
@@ -215,8 +215,8 @@ export class Dense extends Layer {
   private kernel: LayerVariable = null;
   private bias: LayerVariable = null;
 
-  readonly DEFAULT_KERNEL_INITIALIZER = 'GlorotNormal';
-  readonly DEFAULT_BIAS_INITIALIZER = 'Zeros';
+  readonly DEFAULT_KERNEL_INITIALIZER: InitializerIdentifier = 'glorotNormal';
+  readonly DEFAULT_BIAS_INITIALIZER: InitializerIdentifier = 'zeros';
   private readonly kernelConstraint?: Constraint;
   private readonly biasConstraint?: Constraint;
   private readonly kernelRegularizer?: Regularizer;
@@ -311,7 +311,7 @@ export class Dense extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Dense', Dense);
+generic_utils.ClassNameMap.register('dense', Dense);
 
 /**
  * Flattens the input. Does not affect the batch size.
@@ -356,7 +356,7 @@ export class Flatten extends Layer {
     return K.batchFlatten(generic_utils.getExactlyOneTensor(inputs));
   }
 }
-generic_utils.ClassNameMap.register('Flatten', Flatten);
+generic_utils.ClassNameMap.register('flatten', Flatten);
 
 export interface ActivationLayerConfig extends LayerConfig {
   /**
@@ -384,7 +384,7 @@ export class Activation extends Layer {
     return this.activation(input);
   }
 }
-generic_utils.ClassNameMap.register('Activation', Activation);
+generic_utils.ClassNameMap.register('activation', Activation);
 
 export interface ReshapeLayerConfig extends LayerConfig {
   /** The target shape. Does not include the batch axis. */
@@ -430,7 +430,7 @@ export class RepeatVector extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('RepeatVector', RepeatVector);
+generic_utils.ClassNameMap.register('repeatVector', RepeatVector);
 
 
 /**
@@ -537,4 +537,4 @@ export class Reshape extends Layer {
     return K.reshape(input, outputShape);
   }
 }
-generic_utils.ClassNameMap.register('Reshape', Reshape);
+generic_utils.ClassNameMap.register('reshape', Reshape);

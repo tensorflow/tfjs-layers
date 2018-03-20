@@ -103,15 +103,15 @@ describeMathCPU('model_from_json', () => {
   });
 
   it('Serialization round-tripping', done => {
-    modelFromJSON(fakeRoundtripModel)
+    modelFromJSON(pythonicFakeRoundtripModel)
         .then(model => {
           const serializedModel = model.toJSON();
           const reparsedJson = JSON.parse(serializedModel);
           expect(reparsedJson['class_name'])
-              .toEqual(fakeRoundtripModel.modelTopology['class_name']);
+              .toEqual(pythonicFakeRoundtripModel.modelTopology['class_name']);
           // Intentionally skipping backend and keras_version fields.
           expect(reparsedJson['config'])
-              .toEqual(fakeRoundtripModel.modelTopology['config']);
+              .toEqual(pythonicFakeRoundtripModel.modelTopology['config']);
         })
         .then(done)
         .catch(done.fail);
@@ -306,11 +306,11 @@ describeMathCPUAndGPU('Sequential', () => {
     const denseLayer1 = tfl.layers.dense({
       units: 3,
       useBias: false,
-      kernelInitializer: 'Ones',
+      kernelInitializer: 'ones',
       inputShape: [inputSize]
     });
     const denseLayer2 =
-        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'ones'});
     const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     const history = await model.fit(xs, ys, {batchSize, epochs: 2});
@@ -338,11 +338,11 @@ describeMathCPUAndGPU('Sequential', () => {
     const denseLayer1 = tfl.layers.dense({
       units: 3,
       useBias: false,
-      kernelInitializer: 'Ones',
+      kernelInitializer: 'ones',
       inputShape: [inputSize]
     });
     const denseLayer2 =
-        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'ones'});
     const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     const losses = model.evaluate(xs, ys, {batchSize}) as Scalar;
@@ -376,7 +376,7 @@ const fakeSequentialModel: ModelAndWeightsConfig = {
             'bias_constraint': null,
             'use_bias': true,
             'kernel_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1,
@@ -391,7 +391,7 @@ const fakeSequentialModel: ModelAndWeightsConfig = {
             'kernel_constraint': null,
             'kernel_regularizer': null,
             'name': 'dense_6',
-            'bias_initializer': {'class_name': 'Zeros', 'config': {}}
+            'bias_initializer': {'class_name': 'zeros', 'config': {}}
           },
           'inbound_nodes': [[['input_6', 0, 0, {}]]],
           'name': 'dense_6'
@@ -429,14 +429,14 @@ const fakeNonSequentialModel: ModelAndWeightsConfig = {
           'name': 'conv2d_15',
           'inbound_nodes': [[['input_6', 0, 0, {}]]],
           'config': {
-            'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+            'bias_initializer': {'class_name': 'zeros', 'config': {}},
             'padding': 'valid',
             'use_bias': true,
             'strides': [1, 1],
             'bias_regularizer': null,
             'activity_regularizer': null,
             'kernel_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1.0,
@@ -461,14 +461,14 @@ const fakeNonSequentialModel: ModelAndWeightsConfig = {
           'name': 'conv2d_16',
           'inbound_nodes': [[['conv2d_15', 0, 0, {}]]],
           'config': {
-            'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+            'bias_initializer': {'class_name': 'zeros', 'config': {}},
             'padding': 'valid',
             'use_bias': true,
             'strides': [1, 1],
             'bias_regularizer': null,
             'activity_regularizer': null,
             'kernel_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1.0,
@@ -527,7 +527,7 @@ const fakeNonSequentialModel: ModelAndWeightsConfig = {
             'use_bias': true,
             'bias_regularizer': null,
             'kernel_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1.0,
@@ -535,7 +535,7 @@ const fakeNonSequentialModel: ModelAndWeightsConfig = {
                 'seed': null
               }
             },
-            'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+            'bias_initializer': {'class_name': 'zeros', 'config': {}},
             'kernel_constraint': null,
             'bias_constraint': null,
             'kernel_regularizer': null,
@@ -566,7 +566,7 @@ const fakeNonSequentialModel: ModelAndWeightsConfig = {
             'use_bias': true,
             'bias_regularizer': null,
             'kernel_initializer': {
-              'class_name': 'VarianceScaling',
+              'class_name': 'varianceScaling',
               'config': {
                 'distribution': 'uniform',
                 'scale': 1.0,
@@ -574,7 +574,7 @@ const fakeNonSequentialModel: ModelAndWeightsConfig = {
                 'seed': null
               }
             },
-            'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+            'bias_initializer': {'class_name': 'zeros', 'config': {}},
             'kernel_constraint': null,
             'bias_constraint': null,
             'kernel_regularizer': null,
@@ -611,7 +611,7 @@ const fakeMnistModel: ModelAndWeightsConfig = {
           'trainable': true,
           'activation': 'relu',
           'dtype': 'float32',
-          'bias_initializer': {'config': {}, 'class_name': 'Zeros'},
+          'bias_initializer': {'config': {}, 'class_name': 'zeros'},
           'bias_regularizer': null,
           'name': 'conv2d_1',
           'kernel_initializer': {
@@ -621,7 +621,7 @@ const fakeMnistModel: ModelAndWeightsConfig = {
               'seed': null,
               'distribution': 'uniform'
             },
-            'class_name': 'VarianceScaling'
+            'class_name': 'varianceScaling'
           },
           'activity_regularizer': null
         },
@@ -641,7 +641,7 @@ const fakeMnistModel: ModelAndWeightsConfig = {
           'trainable': true,
           'activation': 'relu',
           'kernel_constraint': null,
-          'bias_initializer': {'config': {}, 'class_name': 'Zeros'},
+          'bias_initializer': {'config': {}, 'class_name': 'zeros'},
           'bias_regularizer': null,
           'name': 'conv2d_2',
           'kernel_initializer': {
@@ -651,7 +651,7 @@ const fakeMnistModel: ModelAndWeightsConfig = {
               'seed': null,
               'distribution': 'uniform'
             },
-            'class_name': 'VarianceScaling'
+            'class_name': 'varianceScaling'
           },
           'activity_regularizer': null
         },
@@ -686,7 +686,7 @@ const fakeMnistModel: ModelAndWeightsConfig = {
         'config': {
           'use_bias': true,
           'units': 128,
-          'bias_initializer': {'config': {}, 'class_name': 'Zeros'},
+          'bias_initializer': {'config': {}, 'class_name': 'zeros'},
           'kernel_regularizer': null,
           'bias_regularizer': null,
           'trainable': true,
@@ -701,7 +701,7 @@ const fakeMnistModel: ModelAndWeightsConfig = {
               'seed': null,
               'distribution': 'uniform'
             },
-            'class_name': 'VarianceScaling'
+            'class_name': 'varianceScaling'
           },
           'activity_regularizer': null
         },
@@ -721,7 +721,7 @@ const fakeMnistModel: ModelAndWeightsConfig = {
         'config': {
           'use_bias': true,
           'units': 10,
-          'bias_initializer': {'config': {}, 'class_name': 'Zeros'},
+          'bias_initializer': {'config': {}, 'class_name': 'zeros'},
           'kernel_regularizer': null,
           'bias_regularizer': null,
           'trainable': true,
@@ -736,7 +736,7 @@ const fakeMnistModel: ModelAndWeightsConfig = {
               'seed': null,
               'distribution': 'uniform'
             },
-            'class_name': 'VarianceScaling'
+            'class_name': 'varianceScaling'
           },
           'activity_regularizer': null
         },
@@ -748,7 +748,7 @@ const fakeMnistModel: ModelAndWeightsConfig = {
   }
 };
 
-const fakeRoundtripModel: ModelAndWeightsConfig = {
+const pythonicFakeRoundtripModel: ModelAndWeightsConfig = {
   modelTopology: {
     'backend': 'tensorflow',
     'class_name': 'Model',

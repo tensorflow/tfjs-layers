@@ -26,7 +26,7 @@ import {describeMathCPU, expectTensorsClose, expectTensorsValuesInRange} from '.
 
 describeMathCPU('Zeros initializer', () => {
   it('1D', () => {
-    const init = getInitializer('Zeros');
+    const init = getInitializer('zeros');
     const weights = init.apply([3], DType.float32);
     expect(weights.shape).toEqual([3]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -34,7 +34,7 @@ describeMathCPU('Zeros initializer', () => {
   });
 
   it('2D', () => {
-    const init = getInitializer('Zeros');
+    const init = getInitializer('zeros');
     const weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -44,7 +44,7 @@ describeMathCPU('Zeros initializer', () => {
 
 describeMathCPU('Ones initializer', () => {
   it('1D', () => {
-    const init = getInitializer('Ones');
+    const init = getInitializer('ones');
     const weights = init.apply([3], DType.float32);
     expect(weights.shape).toEqual([3]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -52,7 +52,7 @@ describeMathCPU('Ones initializer', () => {
   });
 
   it('2D', () => {
-    const init = getInitializer('Ones');
+    const init = getInitializer('ones');
     const weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -63,7 +63,7 @@ describeMathCPU('Ones initializer', () => {
 describeMathCPU('Constant initializer', () => {
   it('1D', () => {
     const initializerConfig:
-        ConfigDict = {className: 'Constant', config: {value: 5}};
+        ConfigDict = {className: 'constant', config: {value: 5}};
     const init = getInitializer(initializerConfig);
     const weights = init.apply([3], DType.float32);
     expect(weights.shape).toEqual([3]);
@@ -73,7 +73,7 @@ describeMathCPU('Constant initializer', () => {
 
   it('2D', () => {
     const initializerConfig:
-        ConfigDict = {className: 'Constant', config: {value: 5}};
+        ConfigDict = {className: 'constant', config: {value: 5}};
     const init = getInitializer(initializerConfig);
     const weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
@@ -85,7 +85,7 @@ describeMathCPU('Constant initializer', () => {
 describeMathCPU('Identity initializer', () => {
   it('1D', () => {
     const initializerConfig:
-        ConfigDict = {className: 'Identity', config: {gain: 5}};
+        ConfigDict = {className: 'identity', config: {gain: 5}};
     const init = getInitializer(initializerConfig);
     expect(() => {
       init.apply([4]);
@@ -94,7 +94,7 @@ describeMathCPU('Identity initializer', () => {
 
   it('2D', () => {
     const initializerConfig:
-        ConfigDict = {className: 'Identity', config: {gain: 5}};
+        ConfigDict = {className: 'identity', config: {gain: 5}};
     const init = getInitializer(initializerConfig);
     const weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
@@ -107,7 +107,7 @@ describeMathCPU('Identity initializer', () => {
 describeMathCPU('RandomUniform initializer', () => {
   const shape = [7, 2];
   it('default', () => {
-    const init = getInitializer('RandomUniform');
+    const init = getInitializer('randomUniform');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -116,7 +116,7 @@ describeMathCPU('RandomUniform initializer', () => {
 
   it('with configured min max val', () => {
     const initializerConfig: ConfigDict = {
-      className: 'RandomUniform',
+      className: 'randomUniform',
       config: {minval: 17, maxval: 47}
     };
     const init = getInitializer(initializerConfig);
@@ -130,7 +130,7 @@ describeMathCPU('RandomUniform initializer', () => {
 describeMathCPU('RandomNormal initializer', () => {
   const shape = [7, 2];
   it('default', () => {
-    const init = getInitializer('RandomNormal');
+    const init = getInitializer('randomNormal');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -139,7 +139,7 @@ describeMathCPU('RandomNormal initializer', () => {
 
   it('with configured min max val', () => {
     const initializerConfig: ConfigDict = {
-      className: 'RandomNormal',
+      className: 'randomNormal',
       config: {mean: 1.0, stddev: 0.001}
     };
     const init = getInitializer(initializerConfig);
@@ -154,7 +154,7 @@ describeMathCPU('HeNormal initializer', () => {
   const shape = [7, 2];
   const stddev = Math.sqrt(2 / shape[0]);
   it('default', () => {
-    const init = getInitializer('HeNormal');
+    const init = getInitializer('heNormal');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -166,7 +166,7 @@ describeMathCPU('LecunNormal initializer', () => {
   const shape = [7, 2];
   const stddev = Math.sqrt(1 / shape[0]);
   it('default', () => {
-    const init = getInitializer('LeCunNormal');
+    const init = getInitializer('leCunNormal');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -177,7 +177,7 @@ describeMathCPU('LecunNormal initializer', () => {
 describeMathCPU('TruncatedNormal initializer', () => {
   const shape = [7, 2];
   it('default', () => {
-    const init = getInitializer('TruncatedNormal');
+    const init = getInitializer('truncatedNormal');
     const weights = init.apply(shape, DType.float32);
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual(DType.float32);
@@ -186,7 +186,7 @@ describeMathCPU('TruncatedNormal initializer', () => {
 
   it('with configured min max val', () => {
     const initializerConfig: ConfigDict = {
-      className: 'TruncatedNormal',
+      className: 'truncatedNormal',
       config: {mean: 1.0, stddev: 0.5}
     };
     const init = getInitializer(initializerConfig);
@@ -199,7 +199,7 @@ describeMathCPU('TruncatedNormal initializer', () => {
 
 describeMathCPU('Glorot uniform initializer', () => {
   it('1D', () => {
-    const init = getInitializer('GlorotUniform');
+    const init = getInitializer('glorotUniform');
     let weights = init.apply([3], DType.float32);
     expect(weights.shape).toEqual([3]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -222,7 +222,7 @@ describeMathCPU('Glorot uniform initializer', () => {
   });
 
   it('2D', () => {
-    const init = getInitializer('GlorotUniform');
+    const init = getInitializer('glorotUniform');
     let weights = init.apply([2, 2], DType.float32);
     expect(weights.shape).toEqual([2, 2]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -247,7 +247,7 @@ describeMathCPU('Glorot uniform initializer', () => {
 
 describeMathCPU('Glorot normal initializer', () => {
   it('1D', () => {
-    const init = getInitializer('GlorotNormal');
+    const init = getInitializer('glorotNormal');
     let weights = init.apply([30], DType.float32);
     expect(weights.shape).toEqual([30]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -262,7 +262,7 @@ describeMathCPU('Glorot normal initializer', () => {
   });
 
   it('2D', () => {
-    const init = getInitializer('GlorotNormal');
+    const init = getInitializer('glorotNormal');
     let weights = init.apply([5, 6], DType.float32);
     expect(weights.shape).toEqual([5, 6]);
     expect(weights.dtype).toEqual(DType.float32);
@@ -279,7 +279,7 @@ describeMathCPU('Glorot normal initializer', () => {
 
 describeMathCPU('initializers.get', () => {
   it('by string', () => {
-    const initializer = getInitializer('GlorotNormal');
+    const initializer = getInitializer('glorotNormal');
     const config = serializeInitializer(initializer) as ConfigDict;
     const nestedConfig = config.config as ConfigDict;
     expect(nestedConfig.scale).toEqual(1.0);

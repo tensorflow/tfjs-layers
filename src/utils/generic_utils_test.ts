@@ -246,12 +246,12 @@ describe('toSnakeCase', () => {
   }
 });
 
-describe('toCamelCase', () => {
+describe('toLowerCamelCase', () => {
   for (const [inputString, expectedOutput] of[
-           ['', ''], ['A', 'A'], ['aa', 'aa'], ['a_a', 'aA'],
-           ['a_aa', 'aAa']]) {
+           ['', ''], ['A', 'A'], ['aa', 'aa'], ['a_a', 'aA'], ['a_aa', 'aAa'],
+           ['AAA', 'aaa']]) {
     it('creates expected output', () => {
-      expect(utils.toCamelCase(inputString)).toEqual(expectedOutput);
+      expect(utils.toLowerCamelCase(inputString)).toEqual(expectedOutput);
     });
   }
 });
