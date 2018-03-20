@@ -42,13 +42,14 @@ export class ModelExports {
   // Model and related factory methods.
 
   /**
-   * When creating a `Model`, specify its input(s) and output(s). Inputs are
-   * `SymbolicTensor`s provided by `Input` layers. Outputs are `SymbolicTensor`s
-   * provided by other layers that perform mathematical and neural-network
-   * operations.
+   * A model is a data structure that consists of `Layers` and defines inputs
+   * and outputs.
+   *
+   * When creating a `Model`, specify its input(s) and output(s). Layers
+   * are used to wire input(s) to output(s).
    *
    * For example, the following code snippet defines a model consisting of
-   * two `dense` layers, with of 10 and 4 units, respectively.
+   * two `dense` layers, with 10 and 4 units, respectively.
    *
    * ```js
    * // Define input, which has a size of 5 (not including batch dimension).
@@ -70,7 +71,6 @@ export class ModelExports {
    * // some fake data.
    * model.predict(tf.ones([2, 5])).print();
    * ```
-   *
    * See also:
    *   `sequential`, `loadModel`.
    */
@@ -81,10 +81,12 @@ export class ModelExports {
   }
 
   /**
-   * Creates a `Sequential` model, as a stack of `Layer`s.
+   * Creates a `Sequential` model.  A sequential model is any model where the
+   * outputs of one layer are the inputs to the next layer, i.e. the model
+   * topology is a simple 'stack' of layers, with no branching or skipping.
    *
-   * Note: The first layer passed to a Sequential model should have a defined
-   * input shape. What that means is that it should have received an
+   * This means that the first layer passed to a Sequential model should have a
+   * defined input shape. What that means is that it should have received an
    * `inputShape` or `batchInputShape` argument, or for some type of layers
    * (recurrent, Dense...) an `inputDim` argument.
    *
@@ -105,8 +107,8 @@ export class ModelExports {
    * ```
    *
    * It is also possible to specify a batch size (with potentially undetermined
-   * batch dimension) for the first layer using the `batchInputShape` key. The
-   * following example is equivalent to the above:
+   * batch dimension, denoted by "null") for the first layer using the
+   * `batchInputShape` key. The following example is equivalent to the above:
    *
    * ```js
    * const model = tf.sequential();
