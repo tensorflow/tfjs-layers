@@ -613,7 +613,7 @@ export interface ModelCompileConfig {
  *
  * A `Model` is the basic unit of training, inference and evaluation in
  * TensorFlow.js. To create a `Model, use `model`.
- * *
+ *
  * See also:
  *   `Sequential`, `loadModel`.
  */
