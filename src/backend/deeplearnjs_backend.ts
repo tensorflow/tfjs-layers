@@ -870,7 +870,8 @@ export function sign(x: Tensor): Tensor {
  * Requires `m >= n`.
  *
  * Implementation based on
- *   [http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf](http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf)
+ *   [http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf]
+ * (http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf)
  *
  * @param x The 2D `Tensor` (matrix) to be QR-decomposed. Must have
  *   `x.shape[0] >= x.shape[1]`.
