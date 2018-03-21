@@ -735,7 +735,6 @@ export class InitializerExports {
     namespace: 'initializers',
     useDocsFrom: 'Orthogonal',
     configParamIndices: [0]
-
   })
   static orthogonal(config: OrthogonalConfig): Orthogonal {
     return new Orthogonal(config);

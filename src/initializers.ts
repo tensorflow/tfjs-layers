@@ -513,9 +513,7 @@ ClassNameMap.register('LeCunNormal', LeCunNormal);
 
 export interface OrthogonalConfig extends SeedOnlyInitializerConfig {
   /**
-   * Multiplicative factor to apply to the orthogonal matrix.
-   *
-   * Defaults to 1.
+   * Multiplicative factor to apply to the orthogonal matrix. Defaults to 1.
    */
   gain?: number;
 }
