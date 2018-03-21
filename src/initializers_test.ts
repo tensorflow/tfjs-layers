@@ -17,11 +17,11 @@ import {Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/deeplearnjs_backend';
 import * as tfl from './index';
-import {checkDistribution, checkFanMode, getInitializer, serializeInitializer, VALID_DISTRIBUTION_VALUES, VALID_FAN_MODE_VALUES, Zeros} from './initializers';
+import {checkDistribution, checkFanMode, getInitializer, Orthogonal, serializeInitializer, VALID_DISTRIBUTION_VALUES, VALID_FAN_MODE_VALUES, Zeros} from './initializers';
 import {DType} from './types';
 import {ConfigDict} from './types';
 import * as math_utils from './utils/math_utils';
-import {describeMathCPU, describeMathGPU, expectTensorsClose, expectTensorsValuesInRange} from './utils/test_utils';
+import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose, expectTensorsValuesInRange} from './utils/test_utils';
 
 // tslint:enable:max-line-length
 
@@ -423,7 +423,7 @@ describe('checkDistribution', () => {
   });
 });
 
-describeMathGPU('Orthogonal Initializer', () => {
+describeMathCPUAndGPU('Orthogonal Initializer', () => {
   it('2x2', () => {
     const init = getInitializer('Orthogonal');
     const w = init.apply([2, 2], DType.float32) as Tensor2D;
@@ -431,6 +431,16 @@ describeMathGPU('Orthogonal Initializer', () => {
     expect(w.dtype).toEqual(DType.float32);
     // Assert that columns of w are orthogonal (w is a unitary matrix).
     expectTensorsClose(w.transpose().matMul(w), K.eye(2));
+  });
+
+  it('1x1 with gain', () => {
+    const init = new Orthogonal({gain: 3});
+    const w = init.apply([1, 1], DType.float32) as Tensor2D;
+    expect(w.shape).toEqual([1, 1]);
+    expect(w.dtype).toEqual(DType.float32);
+    // Assert that columns of w are orthogonal (w is a unitary matrix) and the
+    // gain has been reflected.
+    expectTensorsClose(w.transpose().matMul(w), tensor2d([[9]], [1, 1]));
   });
 
   it('4x2', () => {

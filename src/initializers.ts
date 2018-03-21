@@ -407,7 +407,7 @@ ClassNameMap.register('VarianceScaling', VarianceScaling);
 
 export interface SeedOnlyInitializerConfig {
   /** Random number generator seed. */
-  seed: number;
+  seed?: number;
 }
 
 /**
@@ -558,7 +558,7 @@ export class Orthogonal extends Initializer {
     if (shape[0] < shape[1]) {
       q = q.transpose();
     }
-    return q;
+    return K.scalarTimesArray(K.getScalar(this.gain), q);
   }
 
   getConfig(): ConfigDict {
