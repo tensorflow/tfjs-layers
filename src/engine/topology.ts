@@ -328,7 +328,7 @@ let _nextLayerID = 0;
  * create a `Model`.
  *
  * Layers are constructed by using the functions under the
- * [tf.layers](#Layers-Core) namespace.
+ * [tf.layers](#Layers-Basic) namespace.
  */
 @doc({heading: 'Layers', subheading: 'Classes', namespace: 'layers'})
 export class Layer {
@@ -759,8 +759,6 @@ export class Layer {
   /**
    * Wrapper around this.call(), for handling internal references.
    *
-   * This is a replacement for __call__() in Python.
-   *
    * If a `SymbolicTensor` is passed:
    *   - We call this.addInboundNode().
    *   - If necessary, we `build` the layer to match
@@ -780,6 +778,7 @@ export class Layer {
    * @exception ValueError error in case the layer is missing shape information
    *   for its `build` call.
    */
+  // Porting Note: This is a replacement for __call__() in Python.
   @doc({heading: 'Models', 'subheading': 'Classes'})
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
