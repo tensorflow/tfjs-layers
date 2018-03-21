@@ -523,9 +523,8 @@ export interface OrthogonalConfig extends SeedOnlyInitializerConfig {
 /**
  * Initializer that generates a random orthogonal matrix.
  *
- * # Reference:
- *   [Saxe et al.,
- * http://arxiv.org/abs/1312.6120(http://arxiv.org/abs/1312.6120)
+ * Reference:
+ * [Saxe et al., http://arxiv.org/abs/1312.6120](http://arxiv.org/abs/1312.6120)
  */
 export class Orthogonal extends Initializer {
   readonly DEFAULT_GAIN = 1;
