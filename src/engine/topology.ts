@@ -759,14 +759,14 @@ export class Layer {
   /**
    * Builds or executes a `Layer's logic.
    *
-   * When called with `Tensor`(s), execute the `Layer`s logic and
+   * When called with `Tensor`(s), execute the `Layer`s computation and
    * return Tensor(s).
    *
    * When called with `SymbolicTensor`(s), this will prepare the layer for
    * future execution.  This entails internal book-keeping on shapes of
    * expected Tensors, wiring layers together, and initializing weights.
    *
-   * @param inputs Can be a tensor or list/tuple of tensors.
+   * @param inputs a `Tensor` or `SymbolicTensor` or an Array of them.
    * @param kwargs Additional keyword arguments to be passed to `call()`.
    *
    * @return Output of the layer's `call` method.
