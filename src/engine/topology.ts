@@ -791,7 +791,7 @@ export class Layer {
    * const flattenLayer = tf.layers.flatten();
    * const denseLayer = tf.layers.dense({units: 1});
    *
-   * // Use tf.layers.input() to obatin a SymbolicTensor as input to apply().
+   * // Use tf.layers.input() to obtain a SymbolicTensor as input to apply().
    * const input = tf.input({shape: [2, 2]});
    * const output1 = flattenLayer.apply(input);
    *
