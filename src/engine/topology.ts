@@ -1279,9 +1279,7 @@ export interface InputLayerConfig {
 }
 
 /**
- * The `InputLayer` class is to be used as an entry point into a graph.
- *
- * Users should construct `InputLayer`s with the `inputLayer` factory function.
+ * An input layeris the entry point to a `Model`.
  *
  * InputLayer is generated automatically for `SequentialModel`s.  It should not
  * be specified explicitly.
