@@ -1028,7 +1028,7 @@ export class Model extends Container {
    * Computation is done in batches.
    *
    * Note: the "step" mode of predict() is currently not supported.
-   *   This is because the TensorFow.js core backend is imperative only.
+   *   This is because the TensorFlow.js core backend is imperative only.
    *
    * ```js
    * const model = tf.sequential({
@@ -1039,7 +1039,7 @@ export class Model extends Container {
    *
    * @param x The input data, as an Tensor, or an `Array` of `Tensor`s if
    *   the model has multiple inputs.
-   * @param conifg A `ModelPredictConfig` object containing optional fields.
+   * @param config A `ModelPredictConfig` object containing optional fields.
    *
    * @return Prediction results as a `Tensor`(s).
    *
@@ -1062,6 +1062,12 @@ export class Model extends Container {
   /**
    * Returns predictions for a single batch of samples.
    *
+   * ```js
+   * const model = tf.sequential({
+   *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
+   * });
+   * model.predictOnBatch(tf.ones([8, 10])).print();
+   * ```
    * @param x: Input samples, as an Tensor
    * @return Tensor(s) of predictions
    */
@@ -1412,13 +1418,17 @@ export class Model extends Container {
    *
    * ```js
    * const model = tf.sequential({
-   *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
-   * });
+   *      layers: [tf.layers.dense({units: 1, inputShape: [10]})]
+   *   });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * const history = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
-   *   batchSize: 4,
-   *   epochs: 3
-   * });
+   * for (i = 1; i < 5 ; ++i) {
+   *     const h = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
+   *         batchSize: 4,
+   *         epochs: 3
+   *     });
+   *     console.log("Loss after Epoch " + i + " : " + h.history.loss[0]);
+   * }
+   * ```
    *
    * @param x `Tensor` of training data, or an array of `Tensor`s if the model
    *   has multiple inputs. If all inputs in the model are named, you can also
