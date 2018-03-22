@@ -17,6 +17,7 @@ import {Tensor, tensor4d} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/deeplearnjs_backend';
 import {DataFormat, PaddingMode} from '../common';
+import {InitializerIdentifier} from '../initializers';
 import {DType} from '../types';
 import {SymbolicTensor} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
@@ -26,8 +27,8 @@ import {DepthwiseConv2D} from './convolutional_depthwise';
 // tslint:enable:max-line-length
 
 describeMathCPU('DepthwiseConv2D-Symbolic', () => {
-  const dataFormats: DataFormat[] = ['channelFirst', 'channelLast'];
-  const kernelSizes: [number|[number, number]] = [2, [2, 2]];
+  const dataFormats: DataFormat[] = ['channelsFirst', 'channelsLast'];
+  const kernelSizes: [number, [number, number]] = [2, [2, 2]];
   const depthMultipliers = [1, 3];
   const paddingModes: PaddingMode[] = ['valid', 'same'];
 
@@ -42,8 +43,8 @@ describeMathCPU('DepthwiseConv2D-Symbolic', () => {
           it(testTitle, () => {
             const depthwiseConvLayer = new DepthwiseConv2D(
                 {dataFormat, kernelSize, depthMultiplier, padding});
-            const inputShape =
-                dataFormat === 'channelFirst' ? [1, 8, 10, 10] : [1, 10, 10, 8];
+            const inputShape = dataFormat === 'channelsFirst' ? [1, 8, 10, 10] :
+                                                                [1, 10, 10, 8];
             const symbolicInput =
                 new SymbolicTensor(DType.float32, inputShape, null, [], null);
             const symbolicOutput =
@@ -51,7 +52,7 @@ describeMathCPU('DepthwiseConv2D-Symbolic', () => {
 
             const outputImageSize = padding === 'valid' ? 9 : 10;
             let expectedShape: [number, number, number, number];
-            if (dataFormat === 'channelFirst') {
+            if (dataFormat === 'channelsFirst') {
               expectedShape =
                   [1, 8 * depthMultiplier, outputImageSize, outputImageSize];
             } else {
@@ -83,12 +84,13 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
 
   const depthMultipliers = [1, 2];
   const useBiases = [false];
-  const biasInitializers = ['Zeros', 'Ones'];
+  const biasInitializers: InitializerIdentifier[] = ['zeros', 'ones'];
 
   for (const depthMultiplier of depthMultipliers) {
     for (const useBias of useBiases) {
       for (const biasInitializer of biasInitializers) {
-        const testTitle = `channelFirst, depthMultiplier=${depthMultiplier}, ` +
+        const testTitle =
+            `channelsFirst, depthMultiplier=${depthMultiplier}, ` +
             `useBias=${useBias}, biasInitializer=${biasInitializer}, ` +
             `activation=relu`;
         it(testTitle, () => {
@@ -97,11 +99,11 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
             kernelSize: [2, 2],
             depthMultiplier,
             strides: [2, 2],
-            dataFormat: 'channelFirst',
+            dataFormat: 'channelsFirst',
             useBias,
-            depthwiseInitializer: 'Ones',
+            depthwiseInitializer: 'ones',
             biasInitializer,
-            activation: 'relu',
+            activation: 'relu'
           });
           const y = conv2dLayer.apply(x) as Tensor;
 
@@ -114,7 +116,7 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
             yExpectedShape = [1, 2, 2, 2];
             yExpectedData = [100, 260, -100, -260, 100, 260, -100, -260];
           }
-          if (useBias && biasInitializer === 'Ones') {
+          if (useBias && biasInitializer === 'ones') {
             yExpectedData = yExpectedData.map(element => element + 1);
           }
           // relu.
@@ -127,17 +129,17 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
     }
   }
 
-  it('channelLast', () => {
-    // Convert input to channelLast.
+  it('channelsLast', () => {
+    // Convert input to channelsLast.
     const x = K.transpose(tensor4d(x4by4Data, [1, 1, 4, 4]), [0, 2, 3, 1]);
     const conv2dLayer = new DepthwiseConv2D({
       depthMultiplier: 2,
       kernelSize: [2, 2],
       strides: [2, 2],
-      dataFormat: 'channelLast',
+      dataFormat: 'channelsLast',
       useBias: false,
-      depthwiseInitializer: 'Ones',
-      activation: 'linear',
+      depthwiseInitializer: 'ones',
+      activation: 'linear'
     });
     const y = conv2dLayer.apply(x) as Tensor;
     const yExpected =

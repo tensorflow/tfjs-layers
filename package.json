@@ -1,18 +1,17 @@
 {
   "name": "@tensorflow/tfjs-layers",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "TensorFlow layers API in JavaScript",
   "private": false,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "devDependencies": {
-    "@tensorflow/tfjs-core": "0.0.1",
+    "@tensorflow/tfjs-core": "0.0.2",
     "@types/jasmine": "~2.5.53",
     "@types/underscore": "^1.8.7",
     "browserify": "~16.1.0",
     "clang-format": "~1.2.2",
     "cross-spawn": "~5.1.0",
-    "deeplearn-src": "PAIR-code/deeplearnjs",
     "http-server": "~0.10.0",
     "jasmine-core": "~2.6.4",
     "karma": "~1.7.0",
@@ -32,7 +31,6 @@
     "watchify": "~3.9.0"
   },
   "scripts": {
-    "prep": "yarn && yarn build && cd demos/ && yarn prep && cd ..",
     "build": "tsc",
     "build-npm": "./scripts/build-npm.sh",
     "publish-npm": "./scripts/publish-npm.sh",
@@ -43,6 +41,6 @@
     "underscore": "~1.8.3"
   },
   "peerDependencies": {
-    "@tensorflow/tfjs-core": "0.0.1"
+    "@tensorflow/tfjs-core": "0.0.2"
   }
 }

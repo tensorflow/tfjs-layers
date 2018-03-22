@@ -9,12 +9,12 @@
  */
 
 // tslint:disable:max-line-length
-import {doc, scalar, Scalar, Tensor} from '@tensorflow/tfjs-core';
+import {doc, scalar, Scalar, Tensor, Tensor2D} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 import * as K from './backend/deeplearnjs_backend';
 import {checkDataFormat, DataFormat} from './common';
-import {ValueError} from './errors';
+import {NotImplementedError, ValueError} from './errors';
 import {DType, Shape} from './types';
 import {ConfigDict, ConfigDictValue} from './types';
 import {ClassNameMap, Constructor, deserializeKerasObject, SerializableEnumRegistry, serializeKerasObject} from './utils/generic_utils';
@@ -294,7 +294,7 @@ ClassNameMap.register('Identity', Identity);
  * @return An length-2 array: fanIn, fanOut.
  */
 function computeFans(
-    shape: Shape, dataFormat: DataFormat = 'channelLast'): number[] {
+    shape: Shape, dataFormat: DataFormat = 'channelsLast'): number[] {
   let fanIn: number;
   let fanOut: number;
   checkDataFormat(dataFormat);
@@ -302,11 +302,11 @@ function computeFans(
     fanIn = shape[0];
     fanOut = shape[1];
   } else if (_.contains([3, 4, 5], shape.length)) {
-    if (dataFormat === 'channelFirst') {
+    if (dataFormat === 'channelsFirst') {
       const receptiveFieldSize = arrayProd(shape, 2);
       fanIn = shape[1] * receptiveFieldSize;
       fanOut = shape[0] * receptiveFieldSize;
-    } else if (dataFormat === 'channelLast') {
+    } else if (dataFormat === 'channelsLast') {
       const receptiveFieldSize = arrayProd(shape, 0, shape.length - 2);
       fanIn = shape[shape.length - 2] * receptiveFieldSize;
       fanOut = shape[shape.length - 1] * receptiveFieldSize;
@@ -407,7 +407,7 @@ ClassNameMap.register('VarianceScaling', VarianceScaling);
 
 export interface SeedOnlyInitializerConfig {
   /** Random number generator seed. */
-  seed: number;
+  seed?: number;
 }
 
 /**
@@ -511,13 +511,85 @@ export class LeCunNormal extends VarianceScaling {
 }
 ClassNameMap.register('LeCunNormal', LeCunNormal);
 
-// TODO(cais): Implement Orthogonal once the deeplearn.js feature is fulfilled:
-//   https://github.com/PAIR-code/deeplearnjs/issues/245
+export interface OrthogonalConfig extends SeedOnlyInitializerConfig {
+  /**
+   * Multiplicative factor to apply to the orthogonal matrix. Defaults to 1.
+   */
+  gain?: number;
+}
+
+/**
+ * Initializer that generates a random orthogonal matrix.
+ *
+ * Reference:
+ * [Saxe et al., http://arxiv.org/abs/1312.6120](http://arxiv.org/abs/1312.6120)
+ */
+export class Orthogonal extends Initializer {
+  readonly DEFAULT_GAIN = 1;
+  protected readonly gain: number;
+  protected readonly seed: number;
+
+  constructor(config?: OrthogonalConfig) {
+    super();
+    this.gain = config.gain == null ? this.DEFAULT_GAIN : config.gain;
+    this.seed = config.seed;
+
+    if (this.seed != null) {
+      throw new NotImplementedError(
+          'Random seed is not implemented for Orthogonal Initializer yet.');
+    }
+  }
+
+  apply(shape: Shape, dtype?: DType): Tensor {
+    if (shape.length !== 2) {
+      throw new NotImplementedError(
+          'The Orthogonal Initializer does not support non-2D shapes yet.');
+    }
+    const normalizedShape = shape[0] >= shape[1] ? shape : [shape[1], shape[0]];
+    // TODO(cais): Add seed support.
+    const a = K.randomNormal(normalizedShape, 0, 1, DType.float32);
+    let q = K.qr(a as Tensor2D)[0];
+    if (q.shape[1] > normalizedShape[1]) {
+      q = q.slice([0, 0], normalizedShape);
+    }
+    if (shape[0] < shape[1]) {
+      q = q.transpose();
+    }
+    return K.scalarTimesArray(K.getScalar(this.gain), q);
+  }
+
+  getConfig(): ConfigDict {
+    return {
+      gain: this.gain,
+      seed: this.seed,
+    };
+  }
+}
+ClassNameMap.register('Orthogonal', Orthogonal);
 
 /** @docinline */
-export type InitializerIdentifier = 'Constant'|'GlorotNormal'|'GlorotUniform'|
-    'HeNormal'|'Identity'|'LeCunNormal'|'Ones'|'RandomNormal'|'RandomUniform'|
-    'TruncatedNormal'|'VarianceScaling'|'Zeros'|string;
+export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
+    'heNormal'|'identity'|'leCunNormal'|'ones'|'orthogonal'|'randomNormal'|
+    'randomUniform'|'truncatedNormal'|'varianceScaling'|'zeros'|string;
+
+// Maps the JavaScript-like identifier keys to the corresponding registry
+// symbols.
+export const INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:
+    {[identifier in InitializerIdentifier]: string} = {
+      'constant': 'Constant',
+      'glorotNormal': 'GlorotNormal',
+      'glorotUniform': 'GlorotUniform',
+      'heNormal': 'HeNormal',
+      'identity': 'Identity',
+      'leCunNormal': 'LeCunNormal',
+      'ones': 'Ones',
+      'orthogonal': 'Orthogonal',
+      'randomNormal': 'RandomNormal',
+      'randomUniform': 'RandomUniform',
+      'truncatedNormal': 'TruncatedNormal',
+      'varianceScaling': 'VarianceScaling',
+      'zeros': 'Zeros'
+    };
 
 function deserializeInitializer(
     config: ConfigDict, customObjects: ConfigDict = {}): Initializer {
@@ -534,7 +606,10 @@ export function serializeInitializer(initializer: Initializer):
 export function getInitializer(identifier: InitializerIdentifier|Initializer|
                                ConfigDict): Initializer {
   if (typeof identifier === 'string') {
-    const config = {className: identifier, config: {}};
+    const className = identifier in INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP ?
+        INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] :
+        identifier;
+    const config = {className, config: {}};
     return deserializeInitializer(config);
   } else if (identifier instanceof Initializer) {
     return identifier;

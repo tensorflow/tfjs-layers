@@ -336,7 +336,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 
   function createDenseModelAndData(useBias = false): void {
     const layer =
-        tfl.layers.dense({units: 1, useBias, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias, kernelInitializer: 'ones'});
     const output = layer.apply(inputTensor) as SymbolicTensor;
     model = new Model({inputs: [inputTensor], outputs: [output]});
     inputs = K.ones([numSamples, inputSize]);
@@ -345,7 +345,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 
   function createDenseCategoricalModelAndData(useBias = false): void {
     const layer =
-        tfl.layers.dense({units: 2, useBias, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 2, useBias, kernelInitializer: 'ones'});
     const output = layer.apply(inputTensor) as SymbolicTensor;
     model = new Model({inputs: [inputTensor], outputs: [output]});
     inputs = K.ones([numSamples, inputSize]);
@@ -354,9 +354,9 @@ describeMathCPUAndGPU('Model.fit', () => {
 
   function createTwoLayerDenseModelAndData(useBias = false): [Layer, Layer] {
     const layer1 =
-        tfl.layers.dense({units: 10, useBias, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 10, useBias, kernelInitializer: 'ones'});
     const layer2 =
-        tfl.layers.dense({units: 1, useBias, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias, kernelInitializer: 'ones'});
     const output = layer2.apply(layer1.apply(inputTensor)) as SymbolicTensor;
     model = new Model({inputs: [inputTensor], outputs: [output]});
     inputs = K.ones([numSamples, inputSize]);
@@ -366,9 +366,9 @@ describeMathCPUAndGPU('Model.fit', () => {
 
   function createDenseModelWithTwoOutputsAndData(): void {
     const layer1 =
-        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'ones'});
     const layer2 =
-        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'Ones'});
+        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'ones'});
     const output1 = layer1.apply(inputTensor1) as SymbolicTensor;
     const output2 = layer2.apply(inputTensor2) as SymbolicTensor;
     twoOutputModel = new Model(
@@ -437,10 +437,10 @@ describeMathCPUAndGPU('Model.fit', () => {
     const batchSize = 4;
     const input = Input({shape: [inputSize]});
     const dense1 =
-        tfl.layers.dense({units: 2, kernelInitializer: 'Ones', useBias: false});
+        tfl.layers.dense({units: 2, kernelInitializer: 'ones', useBias: false});
     const dropout = new Dropout({rate: 0.5});
     const dense2 =
-        tfl.layers.dense({units: 1, kernelInitializer: 'Ones', useBias: false});
+        tfl.layers.dense({units: 1, kernelInitializer: 'ones', useBias: false});
     const output =
         dense2.apply(dropout.apply(dense1.apply(input))) as SymbolicTensor;
     const model = new Model({inputs: input, outputs: output});
@@ -597,14 +597,14 @@ describeMathCPUAndGPU('Model.fit', () => {
     const outputSize = 2;
     const simpleRNN = new SimpleRNN({
       units: outputSize,
-      kernelInitializer: 'Ones',
-      recurrentInitializer: 'Ones',
+      kernelInitializer: 'ones',
+      recurrentInitializer: 'ones',
       useBias: false,
       returnSequences: true,
     });
     const timeDistributed = new TimeDistributed({
       layer: tfl.layers.dense(
-          {units: outputSize, kernelInitializer: 'Ones', useBias: false})
+          {units: outputSize, kernelInitializer: 'ones', useBias: false})
     });
     const input = Input({shape: [sequenceLength, inputSize]});
     const output =
@@ -964,6 +964,55 @@ describeMathCPUAndGPU('Model.fit', () => {
   });
 });
 
+describeMathCPUAndGPU('Model.fit with training-sensitive layers', () => {
+  it('Correct training arg during fit/evaluate/predict', async done => {
+    const inputTensor =
+        Input({shape: [1], name: 'inputLayer1', dtype: DType.float32});
+    const layer1 = tfl.layers.dense({units: 1});
+    const layer2 = tfl.layers.dropout({rate: 0.5});
+
+    // Hook the dropout layer to observe the training arg values during the
+    // fit(), evaluate() and predict() calls.
+    const dropoutLayerTrainingFlags: boolean[] = [];
+    // tslint:disable:no-any
+    const recordDropoutTrainingArgHook =
+        (inputs: Tensor|Tensor[], kwargs: any) => {
+          dropoutLayerTrainingFlags.push(kwargs.training as boolean);
+        };
+    // tslint:enable:no-any
+    layer2.setCallHook(recordDropoutTrainingArgHook);
+
+    const output = layer2.apply(layer1.apply(inputTensor)) as SymbolicTensor;
+    const model = new Model({inputs: [inputTensor], outputs: [output]});
+    model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+    const xs = K.ones([4, 1]);
+    const ys = K.ones([4, 1]);
+
+    // 1. Call fit: Dropout layer should be called twice, with training as
+    // true.
+    try {
+      await model.fit(xs, ys, {epochs: 2, batchSize: 4});
+    } catch (err) {
+      done.fail(err.stack);
+    }
+    expect(dropoutLayerTrainingFlags).toEqual([true, true]);
+
+    // 2. Call evaluate, Dropout layer should be called once, without
+    // training defined.
+    model.evaluate(xs, ys, {batchSize: 4});
+    expect(dropoutLayerTrainingFlags).toEqual([true, true, undefined]);
+
+    // 3. Call predict, Dropout layer should be called once, without training
+    //   defined.
+    model.predict(xs, {batchSize: 4});
+    expect(dropoutLayerTrainingFlags).toEqual([
+      true, true, undefined, undefined
+    ]);
+
+    done();
+  });
+});
+
 describeMathCPUAndGPU('Model.evaluate', () => {
   const numExamples = 8;
   const inputSize = 2;
@@ -974,7 +1023,7 @@ describeMathCPUAndGPU('Model.evaluate', () => {
   function prepModel() {
     const input = Input({shape: [inputSize]});
     const dense = tfl.layers.dense(
-        {units: outputSize, kernelInitializer: 'Ones', useBias: false});
+        {units: outputSize, kernelInitializer: 'ones', useBias: false});
     const output = dense.apply(input) as SymbolicTensor;
     model = new Model({inputs: input, outputs: output});
   }

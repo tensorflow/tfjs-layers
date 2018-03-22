@@ -62,7 +62,7 @@ def dispatch_pykeras_conversion(h5_path, output_dir=None):
 
 def main():
   parser = argparse.ArgumentParser(
-      'TensorFlow.js model converters.'
+      'TensorFlow.js model converters.')
   parser.add_argument(
       'input_path',
       type=str,
@@ -90,7 +90,7 @@ def main():
   FLAGS = parser.parse_args()
 
   if FLAGS.output_format == 'tensorflowjs':
-    # TODO(cais, piyu): More conversion logics can be added as additoinal
+    # TODO(cais, piyu): More conversion logics can be added as additional
     #   branches below.
     if FLAGS.input_format == 'keras':
       dispatch_pykeras_conversion(FLAGS.input_path, output_dir=FLAGS.output_dir)

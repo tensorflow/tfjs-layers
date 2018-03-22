@@ -315,9 +315,11 @@ export interface LayerConfig {
   inputDType?: DType;
 }
 
-// If necessary, add input arguments to the CallHook function, such as layer
-// and inputs. This is currently used for testing only.
-export type CallHook = () => void;
+// If necessary, add `output` arguments to the CallHook function.
+// This is currently used for testing only, but may be used for debugger-related
+// purposes in the future.
+// tslint:disable-next-line:no-any
+export type CallHook = (inputs: Tensor|Tensor[], kwargs: any) => void;
 
 let _nextLayerID = 0;
 
@@ -326,7 +328,7 @@ let _nextLayerID = 0;
  * create a `Model`.
  *
  * Layers are constructed by using the functions under the
- * [tf.layers](#Layers-Core) namespace.
+ * [tf.layers](#Layers-Basic) namespace.
  */
 @doc({heading: 'Layers', subheading: 'Classes', namespace: 'layers'})
 export class Layer {
@@ -730,9 +732,10 @@ export class Layer {
     return inputs;
   }
 
-  protected invokeCallHook() {
+  // tslint:disable-next-line:no-any
+  protected invokeCallHook(inputs: Tensor|Tensor[], kwargs: any) {
     if (this._callHook != null) {
-      this._callHook();
+      this._callHook(inputs, kwargs);
     }
   }
 
@@ -754,22 +757,64 @@ export class Layer {
   }
 
   /**
-   * Wrapper around this.call(), for handling internal references.
+   * Builds or executes a `Layer's logic.
    *
-   * This is a replacement for __call__() in Python.
+   * When called with `Tensor`(s), execute the `Layer`s computation and
+   * return Tensor(s). For example:
    *
-   * If a `SymbolicTensor` is passed:
-   *   - We call this.addInboundNode().
-   *   - If necessary, we `build` the layer to match
-   *       the shape of the input(s).
-   *   - We update the shape of every input tensor with
-   *       its new shape (obtained via self.computeOutputShape).
-   *       This is done as part of addInboundNode().
-   *   - We update the history of the output tensor(s)
-   *       with the current layer.
-   *       This is done as part of addInboundNode().
+   * ```js
+   * const denseLayer = tf.layers.dense({
+   *   units: 1,
+   *   kernelInitializer: 'zeros',
+   *   useBias: false
+   * });
    *
-   * @param inputs Can be a tensor or list/tuple of tensors.
+   * // Invoke the layer's apply() method with a `Tensor` (with concrete
+   * // numeric values).
+   * const input = tf.ones([2, 2]);
+   * const output = denseLayer.apply(input);
+   *
+   * // The output's value is expected to be [[0], [0]], due to the fact that
+   * // the dense layer has a kernel initialized to all-zeros and does not have
+   * // a bias.
+   * output.print();
+   * ```
+   *
+   * When called with `SymbolicTensor`(s), this will prepare the layer for
+   * future execution.  This entails internal book-keeping on shapes of
+   * expected Tensors, wiring layers together, and initializing weights.
+   *
+   * Calling `apply` with `SymbolicTensor`s are typically used during the
+   * building of non-`Sequential` models. For example:
+   *
+   * ```js
+   * const flattenLayer = tf.layers.flatten();
+   * const denseLayer = tf.layers.dense({units: 1});
+   *
+   * // Use tf.layers.input() to obtain a SymbolicTensor as input to apply().
+   * const input = tf.input({shape: [2, 2]});
+   * const output1 = flattenLayer.apply(input);
+   *
+   * // output1.shape is [null, 4]. The first dimension is the undetermined
+   * // batch size. The second dimension comes from flattening the [2, 2]
+   * // shape.
+   * console.log(output1.shape);
+   *
+   * // The output SymbolicTensor of the flatten layer can be used to call
+   * // the apply() of the dense layer:
+   * const output2 = denseLayer.apply(output1);
+   *
+   * // output2.shape is [null, 1]. The first dimension is the undetermined
+   * // batch size. The second dimension matches the number of units of the
+   * // dense layer.
+   * console.log(output2.shape);
+   *
+   * // The input and output and be used to construct a model that consists
+   * // of the flatten and dense layers.
+   * const model = tf.model({inputs: input, outputs: output2});
+   * ```
+   *
+   * @param inputs a `Tensor` or `SymbolicTensor` or an Array of them.
    * @param kwargs Additional keyword arguments to be passed to `call()`.
    *
    * @return Output of the layer's `call` method.
@@ -777,6 +822,7 @@ export class Layer {
    * @exception ValueError error in case the layer is missing shape information
    *   for its `build` call.
    */
+  // Porting Note: This is a replacement for __call__() in Python.
   @doc({heading: 'Models', 'subheading': 'Classes'})
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],

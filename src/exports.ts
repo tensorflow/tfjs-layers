@@ -18,7 +18,7 @@ import {doc} from '@tensorflow/tfjs-core';
 import {MaxNorm, MaxNormConfig, MinMaxNorm, MinMaxNormConfig, NonNeg, UnitNorm, UnitNormConfig} from './constraints';
 import {ContainerConfig, Input, InputConfig, InputLayer, InputLayerConfig, Layer, LayerConfig} from './engine/topology';
 import {Model} from './engine/training';
-import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, LeCunNormal, Ones, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
+import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
 import {Conv1D, Conv2D, ConvLayerConfig} from './layers/convolutional';
 import {DepthwiseConv2D, DepthwiseConv2DLayerConfig} from './layers/convolutional_depthwise';
 import {Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, DropoutLayerConfig, Flatten, RepeatVector, RepeatVectorLayerConfig} from './layers/core';
@@ -41,22 +41,99 @@ export class ModelExports {
 
   // Model and related factory methods.
 
-  @doc({
-    heading: 'Models',
-    subheading: 'Creation',
-    useDocsFrom: 'Model',
-    configParamIndices: [0]
-  })
+  /**
+   * A model is a data structure that consists of `Layers` and defines inputs
+   * and outputs.
+   *
+   * When creating a `Model`, specify its input(s) and output(s). Layers
+   * are used to wire input(s) to output(s).
+   *
+   * For example, the following code snippet defines a model consisting of
+   * two `dense` layers, with 10 and 4 units, respectively.
+   *
+   * ```js
+   * // Define input, which has a size of 5 (not including batch dimension).
+   * const input = tf.input({shape: [5]});
+   *
+   * // First dense layer uses relu activation.
+   * const denseLayer1 = tf.layers.dense({units: 10, activation: 'relu'});
+   * // Second dense layer uses softmax activation.
+   * const denseLayer2 = tf.layers.dense({units: 2, activation: 'softmax'});
+   *
+   * // Obtain the output symbolic tensor by applying the layers on the input.
+   * const output = denseLayer2.apply(denseLayer1.apply(input));
+   *
+   * // Create the model based on the inputs.
+   * const model = tf.model({inputs: input, outputs: output});
+   *
+   * // The model can be used for training, evaluation and prediction.
+   * // For example, the following line runs prediction with the model on
+   * // some fake data.
+   * model.predict(tf.ones([2, 5])).print();
+   * ```
+   * See also:
+   *   `sequential`, `loadModel`.
+   */
+
+  @doc({heading: 'Models', subheading: 'Creation', configParamIndices: [0]})
   static model(config: ContainerConfig): Model {
     return new Model(config);
   }
 
-  @doc({
-    heading: 'Models',
-    subheading: 'Creation',
-    useDocsFrom: 'Sequential',
-    configParamIndices: [0]
-  })
+  /**
+   * Creates a `Sequential` model.  A sequential model is any model where the
+   * outputs of one layer are the inputs to the next layer, i.e. the model
+   * topology is a simple 'stack' of layers, with no branching or skipping.
+   *
+   * This means that the first layer passed to a Sequential model should have a
+   * defined input shape. What that means is that it should have received an
+   * `inputShape` or `batchInputShape` argument, or for some type of layers
+   * (recurrent, Dense...) an `inputDim` argument.
+   *
+   * Examples:
+   *
+   * ```js
+   * const model = tf.sequential();
+   *
+   * // First layer must have a defined input shape
+   * model.add(tf.layers.dense({units: 32, inputShape: [50]}));
+   * // Afterwards, TF.js does automatic shape inference.
+   * model.add(tf.layers.dense({units: 4}));
+   *
+   * // Inspect the inferred shape of the model's output, which equals
+   * // `[null, 4]`. The 1st dimension is the undetermined batch dimension; the
+   * // 2nd is the output size of the model's last layer.
+   * console.log(model.outputs[0].shape);
+   * ```
+   *
+   * It is also possible to specify a batch size (with potentially undetermined
+   * batch dimension, denoted by "null") for the first layer using the
+   * `batchInputShape` key. The following example is equivalent to the above:
+   *
+   * ```js
+   * const model = tf.sequential();
+   *
+   * // First layer must have a defined input shape
+   * model.add(tf.layers.dense({units: 32, batchInputShape: [null, 50]}));
+   * // Afterwards, TF.js does automatic shape inference.
+   * model.add(tf.layers.dense({units: 4}));
+   *
+   * // Inspect the inferred shape of the model's output.
+   * console.log(model.outputs[0].shape);
+   * ```
+   *
+   * You can also use an `Array` of already-constructed `Layer`s to create
+   * a `Sequential` model:
+   *
+   * ```js
+   * const model = tf.sequential({
+   *   layers: [tf.layers.dense({units: 32, inputShape: [50]}),
+   *            tf.layers.dense({units: 4})]
+   * });
+   * console.log(model.outputs[0].shape);
+   * ```
+   */
+  @doc({heading: 'Models', subheading: 'Creation', configParamIndices: [0]})
   static sequential(config?: SequentialConfig): Sequential {
     return new Sequential(config);
   }
@@ -136,10 +213,10 @@ export class LayerExports {
     return new DepthwiseConv2D(config);
   }
 
-  // Core Layers.
+  // Basic Layers.
   @doc({
     heading: 'Layers',
-    subheading: 'Core',
+    subheading: 'Basic',
     namespace: 'layers',
     useDocsFrom: 'Activation',
     configParamIndices: [0]
@@ -150,7 +227,7 @@ export class LayerExports {
 
   @doc({
     heading: 'Layers',
-    subheading: 'Core',
+    subheading: 'Basic',
     namespace: 'layers',
     useDocsFrom: 'Dense',
     configParamIndices: [0]
@@ -161,7 +238,7 @@ export class LayerExports {
 
   @doc({
     heading: 'Layers',
-    subheading: 'Core',
+    subheading: 'Basic',
     namespace: 'layers',
     useDocsFrom: 'Dropout',
     configParamIndices: [0]
@@ -172,7 +249,7 @@ export class LayerExports {
 
   @doc({
     heading: 'Layers',
-    subheading: 'Core',
+    subheading: 'Basic',
     namespace: 'layers',
     useDocsFrom: 'Flatten',
     configParamIndices: [0]
@@ -183,7 +260,7 @@ export class LayerExports {
 
   @doc({
     heading: 'Layers',
-    subheading: 'Core',
+    subheading: 'Basic',
     namespace: 'layers',
     useDocsFrom: 'RepeatVector',
     configParamIndices: [0]
@@ -194,7 +271,7 @@ export class LayerExports {
 
   @doc({
     heading: 'Layers',
-    subheading: 'Core',
+    subheading: 'Basic',
     namespace: 'layers',
     useDocsFrom: 'Embedding',
     configParamIndices: [0]
@@ -651,6 +728,16 @@ export class InitializerExports {
   })
   static leCunNormal(config: SeedOnlyInitializerConfig): LeCunNormal {
     return new LeCunNormal(config);
+  }
+
+  @doc({
+    heading: 'Initializers',
+    namespace: 'initializers',
+    useDocsFrom: 'Orthogonal',
+    configParamIndices: [0]
+  })
+  static orthogonal(config: OrthogonalConfig): Orthogonal {
+    return new Orthogonal(config);
   }
 }
 
