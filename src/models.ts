@@ -99,7 +99,7 @@ export interface ModelAndWeightsConfig {
  * @param modelConfigPath A path to the `ModelAndWeightsConfig` JSON describing
  * the model in the canonical TensorFlow.js format.
  *
- *   The content is assumed to be a JSON object with the
+ *   The content of the JSON file is assumed to be a JSON object with the
  *   following fields and values:
  *   - 'modelTopology': A JSON object that can be either of:
  *     1. a model architecture JSON consistent with the format of the return
