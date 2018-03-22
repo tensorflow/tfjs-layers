@@ -1279,7 +1279,7 @@ export interface InputLayerConfig {
 }
 
 /**
- * An input layeris the entry point to a `Model`.
+ * An input layer is the entry point to a `Model`.
  *
  * InputLayer is generated automatically for `SequentialModel`s.  It should not
  * be specified explicitly.
