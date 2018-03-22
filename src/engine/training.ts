@@ -609,9 +609,11 @@ export interface ModelCompileConfig {
 }
 
 /**
- * The `Model` class adds training & evaluation routines to a `Container`.
+ * A `Model` is a directed, acyclic graph of `Layer`s plus methods for
+ * fitting to training data, making predictions on test data, and
+ * evaluating performance on hold-out data.
  *
- * A `Model` is the basic unit of training, inference and evaluation in
+ * The `Model` is the basic unit of training, inference and evaluation in
  * TensorFlow.js. To create a `Model, use `model`.
  *
  * See also:
@@ -648,6 +650,14 @@ export class Model extends Container {
     super(config);
   }
 
+  /**
+   * Configures and prepares the model for training and evaluation.  Compiling
+   * outfits the model with an optimizer, loss, and/or metrics.  Calling `fit`
+   * or `evaluate` on an un-compiled model will throw an error.
+   *
+   * @param config a `ModelCompileConfig` specifying the loss, `Optimizer` and
+   * (optionally) metrics to be used for fitting and evaluating this model.
+   */
   @doc({heading: 'Models', subheading: 'Classes'})
   compile(config: ModelCompileConfig): void {
     if (config.loss == null) {
