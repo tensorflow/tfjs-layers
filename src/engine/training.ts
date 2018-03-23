@@ -600,7 +600,7 @@ export interface ModelCompileConfig {
    * List of metrics to be evaluated by the model during training and testing.
    * Typically you will use `metrics=['accuracy']`.
    * To specify different metrics for different outputs of a multi-output
-   * model, you could also pass a dictionary,
+   * model, you could also pass a dictionary.
    */
   metrics?: string[]|{[outputName: string]: string};
 
@@ -610,8 +610,7 @@ export interface ModelCompileConfig {
 
 /**
  * A `Model` is a directed, acyclic graph of `Layer`s plus methods for
- * fitting to training data, making predictions on test data, and
- * evaluating performance on hold-out data.
+ * training, evaluation, prediction and saving.
  *
  * The `Model` is the basic unit of training, inference and evaluation in
  * TensorFlow.js. To create a `Model, use `model`.
@@ -655,10 +654,10 @@ export class Model extends Container {
    * outfits the model with an optimizer, loss, and/or metrics.  Calling `fit`
    * or `evaluate` on an un-compiled model will throw an error.
    *
-   * @param config a `ModelCompileConfig` specifying the loss, `Optimizer` and
-   * (optionally) metrics to be used for fitting and evaluating this model.
+   * @param config a `ModelCompileConfig` specifying the loss, optimizer, and
+   * metrics to be used for fitting and evaluating this model.
    */
-  @doc({heading: 'Models', subheading: 'Classes'})
+  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [0]})
   compile(config: ModelCompileConfig): void {
     if (config.loss == null) {
       config.loss = [];
@@ -1422,11 +1421,11 @@ export class Model extends Container {
    *   });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
    * for (i = 1; i < 5 ; ++i) {
-   *     const h = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
-   *         batchSize: 4,
-   *         epochs: 3
-   *     });
-   *     console.log("Loss after Epoch " + i + " : " + h.history.loss[0]);
+   *   const h = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
+   *       batchSize: 4,
+   *       epochs: 3
+   *   });
+   *   console.log("Loss after Epoch " + i + " : " + h.history.loss[0]);
    * }
    * ```
    *
