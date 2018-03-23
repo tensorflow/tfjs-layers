@@ -1282,8 +1282,8 @@ export interface InputLayerConfig {
  * An input layer is an entry point into a `Model`.
  *
  * `InputLayer` is generated automatically for `Sequential` models by specifying
- * the `inputshape` or `batchInputShape`.  It should not be specified
- * explicitly.
+ * the `inputshape` or `batchInputShape` for the first layer.  It should not be
+ * specified explicitly.
  *
  * ```js
  * // Define a model which simply adds two inputs.
