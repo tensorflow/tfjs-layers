@@ -11,7 +11,7 @@
 /* Original source: keras/engine/topology.py */
 
 // tslint:disable:max-line-length
-import {doc, Scalar, Tensor} from '@tensorflow/tfjs-core';
+import {doc, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 import * as K from '../backend/deeplearnjs_backend';
@@ -2306,18 +2306,20 @@ export class Container extends Layer {
     //   In PyKeras, Container.loss returns symbolic tensors. Here a concrete
     //   Tensor (specifically Scalar) values are returned. This is due to the
     //   imperative backend.
-    const losses: Scalar[] = [];
-    for (const layer of this.layers) {
-      for (let nodeIndex = 0; nodeIndex < layer.inboundNodes.length;
-           ++nodeIndex) {
-        const nodeKey = Container.nodeKey(layer, nodeIndex);
-        if (this.containerNodes.has(nodeKey)) {
-          losses.push(...layer.calculateLosses());
+    return tidy(() => {
+      const losses: Scalar[] = [];
+      for (const layer of this.layers) {
+        for (let nodeIndex = 0; nodeIndex < layer.inboundNodes.length;
+             ++nodeIndex) {
+          const nodeKey = Container.nodeKey(layer, nodeIndex);
+          if (this.containerNodes.has(nodeKey)) {
+            losses.push(...layer.calculateLosses());
+          }
         }
       }
-    }
-    // TOOD(cais): Add any unconditional model-level losses?
-    return losses;
+      // TODO(cais): Add any unconditional model-level losses?
+      return losses;
+    });
   }
 
   getConfig(): ConfigDict {
