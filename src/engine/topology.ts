@@ -2297,7 +2297,7 @@ export class Container extends Layer {
   }
 
   /**
-   * Retrieves the Containers's current loss values.
+   * Retrieves the Container's current loss values.
    *
    * Used for regularizers during training.
    */
