@@ -1417,8 +1417,8 @@ export class Model extends Container {
    *
    * ```js
    * const model = tf.sequential({
-   *      layers: [tf.layers.dense({units: 1, inputShape: [10]})]
-   *   });
+   *    layers: [tf.layers.dense({units: 1, inputShape: [10]})]
+   * });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
    * for (i = 1; i < 5 ; ++i) {
    *   const h = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
