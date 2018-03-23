@@ -1279,10 +1279,11 @@ export interface InputLayerConfig {
 }
 
 /**
- * An input layeris the entry point to a `Model`.
+ * An input layer is an entry point into a `Model`.
  *
- * InputLayer is generated automatically for `SequentialModel`s.  It should not
- * be specified explicitly.
+ * `InputLayer` is generated automatically for `Sequential` models by specifying
+ * the `inputshape` or `batchInputShape`.  It should not be specified
+ * explicitly.
  *
  * ```js
  * // Define a model which simply adds two inputs.
@@ -1419,7 +1420,7 @@ export interface InputConfig {
 }
 
 /**
- * `Input()` is used to instantiate a SymbolicTensor, and represents
+ * `Input()` is used to instantiate a `SymbolicTensor`, and represents
  * the input to a model.  Users should call the `input()` factory function for
  * consistency with other generator functions.
  *
