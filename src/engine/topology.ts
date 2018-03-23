@@ -905,7 +905,7 @@ export class Layer {
 
         if (this.activityRegularizer != null) {
           throw new NotImplementedError(
-              'Layer invocation with in the presence of activity ' +
+              'Layer invocation in the presence of activity ' +
               'regularizer(s) is not supported yet.');
         }
 
@@ -945,7 +945,7 @@ export class Layer {
 
         if (this.activityRegularizer != null) {
           throw new NotImplementedError(
-              'Layer invocation with in the presence of activity ' +
+              'Layer invocation in the presence of activity ' +
               'regularizer(s) is not supported yet.');
         }
 
