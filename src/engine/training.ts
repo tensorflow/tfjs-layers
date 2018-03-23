@@ -743,7 +743,8 @@ export class Model extends Container {
         }
       }
 
-      // TODO(cais): Add regularizer penalties.
+      // Porting Note: Due to the imperative nature of the backend, we calculate
+      //   the regularizer penalties in the totalLossFunction, instead of here.
     });
 
     const nestedMetrics = collectMetrics(config.metrics, this.outputNames);
@@ -897,8 +898,8 @@ export class Model extends Container {
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[],
-      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
+      Scalar|Scalar[] {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
@@ -1567,6 +1568,12 @@ export class Model extends Container {
         }
 
         totalLoss = K.mean(totalLoss);
+
+        // Add regularizer penalties.
+        this.calculateLosses().map(regularizerLoss => {
+          totalLoss = K.add(totalLoss, regularizerLoss);
+        });
+
         return totalLoss as Scalar;
       };
 
