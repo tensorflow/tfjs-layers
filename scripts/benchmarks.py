@@ -263,8 +263,8 @@ def main():
   names_fns_and_descriptions = [
       ("rnn-%s" % rnn_type,
        functools.partial(rnn_model_fn, rnn_type),
-       '%s(input_shape=%s, target_shape=%s)' %
-       (rnn_type, input_shape, target_shape))
+       '%s(input_shape=%s, target_shape=%s)|%s|%s' %
+       (rnn_type, input_shape, target_shape, optimizer, loss))
       for rnn_type in ('SimpleRNN', 'GRU', 'LSTM')]
 
   for model_name, model_fn, description in names_fns_and_descriptions:
