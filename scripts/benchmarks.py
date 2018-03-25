@@ -284,8 +284,8 @@ def main():
     print('train_time = %g s' % train_time)
     print('predict_time = %g s' % predict_time)
 
-    with open(os.path.join(FLAGS.data_root, 'benchmarks.json'), 'wt') as f:
-      json.dump(benchmarks, f)
+  with open(os.path.join(FLAGS.data_root, 'benchmarks.json'), 'wt') as f:
+    json.dump(benchmarks, f)
 
 
 if __name__ == '__main__':
