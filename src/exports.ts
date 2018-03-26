@@ -300,7 +300,7 @@ export class LayerExports {
     useDocsFrom: 'Average',
     configParamIndices: [0]
   })
-  static average(config?: LayerConfig): Layer|SymbolicTensor|Tensor {
+  static average(config?: LayerConfig): Layer {
     return new Average(config);
   }
 
