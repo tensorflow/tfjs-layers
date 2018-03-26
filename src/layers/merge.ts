@@ -306,8 +306,8 @@ generic_utils.ClassNameMap.register('Add', Add);
  * // Gives [[11, 22], [33, 44]].
  *
  */
-export function addInternal(config?: LayerConfig|SymbolicTensor[]|
-                            Tensor[]): Layer|SymbolicTensor|Tensor {
+export function addInternal(config?: SymbolicTensor[]|Tensor[]|
+                            LayerConfig): Layer|SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Add({});
     return layer.apply(config as SymbolicTensor[] | Tensor[]) as
@@ -395,8 +395,8 @@ generic_utils.ClassNameMap.register('Multiply', Multiply);
  * // Gives [[10, 40], [90, 160]].
  *
  */
-export function multiplyInternal(config?: LayerConfig|SymbolicTensor[]|
-                                 Tensor[]): Layer|SymbolicTensor|Tensor {
+export function multiplyInternal(config?: SymbolicTensor[]|Tensor[]|
+                                 LayerConfig): Layer|SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Multiply({});
     return layer.apply(config as SymbolicTensor[] | Tensor[]) as
@@ -484,8 +484,8 @@ generic_utils.ClassNameMap.register('Average', Average);
  * // Gives [[5.5, 11], [16.5, 22]].
  *
  */
-export function averageInternal(config?: LayerConfig|SymbolicTensor[]|
-                                Tensor[]): Layer|SymbolicTensor|Tensor {
+export function averageInternal(config?: SymbolicTensor[]|Tensor[]|
+                                LayerConfig): Layer|SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Average({});
     return layer.apply(config as SymbolicTensor[] | Tensor[]) as
@@ -572,8 +572,8 @@ generic_utils.ClassNameMap.register('Maximum', Maximum);
  * // Gives [[10, 20], [30, 40]].
  *
  */
-export function maximumInternal(config?: LayerConfig|SymbolicTensor[]|
-                                Tensor[]): Layer|SymbolicTensor|Tensor {
+export function maximumInternal(config?: SymbolicTensor[]|Tensor[]|
+                                LayerConfig): Layer|SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Maximum({});
     return layer.apply(config as SymbolicTensor[] | Tensor[]) as
@@ -660,8 +660,8 @@ generic_utils.ClassNameMap.register('Minimum', Minimum);
  * // Gives [[1, 2], [3, 4]].
  *
  */
-export function minimumInternal(config?: LayerConfig|SymbolicTensor[]|
-                                Tensor[]): Layer|SymbolicTensor|Tensor {
+export function minimumInternal(config?: SymbolicTensor[]|Tensor[]|
+                                LayerConfig): Layer|SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Minimum({});
     return layer.apply(config as SymbolicTensor[] | Tensor[]) as
@@ -831,8 +831,8 @@ generic_utils.ClassNameMap.register('Concatenate', Concatenate);
  * // Gives [[1, 2, 10, 20], [3, 4, 30, 40]].
  *
  */
-export function concatenateInternal(config?: ConcatenateLayerConfig|
-                                    SymbolicTensor[]|Tensor[]): Layer|
+export function concatenateInternal(config?: SymbolicTensor[]|Tensor[]|
+                                    ConcatenateLayerConfig): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Concatenate({});

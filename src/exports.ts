@@ -289,7 +289,7 @@ export class LayerExports {
     useDocsFrom: 'addInternal',
     configParamIndices: [0]
   })
-  static add(config: LayerConfig|SymbolicTensor[]|Tensor[]): Layer
+  static add(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
       |SymbolicTensor|Tensor {
     return addInternal(config);
   }
@@ -301,7 +301,7 @@ export class LayerExports {
     useDocsFrom: 'averageInternal',
     configParamIndices: [0]
   })
-  static average(config: LayerConfig|SymbolicTensor[]|Tensor[]): Layer
+  static average(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
       |SymbolicTensor|Tensor {
     return averageInternal(config);
   }
@@ -313,8 +313,9 @@ export class LayerExports {
     useDocsFrom: 'concatenateInternal',
     configParamIndices: [0]
   })
-  static concatenateInternal(config: ConcatenateLayerConfig|SymbolicTensor[]|
-                             Tensor[]): Layer|SymbolicTensor|Tensor {
+  static concatenateInternal(config: SymbolicTensor[]|Tensor[]|
+                             ConcatenateLayerConfig): Layer|SymbolicTensor
+      |Tensor {
     return concatenateInternal(config);
   }
 
@@ -325,7 +326,7 @@ export class LayerExports {
     useDocsFrom: 'maximumInternal',
     configParamIndices: [0]
   })
-  static maximum(config: LayerConfig|SymbolicTensor[]|Tensor[]): Layer
+  static maximum(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
       |SymbolicTensor|Tensor {
     return maximumInternal(config);
   }
@@ -337,7 +338,7 @@ export class LayerExports {
     useDocsFrom: 'minimumInternal',
     configParamIndices: [0]
   })
-  static minimum(config: LayerConfig|SymbolicTensor[]|Tensor[]): Layer
+  static minimum(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
       |SymbolicTensor|Tensor {
     return minimumInternal(config);
   }
@@ -349,7 +350,7 @@ export class LayerExports {
     useDocsFrom: 'multiplyInternal',
     configParamIndices: [0]
   })
-  static multiply(config: LayerConfig|SymbolicTensor[]|Tensor[]): Layer
+  static multiply(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
       |SymbolicTensor|Tensor {
     return multiplyInternal(config);
   }
