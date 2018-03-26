@@ -228,7 +228,7 @@ export class Merge extends Layer {
 }
 
 /**
- * Layer that performs element-wise Addition an `Array` of inputs.
+ * Layer that performs element-wise addition on an `Array` of inputs.
  *
  * It takes as input a list of tensors, all of the same shape, and returns a
  * single tensor (also of the same shape). The inputs are specified as an
@@ -407,7 +407,7 @@ export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
 }
 
 /**
- * Layer that performs element-wise averaging an `Array` of inputs.
+ * Layer that performs element-wise averaging on an `Array` of inputs.
  *
  * It takes as input a list of tensors, all of the same shape, and returns a
  * single tensor (also of the same shape). For example:
