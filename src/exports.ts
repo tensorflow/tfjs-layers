@@ -13,23 +13,23 @@
  */
 
 // tslint:disable:max-line-length
-import {doc} from '@tensorflow/tfjs-core';
+import {doc, Tensor} from '@tensorflow/tfjs-core';
 
-import {MaxNorm, MaxNormConfig, MinMaxNorm, MinMaxNormConfig, NonNeg, UnitNorm, UnitNormConfig} from './constraints';
+import {Constraint, MaxNorm, MaxNormConfig, MinMaxNorm, MinMaxNormConfig, NonNeg, UnitNorm, UnitNormConfig} from './constraints';
 import {ContainerConfig, Input, InputConfig, InputLayer, InputLayerConfig, Layer, LayerConfig} from './engine/topology';
 import {Model} from './engine/training';
-import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
+import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
 import {Conv1D, Conv2D, ConvLayerConfig} from './layers/convolutional';
 import {DepthwiseConv2D, DepthwiseConv2DLayerConfig} from './layers/convolutional_depthwise';
 import {Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, DropoutLayerConfig, Flatten, RepeatVector, RepeatVectorLayerConfig} from './layers/core';
 import {Embedding, EmbeddingLayerConfig} from './layers/embeddings';
-import {Add, Average, Concatenate, ConcatenateLayerConfig, Maximum, Minimum, Multiply} from './layers/merge';
+import {addInternal, averageInternal, concatenateInternal, ConcatenateLayerConfig, maximumInternal, minimumInternal, multiplyInternal} from './layers/merge';
 import {BatchNormalization, BatchNormalizationLayerConfig} from './layers/normalization';
 import {AvgPooling1D, AvgPooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerConfig, MaxPooling1D, MaxPooling2D, Pooling1DLayerConfig, Pooling2DLayerConfig} from './layers/pooling';
 import {GRU, GRUCell, GRUCellLayerConfig, GRULayerConfig, LSTM, LSTMCell, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNCell, RNNLayerConfig, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig, StackedRNNCells, StackedRNNCellsConfig} from './layers/recurrent';
 import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, WrapperLayerConfig} from './layers/wrappers';
 import {loadModelInternal, Sequential, SequentialConfig} from './models';
-import {l1, L1Config, L1L2, L1L2Config, l2, L2Config} from './regularizers';
+import {l1, L1Config, L1L2, L1L2Config, l2, L2Config, Regularizer} from './regularizers';
 import {SymbolicTensor} from './types';
 
 // tslint:enable:max-line-length
@@ -286,66 +286,73 @@ export class LayerExports {
     heading: 'Layers',
     subheading: 'Merge',
     namespace: 'layers',
-    useDocsFrom: 'Add',
+    useDocsFrom: 'addInternal',
     configParamIndices: [0]
   })
-  static add(config: LayerConfig): Layer {
-    return new Add(config);
+  static add(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
+      |SymbolicTensor|Tensor {
+    return addInternal(config);
   }
 
   @doc({
     heading: 'Layers',
     subheading: 'Merge',
     namespace: 'layers',
-    useDocsFrom: 'Average',
+    useDocsFrom: 'averageInternal',
     configParamIndices: [0]
   })
-  static average(config: LayerConfig): Layer {
-    return new Average(config);
+  static average(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
+      |SymbolicTensor|Tensor {
+    return averageInternal(config);
   }
 
   @doc({
     heading: 'Layers',
     subheading: 'Merge',
     namespace: 'layers',
-    useDocsFrom: 'Concatenate',
+    useDocsFrom: 'concatenateInternal',
     configParamIndices: [0]
   })
-  static concatenate(config: ConcatenateLayerConfig): Layer {
-    return new Concatenate(config);
+  static concatenateInternal(config: SymbolicTensor[]|Tensor[]|
+                             ConcatenateLayerConfig): Layer|SymbolicTensor
+      |Tensor {
+    return concatenateInternal(config);
   }
 
   @doc({
     heading: 'Layers',
     subheading: 'Merge',
     namespace: 'layers',
-    useDocsFrom: 'Maximum',
+    useDocsFrom: 'maximumInternal',
     configParamIndices: [0]
   })
-  static maximum(config: LayerConfig): Layer {
-    return new Maximum(config);
+  static maximum(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
+      |SymbolicTensor|Tensor {
+    return maximumInternal(config);
   }
 
   @doc({
     heading: 'Layers',
     subheading: 'Merge',
     namespace: 'layers',
-    useDocsFrom: 'Minimum',
+    useDocsFrom: 'minimumInternal',
     configParamIndices: [0]
   })
-  static minimum(config: LayerConfig): Layer {
-    return new Minimum(config);
+  static minimum(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
+      |SymbolicTensor|Tensor {
+    return minimumInternal(config);
   }
 
   @doc({
     heading: 'Layers',
     subheading: 'Merge',
     namespace: 'layers',
-    useDocsFrom: 'Multiply',
+    useDocsFrom: 'multiplyInternal',
     configParamIndices: [0]
   })
-  static multiply(config: LayerConfig): Layer {
-    return new Multiply(config);
+  static multiply(config: SymbolicTensor[]|Tensor[]|LayerConfig): Layer
+      |SymbolicTensor|Tensor {
+    return multiplyInternal(config);
   }
 
   // Normalization Layers.
@@ -525,7 +532,7 @@ export class LayerExports {
     useDocsFrom: 'RNN',
     configParamIndices: [0]
   })
-  static rnn(config: RNNLayerConfig): RNN {
+  static rnn(config: RNNLayerConfig): Layer {
     return new RNN(config);
   }
 
@@ -572,7 +579,7 @@ export class ConstraintExports {
     useDocsFrom: 'MaxNorm',
     configParamIndices: [0]
   })
-  static maxNorm(config: MaxNormConfig): MaxNorm {
+  static maxNorm(config: MaxNormConfig): Constraint {
     return new MaxNorm(config);
   }
 
@@ -582,13 +589,13 @@ export class ConstraintExports {
     useDocsFrom: 'UnitNorm',
     configParamIndices: [0]
   })
-  static unitNorm(config: UnitNormConfig): UnitNorm {
+  static unitNorm(config: UnitNormConfig): Constraint {
     return new UnitNorm(config);
   }
 
   @doc(
       {heading: 'Constraints', namespace: 'constraints', useDocsFrom: 'NonNeg'})
-  static nonNeg(): NonNeg {
+  static nonNeg(): Constraint {
     return new NonNeg();
   }
 
@@ -598,7 +605,7 @@ export class ConstraintExports {
     useDocsFrom: 'MinMaxNormConfig',
     configParamIndices: [0]
   })
-  static minMaxNorm(config: MinMaxNormConfig): MinMaxNorm {
+  static minMaxNorm(config: MinMaxNormConfig): Constraint {
     return new MinMaxNorm(config);
   }
 }
@@ -615,7 +622,7 @@ export class InitializerExports {
 
   @doc(
       {heading: 'Initializers', namespace: 'initializers', useDocsFrom: 'Ones'})
-  static ones(): Ones {
+  static ones(): Initializer {
     return new Ones();
   }
 
@@ -626,7 +633,7 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static constant(config: ConstantConfig): Constant {
+  static constant(config: ConstantConfig): Initializer {
     return new Constant(config);
   }
 
@@ -637,7 +644,7 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static randomUniform(config: RandomUniformConfig): RandomUniform {
+  static randomUniform(config: RandomUniformConfig): Initializer {
     return new RandomUniform(config);
   }
 
@@ -648,7 +655,7 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static randomNormal(config: RandomNormalConfig): RandomNormal {
+  static randomNormal(config: RandomNormalConfig): Initializer {
     return new RandomNormal(config);
   }
 
@@ -659,7 +666,7 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static truncatedNormal(config: TruncatedNormalConfig): TruncatedNormal {
+  static truncatedNormal(config: TruncatedNormalConfig): Initializer {
     return new TruncatedNormal(config);
   }
 
@@ -670,7 +677,7 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static identity(config: IdentityConfig): Identity {
+  static identity(config: IdentityConfig): Initializer {
     return new Identity(config);
   }
 
@@ -681,7 +688,7 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static varianceScaling(config: VarianceScalingConfig): VarianceScaling {
+  static varianceScaling(config: VarianceScalingConfig): Initializer {
     return new VarianceScaling(config);
   }
 
@@ -692,7 +699,7 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static glorotUniform(config: SeedOnlyInitializerConfig): GlorotUniform {
+  static glorotUniform(config: SeedOnlyInitializerConfig): Initializer {
     return new GlorotUniform(config);
   }
 
@@ -703,7 +710,7 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static glorotNormal(config: SeedOnlyInitializerConfig): GlorotNormal {
+  static glorotNormal(config: SeedOnlyInitializerConfig): Initializer {
     return new GlorotNormal(config);
   }
 
@@ -714,10 +721,9 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static heNormal(config: SeedOnlyInitializerConfig): HeNormal {
+  static heNormal(config: SeedOnlyInitializerConfig): Initializer {
     return new HeNormal(config);
   }
-
 
   @doc({
     heading: 'Initializers',
@@ -726,7 +732,7 @@ export class InitializerExports {
     configParamIndices: [0]
 
   })
-  static leCunNormal(config: SeedOnlyInitializerConfig): LeCunNormal {
+  static leCunNormal(config: SeedOnlyInitializerConfig): Initializer {
     return new LeCunNormal(config);
   }
 
@@ -736,7 +742,7 @@ export class InitializerExports {
     useDocsFrom: 'Orthogonal',
     configParamIndices: [0]
   })
-  static orthogonal(config: OrthogonalConfig): Orthogonal {
+  static orthogonal(config: OrthogonalConfig): Initializer {
     return new Orthogonal(config);
   }
 }
@@ -744,19 +750,19 @@ export class InitializerExports {
 export class RegularizerExports {
   @doc(
       {heading: 'Regularizers', namespace: 'regularizers', useDocsFrom: 'L1L2'})
-  static l1l2(config?: L1L2Config): L1L2 {
+  static l1l2(config?: L1L2Config): Regularizer {
     return new L1L2(config);
   }
 
   @doc(
       {heading: 'Regularizers', namespace: 'regularizers', useDocsFrom: 'L1L2'})
-  static l1(config?: L1Config): L1L2 {
+  static l1(config?: L1Config): Regularizer {
     return l1(config);
   }
 
   @doc(
       {heading: 'Regularizers', namespace: 'regularizers', useDocsFrom: 'L1L2'})
-  static l2(config?: L2Config): L1L2 {
+  static l2(config?: L2Config): Regularizer {
     return l2(config);
   }
 }

@@ -600,7 +600,7 @@ export interface ModelCompileConfig {
    * List of metrics to be evaluated by the model during training and testing.
    * Typically you will use `metrics=['accuracy']`.
    * To specify different metrics for different outputs of a multi-output
-   * model, you could also pass a dictionary,
+   * model, you could also pass a dictionary.
    */
   metrics?: string[]|{[outputName: string]: string};
 
@@ -609,9 +609,10 @@ export interface ModelCompileConfig {
 }
 
 /**
- * The `Model` class adds training & evaluation routines to a `Container`.
+ * A `Model` is a directed, acyclic graph of `Layer`s plus methods for
+ * training, evaluation, prediction and saving.
  *
- * A `Model` is the basic unit of training, inference and evaluation in
+ * The `Model` is the basic unit of training, inference and evaluation in
  * TensorFlow.js. To create a `Model, use `model`.
  *
  * See also:
@@ -623,7 +624,7 @@ export class Model extends Container {
   loss: string|string[]|{[outputName: string]: string};
   lossFunctions: LossOrMetricFn[];
 
-  // TOOD(cais): These private variables should probably not have the string
+  // TODO(cais): These private variables should probably not have the string
   //   'feed' in their names, because we are not dealing with a symbolic
   //   backend.
   private feedOutputShapes: Shape[];
@@ -648,7 +649,15 @@ export class Model extends Container {
     super(config);
   }
 
-  @doc({heading: 'Models', subheading: 'Classes'})
+  /**
+   * Configures and prepares the model for training and evaluation.  Compiling
+   * outfits the model with an optimizer, loss, and/or metrics.  Calling `fit`
+   * or `evaluate` on an un-compiled model will throw an error.
+   *
+   * @param config a `ModelCompileConfig` specifying the loss, optimizer, and
+   * metrics to be used for fitting and evaluating this model.
+   */
+  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [0]})
   compile(config: ModelCompileConfig): void {
     if (config.loss == null) {
       config.loss = [];
@@ -716,7 +725,7 @@ export class Model extends Container {
 
     // TODO(cais): Add logic for weighted losses.
     // TODO(cais): Add logic for output masks.
-    // TOOD(cais): Add logic for sample weights.
+    // TODO(cais): Add logic for sample weights.
     const skipTargetIndices: number[] = [];
 
     // Prepare metrics.
@@ -743,7 +752,8 @@ export class Model extends Container {
         }
       }
 
-      // TODO(cais): Add regularizer penalties.
+      // Porting Note: Due to the imperative nature of the backend, we calculate
+      //   the regularizer penalties in the totalLossFunction, instead of here.
     });
 
     const nestedMetrics = collectMetrics(config.metrics, this.outputNames);
@@ -776,7 +786,7 @@ export class Model extends Container {
           let metricName: string;
           let accFn: LossOrMetricFn;
           let weightedMetricFn: LossOrMetricFn;
-          //  TOOD(cais): Use 'weights_' for weighted metrics.
+          //  TODO(cais): Use 'weights_' for weighted metrics.
 
           for (const metric of metrics) {
             if (['accuracy', 'acc', 'crossentropy', 'ce'].indexOf(metric) !==
@@ -897,8 +907,8 @@ export class Model extends Container {
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[],
-      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
+      Scalar|Scalar[] {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
@@ -1018,7 +1028,7 @@ export class Model extends Container {
    * Computation is done in batches.
    *
    * Note: the "step" mode of predict() is currently not supported.
-   *   This is because the TensorFow.js core backend is imperative only.
+   *   This is because the TensorFlow.js core backend is imperative only.
    *
    * ```js
    * const model = tf.sequential({
@@ -1029,7 +1039,7 @@ export class Model extends Container {
    *
    * @param x The input data, as an Tensor, or an `Array` of `Tensor`s if
    *   the model has multiple inputs.
-   * @param conifg A `ModelPredictConfig` object containing optional fields.
+   * @param config A `ModelPredictConfig` object containing optional fields.
    *
    * @return Prediction results as a `Tensor`(s).
    *
@@ -1052,6 +1062,12 @@ export class Model extends Container {
   /**
    * Returns predictions for a single batch of samples.
    *
+   * ```js
+   * const model = tf.sequential({
+   *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
+   * });
+   * model.predictOnBatch(tf.ones([8, 10])).print();
+   * ```
    * @param x: Input samples, as an Tensor
    * @return Tensor(s) of predictions
    */
@@ -1092,7 +1108,7 @@ export class Model extends Container {
             y, this.feedOutputNames, outputShapes, false, 'target') as Tensor[];
     // TODO(cais): Standardize sampleWeights & classWeights.
     checkArrayLengths(x, y, null);
-    // TOOD(cais): Check sampleWeights as well.
+    // TODO(cais): Check sampleWeights as well.
     checkLossAndTargetCompatibility(y, this.feedLossFns, this.feedOutputShapes);
     if (this.stateful && batchSize != null && batchSize > 0) {
       if (x[0].shape[0] % batchSize !== 0) {
@@ -1402,13 +1418,17 @@ export class Model extends Container {
    *
    * ```js
    * const model = tf.sequential({
-   *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
+   *     layers: [tf.layers.dense({units: 1, inputShape: [10]})]
    * });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * const history = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
-   *   batchSize: 4,
-   *   epochs: 3
-   * });
+   * for (i = 1; i < 5 ; ++i) {
+   *   const h = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
+   *       batchSize: 4,
+   *       epochs: 3
+   *   });
+   *   console.log("Loss after Epoch " + i + " : " + h.history.loss[0]);
+   * }
+   * ```
    *
    * @param x `Tensor` of training data, or an array of `Tensor`s if the model
    *   has multiple inputs. If all inputs in the model are named, you can also
@@ -1432,7 +1452,7 @@ export class Model extends Container {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // Validate user data.
-    // TOOD(cais): Add sampleWeight and  classWeight.
+    // TODO(cais): Add sampleWeight and  classWeight.
     const standardizedOuts = this.standardizeUserData(x, y, false, batchSize);
     let inputs = standardizedOuts[0];
     let targets = standardizedOuts[1];
@@ -1567,6 +1587,12 @@ export class Model extends Container {
         }
 
         totalLoss = K.mean(totalLoss);
+
+        // Add regularizer penalties.
+        this.calculateLosses().forEach(regularizerLoss => {
+          totalLoss = K.add(totalLoss, regularizerLoss);
+        });
+
         return totalLoss as Scalar;
       };
 
@@ -1596,7 +1622,7 @@ export class Model extends Container {
         trainFunction, ins, outLabels, batchSize, config.epochs, config.verbose,
         callbacks, valFunction, valIns, config.shuffle, callbackMetrics, null,
         null, null);
-    // TOOD(cais): Add value to outLabels.
+    // TODO(cais): Add value to outLabels.
     // TODO(cais): Add initialEpoch.
   }
 }
