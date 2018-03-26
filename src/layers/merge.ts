@@ -231,8 +231,19 @@ export class Merge extends Layer {
  * Layer that adds a list of inputs.
  *
  * It takes as input a list of tensors, all of the same shape, and returns a
- * single tensor (also of the same shape).
+ * single tensor (also of the same shape). The inputs are specified as an
+ * `Array` when the `apply` method of the `Add` layer instance is called. For
+ * example:
  *
+ * ```js
+ * const input1 = tf.input({shape: [2, 2]});
+ * const input2 = tf.input({shape: [2, 2]});
+ * const addLayer = tf.layers.add();
+ * const sum = addLayer.apply([input1, input2]);
+ * console.log(sum.shape);
+ * // You get [null, 2, 2], with the first dimension as the undetermined batch
+ * // dimension.
+ * ```
  */
 // TODO(cais): Add examples.
 export class Add extends Merge {
@@ -257,6 +268,17 @@ generic_utils.ClassNameMap.register('Add', Add);
  *
  * It takes as input an Array of tensors, all of the same
  * shape, and returns a single tensor (also of the same shape).
+ * For example:
+ *
+ * ```js
+ * const input1 = tf.input({shape: [2, 2]});
+ * const input2 = tf.input({shape: [2, 2]});
+ * const input3 = tf.input({shape: [2, 2]});
+ * const multiplyLayer = tf.layers.multiply();
+ * const product = multiplyLayer.apply([input1, input2, input3]);
+ * console.log(product.shape);
+ * // You get [null, 2, 2], with the first dimension as the undetermined batch
+ * // dimension.
  */
 export class Multiply extends Merge {
   constructor(config?: LayerConfig) {
@@ -277,7 +299,17 @@ generic_utils.ClassNameMap.register('Multiply', Multiply);
  * Layer that averages a list of inputs.
  *
  * It takes as input a list of tensors, all of the same shape, and returns a
- * single tensor (also of the same shape).
+ * single tensor (also of the same shape). For example:
+ *
+ * ```js
+ * const input1 = tf.input({shape: [2, 2]});
+ * const input2 = tf.input({shape: [2, 2]});
+ * const averageLayer = tf.layers.average();
+ * const average = averageLayer.apply([input1, input2]);
+ * console.log(average.shape);
+ * // You get [null, 2, 2], with the first dimension as the undetermined batch
+ * // dimension.
+ * ```
  */
 export class Average extends Merge {
   constructor(config?: LayerConfig) {
@@ -298,7 +330,17 @@ generic_utils.ClassNameMap.register('Average', Average);
  * Layer that computes the maximum (element-wise) a list of inputs.
  *
  * It takes as input a list of tensors, all of the same shape and returns a
- * single tensor (also of the same shape).
+ * single tensor (also of the same shape). For example:
+ *
+ * ```js
+ * const input1 = tf.input({shape: [2, 2]});
+ * const input2 = tf.input({shape: [2, 2]});
+ * const maxLayer = tf.layers.maximum();
+ * const max = maxLayer.apply([input1, input2]);
+ * console.log(max.shape);
+ * // You get [null, 2, 2], with the first dimension as the undetermined batch
+ * // dimension.
+ * ```
  */
 export class Maximum extends Merge {
   constructor(config?: LayerConfig) {
@@ -319,7 +361,17 @@ generic_utils.ClassNameMap.register('Maximum', Maximum);
  * Layer that computes the minimum (element-wise) a list of inputs.
  *
  * It takes as input a list of tensors, all of the same shape and returns a
- * single tensor (also of the same shape).
+ * single tensor (also of the same shape). For example:
+ *
+ * ```js
+ * const input1 = tf.input({shape: [2, 2]});
+ * const input2 = tf.input({shape: [2, 2]});
+ * const minLayer = tf.layers.minimum();
+ * const min = minLayer.apply([input1, input2]);
+ * console.log(min.shape);
+ * // You get [null, 2, 2], with the first dimension as the undetermined batch
+ * // dimension.
+ * ```
  */
 export class Minimum extends Merge {
   constructor(config?: LayerConfig) {
@@ -348,7 +400,18 @@ export interface ConcatenateLayerConfig extends LayerConfig {
  *
  * It takes a list of tensors, all of the same shape except for the
  * concatenation axis, and returns a single tensor, the concatenation
- * of all inputs.
+ * of all inputs. For example:
+ *
+ * ```js
+ * const input1 = tf.input({shape: [2, 2]});
+ * const input2 = tf.input({shape: [2, 3]});
+ * const concatLayer = tf.layers.concatenate();
+ * const output = concatLayer.apply([input1, input2]);
+ * console.log(output.shape);
+ * // You get [null, 2, 5], with the first dimension as the undetermined batch
+ * // dimension. The last dimension (5) is the result of concatenating the
+ * // last dimensions of the inputs (2 and 3).
+ * ```
  */
 export class Concatenate extends Merge {
   readonly DEFAULT_AXIS = -1;
