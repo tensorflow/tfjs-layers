@@ -15,11 +15,13 @@
 // tslint:disable:max-line-length
 import {Tensor, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 
+import {Input, Layer} from '../engine/topology';
 import {DType, Shape} from '../types';
 import {SymbolicTensor} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {Add, Average, Concatenate, Maximum, Minimum, Multiply} from './merge';
+import {Add, add, Average, average, Concatenate, concatenate, Maximum, maximum, Minimum, minimum, Multiply, multiply} from './merge';
+
 // tslint:enable:max-line-length
 
 describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
@@ -68,6 +70,163 @@ describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
     }).toThrowError(/Can not merge tensors with different batch sizes/);
   });
 });
+
+describeMathCPUAndGPU('Add-Functional', () => {
+  it('Calling without arg returns Layer', () => {
+    expect(add().constructor.name).toEqual('Add');
+  });
+
+  it('Calling with config arg returns Layer', () => {
+    expect((add({name: 'addLayer'}) as Layer).name.indexOf('addLayer'))
+        .toEqual(0);
+  });
+
+  it('Calling with symbolic tensors returns symbolic tensor', () => {
+    const input1 = Input({shape: [2, 2]});
+    const input2 = Input({shape: [2, 2]});
+    const output = add([input1, input2]) as SymbolicTensor;
+    expect(output.shape).toEqual([null, 2, 2]);
+  });
+
+  it('Calling with tensors returns tensor', () => {
+    const input1 = tensor2d([1, 2, 3, 4], [2, 2]);
+    const input2 = tensor2d([10, 20, 30, 40], [2, 2]);
+    const output = add([input1, input2]) as Tensor;
+    expectTensorsClose(output, tensor2d([11, 22, 33, 44], [2, 2]));
+  });
+});
+
+describeMathCPUAndGPU('Multiply-Functional', () => {
+  it('Calling without arg returns Layer', () => {
+    expect(multiply().constructor.name).toEqual('Multiply');
+  });
+
+  it('Calling with config arg returns Layer', () => {
+    expect((multiply({name: 'multiplyLayer'}) as Layer)
+               .name.indexOf('multiplyLayer'))
+        .toEqual(0);
+  });
+
+  it('Calling with symbolic tensors returns symbolic tensor', () => {
+    const input1 = Input({shape: [2, 2]});
+    const input2 = Input({shape: [2, 2]});
+    const output = multiply([input1, input2]) as SymbolicTensor;
+    expect(output.shape).toEqual([null, 2, 2]);
+  });
+
+  it('Calling with tensors returns tensor', () => {
+    const input1 = tensor2d([1, 2, 3, 4], [2, 2]);
+    const input2 = tensor2d([10, 20, 30, 40], [2, 2]);
+    const output = multiply([input1, input2]) as Tensor;
+    expectTensorsClose(output, tensor2d([10, 40, 90, 160], [2, 2]));
+  });
+});
+
+describeMathCPUAndGPU('Average-Functional', () => {
+  it('Calling without arg returns Layer', () => {
+    expect(average().constructor.name).toEqual('Average');
+  });
+
+  it('Calling with config arg returns Layer', () => {
+    expect(
+        (average({name: 'averageLayer'}) as Layer).name.indexOf('averageLayer'))
+        .toEqual(0);
+  });
+
+  it('Calling with symbolic tensors returns symbolic tensor', () => {
+    const input1 = Input({shape: [2, 2]});
+    const input2 = Input({shape: [2, 2]});
+    const output = average([input1, input2]) as SymbolicTensor;
+    expect(output.shape).toEqual([null, 2, 2]);
+  });
+
+  it('Calling with tensors returns tensor', () => {
+    const input1 = tensor2d([1, 2, 3, 4], [2, 2]);
+    const input2 = tensor2d([10, 20, 30, 40], [2, 2]);
+    const output = average([input1, input2]) as Tensor;
+    expectTensorsClose(output, tensor2d([5.5, 11, 16.5, 22], [2, 2]));
+  });
+});
+
+describeMathCPUAndGPU('Maximum-Functional', () => {
+  it('Calling without arg returns Layer', () => {
+    expect(maximum().constructor.name).toEqual('Maximum');
+  });
+
+  it('Calling with config arg returns Layer', () => {
+    expect(
+        (maximum({name: 'maximumLayer'}) as Layer).name.indexOf('maximumLayer'))
+        .toEqual(0);
+  });
+
+  it('Calling with symbolic tensors returns symbolic tensor', () => {
+    const input1 = Input({shape: [2, 2]});
+    const input2 = Input({shape: [2, 2]});
+    const output = maximum([input1, input2]) as SymbolicTensor;
+    expect(output.shape).toEqual([null, 2, 2]);
+  });
+
+  it('Calling with tensors returns tensor', () => {
+    const input1 = tensor2d([1, 20, 3, 40], [2, 2]);
+    const input2 = tensor2d([10, 2, 30, 4], [2, 2]);
+    const output = maximum([input1, input2]) as Tensor;
+    expectTensorsClose(output, tensor2d([10, 20, 30, 40], [2, 2]));
+  });
+});
+
+describeMathCPUAndGPU('Minimum-Functional', () => {
+  it('Calling without arg returns Layer', () => {
+    expect(minimum().constructor.name).toEqual('Minimum');
+  });
+
+  it('Calling with config arg returns Layer', () => {
+    expect(
+        (minimum({name: 'minimumLayer'}) as Layer).name.indexOf('minimumLayer'))
+        .toEqual(0);
+  });
+
+  it('Calling with symbolic tensors returns symbolic tensor', () => {
+    const input1 = Input({shape: [2, 2]});
+    const input2 = Input({shape: [2, 2]});
+    const output = minimum([input1, input2]) as SymbolicTensor;
+    expect(output.shape).toEqual([null, 2, 2]);
+  });
+
+  it('Calling with tensors returns tensor', () => {
+    const input1 = tensor2d([1, 20, 3, 40], [2, 2]);
+    const input2 = tensor2d([10, 2, 30, 4], [2, 2]);
+    const output = minimum([input1, input2]) as Tensor;
+    expectTensorsClose(output, tensor2d([1, 2, 3, 4], [2, 2]));
+  });
+});
+
+describeMathCPUAndGPU('Concatenate-Functional', () => {
+  it('Calling without arg returns Layer', () => {
+    expect(concatenate().constructor.name).toEqual('Concatenate');
+  });
+
+  it('Calling with config arg returns Layer', () => {
+    expect((concatenate({name: 'concatenateLayer'}) as Layer)
+               .name.indexOf('concatenateLayer'))
+        .toEqual(0);
+  });
+
+  it('Calling with symbolic tensors returns symbolic tensor', () => {
+    const input1 = Input({shape: [2, 3]});
+    const input2 = Input({shape: [2, 4]});
+    const output = concatenate([input1, input2]) as SymbolicTensor;
+    expect(output.shape).toEqual([null, 2, 7]);
+  });
+
+  it('Calling with tensors returns tensor', () => {
+    const input1 = tensor2d([[1, 2], [3, 4]], [2, 2]);
+    const input2 = tensor2d([[10, 20], [30, 40]], [2, 2]);
+    const output = concatenate([input1, input2]) as Tensor;
+    expectTensorsClose(
+        output, tensor2d([[1, 2, 10, 20], [3, 4, 30, 40]], [2, 4]));
+  });
+});
+
 
 describeMathCPU('Concatenate Layer: Symbolic', () => {
   it('All known shapes', () => {

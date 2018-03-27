@@ -289,7 +289,7 @@ export class LayerExports {
     useDocsFrom: 'Add',
     configParamIndices: [0]
   })
-  static add(config: LayerConfig): Layer {
+  static add(config?: LayerConfig): Layer {
     return new Add(config);
   }
 
@@ -300,7 +300,7 @@ export class LayerExports {
     useDocsFrom: 'Average',
     configParamIndices: [0]
   })
-  static average(config: LayerConfig): Layer {
+  static average(config?: LayerConfig): Layer {
     return new Average(config);
   }
 
@@ -322,7 +322,7 @@ export class LayerExports {
     useDocsFrom: 'Maximum',
     configParamIndices: [0]
   })
-  static maximum(config: LayerConfig): Layer {
+  static maximum(config?: LayerConfig): Layer {
     return new Maximum(config);
   }
 
@@ -333,7 +333,7 @@ export class LayerExports {
     useDocsFrom: 'Minimum',
     configParamIndices: [0]
   })
-  static minimum(config: LayerConfig): Layer {
+  static minimum(config?: LayerConfig): Layer {
     return new Minimum(config);
   }
 
@@ -344,7 +344,7 @@ export class LayerExports {
     useDocsFrom: 'Multiply',
     configParamIndices: [0]
   })
-  static multiply(config: LayerConfig): Layer {
+  static multiply(config?: LayerConfig): Layer {
     return new Multiply(config);
   }
 
