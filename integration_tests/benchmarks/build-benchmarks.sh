@@ -31,10 +31,6 @@ while true; do
   fi
 done
 
-echo Building TensorFlow.js Layers standalone...
-"${DEMO_DIR}/../../scripts/build-standalone.sh"
-cp ../../dist/tfjs_layers.min.js .
-
 DATA_ROOT="${DEMO_DIR}/data"
 
 # Run Python script to generate the model and weights JSON files.
@@ -46,12 +42,21 @@ DATA_ROOT="${DEMO_DIR}/data"
 echo Running Python Keras benchmarks...
 python "${DEMO_DIR}/python/benchmarks.py" "${DATA_ROOT}"
 
-echo
-echo "-----------------------------------------------------------"
-echo "Once the HTTP server has started, you can view the demo at:"
-echo "  http://localhost:${DEMO_PORT}"
-echo "-----------------------------------------------------------"
-echo
+echo Building local TensorFlow.js Layers NPM package...
+cd ../..
+yarn build-npm
+cd ${DEMO_DIR}
+yarn add ../../tensorflow-tfjs-layers-*
 
-cd "${DEMO_DIR}"
-node_modules/http-server/bin/http-server -p "${DEMO_PORT}"
+yarn watch
+
+# echo
+# echo "-----------------------------------------------------------"
+# echo "Once the HTTP server has started, you can view the demo at:"
+# echo "  http://localhost:${DEMO_PORT}"
+# echo "-----------------------------------------------------------"
+# echo
+
+# cd "${DEMO_DIR}"
+# yarn install ../../tensorflow-tfjs-layers-*
+# node_modules/http-server/bin/http-server -p "${DEMO_PORT}"
