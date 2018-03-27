@@ -24,7 +24,7 @@ export function setRunBenchmarksFunction(runAllBenchmarks) {
 }
 
 export function addResult(modelName, result) {
-  row = '<td>' + modelName + '</td>';
+  let row = '<td>' + modelName + '</td>';
   row += '<td>' + result.originalData.description + '</td>';
   row += '<td>' + result.originalData.batch_size + '</td>';
   row += '<td>' + result.originalData.train_epochs + '</td>';
@@ -33,6 +33,5 @@ export function addResult(modelName, result) {
   row += '<td>' + (result.originalData.predict_time * 1e3).toFixed(1) + '</td>';
   row += '<td>' + result.predictTimeMs.toFixed(1) + '</td>';
 
-  const table = document.getElementById('resultsBody').innerHTML;
-  table += '<tr>' + row + '</tr>';
+  document.getElementById('resultsBody').innerHTML += '<tr>' + row + '</tr>';
 }

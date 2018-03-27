@@ -31,7 +31,7 @@ while true; do
   fi
 done
 
-DATA_ROOT="${DEMO_DIR}/data"
+DATA_ROOT="${DEMO_DIR}/dist/data"
 
 # Run Python script to generate the model and weights JSON files.
 # The extension names are ".js" because they will later be converted into
@@ -45,18 +45,16 @@ python "${DEMO_DIR}/python/benchmarks.py" "${DATA_ROOT}"
 echo Building local TensorFlow.js Layers NPM package...
 cd ../..
 yarn build-npm
-cd ${DEMO_DIR}
-yarn add ../../tensorflow-tfjs-layers-*
 
-yarn watch
+cd ${DEMO_DIR}
+yarn
+yarn build
 
 # echo
 # echo "-----------------------------------------------------------"
 # echo "Once the HTTP server has started, you can view the demo at:"
-# echo "  http://localhost:${DEMO_PORT}"
+# echo "  http://localhost:${DEMO_PORT}/dist"
 # echo "-----------------------------------------------------------"
 # echo
 
-# cd "${DEMO_DIR}"
-# yarn install ../../tensorflow-tfjs-layers-*
-# node_modules/http-server/bin/http-server -p "${DEMO_PORT}"
+node_modules/http-server/bin/http-server -p "${DEMO_PORT}"

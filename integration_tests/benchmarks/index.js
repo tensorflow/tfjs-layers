@@ -8,13 +8,14 @@
  * =============================================================================
  */
 
-import * as tf from '@tensorflow/tfjs';
+import * as tfc from '@tensorflow/tfjs-core';
+import * as tfl from '@tensorflow/tfjs-layers';
 import * as ui from './ui';
 
 async function runBenchmark(artifactsDir, modelName, config) {
   const modelPath = artifactsDir + modelName + '/';
   console.log('Loading model "' + modelName + '" and benchmark data...');
-  const model = await tf.loadModel(modelPath + 'model.json');
+  const model = await tfl.loadModel(modelPath + 'model.json');
   console.log('Done loading model "' + modelName + '" and benchmark data.');
 
   const benchmarkData = await (await fetch(modelPath + 'data.json')).json();
@@ -27,9 +28,9 @@ async function runBenchmark(artifactsDir, modelName, config) {
   // for losses.
 
   const batchSize = benchmarkData.batch_size;
-  const xs = tf.randomUniform(
+  const xs = tfc.randomUniform(
       [batchSize].concat(benchmarkData.input_shape));
-  const ys = tf.randomUniform(
+  const ys = tfc.randomUniform(
       [batchSize].concat(benchmarkData.target_shape));
   model.compile({
     optimizer: benchmarkData.optimizer,
@@ -78,8 +79,8 @@ async function runBenchmark(artifactsDir, modelName, config) {
   };
 }
 
-async function getRunAllBenchmarks(artifactsDir, benchmarks) {
-  return async () => {
+function getRunAllBenchmarks(artifactsDir, benchmarks) {
+  const runAllBenchmarks = async () => {
     ui.status('Running benchmarks...');
     for (let i = 0; i < benchmarks.models.length; ++i) {
       const modelName = benchmarks.models[i];
@@ -87,22 +88,25 @@ async function getRunAllBenchmarks(artifactsDir, benchmarks) {
           'Running model (' + (i + 1) + ' of ' + benchmarks.models.length +
           '): "' + modelName +
           '" ... (Please wait patiently. Do NOT click anything.)');
-      await tf.nextFrame();
+      await tfc.nextFrame();
       console.log('Benchmarking model: ' + modelName);
       const result =
           await runBenchmark(artifactsDir, modelName, benchmarks.config);
       ui.addResult(modelName, result);
     }
-    status('Standing by.');
+    ui.status('Standing by.');
   };
+  return runAllBenchmarks;
 }
 
 async function setupBenchmarks() {
   const artifactsDir = './data/';
 
   console.log('Loading benchmarks...');
-  const benchmarks =
-      await (await fetch(artifactsDir + 'benchmarks.json')).json();
+  const url = 'http:' + artifactsDir + 'benchmarks.json';
+  console.log(url);
+  const x = await fetch(url);
+  const benchmarks = await x.json();
   console.log('Done loading benchmarks:', benchmarks);
 
   ui.setMetadata(benchmarks.metadata);
