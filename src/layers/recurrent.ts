@@ -740,7 +740,7 @@ export interface SimpleRNNCellLayerConfig extends LayerConfig {
 /**
  * Cell class for `SimpleRNN`.
  *
- * `SimpleRNN` is distinct from the `RNN` subclass `SimpleRNN` in that its
+ * `SimpleRNNCell` is distinct from the `RNN` subclass `SimpleRNN` in that its
  * `apply` method takes the input data of only a single time step and returns
  * the cell's output at the time step, while `SimpleRNN` takes the input data
  * over a number of time steps. For example:
@@ -757,7 +757,8 @@ export interface SimpleRNNCellLayerConfig extends LayerConfig {
  *
  * Instance(s) of `SimpleRNNCell` can be used to construct `RNN` layers. The
  * most typical use of this workflow is to combine a number of cells into a
- * stacked RNN cell (`StackedRNNCell`) and use it to create an RNN. For example:
+ * stacked RNN cell (i.e., `StackedRNNCell` internally) and use it to create an
+ * RNN. For example:
  *
  * ```js
  * const cells = [
@@ -1017,7 +1018,7 @@ export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
  * time steps. For example:
  *
  * ```js
- * const simpleRNN = tf.layers.simpleRNN({units: 8, returnSequences: true});
+ * const rnn = tf.layers.simpleRNN({units: 8, returnSequences: true});
  *
  * // Create an input with 10 time steps.
  * const input = tf.input({shape: [10, 20]});
@@ -1174,7 +1175,8 @@ export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
  *
  * Instance(s) of `GRUCell` can be used to construct `RNN` layers. The
  * most typical use of this workflow is to combine a number of cells into a
- * stacked RNN cell (`StackedRNNCell`) and use it to create an RNN. For example:
+ * stacked RNN cell (i.e., `StackedRNNCell` internally) and use it to create an
+ * RNN. For example:
  *
  * ```js
  * const cells = [
@@ -1441,7 +1443,7 @@ export interface GRULayerConfig extends SimpleRNNLayerConfig {
  * time steps. For example:
  *
  * ```js
- * const simpleRNN = tf.layers.simpleRNN({units: 8, returnSequences: true});
+ * const rnn = tf.layers.gru({units: 8, returnSequences: true});
  *
  * // Create an input with 10 time steps.
  * const input = tf.input({shape: [10, 20]});
@@ -1622,14 +1624,15 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
  *
  * Instance(s) of `LSTMCell` can be used to construct `RNN` layers. The
  * most typical use of this workflow is to combine a number of cells into a
- * stacked RNN cell (`StackedRNNCell`) and use it to create an RNN. For example:
+ * stacked RNN cell (i.e., `StackedRNNCell` internally) and use it to create an
+ * RNN. For example:
  *
  * ```js
  * const cells = [
  *   tf.layers.lstmCell({units: 4}),
  *   tf.layers.lstmCell({units: 8}),
  * ];
- * const rnn = tf.layers.rnn({cell: cells, returnSequences: true});
+ * const rnn = tf.layers.lstm({cell: cells, returnSequences: true});
  *
  * // Create an input with 10 time steps and a length-20 vector at each step.
  * const input = tf.input({shape: [10, 20]});
