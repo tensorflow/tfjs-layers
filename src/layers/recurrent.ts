@@ -1193,7 +1193,7 @@ export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
  * // 3rd dimension is the last `gruCell`'s number of units.
  * ```
  *
- * To create an `RNN` consisting of only *one* `gruCell`, use the
+ * To create an `RNN` consisting of only *one* `GRUCell`, use the
  * `tf.layers.gru`.
  */
 export class GRUCell extends RNNCell {
@@ -1641,7 +1641,7 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
  * // 3rd dimension is the last `lstmCell`'s number of units.
  * ```
  *
- * To create an `RNN` consisting of only *one* `lstmCell`, use the
+ * To create an `RNN` consisting of only *one* `LSTMCell`, use the
  * `tf.layers.lstm`.
  */
 export class LSTMCell extends RNNCell {
