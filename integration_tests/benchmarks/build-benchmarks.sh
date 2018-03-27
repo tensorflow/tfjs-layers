@@ -8,15 +8,15 @@
 # =============================================================================
 
 # Builds the benchmarks demo for TensorFlow.js Layers.
-# Usage example: do under the root of the source repository:
-#   ./scripts/build-benchmarks-demo.sh
+# Usage example: do this from the 'benchmarks' directory:
+#   ./build-benchmarks.sh
 #
 # Then open the demo HTML page in your browser, e.g.,
-#   google-chrome demos/benchmarks_demo.html
+#   google-chrome .
 
 set -e
 
-SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEMO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DEMO_PORT=8000
 while true; do
@@ -31,13 +31,11 @@ while true; do
   fi
 done
 
-# Build TensorFlow.js standalone.
-"${SCRIPTS_DIR}/build-standalone.sh"
+echo Building TensorFlow.js Layers standalone...
+"${DEMO_DIR}/../../scripts/build-standalone.sh"
+cp ../../dist/tfjs_layers.min.js .
 
-DEMO_PATH="${SCRIPTS_DIR}/../dist/demo"
-DATA_ROOT="${DEMO_PATH}/benchmarks"
-mkdir -p "${DEMO_PATH}"
-rm -rf "${DATA_ROOT}"
+DATA_ROOT="${DEMO_DIR}/data"
 
 # Run Python script to generate the model and weights JSON files.
 # The extension names are ".js" because they will later be converted into
@@ -45,14 +43,15 @@ rm -rf "${DATA_ROOT}"
 
 # Make sure you install the tensorflowjs pip package first.
 
-python "${SCRIPTS_DIR}/benchmarks.py" "${DATA_ROOT}"
+echo Running Python Keras benchmarks...
+python "${DEMO_DIR}/python/benchmarks.py" "${DATA_ROOT}"
 
 echo
 echo "-----------------------------------------------------------"
 echo "Once the HTTP server has started, you can view the demo at:"
-echo "  http://localhost:${DEMO_PORT}/demos/benchmarks_demo.html"
+echo "  http://localhost:${DEMO_PORT}"
 echo "-----------------------------------------------------------"
 echo
 
-cd "${SCRIPTS_DIR}/.."
+cd "${DEMO_DIR}"
 node_modules/http-server/bin/http-server -p "${DEMO_PORT}"
