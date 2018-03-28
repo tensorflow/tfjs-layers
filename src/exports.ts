@@ -156,16 +156,6 @@ export class ModelExports {
   static input(config: InputConfig): SymbolicTensor {
     return Input(config);
   }
-
-  @doc({
-    heading: 'Models',
-    subheading: 'Inputs',
-    useDocsFrom: 'InputLayer',
-    configParamIndices: [0]
-  })
-  static inputLayer(config: InputLayerConfig): Layer {
-    return new InputLayer(config);
-  }
 }
 
 export class LayerExports {
@@ -175,6 +165,20 @@ export class LayerExports {
   // TODO(cais): Add doc string to all the public static functions in this
   //   class; include exectuable JavaScript code snippets where applicable
   //   (b/74074458).
+
+  // Input Layer.
+  @doc({
+    heading: 'Layers',
+    subheading: 'Inputs',
+    useDocsFrom: 'InputLayer',
+    configParamIndices: [0]
+  })
+  static inputLayer(config: InputLayerConfig): Layer {
+    return new InputLayer(config);
+  }
+
+  // Alias for `tf.input`.
+  static input = ModelExports.input;
 
   // Convolutional Layers.
 
