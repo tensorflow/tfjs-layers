@@ -13,5 +13,4 @@ bazel-*
 
 *.pyc
 
-integration_tests/benchmarks/data
 .cache
