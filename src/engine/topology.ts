@@ -1434,8 +1434,9 @@ export interface InputConfig {
  * model.predict(tf.ones([2, 32])).print();
  * ```
  *
- * Note: `input` is only necessarily when using `model`. It is not necessary
- * when using `sequential`.
+ * Note: `input` is only necessary when using `model`. When using
+ * `sequential`, specify `inputShape` for the first layer or use `inputLayer`
+ * as the first layer.
  */
 export function Input(config: InputConfig): SymbolicTensor {
   if (config.batchShape == null && config.shape == null) {
