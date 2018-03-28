@@ -45,6 +45,10 @@ export class ModelExports {
    * A model is a data structure that consists of `Layers` and defines inputs
    * and outputs.
    *
+   * The key difference between `model` and `sequential` is that `model`
+   * is more generic, supporting an arbitrary graph of layers. `sequential` is
+   * less generic and supports only a linear stack of layers.
+   *
    * When creating a `Model`, specify its input(s) and output(s). Layers
    * are used to wire input(s) to output(s).
    *
@@ -89,6 +93,10 @@ export class ModelExports {
    * defined input shape. What that means is that it should have received an
    * `inputShape` or `batchInputShape` argument, or for some type of layers
    * (recurrent, Dense...) an `inputDim` argument.
+   *
+   * The key difference between `model` and `sequential` is that `sequential`
+   * is less generic, supporting only a linear stack of layers. `model` is
+   * more generic and supports an aribtrary graph of layers.
    *
    * Examples:
    *

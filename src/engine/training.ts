@@ -612,8 +612,8 @@ export interface ModelCompileConfig {
  * A `Model` is a directed, acyclic graph of `Layer`s plus methods for
  * training, evaluation, prediction and saving.
  *
- * The `Model` is the basic unit of training, inference and evaluation in
- * TensorFlow.js. To create a `Model, use `model`.
+ * `Model` is the basic unit of training, inference and evaluation in
+ * TensorFlow.js. To create a `Model`, use `model`.
  *
  * See also:
  *   `Sequential`, `loadModel`.
@@ -907,8 +907,8 @@ export class Model extends Container {
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
-      Scalar|Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[],
+      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
