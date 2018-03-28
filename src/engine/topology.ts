@@ -14,7 +14,7 @@
 import {doc, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
-import * as K from '../backend/deeplearnjs_backend';
+import * as K from '../backend/tfjs_backend';
 import {Constraint} from '../constraints';
 import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {Initializer} from '../initializers';
@@ -1418,8 +1418,9 @@ export interface InputConfig {
 }
 
 /**
- * `Input()` is used to instantiate a `SymbolicTensor`, and represents
- * the input to a model.  Users should call the `input()` factory function for
+ * Used to instantiate an input to a model as a `SymbolicTensor`.
+ *
+ * Users should call the `input` factory function for
  * consistency with other generator functions.
  *
  * Example:
@@ -1432,6 +1433,10 @@ export interface InputConfig {
  * const model = tf.model({inputs: x, outputs: y});
  * model.predict(tf.ones([2, 32])).print();
  * ```
+ *
+ * Note: `input` is only necessary when using `model`. When using
+ * `sequential`, specify `inputShape` for the first layer or use `inputLayer`
+ * as the first layer.
  */
 export function Input(config: InputConfig): SymbolicTensor {
   if (config.batchShape == null && config.shape == null) {
@@ -1984,7 +1989,7 @@ export class Container extends Layer {
       kerasVersion: 'tfjs-layers pre-release',
       // TODO(nielsene): Replace something like K.backend() once
       // possible.
-      backend: 'deeplearn.js'
+      backend: 'TensorFlow.js'
     };
     return modelConfig;
   }
