@@ -46,8 +46,8 @@ export class ModelExports {
    * and outputs.
    *
    * The key difference between `model` and `sequential` is that `model`
-   * is more generic, supporting an arbitrary graph of layers. `sequential` is
-   * less generic and supports only a linear stack of layers.
+   * is more generic, supporting an arbitrary graph (without cycles) of layers.
+   * `sequential` is less generic and supports only a linear stack of layers.
    *
    * When creating a `Model`, specify its input(s) and output(s). Layers
    * are used to wire input(s) to output(s).
