@@ -12,7 +12,7 @@
 #   ./build-benchmarks.sh
 #
 # Then open the demo HTML page in your browser, e.g.,
-#   google-chrome .
+#   http://localhost:8000/dist"
 
 set -e
 
@@ -50,11 +50,11 @@ cd ${DEMO_DIR}
 yarn
 yarn build
 
-# echo
-# echo "-----------------------------------------------------------"
-# echo "Once the HTTP server has started, you can view the demo at:"
-# echo "  http://localhost:${DEMO_PORT}/dist"
-# echo "-----------------------------------------------------------"
-# echo
+echo
+echo "-----------------------------------------------------------"
+echo "Once the HTTP server has started, you can view the demo at:"
+echo "  http://localhost:${DEMO_PORT}/dist"
+echo "-----------------------------------------------------------"
+echo
 
 node_modules/http-server/bin/http-server -p "${DEMO_PORT}"
