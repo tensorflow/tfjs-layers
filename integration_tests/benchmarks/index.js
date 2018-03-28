@@ -28,10 +28,8 @@ async function runBenchmark(artifactsDir, modelName, config) {
   // for losses.
 
   const batchSize = benchmarkData.batch_size;
-  const xs = tfc.randomUniform(
-      [batchSize].concat(benchmarkData.input_shape));
-  const ys = tfc.randomUniform(
-      [batchSize].concat(benchmarkData.target_shape));
+  const xs = tfc.randomUniform([batchSize].concat(benchmarkData.input_shape));
+  const ys = tfc.randomUniform([batchSize].concat(benchmarkData.target_shape));
   model.compile({
     optimizer: benchmarkData.optimizer,
     loss: lossMap[benchmarkData.loss],
@@ -58,18 +56,24 @@ async function runBenchmark(artifactsDir, modelName, config) {
   const trainTimeMs = (trainEndMs - trainBeginMs) / benchmarkData.train_epochs;
 
   // Perform predict() burn-in.
-  let output;
-  for (let i = 0; i < PREDICT_BURNINS; ++i) {
-    output = model.predict(xs);
-  }
-  // Time predict() a number of times and take the average.
-  const predictBeginMs = performance.now();
-  for (let i = 0; i < PREDICT_RUNS; ++i) {
-    output = model.predict(xs);
-  }
-  // After all the model.predict() calls, invoke dataSync() once to let the
-  // scheduled GPU operations complete before proceeding.
-  output.dataSync();
+  tfc.tidy(() => {
+    let output;
+    for (let i = 0; i < PREDICT_BURNINS; ++i) {
+      output = tfc.tidy(() => {
+        return model.predict(xs);
+      });
+    }
+    // Time predict() a number of times and take the average.
+    const predictBeginMs = performance.now();
+    for (let i = 0; i < PREDICT_RUNS; ++i) {
+      output = tfc.tidy(() => {
+        return model.predict(xs);
+      });
+    }
+    // After all the model.predict() calls, invoke dataSync() once to let the
+    // scheduled GPU operations complete before proceeding.
+    output.dataSync();
+  });
   const predictEndMs = performance.now();
   const predictTimeMs = (predictEndMs - predictBeginMs) / PREDICT_RUNS;
   return {

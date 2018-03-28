@@ -7,5 +7,6 @@ Python Keras backed by TensorFlow.
 To launch the benchmarks, do
 
 ```sh
+cd integration_tests/benchmarks
 ./build-benchmarks.sh
 ```
