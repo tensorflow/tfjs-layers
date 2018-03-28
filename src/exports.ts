@@ -45,6 +45,10 @@ export class ModelExports {
    * A model is a data structure that consists of `Layers` and defines inputs
    * and outputs.
    *
+   * The key difference between `model` and `sequential` is that `model`
+   * is more generic, supporting an arbitrary graph (without cycles) of layers.
+   * `sequential` is less generic and supports only a linear stack of layers.
+   *
    * When creating a `Model`, specify its input(s) and output(s). Layers
    * are used to wire input(s) to output(s).
    *
@@ -89,6 +93,10 @@ export class ModelExports {
    * defined input shape. What that means is that it should have received an
    * `inputShape` or `batchInputShape` argument, or for some type of layers
    * (recurrent, Dense...) an `inputDim` argument.
+   *
+   * The key difference between `model` and `sequential` is that `sequential`
+   * is less generic, supporting only a linear stack of layers. `model` is
+   * more generic and supports an arbitrary graph (without cycles) of layers.
    *
    * Examples:
    *
@@ -156,16 +164,6 @@ export class ModelExports {
   static input(config: InputConfig): SymbolicTensor {
     return Input(config);
   }
-
-  @doc({
-    heading: 'Models',
-    subheading: 'Inputs',
-    useDocsFrom: 'InputLayer',
-    configParamIndices: [0]
-  })
-  static inputLayer(config: InputLayerConfig): Layer {
-    return new InputLayer(config);
-  }
 }
 
 export class LayerExports {
@@ -175,6 +173,21 @@ export class LayerExports {
   // TODO(cais): Add doc string to all the public static functions in this
   //   class; include exectuable JavaScript code snippets where applicable
   //   (b/74074458).
+
+  // Input Layer.
+  @doc({
+    heading: 'Layers',
+    subheading: 'Inputs',
+    namespace: 'layers',
+    useDocsFrom: 'InputLayer',
+    configParamIndices: [0]
+  })
+  static inputLayer(config: InputLayerConfig): Layer {
+    return new InputLayer(config);
+  }
+
+  // Alias for `tf.input`.
+  static input = ModelExports.input;
 
   // Convolutional Layers.
 
