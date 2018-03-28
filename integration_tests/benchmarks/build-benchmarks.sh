@@ -12,7 +12,7 @@
 #   ./build-benchmarks.sh
 #
 # Then open the demo HTML page in your browser, e.g.,
-#   http://localhost:8000/dist"
+#   http://localhost:8000/dist
 
 set -e
 
