@@ -1418,7 +1418,7 @@ export interface InputConfig {
 }
 
 /**
- * Used to instantiate an input to a model as a `SymbolicTensor`.
+ * Used to instantiate an input to a model.
  *
  * Users should call the `input` factory function for
  * consistency with other generator functions.
