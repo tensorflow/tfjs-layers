@@ -367,6 +367,31 @@ export interface ActivationLayerConfig extends LayerConfig {
 
 /**
  * Applies an activation function to an output.
+ *
+ * This layer applies element-wise activation function.  Other layers, noteably
+ * `dense` can also apply activation functions.  Use this isolated activation
+ * function to, for instance, extract the values before and after the
+ * activation. for instance:
+ *
+ * ```js
+ * const input = tf.input({shape: [5]});
+ * const denseLayer = tf.layers.dense({units: 1});
+ * const activationLayer = tf.layers.activation({activation: 'relu6'});
+ *
+ * // Obtain the output symbolic tensors by applying the layers in order.
+ * const denseOutput = denseLayer.apply(input);
+ * const activationOutput = activationLayer.apply(denseOutput);
+ *
+ * // Create the model based on the inputs.
+ * const model = tf.model({inputs: input, outputs: [denseOutput,
+ * activationOutput]});
+ *
+ * // Collect both outputs and print separately.
+ * const [denseOut, activationOut] = model.predict(tf.randomNormal([6, 5]));
+ * denseOut.print();
+ * activationOut.print();
+ * ```
+ *
  */
 export class Activation extends Layer {
   activation: ActivationFn;
