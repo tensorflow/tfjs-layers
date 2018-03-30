@@ -167,9 +167,9 @@ export interface SequentialConfig {
  *  const xs = tf.tensor2d([1, 2, 3, 4], [4, 1]);
  *  const ys = tf.tensor2d([1, 3, 5, 7], [4, 1]);
  *
- * // Train the model using the data.
- *  model.fit(xs, ys);
- *  // Use the model to do inference on a data point the model hasn't seen:
+ *  // Train the model using the data then do inference on a data point the
+ *  // model hasn't seen:
+ *  await model.fit(xs, ys);
  *  model.predict(tf.tensor2d([5], [1, 1])).print();
  * ```
  */
@@ -204,6 +204,7 @@ export class Sequential extends Model {
    *  model.add(tf.layers.dense({units: 8, inputShape: [1]}));
    *  model.add(tf.layers.dense({units: 4, activation: 'relu6'}));
    *  model.add(tf.layers.dense({units: 1, activation: 'relu6'}));
+   *  // Note that the untrained model is random at this point.
    *  model.predict(tf.randomNormal([10, 1])).print();
    * ```
    * @param layer Layer instance.
@@ -496,11 +497,11 @@ export class Sequential extends Model {
    *   layers: [tf.layers.dense({units: 1, inputShape: [10]})]
    * });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * const h = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
+   * const history = await model.fit(tf.ones([8, 10]), tf.ones([8, 1]), {
    *   batchSize: 4,
    *   epochs: 3
    * });
-   * console.log(h.history.loss[0]);
+   * console.log(history.history.loss[0]);
    *
    * @param x `Tensor` of training data, or an array of `Tensor`s if the model
    *   has multiple inputs. If all inputs in the model are named, you can also

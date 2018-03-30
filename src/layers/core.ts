@@ -368,10 +368,10 @@ export interface ActivationLayerConfig extends LayerConfig {
 /**
  * Applies an activation function to an output.
  *
- * This layer applies element-wise activation function.  Other layers, noteably
+ * This layer applies element-wise activation function.  Other layers, notably
  * `dense` can also apply activation functions.  Use this isolated activation
- * function to, for instance, extract the values before and after the
- * activation. for instance:
+ * function to extract the values before and after the
+ * activation. For instance:
  *
  * ```js
  * const input = tf.input({shape: [5]});
@@ -383,8 +383,10 @@ export interface ActivationLayerConfig extends LayerConfig {
  * const activationOutput = activationLayer.apply(denseOutput);
  *
  * // Create the model based on the inputs.
- * const model = tf.model({inputs: input, outputs: [denseOutput,
- * activationOutput]});
+ * const model = tf.model({
+ *     inputs: input,
+ *     outputs: [denseOutput, activationOutput]
+ * });
  *
  * // Collect both outputs and print separately.
  * const [denseOut, activationOut] = model.predict(tf.randomNormal([6, 5]));
