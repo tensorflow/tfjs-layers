@@ -426,9 +426,17 @@ export interface RepeatVectorLayerConfig extends LayerConfig {
 }
 
 /**
- * Repeat the input n times.
+ * Repeats the input n times in a new dimension.
+ *
+ * ```js
+ *  const model = tf.sequential();
+ *  model.add(tf.layers.repeatVector({n: 4, inputShape: [2]}));
+ *  const x = tf.tensor2d([[10, 20]]);
+ *  // Use the model to do inference on a data point the model hasn't see
+ *  model.predict(x).print();
+ *  // output shape is now [batch, 2, 4]
+ * ```
  */
-// TODO(cais): Add example.
 export class RepeatVector extends Layer {
   readonly n: number;
 
