@@ -99,7 +99,7 @@ describeMathCPUAndGPU('BatchNormalization Layers: Tensor', () => {
     expectTensorsClose(layer.getWeights()[2], onesLike(layer.getWeights()[2]));
   });
 
-  it('no center, no scasle', () => {
+  it('no center, no scale', () => {
     const layer = new BatchNormalization({scale: false, center: false});
     const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
     expectTensorsClose(layer.apply(x) as Tensor, x, 0.01);
