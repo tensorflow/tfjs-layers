@@ -35,6 +35,7 @@
     "build-npm": "./scripts/build-npm.sh",
     "publish-npm": "./scripts/publish-npm.sh",
     "test": "karma start",
+    "test-travis": "karma start --browsers='bs_firefox_mac,bs_chrome_mac' --singleRun",
     "lint": "tslint -p . --type-check -t verbose"
   },
   "dependencies": {
