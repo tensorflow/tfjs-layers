@@ -194,7 +194,7 @@ export class LayerExports {
 
   @doc({
     heading: 'Layers',
-    subheading: 'Advanced Activations',
+    subheading: 'Advanced Activation',
     namespace: 'layers',
     useDocsFrom: 'ELU',
     configParamIndices: [0]
@@ -205,7 +205,7 @@ export class LayerExports {
 
   @doc({
     heading: 'Layers',
-    subheading: 'Advanced Activations',
+    subheading: 'Advanced Activation',
     namespace: 'layers',
     useDocsFrom: 'LeakyReLU',
     configParamIndices: [0]
@@ -216,7 +216,7 @@ export class LayerExports {
 
   @doc({
     heading: 'Layers',
-    subheading: 'Advanced Activations',
+    subheading: 'Advanced Activation',
     namespace: 'layers',
     useDocsFrom: 'Softmax',
     configParamIndices: [0]
@@ -227,7 +227,7 @@ export class LayerExports {
 
   @doc({
     heading: 'Layers',
-    subheading: 'Advanced Activations',
+    subheading: 'Advanced Activation',
     namespace: 'layers',
     useDocsFrom: 'ThresholdedReLU',
     configParamIndices: [0]

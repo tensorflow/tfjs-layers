@@ -33,7 +33,7 @@ export interface LeakyReLULayerConfig extends LayerConfig {
  * Leaky version of a rectified linear unit.
  *
  * It allows a small gradient when the unit is not active:
- * `f(x) = alpha *x for x < 0.`
+ * `f(x) = alpha * x for x < 0.`
  * `f(x) = x for x >= 0.`
  *
  * Input shape:
@@ -154,7 +154,7 @@ export interface ThresholdedReLULayerConfig extends LayerConfig {
  *
  * It follows:
  * `f(x) = x for x > theta`,
- * `f(x) = 0 ohterwise`.
+ * `f(x) = 0 otherwise`.
  *
  * Input shape:
  *   Arbitrary. Use the configuration `inputShape` when using this layer as the
