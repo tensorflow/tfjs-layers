@@ -494,6 +494,13 @@ export class Conv2DTranspose extends Conv2D {
         deconvLength(outputShape[widthAxis], strideW, kernelW, this.padding);
     return outputShape;
   }
+
+  getConfig(): ConfigDict {
+    const config = super.getConfig();
+    delete config['dilationRate'];
+    return config;
+  }
+
 }
 generic_utils.ClassNameMap.register('Conv2DTranspose', Conv2DTranspose);
 
