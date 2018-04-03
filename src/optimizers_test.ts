@@ -57,6 +57,7 @@ describeMathCPU('getOptimizer', () => {
   });
 
   it('throws for non-existent optimizer', () => {
-    expect(() => getOptimizer('not an optimizer')).toThrow(/Unknown Optimizer/);
+    expect(() => getOptimizer('not an optimizer'))
+        .toThrowError(/Unknown Optimizer/);
   });
 });
