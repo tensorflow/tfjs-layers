@@ -495,6 +495,7 @@ export class Conv2DTranspose extends Conv2D {
     return outputShape;
   }
 }
+generic_utils.ClassNameMap.register('Conv2DTranspose', Conv2DTranspose);
 
 /**
  * 1D convolution layer (e.g., temporal convolution).
