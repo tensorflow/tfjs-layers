@@ -439,23 +439,15 @@ export class Conv2DTranspose extends Conv2D {
     const outHeight = deconvLength(height, strideH, kernelH, this.padding);
     const outWidth = deconvLength(width, strideW, kernelW, this.padding);
 
-    // NOTE(cais): We don't branch based on `this.dataFormat` here, because the
-    //   core function `conv2dTranspose` called below always assumes
+    // Porting Note: We don't branch based on `this.dataFormat` here, because
+    //   the tjfs-core function `conv2dTranspose` called below always assumes
     //   channelsLast.
     const outputShape: [number, number, number, number] =
         [batchSize, outHeight, outWidth, this.filters];
-    // const outputShape: [number, number, number, number] =
-    //     this.dataFormat === 'channelsFirst' ?
-    //     [batchSize, this.filters, outHeight, outWidth] :
-    //     [batchSize, outHeight, outWidth, this.filters];
 
-    // TODO(cais): Check this.strides.
-    // TODO(cais): This assumes channelsLast. If channelsFirst, call
-    // transpose().
     if (this.dataFormat !== 'channelsLast') {
       input = K.transpose(input, [0, 2, 3, 1]);
     }
-
     let outputs = conv2dTranspose(
         input as Tensor4D, this.kernel.read() as Tensor4D, outputShape,
         this.strides as [number, number], this.padding as 'same' | 'valid');
