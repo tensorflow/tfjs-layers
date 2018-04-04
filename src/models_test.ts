@@ -218,6 +218,52 @@ describeMathCPU('loadModel', () => {
         .then(() => done.fail)
         .catch(done);
   });
+
+  fit(`Loads weights despite uniqueified tensor names`, async done => {
+    try {
+      setupFakeWeightFiles({
+        './weight_0': ones([32, 32], 'float32').dataSync() as Float32Array,
+        './weight_1': ones([32], 'float32').dataSync() as Float32Array,
+      });
+      const denseLayerName = 'dense';
+      const weightsManifest: WeightsManifestConfig = [
+        {
+          'paths': ['weight_0'],
+          'weights': [{
+            'name': `${denseLayerName}/kernel`,
+            'dtype': 'float32',
+            'shape': [32, 32]
+          }],
+        },
+        {
+          'paths': ['weight_1'],
+          'weights': [{
+            'name': `${denseLayerName}/bias`,
+            'dtype': 'float32',
+            'shape': [32]
+          }],
+        }
+      ];
+      // JSON.parse and stringify to deep copy fakeSequentialModel.
+      const configJson =
+          JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
+      configJson['config']['layers'][1]['config']['name'] = denseLayerName;
+      await modelFromJSON({
+        modelTopology: configJson,
+        weightsManifest,
+      });
+
+      // On the second load, the layer names will be uniqueified but the keys of
+      // the weights manifest will not.
+      await modelFromJSON({
+        modelTopology: configJson,
+        weightsManifest,
+      });
+      done();
+    } catch (e) {
+      done.fail(e);
+    }
+  });
 });
 
 describeMathCPUAndGPU('Sequential', () => {
