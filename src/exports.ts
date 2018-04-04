@@ -19,7 +19,8 @@ import {Constraint, MaxNorm, MaxNormConfig, MinMaxNorm, MinMaxNormConfig, NonNeg
 import {ContainerConfig, Input, InputConfig, InputLayer, InputLayerConfig, Layer, LayerConfig} from './engine/topology';
 import {Model} from './engine/training';
 import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
-import {Conv1D, Conv2D, ConvLayerConfig} from './layers/convolutional';
+import {ELU, ELULayerConfig, LeakyReLU, LeakyReLULayerConfig, Softmax, SoftmaxLayerConfig, ThresholdedReLU, ThresholdedReLULayerConfig} from './layers/advanced_activations';
+import {Conv1D, Conv2D, Conv2DTranspose, ConvLayerConfig} from './layers/convolutional';
 import {DepthwiseConv2D, DepthwiseConv2DLayerConfig} from './layers/convolutional_depthwise';
 import {Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, DropoutLayerConfig, Flatten, RepeatVector, RepeatVectorLayerConfig} from './layers/core';
 import {Embedding, EmbeddingLayerConfig} from './layers/embeddings';
@@ -103,7 +104,7 @@ export class ModelExports {
    * ```js
    * const model = tf.sequential();
    *
-   * // First layer must have a defined input shape
+   * // First layer must have an input shape defined.
    * model.add(tf.layers.dense({units: 32, inputShape: [50]}));
    * // Afterwards, TF.js does automatic shape inference.
    * model.add(tf.layers.dense({units: 4}));
@@ -111,7 +112,7 @@ export class ModelExports {
    * // Inspect the inferred shape of the model's output, which equals
    * // `[null, 4]`. The 1st dimension is the undetermined batch dimension; the
    * // 2nd is the output size of the model's last layer.
-   * console.log(model.outputs[0].shape);
+   * console.log(JSON.stringify(model.outputs[0].shape));
    * ```
    *
    * It is also possible to specify a batch size (with potentially undetermined
@@ -127,7 +128,7 @@ export class ModelExports {
    * model.add(tf.layers.dense({units: 4}));
    *
    * // Inspect the inferred shape of the model's output.
-   * console.log(model.outputs[0].shape);
+   * console.log(JSON.stringify(model.outputs[0].shape));
    * ```
    *
    * You can also use an `Array` of already-constructed `Layer`s to create
@@ -138,7 +139,7 @@ export class ModelExports {
    *   layers: [tf.layers.dense({units: 32, inputShape: [50]}),
    *            tf.layers.dense({units: 4})]
    * });
-   * console.log(model.outputs[0].shape);
+   * console.log(JSON.stringify(model.outputs[0].shape));
    * ```
    */
   @doc({heading: 'Models', subheading: 'Creation', configParamIndices: [0]})
@@ -189,6 +190,52 @@ export class LayerExports {
   // Alias for `tf.input`.
   static input = ModelExports.input;
 
+  // Advanced Activation Layers.
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Advanced Activation',
+    namespace: 'layers',
+    useDocsFrom: 'ELU',
+    configParamIndices: [0]
+  })
+  static elu(config?: ELULayerConfig): Layer {
+    return new ELU(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Advanced Activation',
+    namespace: 'layers',
+    useDocsFrom: 'LeakyReLU',
+    configParamIndices: [0]
+  })
+  static leakyReLU(config?: LeakyReLULayerConfig): Layer {
+    return new LeakyReLU(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Advanced Activation',
+    namespace: 'layers',
+    useDocsFrom: 'Softmax',
+    configParamIndices: [0]
+  })
+  static softmax(config?: SoftmaxLayerConfig): Layer {
+    return new Softmax(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Advanced Activation',
+    namespace: 'layers',
+    useDocsFrom: 'ThresholdedReLU',
+    configParamIndices: [0]
+  })
+  static thresohldedReLU(config?: ThresholdedReLULayerConfig): Layer {
+    return new ThresholdedReLU(config);
+  }
+
   // Convolutional Layers.
 
   @doc({
@@ -211,6 +258,17 @@ export class LayerExports {
   })
   static conv2d(config: ConvLayerConfig): Layer {
     return new Conv2D(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Convolutional',
+    namespace: 'layers',
+    useDocsFrom: 'Conv2DTranspose',
+    configParamIndices: [0]
+  })
+  static conv2dTranspose(config: ConvLayerConfig): Layer {
+    return new Conv2DTranspose(config);
   }
 
   // Convolutional (depthwise) Layers.

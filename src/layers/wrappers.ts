@@ -43,12 +43,6 @@ export interface WrapperLayerConfig extends LayerConfig {
  */
 export abstract class Wrapper extends Layer {
   readonly layer: Layer;
-  /**
-   * Tracks mapping of Wrapper inputs to inner layer inputs. Useful when
-   * the inner layer has update ops that depend on its inputs (as opposed
-   * to the inputs to the Wrapper layer).
-   */
-  private inputMap: {[key: string]: SymbolicTensor[]};
 
   constructor(config: WrapperLayerConfig) {
     // Porting Note: In PyKeras, `self.layer` is set prior to the calling
@@ -60,7 +54,6 @@ export abstract class Wrapper extends Layer {
     //   and the setter of `this.layer`.
     super(config);
     this.layer = config.layer;
-    this.inputMap = {};
   }
 
   build(inputShape: Shape|Shape[]): void {
@@ -170,6 +163,7 @@ export abstract class Wrapper extends Layer {
  *
  * // In subsequent layers, there is no need for `inputShape`:
  * model.add(tf.layers.timeDistributed({layer: tf.layers.dense({units: 32})}));
+ * console.log(JSON.stringify(model.outputs[0].shape));
  * // Now model.outputShape = [null, 10, 32].
  * ```
  *
@@ -184,6 +178,7 @@ export abstract class Wrapper extends Layer {
  *   layer: tf.layers.conv2d({filters: 64, kernelSize: [3, 3]}),
  *   inputShape: [10, 299, 299, 3],
  * }));
+ * console.log(JSON.stringify(model.outputs[0].shape));
  * ```
  */
 export class TimeDistributed extends Wrapper {
