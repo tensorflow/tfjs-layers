@@ -12,7 +12,7 @@
  * TensorFlow.js Layers: Convolutional Layers
  */
 
-import {conv2dTranspose, Tensor, Tensor4D} from '@tensorflow/tfjs-core';
+import {conv2dTranspose, Tensor, Tensor4D, tidy} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 // tslint:disable:max-line-length
@@ -381,6 +381,7 @@ export class Conv2DTranspose extends Conv2D {
           'Input should have rank 4; Received input shape: ' +
           JSON.stringify(inputShape));
     }
+
     const channelAxis =
         this.dataFormat === 'channelsFirst' ? 1 : inputShape.length - 1;
     if (inputShape[channelAxis] == null) {
@@ -408,61 +409,63 @@ export class Conv2DTranspose extends Conv2D {
 
   // tslint:disable-next-line:no-any
   call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
-    let input = generic_utils.getExactlyOneTensor(inputs);
-    if (input.shape.length !== 4) {
-      throw new ValueError(
-          `Conv2DTranspose.call() expects input tensor to be rank-4, but ` +
-          `received a tensor of rank-${input.shape.length}`);
-    }
+    return tidy(() => {
+      let input = generic_utils.getExactlyOneTensor(inputs);
+      if (input.shape.length !== 4) {
+        throw new ValueError(
+            `Conv2DTranspose.call() expects input tensor to be rank-4, but ` +
+            `received a tensor of rank-${input.shape.length}`);
+      }
 
-    const inputShape = input.shape;
-    const batchSize = inputShape[0];
+      const inputShape = input.shape;
+      const batchSize = inputShape[0];
 
-    let hAxis: number;
-    let wAxis: number;
-    if (this.dataFormat === 'channelsFirst') {
-      hAxis = 2;
-      wAxis = 3;
-    } else {
-      hAxis = 1;
-      wAxis = 2;
-    }
+      let hAxis: number;
+      let wAxis: number;
+      if (this.dataFormat === 'channelsFirst') {
+        hAxis = 2;
+        wAxis = 3;
+      } else {
+        hAxis = 1;
+        wAxis = 2;
+      }
 
-    const height = inputShape[hAxis];
-    const width = inputShape[wAxis];
-    const kernelH = this.kernelSize[0];
-    const kernelW = this.kernelSize[1];
-    const strideH = this.strides[0];
-    const strideW = this.strides[1];
+      const height = inputShape[hAxis];
+      const width = inputShape[wAxis];
+      const kernelH = this.kernelSize[0];
+      const kernelW = this.kernelSize[1];
+      const strideH = this.strides[0];
+      const strideW = this.strides[1];
 
-    // Infer the dynamic output shape.
-    const outHeight = deconvLength(height, strideH, kernelH, this.padding);
-    const outWidth = deconvLength(width, strideW, kernelW, this.padding);
+      // Infer the dynamic output shape.
+      const outHeight = deconvLength(height, strideH, kernelH, this.padding);
+      const outWidth = deconvLength(width, strideW, kernelW, this.padding);
 
-    // Porting Note: We don't branch based on `this.dataFormat` here, because
-    //   the tjfs-core function `conv2dTranspose` called below always assumes
-    //   channelsLast.
-    const outputShape: [number, number, number, number] =
-        [batchSize, outHeight, outWidth, this.filters];
+      // Porting Note: We don't branch based on `this.dataFormat` here, because
+      //   the tjfs-core function `conv2dTranspose` called below always assumes
+      //   channelsLast.
+      const outputShape: [number, number, number, number] =
+          [batchSize, outHeight, outWidth, this.filters];
 
-    if (this.dataFormat !== 'channelsLast') {
-      input = K.transpose(input, [0, 2, 3, 1]);
-    }
-    let outputs = conv2dTranspose(
-        input as Tensor4D, this.kernel.read() as Tensor4D, outputShape,
-        this.strides as [number, number], this.padding as 'same' | 'valid');
-    if (this.dataFormat !== 'channelsLast') {
-      outputs = K.transpose(outputs, [0, 3, 1, 2]) as Tensor4D;
-    }
+      if (this.dataFormat !== 'channelsLast') {
+        input = K.transpose(input, [0, 2, 3, 1]);
+      }
+      let outputs = conv2dTranspose(
+          input as Tensor4D, this.kernel.read() as Tensor4D, outputShape,
+          this.strides as [number, number], this.padding as 'same' | 'valid');
+      if (this.dataFormat !== 'channelsLast') {
+        outputs = K.transpose(outputs, [0, 3, 1, 2]) as Tensor4D;
+      }
 
-    if (this.bias != null) {
-      outputs =
-          K.biasAdd(outputs, this.bias.read(), this.dataFormat) as Tensor4D;
-    }
-    if (this.activation != null) {
-      outputs = this.activation(outputs) as Tensor4D;
-    }
-    return outputs;
+      if (this.bias != null) {
+        outputs =
+            K.biasAdd(outputs, this.bias.read(), this.dataFormat) as Tensor4D;
+      }
+      if (this.activation != null) {
+        outputs = this.activation(outputs) as Tensor4D;
+      }
+      return outputs;
+    });
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
@@ -500,7 +503,6 @@ export class Conv2DTranspose extends Conv2D {
     delete config['dilationRate'];
     return config;
   }
-
 }
 generic_utils.ClassNameMap.register('Conv2DTranspose', Conv2DTranspose);
 
