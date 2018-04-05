@@ -123,7 +123,7 @@ describeMathCPUAndGPU('ZeroPadding2D: Tensor', () => {
         slice(y, [0, 0, 3, 0], [2, 4, 1, 3]), zeros([2, 4, 1, 3]));
   });
 
-  it('Default padding 1-1-1-1, channelsLast', () => {
+  it('Default padding 1-1-1-1, channelFirst', () => {
     const x = ones([2, 3, 2, 2]);
     const layer = new ZeroPadding2D({dataFormat: 'channelsFirst'});
     const y = layer.apply(x) as Tensor;

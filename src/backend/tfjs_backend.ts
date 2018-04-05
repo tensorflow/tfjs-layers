@@ -284,6 +284,7 @@ export function temporalPadding(x: Tensor, padding?: [number, number]): Tensor {
  *   integers. The amount of padding at the beginning and end of the 2nd and 3rd
  *   dimensions, respectively.
  * @param dataFormat 'channelsLast' (default) or 'channelsFirst'.
+ * @return Padded 4D `Tensor`.
  */
 export function spatial2dPadding(
     x: Tensor, padding?: [[number, number], [number, number]],
@@ -307,7 +308,7 @@ export function spatial2dPadding(
   if (dataFormat == null) {
     dataFormat = imageDataFormat();
   }
-  if (dataFormat in ['channelsLast', 'channelsFirst']) {
+  if (dataFormat !== 'channelsLast' && dataFormat !== 'channelsFirst') {
     throw new ValueError(`Unknown data format: ${dataFormat}`);
   }
 

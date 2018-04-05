@@ -84,6 +84,8 @@ export class ZeroPadding2D extends Layer {
 
     this.dataFormat =
         config.dataFormat == null ? imageDataFormat() : config.dataFormat;
+    // TODO(cais): Maybe refactor the following logic surrounding `padding`
+    //   into a helper method.
     if (config.padding == null) {
       this.padding = [[1, 1], [1, 1]];
     } else if (typeof config.padding === 'number') {
