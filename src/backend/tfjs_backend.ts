@@ -309,7 +309,9 @@ export function spatial2dPadding(
     dataFormat = imageDataFormat();
   }
   if (dataFormat !== 'channelsLast' && dataFormat !== 'channelsFirst') {
-    throw new ValueError(`Unknown data format: ${dataFormat}`);
+    throw new ValueError(
+        `Unknown data format: ${dataFormat}. ` +
+        `Supported data formats are 'channelsLast' and 'channelsFirst.`);
   }
 
   let pattern: Array<[number, number]>;

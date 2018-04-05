@@ -41,7 +41,7 @@ export interface ZeroPadding2DLayerConfig extends LayerConfig {
   padding?: number|[number, number]|[[number, number], [number, number]];
 
   /**
-   * One of 'channelsLast' (default) and 'channelsFirst'.
+   * One of `'channelsLast'` (default) and `'channelsFirst'`.
    *
    * The ordering of the dimensions in the inputs.
    * `channelsLast` corresponds to inputs with shape
