@@ -420,11 +420,15 @@ describeMathCPUAndGPU('spatial2dPadding', () => {
     const y = K.spatial2dPadding(x);
 
     expect(y.shape).toEqual([2, 5, 6, 3]);
-    expectTensorsClose(
-        slice(y, [0, 0, 0, 0], [2, 1, 1, 3]), K.zeros([2, 1, 1, 3]));
     expectTensorsClose(slice(y, [0, 1, 1, 0], [2, 3, 4, 3]), x);
     expectTensorsClose(
-        slice(y, [0, 4, 5, 0], [2, 1, 1, 3]), K.zeros([2, 1, 1, 3]));
+        slice(y, [0, 0, 0, 0], [2, 1, 6, 3]), K.zeros([2, 1, 6, 3]));
+    expectTensorsClose(
+        slice(y, [0, 4, 0, 0], [2, 1, 6, 3]), K.zeros([2, 1, 6, 3]));
+    expectTensorsClose(
+        slice(y, [0, 0, 0, 0], [2, 5, 1, 3]), K.zeros([2, 5, 1, 3]));
+    expectTensorsClose(
+        slice(y, [0, 0, 5, 0], [2, 5, 1, 3]), K.zeros([2, 5, 1, 3]));
   });
 
   it('custom padding 2-2-3-0', () => {
@@ -432,9 +436,13 @@ describeMathCPUAndGPU('spatial2dPadding', () => {
     const y = K.spatial2dPadding(x, [[2, 2], [3, 0]]);
     expect(y.shape).toEqual([2, 7, 7, 3]);
 
-    expectTensorsClose(
-        slice(y, [0, 0, 0, 0], [2, 2, 3, 3]), K.zeros([2, 2, 3, 3]));
     expectTensorsClose(slice(y, [0, 2, 3, 0], [2, 3, 4, 3]), x);
+    expectTensorsClose(
+        slice(y, [0, 0, 0, 0], [2, 2, 7, 3]), K.zeros([2, 2, 7, 3]));
+    expectTensorsClose(
+        slice(y, [0, 5, 0, 0], [2, 2, 7, 3]), K.zeros([2, 2, 7, 3]));
+    expectTensorsClose(
+        slice(y, [0, 0, 0, 0], [2, 7, 3, 3]), K.zeros([2, 7, 3, 3]));
   });
 });
 

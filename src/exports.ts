@@ -26,13 +26,13 @@ import {Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, Dro
 import {Embedding, EmbeddingLayerConfig} from './layers/embeddings';
 import {Add, Average, Concatenate, ConcatenateLayerConfig, Maximum, Minimum, Multiply} from './layers/merge';
 import {BatchNormalization, BatchNormalizationLayerConfig} from './layers/normalization';
+import {ZeroPadding2D, ZeroPadding2DLayerConfig} from './layers/padding';
 import {AvgPooling1D, AvgPooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerConfig, MaxPooling1D, MaxPooling2D, Pooling1DLayerConfig, Pooling2DLayerConfig} from './layers/pooling';
 import {GRU, GRUCell, GRUCellLayerConfig, GRULayerConfig, LSTM, LSTMCell, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNCell, RNNLayerConfig, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig, StackedRNNCells, StackedRNNCellsConfig} from './layers/recurrent';
 import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, WrapperLayerConfig} from './layers/wrappers';
 import {loadModelInternal, Sequential, SequentialConfig} from './models';
 import {l1, L1Config, L1L2, L1L2Config, l2, L2Config, Regularizer} from './regularizers';
 import {SymbolicTensor} from './types';
-import { ZeroPadding2DLayerConfig, ZeroPadding2D } from './layers/padding';
 
 // tslint:enable:max-line-length
 
