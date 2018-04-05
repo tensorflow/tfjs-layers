@@ -498,12 +498,14 @@ export interface ModelEvaluateConfig {
  */
 export interface ModelFitConfig {
   /**
-   * Number of samples per gradient update. If unspecified, it
-   * will default to 32.
+   * Number of samples per gradient update. Defaults to 32.
    */
   batchSize?: number;
 
-  /** The number of times to iterate over the training data arrays. */
+  /**
+   * The number of times to iterate over the training data arrays. Defaults to
+   * 100.
+   */
   epochs?: number;
 
   verbose?: ModelLoggingVerbosity;
@@ -910,8 +912,8 @@ export class Model extends Container {
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[],
-      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
+      Scalar|Scalar[] {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
