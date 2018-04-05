@@ -21,7 +21,7 @@ import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
-import {LayerVariable, LossOrMetricFn, Shape} from '../types';
+import {LayerVariable, LossOrMetricFn, Shape, SymbolicTensor} from '../types';
 import {ClassNameMap, count, singletonOrArray} from '../utils/generic_utils';
 
 import {execute, FeedDict} from './executor';
@@ -608,6 +608,12 @@ export interface ModelCompileConfig {
   //   targetTensors.
 }
 
+export interface ModelConfig {
+  inputs?: SymbolicTensor|SymbolicTensor[];
+  outputs?: SymbolicTensor|SymbolicTensor[];
+  name?: string;
+}
+
 /**
  * A `Model` is a directed, acyclic graph of `Layer`s plus methods for
  * training, evaluation, prediction and saving.
@@ -620,6 +626,8 @@ export interface ModelCompileConfig {
  */
 @doc({heading: 'Models', subheading: 'Classes'})
 export class Model extends Container {
+  protected readonly isGraphModel: boolean;
+
   optimizer: Optimizer;
   loss: string|string[]|{[outputName: string]: string};
   lossFunctions: LossOrMetricFn[];
@@ -645,8 +653,24 @@ export class Model extends Container {
   //   "knowledge" of the outputs it depends on.
   metricsTensors: Array<[LossOrMetricFn, number]>;
 
-  constructor(config: ContainerConfig) {
-    super(config);
+  constructor(config: ModelConfig) {
+    if (config.inputs != null && config.outputs == null ||
+        config.inputs == null && config.outputs != null) {
+      throw new ValueError(
+          'When constructing a Model, `inputs` and `outputs` must both be ' +
+          'specified (which leads to a graph model) or both unspecified ' +
+          '(which leads to an eager Model). But only one of them is ' +
+          'specified.');
+    }
+    if (config.inputs != null) {
+      super(config as ContainerConfig);
+      this.isGraphModel = true;
+    } else {
+      this.isGraphModel = false;
+      this.inputs = null;
+      this.outputs = null;
+      this.built = false;
+    }
   }
 
   /**
@@ -910,8 +934,8 @@ export class Model extends Container {
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[],
-      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
+      Scalar|Scalar[] {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
