@@ -32,6 +32,7 @@ import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, WrapperLayerCo
 import {loadModelInternal, Sequential, SequentialConfig} from './models';
 import {l1, L1Config, L1L2, L1L2Config, l2, L2Config, Regularizer} from './regularizers';
 import {SymbolicTensor} from './types';
+import { ZeroPadding2DLayerConfig, ZeroPadding2D } from './layers/padding';
 
 // tslint:enable:max-line-length
 
@@ -430,6 +431,19 @@ export class LayerExports {
   })
   static batchNormalization(config: BatchNormalizationLayerConfig): Layer {
     return new BatchNormalization(config);
+  }
+
+  // Padding Layers.
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Padding',
+    namespace: 'layers',
+    useDocsFrom: 'ZeroPadding2D',
+    configParamIndices: [0]
+  })
+  static zeroPadding2d(config: ZeroPadding2DLayerConfig): Layer {
+    return new ZeroPadding2D(config);
   }
 
   // Pooling Layers.
