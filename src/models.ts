@@ -50,22 +50,24 @@ export async function modelFromJSON(
   const model = deserialize(tsConfig, customObjects) as Model;
 
   if (modelAndWeightsConfig.weightsManifest != null) {
-    // Load the weight values keyed by their name in the manifest
-    const originalWeightValues =
+    // Load the weight values keyed by the original tensor names in the model
+    // file that was loaded.  These should match the keys of the weight
+    // manifest.
+    const weightValues =
         await loadWeights(
             modelAndWeightsConfig.weightsManifest,
             modelAndWeightsConfig.pathPrefix,
             model.weights.map(weight => weight.originalName)) as NamedTensorMap;
 
     // Map the weights to the unique tensor names generated during model loading
-    const weightValues: NamedTensorMap = {};
+    const uniqueWeightValues: NamedTensorMap = {};
     for (const weight of model.weights) {
-      weightValues[weight.name] = originalWeightValues[weight.originalName];
+      uniqueWeightValues[weight.name] = weightValues[weight.originalName];
     }
 
     const skipMismatches: boolean = null;
     const isNamedTensorMap = true;
-    model.loadWeights(weightValues, skipMismatches, isNamedTensorMap);
+    model.loadWeights(uniqueWeightValues, skipMismatches, isNamedTensorMap);
   }
   return model;
 }

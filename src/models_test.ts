@@ -172,11 +172,7 @@ describeMathCPU('loadModel', () => {
           // `model_config`, but also other data, such as training.
           modelTopology = {'model_config': modelTopology};
         }
-        modelFromJSON({
-          modelTopology,
-          weightsManifest,
-          pathPrefix,
-        })
+        modelFromJSON({modelTopology, weightsManifest, pathPrefix})
             .then(model => {
               expectTensorsClose(
                   model.weights[0].read(), ones([32, 32], 'float32'));
@@ -247,8 +243,10 @@ describeMathCPU('loadModel', () => {
       await modelFromJSON(
           {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
 
-      // On the second load, the layer names will be uniqueified but the keys of
-      // the weights manifest will not.
+      // On the second load, the variable names will be uniqueified.  This test
+      // succeeds only because we maintain the name mapping, so we can load
+      // weights--keyed by non-unique names in the weight manifest--into
+      // variables with newly uniqueified names.
       await modelFromJSON(
           {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
       done();
