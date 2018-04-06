@@ -69,6 +69,7 @@ export class SymbolicTensor implements TensorInterface {
   /* A unique ID for the tensor to be able to differentiate tensors. */
   readonly id: number;
   readonly name?: string;
+  readonly originalName?: string;
   /**
    * Replacement for _keras_history.
    */
@@ -99,7 +100,9 @@ export class SymbolicTensor implements TensorInterface {
       readonly outputTensorIndex?: number) {
     this.id = _nextUniqueTensorId++;
     if (name != null) {
-      this.name = getUniqueTensorName(name);
+      const {scoped, unique} = getUniqueTensorName(name);
+      this.originalName = scoped;
+      this.name = unique;
     }
   }
 }
@@ -114,6 +117,7 @@ export class ConcreteTensor implements TensorInterface {
 
   readonly id: number;
   readonly name?: string;
+  readonly originalName?: string;
 
   protected val: Tensor;
 
@@ -132,7 +136,9 @@ export class ConcreteTensor implements TensorInterface {
     this.id = _nextUniqueTensorId++;
 
     if (name != null) {
-      this.name = getUniqueTensorName(name);
+      const {scoped, unique} = getUniqueTensorName(name);
+      this.originalName = scoped;
+      this.name = unique;
     }
   }
 
@@ -171,6 +177,7 @@ export class LayerVariable {
 
   readonly id: number;
   readonly name: string;
+  readonly originalName: string;
   readonly trainable: boolean;
 
   protected readonly val: tfc.Variable;
@@ -196,8 +203,12 @@ export class LayerVariable {
     this.dtype = dtype == null ? DType.float32 : dtype;
     this.shape = val.shape;
     this.id = _nextUniqueTensorId++;
-    this.name =
+
+    const {scoped, unique} =
         getUniqueTensorName(name == null ? DEFAULT_VARIABLE_NAME_PREFIX : name);
+    this.originalName = scoped;
+    this.name = unique;
+
     this.trainable = trainable;
     this.constraint = constraint;
 

@@ -50,11 +50,18 @@ export async function modelFromJSON(
   const model = deserialize(tsConfig, customObjects) as Model;
 
   if (modelAndWeightsConfig.weightsManifest != null) {
-    const weightValues =
+    // Load the weight values keyed by their name in the manifest
+    const originalWeightValues =
         await loadWeights(
             modelAndWeightsConfig.weightsManifest,
             modelAndWeightsConfig.pathPrefix,
-            model.weights.map(weight => weight.name)) as NamedTensorMap;
+            model.weights.map(weight => weight.originalName)) as NamedTensorMap;
+
+    // Map the weights to the unique tensor names generated during model loading
+    const weightValues: NamedTensorMap = {};
+    for (const weight of model.weights) {
+      weightValues[weight.name] = originalWeightValues[weight.originalName];
+    }
 
     const skipMismatches: boolean = null;
     const isNamedTensorMap = true;
@@ -388,8 +395,8 @@ export class Sequential extends Model {
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
-      Scalar|Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[],
+      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before being used.');

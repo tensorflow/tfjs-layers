@@ -98,28 +98,39 @@ function currentNameScopePrefix(): string {
 }
 
 /**
+ * Get the name a Tensor (or Variable) would have if not uniqueified.
+ * @param prefix
+ * @return Scoped name string.
+ */
+function getNonUniqueScopedTensorName(prefix: string): string {
+  if (!isValidTensorName(prefix)) {
+    throw new Error('Not a valid tensor name: \'' + prefix + '\'');
+  }
+  return currentNameScopePrefix() + prefix;
+}
+
+/**
  * Get unique names for Tensors (and Variables).
  * @param prefix
  * @return Unique name string.
  */
-export function getUniqueTensorName(prefix: string): string {
-  if (!isValidTensorName(prefix)) {
-    throw new Error('Not a valid tensor name: \'' + prefix + '\'');
+export function getUniqueTensorName(prefix: string):
+    {scoped: string, unique: string} {
+  const scoped = getNonUniqueScopedTensorName(prefix);
+
+  if (!nameMap.has(scoped)) {
+    nameMap.set(scoped, 0);
   }
+  const index = nameMap.get(scoped);
+  nameMap.set(scoped, nameMap.get(scoped) + 1);
 
-  prefix = currentNameScopePrefix() + prefix;
-
-  if (!nameMap.has(prefix)) {
-    nameMap.set(prefix, 0);
-  }
-  const index = nameMap.get(prefix);
-  nameMap.set(prefix, nameMap.get(prefix) + 1);
-
+  let unique;
   if (index > 0) {
-    return prefix + '_' + index;
+    unique = scoped + '_' + index;
   } else {
-    return prefix;
+    unique = scoped;
   }
+  return {scoped, unique};
 }
 
 const tensorNameRegex = new RegExp(/^[A-Za-z][A-Za-z0-9\._\/]*$/);

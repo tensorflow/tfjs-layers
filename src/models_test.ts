@@ -211,21 +211,18 @@ describeMathCPU('loadModel', () => {
     const configJson =
         JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
     configJson['config']['layers'][1]['config']['name'] = denseLayerName;
-    modelFromJSON({
-      modelTopology: configJson,
-      weightsManifest,
-    })
+    modelFromJSON({modelTopology: configJson, weightsManifest, pathPrefix: '.'})
         .then(() => done.fail)
         .catch(done);
   });
 
-  fit(`Loads weights despite uniqueified tensor names`, async done => {
+  it(`Loads weights despite uniqueified tensor names`, async done => {
     try {
       setupFakeWeightFiles({
         './weight_0': ones([32, 32], 'float32').dataSync() as Float32Array,
         './weight_1': ones([32], 'float32').dataSync() as Float32Array,
       });
-      const denseLayerName = 'dense';
+      const denseLayerName = 'dense_6';
       const weightsManifest: WeightsManifestConfig = [
         {
           'paths': ['weight_0'],
@@ -247,18 +244,13 @@ describeMathCPU('loadModel', () => {
       // JSON.parse and stringify to deep copy fakeSequentialModel.
       const configJson =
           JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
-      configJson['config']['layers'][1]['config']['name'] = denseLayerName;
-      await modelFromJSON({
-        modelTopology: configJson,
-        weightsManifest,
-      });
+      await modelFromJSON(
+          {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
 
       // On the second load, the layer names will be uniqueified but the keys of
       // the weights manifest will not.
-      await modelFromJSON({
-        modelTopology: configJson,
-        weightsManifest,
-      });
+      await modelFromJSON(
+          {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
       done();
     } catch (e) {
       done.fail(e);
