@@ -19,13 +19,13 @@ import * as _ from 'underscore';
 import * as K from '../backend/tfjs_backend';
 import {CustomCallback, CustomCallbackConfig, Logs} from '../callbacks';
 import * as tfl from '../index';
-import {Dropout, Flatten, Reshape} from '../layers/core';
+import {Dense, Dropout, Flatten, Reshape} from '../layers/core';
 import {SimpleRNN} from '../layers/recurrent';
 import {TimeDistributed} from '../layers/wrappers';
 import {Regularizer} from '../regularizers';
 import {DType, SymbolicTensor} from '../types';
-import {pyListRepeat} from '../utils/generic_utils';
-import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
+import {getExactlyOneTensor, pyListRepeat} from '../utils/generic_utils';
+import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {Input, Layer} from './topology';
 import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, makeBatches, Model, sliceArraysByIndices, standardizeInputData} from './training';
@@ -1192,5 +1192,41 @@ describeMathCPUAndGPU('Load weights', () => {
     expectTensorsClose(
         model.apply(tensor2d([[1, 1, 1]], [1, 3])) as Tensor,
         tensor2d([[0.8, 1.0]], [1, 2]));
+  });
+});
+
+describeMathGPU('Eager-style Model', () => {
+  class EagerModelForTest extends Model {
+    dense1: Layer;
+    dense2: Layer;
+
+    constructor() {
+      super({});
+      this.dense1 = new Dense({units: 5, name: 'dense1'});
+      this.dense2 = new Dense({units: 2, name: 'dense2'});
+    }
+
+    // tslint:disable-next-line:no-any
+    call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+      inputs = getExactlyOneTensor(inputs);
+      return this.dense2.apply(this.dense1.apply(inputs)) as Tensor;
+    }
+  }
+
+  it('getLayer by name gives correct results', () => {
+    const eagerModel = new EagerModelForTest();
+    expect(eagerModel.getLayer(eagerModel.dense1.name)).toBe(eagerModel.dense1);
+    expect(eagerModel.getLayer(eagerModel.dense2.name)).toBe(eagerModel.dense2);
+  });
+
+  it('getLayer with index throws error', () => {
+    const eagerModel = new EagerModelForTest();
+    expect(() => eagerModel.getLayer(null, 0))
+        .toThrowError(/should not be called with an index number.*eager/);
+  });
+
+  it('trainableWeights gives correct results', () => {
+    const eagerModel = new EagerModelForTest();
+    expect(eagerModel.trainableWeights.length).toEqual(4);
   });
 });

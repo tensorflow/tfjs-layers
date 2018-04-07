@@ -25,7 +25,7 @@ import {LayerVariable, LossOrMetricFn, Shape, SymbolicTensor} from '../types';
 import {ClassNameMap, count, singletonOrArray} from '../utils/generic_utils';
 
 import {execute, FeedDict} from './executor';
-import {Container, ContainerConfig} from './topology';
+import {Container, ContainerConfig, Layer} from './topology';
 // tslint:enable:max-line-length
 
 /**
@@ -671,6 +671,73 @@ export class Model extends Container {
       this.outputs = null;
       this.built = false;
     }
+  }
+
+  /**
+   * Collect all layers for an eager-style (i.e., non-graph) model.
+   */
+  private collectEagerLayers(): void {
+    if (this.isGraphModel) {
+      throw new ValueError(
+          'collectEagerLayers is unexpected called for a graph-style model');
+    }
+    // tslint:disable:no-any
+    for (const key in (this as any)) {
+      if (!this.hasOwnProperty(key)) {
+        continue;
+      }
+      const value = (this as any)[key];
+      if (value instanceof Layer) {
+        const layer = value as Layer;
+        if (this.layers == null) {
+          this.layers = [];
+        }
+        if (this.layers.map(l => l.name).indexOf(layer.name) === -1) {
+          this.layers.push(layer);
+          console.log('Found layer:' + (value as Layer).name);  // DEBUG
+        }
+      }
+    }
+    // tslint:enable:no-any
+  }
+
+  /**
+   * Retrieves a layer based on either its name (unique) or index.
+   *
+   * Indices are based on order of horizontal graph traversal (bottom-up).
+   *
+   * If both `name` and `index` are specified, `index` takes precedence.
+   *
+   * If the model is an eager-style model, only getting name by layer is
+   * supported.
+   *
+   * @param name Name of layer.
+   * @param index Index of layer.
+   * @returns A Layer instance.
+   * @throws ValueError: In case of invalid layer name or index, or if this
+   *   model is an eager-style model and this method is called with the `index`
+   *   argument.
+   */
+  getLayer(name?: string, index?: number): Layer {
+    if (this.isGraphModel) {
+      // This is a graph model. Can simply use Container.getLayer().
+      return super.getLayer(name, index);
+    } else {
+      this.collectEagerLayers();
+      if (index != null) {
+        throw new ValueError(
+            'getLayer() should not be called with an index number for an ' +
+            'eager-style Model.');
+      }
+      return super.getLayer(name);
+    }
+  }
+
+  get trainableWeights(): LayerVariable[] {
+    if (!this.isGraphModel) {
+      this.collectEagerLayers();
+    }
+    return (this as Container).trainableWeights;
   }
 
   /**
