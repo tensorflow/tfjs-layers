@@ -129,6 +129,8 @@ generic_utils.ClassNameMap.register('MaxPooling1D', MaxPooling1D);
  * Input shape: `[batchSize, inLength, channels]`
  *
  * Output shape: `[batchSize, pooledLength, channels]`
+ *
+ * `tf.avgPool1d` is an alias.
  */
 export class AveragePooling1D extends Pooling1D {
   constructor(config: Pooling1DLayerConfig) {
@@ -291,6 +293,8 @@ generic_utils.ClassNameMap.register('MaxPooling2D', MaxPooling2D);
  *  - If `dataFormat === CHANNEL_FIRST`:
  *      4D tensor with shape:
  *      `[batchSize, channels, pooleRows, pooledCols]`
+ *
+ * `tf.avgPool2d` is an alias.
  */
 export class AveragePooling2D extends Pooling2D {
   constructor(config: Pooling2DLayerConfig) {
