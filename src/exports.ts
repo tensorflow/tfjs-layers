@@ -457,6 +457,9 @@ export class LayerExports {
   static averagePooling1d(config: Pooling1DLayerConfig): Layer {
     return new AveragePooling1D(config);
   }
+  static avgPool1d(config: Pooling1DLayerConfig): Layer {
+    return LayerExports.averagePooling1d(config);
+  }
   // For backwards compatibility.
   // See https://github.com/tensorflow/tfjs/issues/152
   static avgPooling1d(config: Pooling1DLayerConfig): Layer {
@@ -472,6 +475,9 @@ export class LayerExports {
   })
   static averagePooling2d(config: Pooling2DLayerConfig): Layer {
     return new AveragePooling2D(config);
+  }
+  static avgPool2d(config: Pooling2DLayerConfig): Layer {
+    return LayerExports.averagePooling2d(config);
   }
   // For backwards compatibility.
   // See https://github.com/tensorflow/tfjs/issues/152
