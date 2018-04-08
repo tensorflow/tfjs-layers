@@ -130,7 +130,7 @@ generic_utils.ClassNameMap.register('MaxPooling1D', MaxPooling1D);
  *
  * Output shape: `[batchSize, pooledLength, channels]`
  */
-export class AvgPooling1D extends Pooling1D {
+export class AveragePooling1D extends Pooling1D {
   constructor(config: Pooling1DLayerConfig) {
     super(config);
   }
@@ -143,7 +143,7 @@ export class AvgPooling1D extends Pooling1D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-generic_utils.ClassNameMap.register('AvgPooling1D', AvgPooling1D);
+generic_utils.ClassNameMap.register('AveragePooling1D', AveragePooling1D);
 
 export interface Pooling2DLayerConfig extends LayerConfig {
   /**
@@ -292,7 +292,7 @@ generic_utils.ClassNameMap.register('MaxPooling2D', MaxPooling2D);
  *      4D tensor with shape:
  *      `[batchSize, channels, pooleRows, pooledCols]`
  */
-export class AvgPooling2D extends Pooling2D {
+export class AveragePooling2D extends Pooling2D {
   constructor(config: Pooling2DLayerConfig) {
     super(config);
   }
@@ -305,7 +305,7 @@ export class AvgPooling2D extends Pooling2D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-generic_utils.ClassNameMap.register('AvgPooling2D', AvgPooling2D);
+generic_utils.ClassNameMap.register('AveragePooling2D', AveragePooling2D);
 
 /**
  * Abstract class for different global pooling 1D layers.
