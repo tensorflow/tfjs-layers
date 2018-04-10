@@ -179,11 +179,17 @@ export abstract class Conv extends Layer {
     this.dilationRate = config.dilationRate == null ? 1 : config.dilationRate;
     if (this.rank === 1 && Array.isArray(this.dilationRate)) {
       throw new ValueError(
-          `dilationRate must be a number for Conv1D, but ` +
+          `dilationRate must be a number for 1D convolution, but ` +
           `received ${JSON.stringify(this.dilationRate)}`);
     }
-    if (this.rank === 2 && typeof this.dilationRate === 'number') {
-      this.dilationRate = [this.dilationRate, this.dilationRate];
+    if (this.rank === 2) {
+      if (typeof this.dilationRate === 'number') {
+        this.dilationRate = [this.dilationRate, this.dilationRate];
+      } else if (this.dilationRate.length !== 2) {
+        throw new ValueError(
+            `dilationRate must be a number or array of two numbers for 2D ` +
+            `convolution, but received ${JSON.stringify(this.dilationRate)}`);
+      }
     }
 
     this.activation = getActivation(config.activation);
