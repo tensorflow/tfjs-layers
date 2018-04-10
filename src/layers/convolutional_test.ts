@@ -163,7 +163,6 @@ describeMathCPUAndGPU('Conv2D Layer: Tensor', () => {
   const dilationRateValues: Array<number|[number, number]> = [2, [2, 2]];
   for (const dilationRate of dilationRateValues) {
     it(`CHANNEL_LAST, dilationRate=${dilationRate}`, () => {
-      // Convert input to CHANNEL_LAST.
       const x = tensor4d(
           [[
             [
