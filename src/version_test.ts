@@ -8,6 +8,7 @@
  * =============================================================================
  */
 
+// tslint:disable-next-line:no-require-imports
 const packageJSON = require('../package.json');
 
 describe('tfjs-core version consistency', () => {
