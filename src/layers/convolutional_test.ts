@@ -468,7 +468,7 @@ describeMathCPU('SeparableConv2D Layers: Symbolic', () => {
                 const symbolicInput = new SymbolicTensor(
                     DType.float32, inputShape, null, [], null);
 
-                const conv2dLayer = new SeparableConv2D({
+                const layer = new SeparableConv2D({
                   filters,
                   kernelSize,
                   strides,
@@ -477,8 +477,7 @@ describeMathCPU('SeparableConv2D Layers: Symbolic', () => {
                   dilationRate,
                 });
 
-                const output =
-                    conv2dLayer.apply(symbolicInput) as SymbolicTensor;
+                const output = layer.apply(symbolicInput) as SymbolicTensor;
 
                 let outputRows: number;
                 let outputCols: number;
@@ -537,6 +536,29 @@ describeMathCPU('SeparableConv2D Layers: Symbolic', () => {
       }
     }
   }
+
+  it('Incorrect input rank throws error', () => {
+    const layer = new SeparableConv2D({
+      filters: 1,
+      kernelSize: [2, 2],
+      strides: 1,
+    });
+    const symbolicInput =
+        new SymbolicTensor(DType.float32, [2, 3, 4], null, [], null);
+    expect(() => layer.apply(symbolicInput)).toThrowError(/rank 4/);
+  });
+
+  it('Undefined channel axis throws error', () => {
+    const layer = new SeparableConv2D({
+      filters: 1,
+      kernelSize: [2, 2],
+      strides: 1,
+    });
+    const symbolicInput =
+        new SymbolicTensor(DType.float32, [1, , 2, 3, null], null, [], null);
+    expect(() => layer.apply(symbolicInput))
+        .toThrowError(/channel dimension .* should be defined/);
+  });
 });
 
 describeMathGPU('SeparableConv2D Layer: Tensor', () => {

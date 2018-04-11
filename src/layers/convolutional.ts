@@ -537,12 +537,12 @@ export interface SeparableConvLayerConfig extends ConvLayerConfig {
   pointwiseInitializer?: InitializerIdentifier|Initializer;
 
   /**
-   * Regulairzer function applied to the depthwise kernel matrix.
+   * Regularizer function applied to the depthwise kernel matrix.
    */
   depthwiseRegularizer?: RegularizerIdentifier|Regularizer;
 
   /**
-   * Regulairzer function applied to the pointwise kernel matrix.
+   * Regularizer function applied to the pointwise kernel matrix.
    */
   pointwiseRegularizer?: RegularizerIdentifier|Regularizer;
 
@@ -595,8 +595,8 @@ export class SeparableConv extends Conv {
     if (config.padding != null && config.padding !== 'same' &&
         config.padding !== 'valid') {
       throw new ValueError(
-          `SeparableConv supports only padding modes: same and valid, but ` +
-          `received ${JSON.stringify(config.padding)}`);
+          `SeparableConv${this.rank}D supports only padding modes: ` +
+          `'same' and 'valid', but received ${JSON.stringify(config.padding)}`);
     }
 
     this.depthMultiplier =
@@ -636,18 +636,19 @@ export class SeparableConv extends Conv {
     }
     pointwiseKernelShape.push(inputDim * this.depthMultiplier, this.filters);
 
+    const trainable = true;
     this.depthwiseKernel = this.addWeight(
         'depthwise_kernel', depthwiseKernelShape, DType.float32,
-        this.depthwiseInitializer, this.depthwiseRegularizer, true,
+        this.depthwiseInitializer, this.depthwiseRegularizer, trainable,
         this.depthwiseConstraint);
     this.pointwiseKernel = this.addWeight(
         'pointwise_kernel', pointwiseKernelShape, DType.float32,
-        this.pointwiseInitializer, this.pointwiseRegularizer, true,
+        this.pointwiseInitializer, this.pointwiseRegularizer, trainable,
         this.pointwiseConstraint);
     if (this.useBias) {
       this.bias = this.addWeight(
           'bias', [this.filters], DType.float32, this.biasInitializer,
-          this.biasRegularizer, true, this.biasConstraint);
+          this.biasRegularizer, trainable, this.biasConstraint);
     } else {
       this.bias = null;
     }
@@ -715,11 +716,11 @@ export class SeparableConv extends Conv {
 /**
  * Depthwise separable 2D convolution.
  *
- * Separable convolutions consist in first performing
+ * Separable convolution consists of first performing
  * a depthwise spatial convolution
  * (which acts on each input channel separately)
  * followed by a pointwise convolution which mixes together the resulting
- * output channels. The `depth_multiplier` argument controls how many
+ * output channels. The `depthMultiplier` argument controls how many
  * output channels are generated per input channel in the depthwise step.
  *
  * Intuitively, separable convolutions can be understood as
