@@ -12,7 +12,17 @@
 
 const fs = require('fs');
 
-const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+const packageJSON = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const version = packageJSON.version;
+
+const tfjsCoreDevDepVersion = packageJSON.devDependencies['@tensorflow/tfjs-core'];
+const tfjsCorePeerDepVersion = packageJSON.peerDependencies['@tensorflow/tfjs-core'];
+if (tfjsCoreDevDepVersion !== tfjsCorePeerDepVersion) {
+  throw new Error(
+      'Detected mismatch in @tensorflow/tfjs version in dev and peer dependencies: ' +
+      tfjsCoreDevDepVersion + ' !== ' + tfjsCorePeerDepVersion);
+}
+
 const tag = `v${version}`;
 
 const versionCode =
