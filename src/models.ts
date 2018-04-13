@@ -540,7 +540,7 @@ export class Sequential extends Model {
   // tslint:disable-next-line:no-any
   getConfig(): any {
     // NOTE(cais): We override the return type of getConfig() to `any` here,
-    //   because the `Sequential` class is a special case among `Containers`
+    //   because the `Sequential` class is a special case among `Container`
     //   subtypes in that its getConfig() method returns an Array (not a dict).
     const config: ConfigDict[] = [];
     for (const layer of this.layers) {
