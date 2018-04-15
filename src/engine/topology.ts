@@ -695,11 +695,10 @@ export class Layer {
       // Check specific shape axes.
       if (spec.axes) {
         const xShape = K.intShape(x);
-        for (const pair of _.pairs(spec.axes)) {
-          let axis = pair[0];
-          const value = pair[1];
+        for (const key in spec.axes) {
+          const axis = Number(key);
+          const value = spec.axes[key];
           // Perform Python-style slicing in case axis < 0;
-          axis = Number(axis);
           // TODO(cais): Use https://github.com/alvivi/typescript-underscore to
           // ensure type safety through Underscore calls.
           const xShapeAtAxis =
@@ -1811,7 +1810,8 @@ export class Container extends Layer {
 
     // Build a dict {depth: list of nodes with this depth}
     const nodesByDepth: {[depth: string]: Node[]} = {};
-    for (const [nodeID, depth] of _.pairs(nodesDepths)) {
+    for (const nodeID in nodesDepths) {
+      const depth = nodesDepths[nodeID];
       if (!(depth in nodesByDepth)) {
         nodesByDepth[depth] = [];
       }
@@ -1820,7 +1820,8 @@ export class Container extends Layer {
 
     // Build a dict {depth: list of layers with this depth}
     const layersByDepth: {[depth: string]: Layer[]} = {};
-    for (const [layerID, depth] of _.pairs(layersDepths)) {
+    for (const layerID in layersDepths) {
+      const depth = layersDepths[layerID];
       if (!(depth in layersByDepth)) {
         layersByDepth[depth] = [];
       }
