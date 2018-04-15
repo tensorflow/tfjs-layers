@@ -12,7 +12,6 @@
 
 // tslint:disable:max-line-length
 import {doc, Scalar, Tensor, tidy, util} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
 
 import * as K from '../backend/tfjs_backend';
 import {Constraint} from '../constraints';
@@ -2700,7 +2699,9 @@ export function getSourceInputs(
 function loadTensor(dtype: string, shape: Shape, value: any): Tensor {
   const dataType = generic_utils.stringToDType(dtype);
   return Tensor.make(
-      shape, {values: shape.length === 0 ? value : _.flatten(value)}, dataType);
+      shape,
+      {values: shape.length === 0 ? value : generic_utils.flatten(value)},
+      dataType);
 }
 
 /**

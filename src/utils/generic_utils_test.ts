@@ -352,3 +352,28 @@ describe('isObjectEmpty', () => {
     expect(utils.isObjectEmpty({'a': 12, 'b': 34})).toEqual(false);
   });
 });
+
+describe('flatten', () => {
+  it('null, undefined or scalar throws error', () => {
+    expect(() => utils.flatten(null)).toThrowError();
+    expect(() => utils.flatten(undefined)).toThrowError();
+    // tslint:disable-next-line:no-any
+    expect(() => utils.flatten(1337 as any)).toThrowError();
+    // tslint:disable-next-line:no-any
+    expect(() => utils.flatten('foo' as any)).toThrowError();
+  });
+  it('Empty arrays', () => {
+    expect(utils.flatten([])).toEqual([]);
+    expect(utils.flatten([[], [], []])).toEqual([]);
+  });
+  it('Non-empty non-nested arrays', () => {
+    expect(utils.flatten([1, 2, 3])).toEqual([1, 2, 3]);
+    expect(utils.flatten(['J', 'Q', 'K'])).toEqual(['J', 'Q', 'K']);
+  });
+  it('Non-empty nested arrays', () => {
+    expect(utils.flatten([[1, 2], 3, [4]])).toEqual([1, 2, 3, 4]);
+    expect(utils.flatten(['J', ['Q', 'K'], 'Ace'])).toEqual([
+      'J', 'Q', 'K', 'Ace'
+    ]);
+  });
+});
