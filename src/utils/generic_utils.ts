@@ -508,3 +508,23 @@ export function unique<T>(xs: T[]): T[] {
   }
   return out;
 }
+
+
+/**
+ * Get the key names of an object's own properties.
+ * @param obj Object.
+ * @returns If obj is not `null` or `undefined`, Key name as an array of
+ *   strings. Else, `null`.
+ */
+export function keys(obj: {}): string[] {
+  if (obj == null) {
+    return null;
+  }
+  const keyNames: string[] = [];
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      keyNames.push(key);
+    }
+  }
+  return keyNames;
+}

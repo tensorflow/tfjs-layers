@@ -1738,7 +1738,7 @@ export class Container extends Layer {
 
           // Store the traversal order for layer sorting.
           if (!(layer.id in layerIndices)) {
-            layerIndices[layer.id] = _.keys(layerIndices).length;
+            layerIndices[layer.id] = generic_utils.keys(layerIndices).length;
           }
 
           if (nodesInProgress.indexOf(node) === -1) {
@@ -1829,7 +1829,7 @@ export class Container extends Layer {
     }
 
     // Get sorted list of layer depths.
-    let depthKeys = _.keys(layersByDepth)
+    let depthKeys = generic_utils.keys(layersByDepth)
                         .map(x => parseInt(x, 10))
                         .sort(generic_utils.reverseNumberCompare);
 
@@ -1857,7 +1857,7 @@ export class Container extends Layer {
     this.layersByDepth = layersByDepth;
 
     // Get sorted list of node depths;
-    depthKeys = _.keys(nodesByDepth)
+    depthKeys = generic_utils.keys(nodesByDepth)
                     .map(x => parseInt(x, 10))
                     .sort(generic_utils.reverseNumberCompare);
 

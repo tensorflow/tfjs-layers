@@ -325,3 +325,17 @@ describe('unique', () => {
     expect(utils.unique([2, 3, 2, null])).toEqual([2, 3, null]);
   });
 });
+
+
+describe('keys', () => {
+  it('null or undefined', () => {
+    expect(utils.keys(null)).toEqual(null);
+    expect(utils.keys(undefined)).toEqual(null);
+  });
+  it('empty object', () => {
+    expect(utils.keys({})).toEqual([]);
+  });
+  it('Non-empty object', () => {
+    expect(utils.keys({'a': 12, 'b': 34}).sort()).toEqual(['a', 'b']);
+  });
+});
