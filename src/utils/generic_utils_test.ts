@@ -297,3 +297,32 @@ describe('getExactlyOneShape', () => {
     ])).toThrowError(/Expected exactly 1 Shape; got 2/);
   });
 });
+
+describe('stringsEqual', () => {
+  it('null and undefined', () => {
+    expect(utils.stringsEqual(null, null)).toEqual(true);
+    expect(utils.stringsEqual(undefined, undefined)).toEqual(true);
+    expect(utils.stringsEqual(undefined, null)).toEqual(false);
+    expect(utils.stringsEqual(undefined, [])).toEqual(false);
+    expect(utils.stringsEqual(null, [])).toEqual(false);
+    expect(utils.stringsEqual(null, ['a'])).toEqual(false);
+  });
+  it('Empty arrays', () => {
+    expect(utils.stringsEqual([], [])).toEqual(true);
+    expect(utils.stringsEqual([], ['a'])).toEqual(false);
+  });
+  it('Non-empty arrays', () => {
+    expect(utils.stringsEqual(['a', 'b', 'c', null], [
+      'a', 'b', 'c', null
+    ])).toEqual(true);
+    expect(utils.stringsEqual(['a', 'b', 'c', ''], [
+      'a', 'b', 'c', ''
+    ])).toEqual(true);
+    expect(utils.stringsEqual(['a', 'b', 'c', null], [
+      'a', 'b', 'c', undefined
+    ])).toEqual(false);
+    expect(utils.stringsEqual(['a', 'b', 'c', ''], [
+      'a', 'c', 'b', ''
+    ])).toEqual(false);
+  });
+});

@@ -11,7 +11,7 @@
 /* Original source: keras/engine/topology.py */
 
 // tslint:disable:max-line-length
-import {doc, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
+import {doc, Scalar, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 import * as K from '../backend/tfjs_backend';
@@ -1005,7 +1005,7 @@ export class Layer {
     const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
     const paramValues = K.batchGetValue(params);
     for (const [pv, p, w] of _.zip(paramValues, params, weights)) {
-      if (!_.isEqual(pv.shape, w.shape)) {
+      if (!util.arraysEqual(pv.shape, w.shape)) {
         throw new ValueError(
             `Layer weight shape ${pv.shape} ` +
             `not compatible with provided weight shape ${w.shape}`);
@@ -2821,7 +2821,8 @@ export function loadWeightsFromJson(
       // Set values.
       for (let i = 0; i < weightValues.length; ++i) {
         if (skipMismatch) {
-          if (!_.isEqual(symbolicWeights[i].shape, weightValues[i].shape)) {
+          if (!util.arraysEqual(
+                  symbolicWeights[i].shape, weightValues[i].shape)) {
             console.warn(
                 `Skipping loading of weights for layer ${layer.name} due ` +
                 `to mismatch in shape (${symbolicWeights[i].shape} vs ` +

@@ -476,3 +476,24 @@ export function stringToDType(dtype: string): DType {
       throw new ValueError(`Invalid dtype: ${dtype}`);
   }
 }
+
+/**
+ * Test the element-by-element equality of two Arrays of strings.
+ * @param xs First array of strings.
+ * @param ys Second array of strings.
+ * @returns Wether the two arrays are all equal, element by element.
+ */
+export function stringsEqual(xs: string[], ys: string[]): boolean {
+  if (xs == null || ys == null) {
+    return xs === ys;
+  }
+  if (xs.length !== ys.length) {
+    return false;
+  }
+  for (let i = 0; i < xs.length; ++i) {
+    if (xs[i] !== ys[i]) {
+      return false;
+    }
+  }
+  return true;
+}

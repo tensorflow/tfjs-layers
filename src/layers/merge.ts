@@ -12,7 +12,7 @@
  * TensorFlow.js Layers: Merge Layers.
  */
 
-import {Tensor} from '@tensorflow/tfjs-core';
+import {Tensor, util} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 import * as K from '../backend/tfjs_backend';
@@ -737,7 +737,7 @@ export class Concatenate extends Merge {
       shapeWithoutConcatAxis.splice(this.axis, 1);
       let exists = false;
       for (const shape of shapeSet) {
-        if (_.isEqual(shape, shapeWithoutConcatAxis)) {
+        if (util.arraysEqual(shape, shapeWithoutConcatAxis)) {
           exists = true;
           break;
         }

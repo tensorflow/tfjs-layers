@@ -12,8 +12,7 @@
  * TensorFlow.js Layers: Recurrent Neural Network Layers.
  */
 
-import {doc, Tensor} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
+import {doc, Tensor, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import {ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
@@ -314,7 +313,7 @@ export class RNN extends Layer {
     }
 
     if (this.stateSpec != null) {
-      if (!_.isEqual(
+      if (!util.arraysEqual(
               this.stateSpec.map(spec => spec.shape[spec.shape.length - 1]),
               stateSize)) {
         throw new ValueError(
@@ -379,7 +378,7 @@ export class RNN extends Layer {
             this.cell.stateSize[index] :
             this.cell.stateSize;
         const expectedShape = [batchSize, dim];
-        if (!_.isEqual(value.shape, expectedShape)) {
+        if (!util.arraysEqual(value.shape, expectedShape)) {
           throw new ValueError(
               `State ${index} is incompatible with layer ${this.name}: ` +
               `expected shape=${expectedShape}, received shape=${value.shape}`);

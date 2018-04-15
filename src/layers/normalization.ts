@@ -12,8 +12,7 @@
  * Normalization layers.
  */
 
-import {Tensor} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
+import {Tensor, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -214,8 +213,8 @@ export class BatchNormalization extends Layer {
 
     const sortedReductionAxes = reductionAxes.slice();
     sortedReductionAxes.sort();
-    const needsBroadcasting =
-        !_.isEqual(sortedReductionAxes, range(0, ndim).slice(0, ndim - 1));
+    const needsBroadcasting = !util.arraysEqual(
+        sortedReductionAxes, range(0, ndim).slice(0, ndim - 1));
 
     const normalizeInference: () => Tensor = () => {
       if (needsBroadcasting) {

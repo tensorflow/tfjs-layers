@@ -12,7 +12,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {doc, Optimizer, Scalar, Tensor, Tensor1D, tensor1d} from '@tensorflow/tfjs-core';
+import {doc, Optimizer, Scalar, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
 import * as _ from 'underscore';
 
 import * as K from '../backend/tfjs_backend';
@@ -196,7 +196,7 @@ export function checkArrayLengths(
         `Got array shapes: ` +
         `${JSON.stringify(targets.map(target => target.shape))}`);
   }
-  if (setX.length > 0 && setY.length > 0 && !_.isEqual(setX, setY)) {
+  if (setX.length > 0 && setY.length > 0 && !util.arraysEqual(setX, setY)) {
     throw new ValueError(
         `Input Tensors should have the same number of samples as target ` +
         `Tensors. Found ${setX[0]} input sample(s) and ${setY[0]} target ` +
