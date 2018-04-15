@@ -1990,7 +1990,7 @@ export function rnn(
 
   // Transpose to time-major, i.e., from [batch, time, ...] to [time, batch,
   // ...].
-  const axes = [1, 0].concat(_.range(2, ndim));
+  const axes = [1, 0].concat(math_utils.range(2, ndim));
   inputs = transpose(inputs, axes);
 
   if (mask != null) {
@@ -2049,7 +2049,9 @@ export function rnn(
 
   return [
     lastOutput,
-    transpose(outputs, [1, 0].concat(_.range(2, outputs.shape.length))), states
+    transpose(
+        outputs, [1, 0].concat(math_utils.range(2, outputs.shape.length))),
+    states
   ];
 }
 

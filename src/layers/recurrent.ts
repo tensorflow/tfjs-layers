@@ -230,7 +230,7 @@ export class RNN extends Layer {
     if (this.states == null) {
       const numStates =
           Array.isArray(this.cell.stateSize) ? this.cell.stateSize.length : 1;
-      return _.range(numStates).map(x => null);
+      return math_utils.range(0, numStates).map(x => null);
     } else {
       return this.states;
     }

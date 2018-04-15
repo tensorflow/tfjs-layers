@@ -23,6 +23,7 @@ import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LayerVariable, LossOrMetricFn, Shape} from '../types';
 import {ClassNameMap, count, singletonOrArray} from '../utils/generic_utils';
+import {range} from '../utils/math_utils';
 
 import {execute, FeedDict} from './executor';
 import {Container, ContainerConfig} from './topology';
@@ -910,8 +911,8 @@ export class Model extends Container {
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[],
-      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
+      Scalar|Scalar[] {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
@@ -1190,7 +1191,7 @@ export class Model extends Container {
         this.checkNumSamples(ins, batchSize, stepsPerEpoch, 'steps_per_epoch');
     let indexArray: number[];
     if (numTrainSamples != null) {
-      indexArray = _.range(numTrainSamples);
+      indexArray = range(0, numTrainSamples);
     }
 
     this.history = new History();
@@ -1327,7 +1328,7 @@ export class Model extends Container {
           'steps mode in testLoop() is not implemented yet');
     } else {
       const batches = makeBatches(numSamples, batchSize);
-      const indexArray = tensor1d(_.range(numSamples));
+      const indexArray = tensor1d(range(0, numSamples));
       for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
         const batchStart = batches[batchIndex][0];
         const batchEnd = batches[batchIndex][1];

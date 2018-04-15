@@ -162,7 +162,7 @@ export class Merge extends Layer {
             reshapedInputs.push(xTransposed);
             transposed = true;
           } else if (xNDim > 1) {
-            const dims = _.range(1, xNDim).concat([0]);
+            const dims = mathUtils.range(1, xNDim).concat([0]);
             reshapedInputs.push(K.permuteDimensions(x, dims));
             transposed = true;
           } else {
@@ -185,7 +185,7 @@ export class Merge extends Layer {
                 K.permuteDimensions(K.reshape(y, [-1, batchSize]), [1, 0]),
                 newShape);
           } else if (yNDim > 1) {
-            const dims = [yNDim - 1].concat(_.range(0, yNDim - 1));
+            const dims = [yNDim - 1].concat(mathUtils.range(0, yNDim - 1));
             y = K.permuteDimensions(y, dims);
           }
         }

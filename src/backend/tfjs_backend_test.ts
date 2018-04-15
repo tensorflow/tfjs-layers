@@ -18,6 +18,7 @@ import * as _ from 'underscore';
 
 import {DataFormat, PaddingMode, PoolMode} from '../common';
 import {ConcreteTensor, DType, LayerVariable, SymbolicTensor} from '../types';
+import {range} from '../utils/math_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import * as K from './tfjs_backend';
@@ -1866,7 +1867,7 @@ describeMathCPUAndGPU('dropout', () => {
   const dropoutLevels = [0, 0.75];
   for (const dropoutLevel of dropoutLevels) {
     it(`Level = ${dropoutLevel}`, () => {
-      const x = tensor2d(_.range(1, 21), [10, 2]);
+      const x = tensor2d(range(1, 21), [10, 2]);
       const y = K.dropout(x, scalar(dropoutLevel));
       expect(y.dtype).toEqual(x.dtype);
       expect(y.shape).toEqual(x.shape);
