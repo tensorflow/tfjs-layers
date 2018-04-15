@@ -326,7 +326,6 @@ describe('unique', () => {
   });
 });
 
-
 describe('keys', () => {
   it('null or undefined', () => {
     expect(utils.keys(null)).toEqual(null);
@@ -337,5 +336,19 @@ describe('keys', () => {
   });
   it('Non-empty object', () => {
     expect(utils.keys({'a': 12, 'b': 34}).sort()).toEqual(['a', 'b']);
+  });
+});
+
+describe('isObjectEmpty', () => {
+  it('null or undefined', () => {
+    expect(() => utils.isObjectEmpty(null)).toThrowError();
+    expect(() => utils.isObjectEmpty(undefined)).toThrowError();
+  });
+  it('empty object', () => {
+    expect(utils.isObjectEmpty({})).toEqual(true);
+  });
+  it('Non-empty object', () => {
+    expect(utils.isObjectEmpty({'a': 12})).toEqual(false);
+    expect(utils.isObjectEmpty({'a': 12, 'b': 34})).toEqual(false);
   });
 });

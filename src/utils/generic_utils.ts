@@ -528,3 +528,21 @@ export function keys(obj: {}): string[] {
   }
   return keyNames;
 }
+
+/**
+ * Determine if an Object is empty (i.e., does not have own properties).
+ * @param obj Object
+ * @returns Whether the Object is empty.
+ * @throws ValueError: If object is `null` or `undefined`.
+ */
+export function isObjectEmpty(obj: {}): boolean {
+  if (obj == null) {
+    throw new ValueError(`Invalid value in obj: ${JSON.stringify(obj)}`);
+  }
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      return false;
+    }
+  }
+  return true;
+}

@@ -2537,7 +2537,7 @@ export class Container extends Layer {
       // Call layer on its inputs, thus creating the node
       // and building the layer if needed.
       // Note: This has Eager vs Graph Implications.
-      if (!_.isEmpty(inputTensors)) {
+      if (inputTensors.length > 0) {
         layer.apply(
             generic_utils.singletonOrArray(inputTensors),
             kwargs);  // was ** kwargs
@@ -2585,7 +2585,7 @@ export class Container extends Layer {
     // Nodes that cannot yet be processed(if the inbound node
     // does not yet exist) are re - enqueued, and the process
     // is repeated until all nodes are processed.
-    while (!_.isEmpty(unprocessedNodes)) {
+    while (!generic_utils.isObjectEmpty(unprocessedNodes)) {
       for (const layerData of layersFromConfig) {
         const layer = createdLayers[layerData.name as string];
         if (layer.name in unprocessedNodes) {
