@@ -48,7 +48,7 @@ export function pyGetAttr<T>(obj: any, attrName: string, defaultValue?: T): T {
   if (attrName in obj) {
     return obj[attrName];
   }
-  if (_.isUndefined(defaultValue)) {
+  if (defaultValue === undefined) {
     throw new AttributeError(
         'pyGetAttr: Attempting to get attribute ' + attrName +
         'with no default value defined');
@@ -256,8 +256,7 @@ export function normalizeShapeList(x: Shape|Shape[]): Shape[] {
  * Checks whether an element or every element in a list is null or undefined.
  */
 export function isAllNullOrUndefined(iterableOrElement: {}): boolean {
-  return _.every(
-      toList(iterableOrElement), x => (_.isNull(x) || _.isUndefined(x)));
+  return _.every(toList(iterableOrElement), x => x == null);
 }
 
 /**
