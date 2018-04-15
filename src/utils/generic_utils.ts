@@ -19,7 +19,10 @@ import {ConfigDict, ConfigDictValue, DType, Shape} from '../types';
 
 // tslint:enable
 
-/** Equivalent to Python's [value] * numValues */
+/**
+ * If `value` is an Array, equivalent to Python's `value * numValues`.
+ * If `value` is not an Array, equivalent to Python's `[value] * numValues`
+ */
 // tslint:disable-next-line:no-any
 export function pyListRepeat(value: any, numValues: number): any[] {
   if (Array.isArray(value)) {

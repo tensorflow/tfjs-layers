@@ -136,7 +136,7 @@ export class Merge extends Layer {
       if (!_.contains(inputDims, null)) {
         // If ranks of all inputs are available, we simply expand each of them
         // at axis=1 until all of them have the same rank.
-        const maxNDim = _.max(inputDims);
+        const maxNDim = mathUtils.max(inputDims);
         for (let x of inputs) {
           const xNDim = K.ndim(x);
           for (let k = 0; k < maxNDim - xNDim; ++k) {
