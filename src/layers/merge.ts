@@ -13,7 +13,6 @@
  */
 
 import {Tensor, util} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
 
 import * as K from '../backend/tfjs_backend';
 import {Layer, LayerConfig} from '../engine/topology';
@@ -104,7 +103,7 @@ export class Merge extends Layer {
         batchSizes.push(shape[0]);
       }
     }
-    batchSizes = _.uniq(batchSizes);
+    batchSizes = generic_utils.unique(batchSizes);
     if (batchSizes.length > 1) {
       throw new ValueError(
           `Can not merge tensors with different batch sizes. ` +
@@ -120,7 +119,8 @@ export class Merge extends Layer {
     // If the inputs have different ranks, we have to reshape them to make them
     // broadcastable.
     const allRanks = inputShape.map(shape => shape.length);
-    if (inputShape.indexOf(null) === -1 && _.uniq(allRanks).length === 1) {
+    if (inputShape.indexOf(null) === -1 &&
+        generic_utils.unique(allRanks).length === 1) {
       this.reshapeRequired = false;
     } else {
       this.reshapeRequired = true;
@@ -215,7 +215,7 @@ export class Merge extends Layer {
         batchSizes.push(shape[0]);
       }
     }
-    batchSizes = _.uniq(batchSizes);
+    batchSizes = generic_utils.unique(batchSizes);
     if (batchSizes.length === 1) {
       outputShape = batchSizes.concat(outputShape);
     } else {

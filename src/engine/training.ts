@@ -22,7 +22,7 @@ import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LayerVariable, LossOrMetricFn, Shape} from '../types';
-import {ClassNameMap, count, singletonOrArray} from '../utils/generic_utils';
+import {ClassNameMap, count, singletonOrArray, unique} from '../utils/generic_utils';
 import {range} from '../utils/math_utils';
 
 import {execute, FeedDict} from './executor';
@@ -179,9 +179,9 @@ export function standardizeInputData(
  */
 export function checkArrayLengths(
     inputs: Tensor[], targets: Tensor[], weights?: Tensor[]) {
-  const setX = _.unique(inputs.map(input => input.shape[0]));
+  const setX = unique(inputs.map(input => input.shape[0]));
   setX.sort();
-  const setY = _.unique(targets.map(target => target.shape[0]));
+  const setY = unique(targets.map(target => target.shape[0]));
   setY.sort();
   // TODO(cais): Check `weights` as well.
   if (setX.length > 1) {

@@ -497,3 +497,22 @@ export function stringsEqual(xs: string[], ys: string[]): boolean {
   }
   return true;
 }
+
+/**
+ * Get the unique elements of an array.
+ * @param xs Array.
+ * @returns An Array consisting of the unique elements in `xs`.
+ */
+export function unique<T>(xs: T[]): T[] {
+  if (xs == null) {
+    return xs;
+  }
+  const out: T[] = [];
+  // TODO(cais): Maybe improve performance by sorting.
+  for (const x of xs) {
+    if (out.indexOf(x) === -1) {
+      out.push(x);
+    }
+  }
+  return out;
+}

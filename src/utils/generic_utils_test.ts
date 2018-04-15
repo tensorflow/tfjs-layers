@@ -326,3 +326,24 @@ describe('stringsEqual', () => {
     ])).toEqual(false);
   });
 });
+
+describe('unique', () => {
+  it('null or undefined', () => {
+    expect(utils.unique(null)).toEqual(null);
+    expect(utils.unique(undefined)).toEqual(undefined);
+  });
+  it('empty array', () => {
+    expect(utils.unique([])).toEqual([]);
+  });
+  it('Non-empty array: string', () => {
+    expect(utils.unique(['foo', 'bar', 'foo'])).toEqual(['foo', 'bar']);
+    expect(utils.unique(['foo', 'bar', ''])).toEqual(['foo', 'bar', '']);
+    expect(utils.unique(['foo', 'bar', null, ''])).toEqual([
+      'foo', 'bar', null, ''
+    ]);
+  });
+  it('Non-empty array: number', () => {
+    expect(utils.unique([1, 2, -1, 2])).toEqual([1, 2, -1]);
+    expect(utils.unique([2, 3, 2, null])).toEqual([2, 3, null]);
+  });
+});

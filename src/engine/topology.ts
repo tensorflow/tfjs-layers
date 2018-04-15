@@ -1558,7 +1558,7 @@ export class Container extends Layer {
     }
 
     // Check for redundancy in inputs.
-    if (_.uniq(this.inputs).length !== this.inputs.length) {
+    if (generic_utils.unique(this.inputs).length !== this.inputs.length) {
       throw new ValueError(
           'The list of inputs passed to the model is ' +
           'redundant. All inputs should only appear once. Found: ' +
@@ -1566,7 +1566,7 @@ export class Container extends Layer {
     }
 
     // Check for redundancy in outputs.
-    if (_.uniq(this.outputs).length !== this.outputs.length) {
+    if (generic_utils.unique(this.outputs).length !== this.outputs.length) {
       console.warn(
           'The list of outputs passed to the model is redundant. ' +
           'All outputs should only appear once. Found: ' +
