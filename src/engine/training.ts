@@ -13,7 +13,6 @@
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {doc, Optimizer, Scalar, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
 
 import * as K from '../backend/tfjs_backend';
 import {BaseLogger, Callback, CallbackList, CustomCallbackConfig, disposeTensorsInLogs, History, standardizeCallbacks, UnresolvedLogs} from '../callbacks';
@@ -1226,7 +1225,6 @@ export class Model extends Container {
     for (let epoch = initialEpoch; epoch < epochs; ++epoch) {
       await callbackList.onEpochBegin(epoch);
       const epochLogs: UnresolvedLogs = {};
-      let epochIndexArray = indexArray;
       if (stepsPerEpoch != null) {
         throw new NotImplementedError(
             'stepsPerEpoch mode is not implemented yet.');
@@ -1235,11 +1233,11 @@ export class Model extends Container {
           throw new NotImplementedError(
               'batch shuffling is not implemneted yet');
         } else if (shuffle) {
-          epochIndexArray = _.shuffle(indexArray);
+          util.shuffle(indexArray);
         }
         // Convert the potentially shuffled indices to Tensor1D, to avoid the
         // cost of repeated creation of Array1Ds later on.
-        const epochIndexArray1D = tensor1d(epochIndexArray);
+        const epochIndexArray1D = tensor1d(indexArray);
 
         const batches = makeBatches(numTrainSamples, batchSize);
         for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
