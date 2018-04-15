@@ -120,7 +120,7 @@ export class Merge extends Layer {
     // If the inputs have different ranks, we have to reshape them to make them
     // broadcastable.
     const allRanks = inputShape.map(shape => shape.length);
-    if (!_.contains(inputShape, null) && _.uniq(allRanks).length === 1) {
+    if (inputShape.indexOf(null) === -1 && _.uniq(allRanks).length === 1) {
       this.reshapeRequired = false;
     } else {
       this.reshapeRequired = true;
@@ -133,7 +133,7 @@ export class Merge extends Layer {
     if (this.reshapeRequired) {
       const reshapedInputs: Tensor[] = [];
       const inputDims = inputs.map(input => K.ndim(input));
-      if (!_.contains(inputDims, null)) {
+      if (inputDims.indexOf(null) === -1) {
         // If ranks of all inputs are available, we simply expand each of them
         // at axis=1 until all of them have the same rank.
         const maxNDim = mathUtils.max(inputDims);

@@ -237,7 +237,7 @@ function checkLossAndTargetCompatibility(
         // TODO(cais): Example code in error message.
       }
     }
-    if (_.contains(keyLosses, loss)) {
+    if (keyLosses.indexOf(loss) !== -1) {
       const slicedYShape = y.shape.slice(1);
       const slicedShape = shape.slice(1);
       for (let j = 0; j < slicedYShape.length; ++j) {
@@ -683,7 +683,7 @@ export class Model extends Container {
     if (!Array.isArray(config.loss) && typeof config.loss !== 'string') {
       config.loss = config.loss as {[outputName: string]: string};
       for (const name in config.loss) {
-        if (!_.contains(this.outputNames, name)) {
+        if (this.outputNames.indexOf(name) === -1) {
           throw new ValueError(
               `Unknown entry in loss dictionary: "${name}". Only expect the ` +
               `following keys: ${this.outputNames}`);

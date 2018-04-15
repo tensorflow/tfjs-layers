@@ -704,7 +704,7 @@ export class Layer {
           // ensure type safety through Underscore calls.
           const xShapeAtAxis =
               axis >= 0 ? xShape[axis] : xShape[xShape.length + axis];
-          if (value != null && !_.contains([value, null], xShapeAtAxis)) {
+          if (value != null && [value, null].indexOf(xShapeAtAxis) === -1) {
             throw new ValueError(
                 `Input ${inputIndex} is incompatible with layer ` +
                 `${this.name}: expected axis ${axis} of input shape to ` +
@@ -898,7 +898,7 @@ export class Layer {
         // TODO(michaelterry): This copying may not be necessary given our eager
         // backend.
         for (let x of outputList) {
-          if (_.contains(inputsList, x)) {
+          if (inputsList.indexOf(x) !== -1) {
             x = K.identity(x);
           }
           outputListCopy.push(x);
@@ -1704,14 +1704,14 @@ export class Container extends Layer {
           const node = layer.inboundNodes[nodeIndex];
 
           // Prevent cycles.
-          if (_.contains(nodesInProgress, node)) {
+          if (nodesInProgress.indexOf(node) !== -1) {
             throw new RuntimeError(
                 `The tensor ${tensor.name} at layer "${layer.name}" ` +
                 'is part of a cycle.');
           }
 
           // Don't repeat work for shared subgraphs
-          if (_.contains(finishedNodes, node)) {
+          if (finishedNodes.indexOf(node) !== -1) {
             return;
           }
 
@@ -1723,7 +1723,7 @@ export class Container extends Layer {
             layerIndices[layer.id] = _.keys(layerIndices).length;
           }
 
-          if (!_.contains(nodesInProgress, node)) {
+          if (nodesInProgress.indexOf(node) === -1) {
             nodesInProgress.push(node);
           }
 
@@ -1853,7 +1853,7 @@ export class Container extends Layer {
         const layer = node.outboundLayer;
         if (layer != null) {
           for (const x of node.inputTensors) {
-            if (!_.contains(computableTensors, x)) {
+            if (computableTensors.indexOf(x) === -1) {
               throw new RuntimeError(
                   `Graph disconnected: cannot obtain value for tensor ${x}` +
                   ` at layer "${layer.name}". ` +
@@ -2104,7 +2104,7 @@ export class Container extends Layer {
         for (const node of nodes) {
           // This is always a single layer, never a list.
           const layer = node.outboundLayer;
-          if (_.contains(this.inputLayers.map(x => x.id), layer.id)) {
+          if (this.inputLayers.map(x => x.id).indexOf(layer.id) !== -1) {
             // We've already covered the input layers a few lines above.
             continue;
           }
@@ -2653,7 +2653,7 @@ export function getSourceInputs(
         const previousSources = getSourceInputs(x, layer, nodeIndex);
         // Avoid input redundancy.
         for (const x of previousSources) {
-          if (!_.contains(sourceTensors, x)) {
+          if (sourceTensors.indexOf(x) === -1) {
             sourceTensors.push(x);
           }
         }
