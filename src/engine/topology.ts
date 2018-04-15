@@ -1103,10 +1103,12 @@ export class Layer {
     if (!this.supportsMasking) {
       if (mask != null) {
         if (Array.isArray(mask)) {
-          if (_.any(mask)) {
-            throw new TypeError(
-                `Layer ${this.name} does not support masking,` +
-                'but was passed an inputMask.');
+          for (const maskElement of mask) {
+            if (maskElement != null) {
+              throw new TypeError(
+                  `Layer ${this.name} does not support masking,` +
+                  'but was passed an inputMask.');
+            }
           }
         } else {
           throw new TypeError(

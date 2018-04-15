@@ -213,28 +213,6 @@ describe('normalizeShapeList', () => {
   });
 });
 
-describe('isAllNull', () => {
-  it('is true for empty lists.', () => {
-    expect(utils.isAllNullOrUndefined([])).toEqual(true);
-  });
-
-  it('is true for lists with null.', () => {
-    expect(utils.isAllNullOrUndefined([null])).toEqual(true);
-  });
-
-  it('is true for lists with undefined.', () => {
-    expect(utils.isAllNullOrUndefined([undefined])).toEqual(true);
-  });
-
-  it('is false for lists with non-null.', () => {
-    expect(utils.isAllNullOrUndefined([1])).toEqual(false);
-  });
-
-  it('is false for lists with non-null and null.', () => {
-    expect(utils.isAllNullOrUndefined([null, 1])).toEqual(false);
-  });
-});
-
 describe('toSnakeCase', () => {
   for (const [inputString, expectedOutput] of [
            ['', ''], ['A', 'a'], ['AA', 'aa'], ['AAA', 'aaa'], ['AAa', 'a_aa'],

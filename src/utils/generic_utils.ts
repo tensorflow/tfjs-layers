@@ -256,13 +256,6 @@ export function normalizeShapeList(x: Shape|Shape[]): Shape[] {
 }
 
 /**
- * Checks whether an element or every element in a list is null or undefined.
- */
-export function isAllNullOrUndefined(iterableOrElement: {}): boolean {
-  return _.every(toList(iterableOrElement), x => x == null);
-}
-
-/**
  * Converts string to snake-case.
  * @param name
  */
