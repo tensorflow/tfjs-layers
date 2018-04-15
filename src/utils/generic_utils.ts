@@ -12,7 +12,6 @@
 
 // tslint:disable:max-line-length
 import {Tensor} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
 
 import {AssertionError, AttributeError, IndexError, ValueError} from '../errors';
 import {ConfigDict, ConfigDictValue, DType, Shape} from '../types';
@@ -342,11 +341,11 @@ export function deserializeKerasObject(
     }
     const className = config.className as string;
     let cls, fromConfig;
-    if (_.has(customObjects, className)) {
+    if (className in customObjects) {
       [cls, fromConfig] = customObjects.get(className);
-    } else if (_.has(_GLOBAL_CUSTOM_OBJECTS, className)) {
+    } else if (className in _GLOBAL_CUSTOM_OBJECTS) {
       [cls, fromConfig] = _GLOBAL_CUSTOM_OBJECTS.className;
-    } else if (_.has(moduleObjects, className)) {
+    } else if (className in moduleObjects) {
       [cls, fromConfig] = moduleObjects[className];
     }
     if (cls == null) {
