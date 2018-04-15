@@ -716,7 +716,9 @@ export class Layer {
       // Check shape.
       if (spec.shape != null) {
         const xShape = K.intShape(x);
-        for (const [specDim, dim] of _.zip(spec.shape, xShape)) {
+        for (let i = 0; i < spec.shape.length; ++i) {
+          const specDim = spec.shape[i];
+          const dim = xShape[i];
           if (specDim != null && dim != null) {
             if (specDim !== dim) {
               throw new ValueError(
@@ -843,10 +845,22 @@ export class Layer {
 
     // Ensure inputs are all the same type.
     const inputsList = generic_utils.toList(inputs);
-    const allAreSymbolic =
-        _.every(inputsList, (x) => x instanceof SymbolicTensor);
-    const noneAreSymbolic =
-        _.every(inputsList, (x) => !(x instanceof SymbolicTensor));
+
+    let allAreSymbolic = true;
+    for (const input of inputsList) {
+      if (!(input instanceof SymbolicTensor)) {
+        allAreSymbolic = false;
+        break;
+      }
+    }
+    let noneAreSymbolic = true;
+    for (const input of inputsList) {
+      if (input instanceof SymbolicTensor) {
+        noneAreSymbolic = false;
+        break;
+      }
+    }
+
     if (allAreSymbolic === noneAreSymbolic) {
       throw new ValueError(
           'Arguments to apply() must be all ' +
@@ -1004,7 +1018,10 @@ export class Layer {
     }
     const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
     const paramValues = K.batchGetValue(params);
-    for (const [pv, p, w] of _.zip(paramValues, params, weights)) {
+    for (let i = 0; i < paramValues.length; ++i) {
+      const pv = paramValues[i];
+      const p = params[i];
+      const w = weights[i];
       if (!util.arraysEqual(pv.shape, w.shape)) {
         throw new ValueError(
             `Layer weight shape ${pv.shape} ` +
@@ -2177,7 +2194,10 @@ export class Container extends Layer {
     // TODO: raise exception when a `.computeMask()` call
     // does not return a list the same size as `call`
     const tensorMap: {[tensorID: string]: [Tensor, Tensor]} = {};
-    for (const [x, y, mask] of _.zip(this.inputs, inputs, masks)) {
+    for (let i = 0; i < this.inputs.length; ++i) {
+      const x = this.inputs[i];
+      const y = inputs[i];
+      const mask = masks[i];
       tensorMap[x.id] = [y, mask];
     }
 
@@ -2244,8 +2264,10 @@ export class Container extends Layer {
           // TODO(michaelterry): Add model updates and losses
 
           // Update tensor map.
-          for (const [x, y, mask] of _.zip(
-                   referenceOutputTensors, outputTensors, outputMasks)) {
+          for (let i = 0; i < referenceOutputTensors.length; ++i) {
+            const x = referenceOutputTensors[i];
+            const y = outputTensors[i];
+            const mask = outputMasks[i];
             tensorMap[x.id] = [y, mask];
           }
         }
