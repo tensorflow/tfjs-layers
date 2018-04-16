@@ -1118,13 +1118,13 @@ export class Layer {
     if (!this.supportsMasking) {
       if (mask != null) {
         if (Array.isArray(mask)) {
-          for (const maskElement of mask) {
+          mask.forEach(maskElement => {
             if (maskElement != null) {
               throw new TypeError(
                   `Layer ${this.name} does not support masking,` +
                   'but was passed an inputMask.');
             }
-          }
+          });
         } else {
           throw new TypeError(
               `Layer ${this.name} does not support masking,` +
@@ -1737,7 +1737,7 @@ export class Container extends Layer {
 
           // Store the traversal order for layer sorting.
           if (!(layer.id in layerIndices)) {
-            layerIndices[layer.id] = generic_utils.keys(layerIndices).length;
+            layerIndices[layer.id] = Object.keys(layerIndices).length;
           }
 
           if (nodesInProgress.indexOf(node) === -1) {
@@ -1828,7 +1828,7 @@ export class Container extends Layer {
     }
 
     // Get sorted list of layer depths.
-    let depthKeys = generic_utils.keys(layersByDepth)
+    let depthKeys = Object.keys(layersByDepth)
                         .map(x => parseInt(x, 10))
                         .sort(generic_utils.reverseNumberCompare);
 
@@ -1856,7 +1856,7 @@ export class Container extends Layer {
     this.layersByDepth = layersByDepth;
 
     // Get sorted list of node depths;
-    depthKeys = generic_utils.keys(nodesByDepth)
+    depthKeys = Object.keys(nodesByDepth)
                     .map(x => parseInt(x, 10))
                     .sort(generic_utils.reverseNumberCompare);
 
@@ -2699,8 +2699,7 @@ export function getSourceInputs(
 function loadTensor(dtype: string, shape: Shape, value: any): Tensor {
   const dataType = generic_utils.stringToDType(dtype);
   return Tensor.make(
-      shape,
-      {values: shape.length === 0 ? value : generic_utils.flatten(value)},
+      shape, {values: shape.length === 0 ? value : util.flatten(value)},
       dataType);
 }
 
