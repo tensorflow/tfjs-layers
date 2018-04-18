@@ -392,7 +392,6 @@ describeMathCPU('Deserialize Merge Layers', () => {
     // output = keras.layers.add([input1, input2])
     // model = keras.Model([input1, input2], output)
     //
-    // print(model)
     // model_json = model.to_json()
     // print(model_json)
 
@@ -459,7 +458,6 @@ describeMathCPU('Deserialize Merge Layers', () => {
     // output = keras.layers.concatenate([input1, input2])
     // model = keras.Model([input1, input2], output)
     //
-    // print(model)
     // model_json = model.to_json()
     // print(model_json)
 
