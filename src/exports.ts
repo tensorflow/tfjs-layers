@@ -13,26 +13,26 @@
  */
 
 // tslint:disable:max-line-length
-import {doc} from '@tensorflow/tfjs-core';
+import { doc } from '@tensorflow/tfjs-core';
 
-import {Constraint, MaxNorm, MaxNormConfig, MinMaxNorm, MinMaxNormConfig, NonNeg, UnitNorm, UnitNormConfig} from './constraints';
-import {ContainerConfig, Input, InputConfig, InputLayer, InputLayerConfig, Layer, LayerConfig} from './engine/topology';
-import {Model} from './engine/training';
-import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
-import {ELU, ELULayerConfig, LeakyReLU, LeakyReLULayerConfig, Softmax, SoftmaxLayerConfig, ThresholdedReLU, ThresholdedReLULayerConfig} from './layers/advanced_activations';
-import {Conv1D, Conv2D, Conv2DTranspose, ConvLayerConfig, SeparableConv2D, SeparableConvLayerConfig} from './layers/convolutional';
-import {DepthwiseConv2D, DepthwiseConv2DLayerConfig} from './layers/convolutional_depthwise';
-import {Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, DropoutLayerConfig, Flatten, RepeatVector, RepeatVectorLayerConfig} from './layers/core';
-import {Embedding, EmbeddingLayerConfig} from './layers/embeddings';
-import {Add, Average, Concatenate, ConcatenateLayerConfig, Maximum, Minimum, Multiply} from './layers/merge';
-import {BatchNormalization, BatchNormalizationLayerConfig} from './layers/normalization';
-import {ZeroPadding2D, ZeroPadding2DLayerConfig} from './layers/padding';
-import {AveragePooling1D, AveragePooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerConfig, MaxPooling1D, MaxPooling2D, Pooling1DLayerConfig, Pooling2DLayerConfig} from './layers/pooling';
-import {GRU, GRUCell, GRUCellLayerConfig, GRULayerConfig, LSTM, LSTMCell, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNCell, RNNLayerConfig, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig, StackedRNNCells, StackedRNNCellsConfig} from './layers/recurrent';
-import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, WrapperLayerConfig} from './layers/wrappers';
-import {loadModelInternal, Sequential, SequentialConfig} from './models';
-import {l1, L1Config, L1L2, L1L2Config, l2, L2Config, Regularizer} from './regularizers';
-import {SymbolicTensor} from './types';
+import { Constraint, MaxNorm, MaxNormConfig, MinMaxNorm, MinMaxNormConfig, NonNeg, UnitNorm, UnitNormConfig } from './constraints';
+import { ContainerConfig, Input, InputConfig, InputLayer, InputLayerConfig, Layer, LayerConfig } from './engine/topology';
+import { Model } from './engine/training';
+import { Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros } from './initializers';
+import { ELU, ELULayerConfig, LeakyReLU, LeakyReLULayerConfig, Softmax, SoftmaxLayerConfig, ThresholdedReLU, ThresholdedReLULayerConfig } from './layers/advanced_activations';
+import { Conv1D, Conv2D, Conv2DTranspose, ConvLayerConfig, SeparableConv2D, SeparableConvLayerConfig } from './layers/convolutional';
+import { DepthwiseConv2D, DepthwiseConv2DLayerConfig } from './layers/convolutional_depthwise';
+import { Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, DropoutLayerConfig, Flatten, RepeatVector, RepeatVectorLayerConfig, Reshape, ReshapeLayerConfig } from './layers/core';
+import { Embedding, EmbeddingLayerConfig } from './layers/embeddings';
+import { Add, Average, Concatenate, ConcatenateLayerConfig, Maximum, Minimum, Multiply } from './layers/merge';
+import { BatchNormalization, BatchNormalizationLayerConfig } from './layers/normalization';
+import { ZeroPadding2D, ZeroPadding2DLayerConfig } from './layers/padding';
+import { AveragePooling1D, AveragePooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerConfig, MaxPooling1D, MaxPooling2D, Pooling1DLayerConfig, Pooling2DLayerConfig } from './layers/pooling';
+import { GRU, GRUCell, GRUCellLayerConfig, GRULayerConfig, LSTM, LSTMCell, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNCell, RNNLayerConfig, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig, StackedRNNCells, StackedRNNCellsConfig } from './layers/recurrent';
+import { Bidirectional, BidirectionalLayerConfig, TimeDistributed, WrapperLayerConfig } from './layers/wrappers';
+import { loadModelInternal, Sequential, SequentialConfig } from './models';
+import { l1, L1Config, L1L2, L1L2Config, l2, L2Config, Regularizer } from './regularizers';
+import { SymbolicTensor } from './types';
 
 // tslint:enable:max-line-length
 
@@ -81,7 +81,7 @@ export class ModelExports {
    *   `sequential`, `loadModel`.
    */
 
-  @doc({heading: 'Models', subheading: 'Creation', configParamIndices: [0]})
+  @doc({ heading: 'Models', subheading: 'Creation', configParamIndices: [0] })
   static model(config: ContainerConfig): Model {
     return new Model(config);
   }
@@ -143,7 +143,7 @@ export class ModelExports {
    * console.log(JSON.stringify(model.outputs[0].shape));
    * ```
    */
-  @doc({heading: 'Models', subheading: 'Creation', configParamIndices: [0]})
+  @doc({ heading: 'Models', subheading: 'Creation', configParamIndices: [0] })
   static sequential(config?: SequentialConfig): Sequential {
     return new Sequential(config);
   }
@@ -350,6 +350,17 @@ export class LayerExports {
   })
   static repeatVector(config: RepeatVectorLayerConfig): Layer {
     return new RepeatVector(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Basic',
+    namespace: 'layers',
+    useDocsFrom: 'Reshape',
+    configParamIndices: [0]
+  })
+  static reshape(config: ReshapeLayerConfig): Layer {
+    return new Reshape(config);
   }
 
   @doc({
@@ -699,7 +710,7 @@ export class ConstraintExports {
   }
 
   @doc(
-      {heading: 'Constraints', namespace: 'constraints', useDocsFrom: 'NonNeg'})
+    { heading: 'Constraints', namespace: 'constraints', useDocsFrom: 'NonNeg' })
   static nonNeg(): Constraint {
     return new NonNeg();
   }
@@ -726,7 +737,7 @@ export class InitializerExports {
   }
 
   @doc(
-      {heading: 'Initializers', namespace: 'initializers', useDocsFrom: 'Ones'})
+    { heading: 'Initializers', namespace: 'initializers', useDocsFrom: 'Ones' })
   static ones(): Initializer {
     return new Ones();
   }
@@ -854,19 +865,19 @@ export class InitializerExports {
 
 export class RegularizerExports {
   @doc(
-      {heading: 'Regularizers', namespace: 'regularizers', useDocsFrom: 'L1L2'})
+    { heading: 'Regularizers', namespace: 'regularizers', useDocsFrom: 'L1L2' })
   static l1l2(config?: L1L2Config): Regularizer {
     return new L1L2(config);
   }
 
   @doc(
-      {heading: 'Regularizers', namespace: 'regularizers', useDocsFrom: 'L1L2'})
+    { heading: 'Regularizers', namespace: 'regularizers', useDocsFrom: 'L1L2' })
   static l1(config?: L1Config): Regularizer {
     return l1(config);
   }
 
   @doc(
-      {heading: 'Regularizers', namespace: 'regularizers', useDocsFrom: 'L1L2'})
+    { heading: 'Regularizers', namespace: 'regularizers', useDocsFrom: 'L1L2' })
   static l2(config?: L2Config): Regularizer {
     return l2(config);
   }
