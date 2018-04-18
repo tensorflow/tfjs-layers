@@ -589,7 +589,7 @@ export interface ModelCompileConfig {
   optimizer: string|Optimizer;
 
   /**
-   * String (name of objective function) or objective function.
+   * Object function(s) or name(s) of object function(s).
    * If the model has multiple outputs, you can use a different loss
    * on each output by passing a dictionary or an Array of losses.
    * The loss value that will be minimized by the model will then be the sum

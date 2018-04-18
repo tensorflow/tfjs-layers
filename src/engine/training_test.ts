@@ -13,8 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {abs, mean, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, zeros} from '@tensorflow/tfjs-core';
-import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
+import {abs, mean, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {CustomCallback, CustomCallbackConfig, Logs} from '../callbacks';
@@ -450,8 +449,9 @@ describeMathCPUAndGPU('Model.fit', () => {
             inputs, targets,
             {batchSize: numSamples, epochs: 2, validationSplit: 0.2})
         .then(history => {
-          expectArraysClose(history.history['loss'] as number[], [3, 2.96]);
-          expectArraysClose(
+          test_util.expectArraysClose(
+              history.history['loss'] as number[], [3, 2.96]);
+          test_util.expectArraysClose(
               history.history['val_loss'] as number[], [2.96, 2.92]);
           done();
         })
