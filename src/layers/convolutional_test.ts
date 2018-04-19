@@ -19,7 +19,7 @@ import * as K from '../backend/tfjs_backend';
 import {DataFormat, PaddingMode} from '../common';
 import * as tf from '../index';
 import {InitializerIdentifier} from '../initializers';
-import {DType, SymbolicTensor} from '../types';
+import {DType} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 // tslint:enable:max-line-length
 
@@ -45,8 +45,8 @@ describeMathCPU('Conv2D Layers: Symbolic', () => {
               const inputShape = dataFormat === 'channelsFirst' ?
                   [2, 16, 11, 9] :
                   [2, 11, 9, 16];
-              const symbolicInput =
-                  new SymbolicTensor(DType.float32, inputShape, null, [], null);
+              const symbolicInput = new tf.SymbolicTensor(
+                  DType.float32, inputShape, null, [], null);
 
               const conv2dLayer = tf.layers.conv2d({
                 filters,
@@ -56,7 +56,8 @@ describeMathCPU('Conv2D Layers: Symbolic', () => {
                 dataFormat,
               });
 
-              const output = conv2dLayer.apply(symbolicInput) as SymbolicTensor;
+              const output =
+                  conv2dLayer.apply(symbolicInput) as tf.SymbolicTensor;
 
               let outputRows: number;
               let outputCols: number;
@@ -249,12 +250,12 @@ describeMathCPU('Conv2DTranspose: Symbolic', () => {
               `kernelSize=${JSON.stringify(kernelSize)}, strides=${strides}`;
           it(testTitle, () => {
             const inputShape = [2, 11, 9, 16];
-            const x =
-                new SymbolicTensor(DType.float32, inputShape, null, [], null);
+            const x = new tf.SymbolicTensor(
+                DType.float32, inputShape, null, [], null);
 
             const layer = tf.layers.conv2dTranspose(
                 {filters, kernelSize, padding, strides});
-            const y = layer.apply(x) as SymbolicTensor;
+            const y = layer.apply(x) as tf.SymbolicTensor;
 
             let expectedShape: [number, number, number, number];
             if (strides === undefined) {
@@ -288,7 +289,8 @@ describeMathCPU('Conv2DTranspose: Symbolic', () => {
   }
 
   it('Correct weight names', () => {
-    const x = new SymbolicTensor(DType.float32, [1, 2, 3, 4], null, [], null);
+    const x =
+        new tf.SymbolicTensor(DType.float32, [1, 2, 3, 4], null, [], null);
     const layer = tf.layers.conv2dTranspose({filters: 2, kernelSize: [3, 3]});
     layer.apply(x);  // Let the layer build first.
 
@@ -346,7 +348,7 @@ describeMathCPU('Conv1D Layers: Symbolic', () => {
         it(testTitle, () => {
           const inputShape = [2, 8, 3];
           const symbolicInput =
-              new SymbolicTensor(DType.float32, inputShape, null, [], null);
+              new tf.SymbolicTensor(DType.float32, inputShape, null, [], null);
 
           const conv1dLayer = tf.layers.conv1d({
             filters,
@@ -356,7 +358,7 @@ describeMathCPU('Conv1D Layers: Symbolic', () => {
             dataFormat: 'channelsLast',
           });
 
-          const output = conv1dLayer.apply(symbolicInput) as SymbolicTensor;
+          const output = conv1dLayer.apply(symbolicInput) as tf.SymbolicTensor;
 
           const expectedShape = [2, 7, filters];
           if (padding === 'same') {
@@ -466,7 +468,7 @@ describeMathCPU('SeparableConv2D Layers: Symbolic', () => {
                 const inputShape = dataFormat === 'channelsFirst' ?
                     [2, 16, 11, 9] :
                     [2, 11, 9, 16];
-                const symbolicInput = new SymbolicTensor(
+                const symbolicInput = new tf.SymbolicTensor(
                     DType.float32, inputShape, null, [], null);
 
                 const layer = tf.layers.separableConv2d({
@@ -478,7 +480,7 @@ describeMathCPU('SeparableConv2D Layers: Symbolic', () => {
                   dilationRate,
                 });
 
-                const output = layer.apply(symbolicInput) as SymbolicTensor;
+                const output = layer.apply(symbolicInput) as tf.SymbolicTensor;
 
                 let outputRows: number;
                 let outputCols: number;
@@ -545,7 +547,7 @@ describeMathCPU('SeparableConv2D Layers: Symbolic', () => {
       strides: 1,
     });
     const symbolicInput =
-        new SymbolicTensor(DType.float32, [2, 3, 4], null, [], null);
+        new tf.SymbolicTensor(DType.float32, [2, 3, 4], null, [], null);
     expect(() => layer.apply(symbolicInput)).toThrowError(/rank 4/);
   });
 
@@ -556,7 +558,7 @@ describeMathCPU('SeparableConv2D Layers: Symbolic', () => {
       strides: 1,
     });
     const symbolicInput =
-        new SymbolicTensor(DType.float32, [1, , 2, 3, null], null, [], null);
+        new tf.SymbolicTensor(DType.float32, [1, , 2, 3, null], null, [], null);
     expect(() => layer.apply(symbolicInput))
         .toThrowError(/channel dimension .* should be defined/);
   });
