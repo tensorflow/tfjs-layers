@@ -184,7 +184,7 @@ export class LayerExports {
     useDocsFrom: 'InputLayer',
     configParamIndices: [0]
   })
-  static inputLayer(config: InputLayerConfig): Layer {
+  static inputLayer(config: InputLayerConfig): InputLayer {
     return new InputLayer(config);
   }
 
@@ -405,7 +405,7 @@ export class LayerExports {
     useDocsFrom: 'Concatenate',
     configParamIndices: [0]
   })
-  static concatenate(config: ConcatenateLayerConfig): Layer {
+  static concatenate(config?: ConcatenateLayerConfig): Layer {
     return new Concatenate(config);
   }
 
