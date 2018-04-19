@@ -12,8 +12,11 @@
  * Unit tests for wrapper layers.
  */
 
-// tslint:disable:max-line-length
-import {Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
+DOING DOING DOING Finish refactoring this.
+
+
+    // tslint:disable:max-line-length
+import{Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
 
 import {DType, SymbolicTensor} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';

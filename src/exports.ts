@@ -464,7 +464,7 @@ export class LayerExports {
     useDocsFrom: 'ZeroPadding2D',
     configParamIndices: [0]
   })
-  static zeroPadding2d(config: ZeroPadding2DLayerConfig): Layer {
+  static zeroPadding2d(config?: ZeroPadding2DLayerConfig): Layer {
     return new ZeroPadding2D(config);
   }
 
