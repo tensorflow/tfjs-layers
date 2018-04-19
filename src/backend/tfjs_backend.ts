@@ -432,6 +432,86 @@ export function sliceAlongLastAxis(
 }
 
 /**
+ * Non-broadcasting batch normalization for use in training (not inference).
+ *
+ * @param x Input tensor to be normalized.
+ * @param gamma Tensor by which to scale the input.
+ * @param beta Tensor by which to center the input.
+ * @param reductionAxes Axes over which to normalize.
+ * @param epsilon Fuzz factor.
+ * @returns An `Array` of three `Tensors`:
+ *   [normalized tensor, mean of input, variance of input].
+ */
+function regularNormalizeBatchInTraining(
+    x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
+    epsilon = 1e-3): [Tensor, Tensor, Tensor] {
+  const meanAndVariance = tfc.moments(x, reductionAxes);
+  const mean = meanAndVariance.mean;
+  const variance = meanAndVariance.variance;
+  const normed = batchNormalization(x, mean, variance, beta, gamma, epsilon);
+  return [normed, mean, variance];
+}
+
+/**
+ * Broadcasting batch normalization for use in training (not inference).
+ *
+ * @param x Input tensor to be normalized.
+ * @param gamma Tensor by which to scale the input.
+ * @param beta Tensor by which to center the input.
+ * @param reductionAxes Axes over which to normalize.
+ * @param epsilon Fuzz factor.
+ * @returns An `Array` of three `Tensors`:
+ *   [normalized tensor, mean of input, variance of input].
+ */
+function broadcastNormalizeBatchInTraining(
+    x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
+    epsilon = 1e-3): [Tensor, Tensor, Tensor] {
+  const meanAndVariance = tfc.moments(x, reductionAxes);
+  const mean = meanAndVariance.mean;
+  const variance = meanAndVariance.variance;
+  const targetShape: number[] = [];
+  for (const axis of math_utils.range(0, ndim(x))) {
+    if (reductionAxes.indexOf(axis) !== -1) {
+      targetShape.push(1);
+    } else {
+      targetShape.push(x.shape[axis]);
+    }
+  }
+  const broadcastMean = reshape(mean, targetShape);
+  const broadcastVariance = reshape(variance, targetShape);
+  const broadcastGamma = gamma == null ? null : reshape(gamma, targetShape);
+  const broadcastBeta = beta == null ? null : reshape(beta, targetShape);
+  const normed = batchNormalization(
+      x, broadcastMean, broadcastVariance, broadcastBeta, broadcastGamma,
+      epsilon);
+  return [normed, mean, variance];
+}
+
+/**
+ * Batch normalization for use in training (not inference).
+ *
+ * @param x Input tensor to be normalized.
+ * @param gamma Tensor by which to scale the input.
+ * @param beta Tensor by which to center the input.
+ * @param reductionAxes Axes over which to normalize.
+ * @param epsilon Fuzz factor.
+ * @returns An `Array` of three `Tensors`:
+ *   [normalized tensor, mean of input, variance of input].
+ */
+export function normalizeBatchInTraining(
+    x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
+    epsilon = 1e-3): [Tensor, Tensor, Tensor] {
+  if (util.arraysEqual(
+          reductionAxes.slice().sort(), math_utils.range(0, ndim(x) - 1))) {
+    return regularNormalizeBatchInTraining(
+        x, gamma, beta, reductionAxes, epsilon);
+  } else {
+    return broadcastNormalizeBatchInTraining(
+        x, gamma, beta, reductionAxes, epsilon);
+  }
+}
+
+/**
  * Concatenates a list of tensors alongside the specified axis.
  * @param tensors `Array` of tensors to concatenate.
  * @param axis Concatenation axis.
@@ -1297,31 +1377,36 @@ export function cos(x: ConcreteTensor): Tensor {
 export function batchNormalization(
     x: Tensor, mean: Tensor, variance: Tensor, beta?: Tensor, gamma?: Tensor,
     epsilon = 1e-3): Tensor {
+  // console.log(
+  //     `K.batchNormalization: beta = ${beta}, gamma = ${gamma}`);  // DEBUG
   let out: Tensor;
   if (ndim(x) === 2) {
     out = tfc.batchNormalization2d(
         x as Tensor2D, mean as Tensor2D | Tensor1D,
-        variance as Tensor2D | Tensor1D, epsilon);
+        variance as Tensor2D | Tensor1D, epsilon, gamma as Tensor2D | Tensor1D,
+        beta as Tensor2D | Tensor1D);
   } else if (ndim(x) === 3) {
     // TODO(cais): Check rank; give proper error message.
     out = tfc.batchNormalization3d(
         x as Tensor3D, mean as Tensor3D | Tensor1D,
-        variance as Tensor3D | Tensor1D, epsilon);
+        variance as Tensor3D | Tensor1D, epsilon, gamma as Tensor3D | Tensor1D,
+        beta as Tensor3D | Tensor1D);
   } else if (ndim(x) === 4) {
     out = tfc.batchNormalization4d(
         x as Tensor4D, mean as Tensor4D | Tensor1D,
-        variance as Tensor4D | Tensor1D, epsilon);
+        variance as Tensor4D | Tensor1D, epsilon, gamma as Tensor4D | Tensor1D,
+        beta as Tensor4D | Tensor1D);
   } else {
     throw new NotImplementedError(
         `batchNormalization is not implememnted for array of rank ${ndim(x)} ` +
         `yet`);
   }
-  if (gamma != null) {
-    out = multiply(out, gamma);
-  }
-  if (beta != null) {
-    out = add(out, beta);
-  }
+  // if (gamma != null) {
+  //   out = multiply(out, gamma);
+  // }
+  // if (beta != null) {
+  //   out = add(out, beta);
+  // }
   return out;
 }
 

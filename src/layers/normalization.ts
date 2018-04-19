@@ -12,19 +12,20 @@
  * Normalization layers.
  */
 
-import {Tensor, util} from '@tensorflow/tfjs-core';
+import {movingAverage, Tensor, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, Layer, LayerConfig} from '../engine/topology';
-import {NotImplementedError, ValueError} from '../errors';
+import {ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Shape} from '../types';
 import {ConfigDict, LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
-import {range} from '../utils/math_utils';
+import {arrayProd, range} from '../utils/math_utils';
+
 // tslint:enable:max-line-length
 
 export interface BatchNormalizationLayerConfig extends LayerConfig {
@@ -147,6 +148,7 @@ export class BatchNormalization extends Layer {
   private beta: LayerVariable;
   private movingMean: LayerVariable;
   private movingVariance: LayerVariable;
+  private stepCount: number;
 
   constructor(config: BatchNormalizationLayerConfig) {
     super(config);
@@ -166,6 +168,7 @@ export class BatchNormalization extends Layer {
     this.gammaConstraint = getConstraint(config.gammaConstraint);
     this.betaRegularizer = getRegularizer(config.betaRegularizer);
     this.gammaRegularizer = getRegularizer(config.gammaRegularizer);
+    this.stepCount = 0;
   }
 
   public build(inputShape: Shape|Shape[]): void {
@@ -241,9 +244,29 @@ export class BatchNormalization extends Layer {
       return normalizeInference();
     }
 
-    throw new NotImplementedError(
-        'BatchNormalization.call() has not been implemented for training ' +
-        'mode yet.');
+    const [normedTraining, mean, variance] = K.normalizeBatchInTraining(
+        input, this.gamma.read(), this.beta.read(), reductionAxes,
+        this.epsilon);
+
+    // Debias variance.
+    const sampleSize = arrayProd(reductionAxes.map(axis => input.shape[axis]));
+    const varianceDebiased = variance.mul(
+        K.getScalar(sampleSize / (sampleSize - (1 + this.epsilon))));
+
+    this.stepCount++;
+
+    // Perform updates to moving mean and moving variance for training.
+    const updateMovingMeanAndVariance = () => {
+      const newMovingMean = movingAverage(
+          this.movingMean.read(), mean, this.momentum, this.stepCount);
+      this.movingMean.write(newMovingMean);
+      const newMovingVariance = movingAverage(
+          this.movingVariance.read(), varianceDebiased, this.momentum,
+          this.stepCount);
+      this.movingVariance.write(newMovingVariance);
+    };
+    updateMovingMeanAndVariance();
+    return normedTraining;
   }
 
   getConfig(): ConfigDict {
