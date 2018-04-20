@@ -185,33 +185,6 @@ describeMathCPU('loadModel', () => {
     }
   }
 
-  it('Missing weight in manifest leads to error', done => {
-    setupFakeWeightFiles({
-      './weight_0': ones([32, 32], 'float32').dataSync() as Float32Array,
-      './weight_1': ones([32], 'float32').dataSync() as Float32Array,
-    });
-    // Use a randomly generated layer name to prevent interaction with other
-    // unit tests that load the same sample JSON.
-    const denseLayerName = 'dense_' + Math.floor(Math.random() * 1e9);
-    const weightsManifest: WeightsManifestConfig = [
-      {
-        'paths': ['weight_0'],
-        'weights': [{
-          'name': `${denseLayerName}/kernel`,
-          'dtype': 'float32',
-          'shape': [32, 32]
-        }],
-      },
-    ];  // Missing bias.
-    // JSON.parse and stringify to deep copy fakeSequentialModel.
-    const configJson =
-        JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
-    configJson['config']['layers'][1]['config']['name'] = denseLayerName;
-    modelFromJSON({modelTopology: configJson, weightsManifest, pathPrefix: '.'})
-        .then(() => done.fail)
-        .catch(done);
-  });
-
   it('Loads weights despite uniqueified tensor names', async done => {
     try {
       setupFakeWeightFiles({
