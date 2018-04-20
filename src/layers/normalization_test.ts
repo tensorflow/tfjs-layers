@@ -238,6 +238,23 @@ describeMathCPUAndGPU('BatchNormalization Layers: Tensor', () => {
   it('Fit: 3D, BatchNorm Layer Only', async done => {
     // Use the following Python code to get the reference values for assertion:
     // ```python
+    // import keras
+    // from keras import backend as keras_backend
+    // import numpy as np
+    //
+    // layer1 = keras.layers.BatchNormalization(input_shape=[2, 2])
+    // model = keras.Sequential([layer1])
+    //
+    // model.compile(loss='mean_squared_error', optimizer='sgd')
+    //
+    // xs = np.array(
+    //     [[[1, 2], [3, 4]], [[2, 4], [6, 8]], [[12, 11], [10, 9]]],
+    //     dtype=np.float32)
+    // ys = np.zeros([3, 2, 2], dtype=np.float32)
+    // print(layer1.get_weights())
+    // history = model.fit(xs, ys, epochs=2, batch_size=3)
+    // print(history.history)
+    // print(layer1.get_weights())
     // ```
     const layer1 = tfl.layers.batchNormalization({inputShape: [2, 2]});
     const model = tfl.sequential({layers: [layer1]});
