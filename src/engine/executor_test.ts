@@ -16,7 +16,7 @@
 import {Tensor, tensor1d, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import * as tf from '../index';
+import * as tfl from '../index';
 import {DType} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
@@ -25,8 +25,8 @@ import {execute, FeedDict} from './executor';
 // tslint:enable
 
 describeMathCPU('FeedDict', () => {
-  const x = tf.input({shape: [], name: 'x', dtype: DType.float32});
-  const y = tf.input({shape: [], name: 'y', dtype: DType.float32});
+  const x = tfl.input({shape: [], name: 'x', dtype: DType.float32});
+  const y = tfl.input({shape: [], name: 'y', dtype: DType.float32});
   const xValue = tensor1d([42]);
   const yValue = tensor1d([21]);
 
@@ -76,19 +76,19 @@ describeMathCPU('FeedDict', () => {
     expect(() => feedDict.add(x, xValue)).toThrowError(/Duplicate key/);
   });
   it('Feeding compatible value with undetermined dimension works', () => {
-    const s = tf.input({shape: [null, 4], name: 's', dtype: DType.float32});
+    const s = tfl.input({shape: [null, 4], name: 's', dtype: DType.float32});
     const sValue = tensor3d([1, 3, 3, 7], [1, 1, 4]);
     const feedDict = new FeedDict([{key: s, value: sValue}]);
     expect(feedDict.getValue(s)).toEqual(sValue);
   });
   it('Feeding incompatible rank leads to error', () => {
-    const s = tf.input({shape: [null, 4], name: 's', dtype: DType.float32});
+    const s = tfl.input({shape: [null, 4], name: 's', dtype: DType.float32});
     const sValue = tensor2d([1, 3, 3, 7], [1, 4]);
     expect(() => new FeedDict([{key: s, value: sValue}]))
         .toThrowError(/rank of feed .* does not match/);
   });
   it('Feeding incompatible dimension leads to error', () => {
-    const s = tf.input({shape: [null, 4], name: 's', dtype: DType.float32});
+    const s = tfl.input({shape: [null, 4], name: 's', dtype: DType.float32});
     const sValue = tensor3d([0, 0, 8], [1, 1, 3]);
     expect(() => new FeedDict([{key: s, value: sValue}]))
         .toThrowError(/The 2-th dimension of the feed .* is incompatible/);
@@ -97,14 +97,14 @@ describeMathCPU('FeedDict', () => {
 
 describeMathCPUAndGPU('Executor', () => {
   it('Linear Graph Topology', () => {
-    const x = tf.input({shape: [2], name: 'fooInput', dtype: DType.float32});
-    const denseLayer1 = tf.layers.dense(
+    const x = tfl.input({shape: [2], name: 'fooInput', dtype: DType.float32});
+    const denseLayer1 = tfl.layers.dense(
         {units: 5, activation: 'linear', kernelInitializer: 'ones'});
     const y = denseLayer1.apply(x);
-    const u = tf.input({shape: [2], name: 'footInput', dtype: DType.float32});
-    const denseLayer2 = tf.layers.dense(
+    const u = tfl.input({shape: [2], name: 'footInput', dtype: DType.float32});
+    const denseLayer2 = tfl.layers.dense(
         {units: 5, activation: 'linear', kernelInitializer: 'ones'});
-    const denseLayer3 = tf.layers.dense(
+    const denseLayer3 = tfl.layers.dense(
         {units: 3, activation: 'linear', kernelInitializer: 'ones'});
     const v = denseLayer2.apply(u);
     const w = denseLayer3.apply(v);
@@ -113,62 +113,62 @@ describeMathCPUAndGPU('Executor', () => {
       const xValue = K.ones([2, 2]);
       const feedDict = new FeedDict().add(x, xValue);
       expectTensorsClose(
-          execute(x as tf.SymbolicTensor, feedDict) as Tensor,
+          execute(x as tfl.SymbolicTensor, feedDict) as Tensor,
           tensor2d([1, 1, 1, 1], [2, 2]));
     });
     it('Input to Dense', () => {
       const xValue = K.ones([2, 2]);
       const feedDict = new FeedDict([{key: x, value: xValue}]);
       expectTensorsClose(
-          execute(y as tf.SymbolicTensor, feedDict) as Tensor,
+          execute(y as tfl.SymbolicTensor, feedDict) as Tensor,
           tensor2d([2, 2, 2, 2, 2, 2, 2, 2, 2, 2], [2, 5]));
     });
     it('Input to Dense1 to Dense2', () => {
       const uValue = K.ones([2, 2]);
       const feedDict = new FeedDict([{key: u, value: uValue}]);
       expectTensorsClose(
-          execute(w as tf.SymbolicTensor, feedDict) as Tensor,
+          execute(w as tfl.SymbolicTensor, feedDict) as Tensor,
           tensor2d([10, 10, 10, 10, 10, 10], [2, 3]));
     });
     it('Feed value to intermediate layers is supported', () => {
       const vValue = K.ones([3, 5]);
       const feedDict =
-          new FeedDict([{key: v as tf.SymbolicTensor, value: vValue}]);
+          new FeedDict([{key: v as tfl.SymbolicTensor, value: vValue}]);
       expectTensorsClose(
-          execute(w as tf.SymbolicTensor, feedDict) as Tensor,
+          execute(w as tfl.SymbolicTensor, feedDict) as Tensor,
           tensor2d([5, 5, 5, 5, 5, 5, 5, 5, 5], [3, 3]));
     });
     it('Calling execute without all Input feeds available leads to error',
        () => {
          const feedDict = new FeedDict();
-         expect(() => execute(y as tf.SymbolicTensor, feedDict))
+         expect(() => execute(y as tfl.SymbolicTensor, feedDict))
              .toThrowError(/Missing a feed value .* from InputLayer/);
        });
   });
 
   it('Diamond Graph Topology', () => {
-    const x = tf.input({shape: [2], name: 'fooInput', dtype: DType.float32});
-    const denseLayer1 = tf.layers.dense({
+    const x = tfl.input({shape: [2], name: 'fooInput', dtype: DType.float32});
+    const denseLayer1 = tfl.layers.dense({
       units: 5,
       activation: 'linear',
       kernelInitializer: 'ones',
       name: 'denseLayer1'
     });
     const y = denseLayer1.apply(x);
-    const denseLayer2 = tf.layers.dense({
+    const denseLayer2 = tfl.layers.dense({
       units: 4,
       activation: 'linear',
       kernelInitializer: 'ones',
       name: 'denseLayer2'
     });
-    const denseLayer3 = tf.layers.dense({
+    const denseLayer3 = tfl.layers.dense({
       units: 3,
       activation: 'linear',
       kernelInitializer: 'ones',
       name: 'denseLayer3'
     });
-    const z1 = denseLayer2.apply(y) as tf.SymbolicTensor;
-    const z2 = denseLayer3.apply(y) as tf.SymbolicTensor;
+    const z1 = denseLayer2.apply(y) as tfl.SymbolicTensor;
+    const z2 = denseLayer3.apply(y) as tfl.SymbolicTensor;
 
     it('Calling execute with two fetches and diamond graph works', () => {
       const xValue = K.ones([2, 2]);
