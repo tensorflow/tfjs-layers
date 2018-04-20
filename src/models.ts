@@ -134,13 +134,7 @@ export async function loadModelInternal(modelConfigPath: string):
         'Missing field "modelTopology" from model JSON at path' +
         modelConfigPath);
   }
-  // TODO(cais): Remove this check as it's okay to load just the topology of a
-  // model.
-  if (modelConfig['weightsManifest'] == null) {
-    throw new ValueError(
-        'Missing field "weightsManifest" from model JSON at path' +
-        modelConfigPath);
-  }
+
   modelConfig.pathPrefix =
       modelConfigPath.substring(0, modelConfigPath.lastIndexOf('/'));
 
