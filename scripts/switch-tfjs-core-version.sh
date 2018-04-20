@@ -9,8 +9,6 @@
 
 # Switch between different versions of tfjs-core dependency.
 #
-# The script automatically modifies ./package.json
-#
 # Usage examples:
 #
 # 1. To depend on the HEAD of the public GitHub repo of tfjs-core
