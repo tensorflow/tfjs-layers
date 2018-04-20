@@ -672,7 +672,7 @@ export class LayerExports {
     useDocsFrom: 'Bidirectional',
     configParamIndices: [0]
   })
-  static bidirectional(config: BidirectionalLayerConfig): Layer {
+  static bidirectional(config: BidirectionalLayerConfig): Bidirectional {
     return new Bidirectional(config);
   }
 
