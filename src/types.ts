@@ -289,7 +289,9 @@ export type RnnStepFunction =
  * and support for Enums.
  */
 export type JsonValue = boolean|number|string|null|JsonArray|JsonDict;
-export interface JsonDict { [key: string]: JsonValue; }
+export interface JsonDict {
+  [key: string]: JsonValue;
+}
 export interface JsonArray extends Array<JsonValue> {}
 
 /**
@@ -309,9 +311,22 @@ export interface JsonArray extends Array<JsonValue> {}
  */
 export type ConfigDictValue =
     boolean|number|string|null|ConfigDictArray|ConfigDict;
-export interface ConfigDict { [key: string]: ConfigDictValue; }
+export interface ConfigDict {
+  [key: string]: ConfigDictValue;
+}
 export interface ConfigDictArray extends Array<ConfigDictValue> {}
 
 export type NamedTensorMap = {
   [name: string]: Tensor;
 };
+
+/**
+ * Serializable defines the serialization contract.
+ *
+ * TFJS requires serializable classes to return their className when asked
+ * to avoid issues with minification.
+ */
+export abstract class Serializable {
+  abstract getClassName(): string;
+  abstract getConfig(): ConfigDict;
+}

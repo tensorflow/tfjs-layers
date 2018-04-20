@@ -18,9 +18,27 @@ import {DType, LayerVariable, NamedTensorMap, Shape, SymbolicTensor} from '../ty
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {execute, FeedDict} from './executor';
-import {Container, getSourceInputs, Input, InputLayer, InputSpec, Layer, LayerConfig, loadWeightsFromJson, loadWeightsFromNamedTensorMap, Node} from './topology';
+import {Container, ContainerConfig, getSourceInputs, Input, InputLayer, InputSpec, Layer, LayerConfig, loadWeightsFromJson, loadWeightsFromNamedTensorMap, Node} from './topology';
 
 // tslint:enable
+
+class LayerForTest extends Layer {
+  constructor(config: LayerConfig) {
+    super(config);
+  }
+  getClassName(): string {
+    return 'Layer';
+  }
+}
+
+class ContainerForTest extends Container {
+  constructor(config: ContainerConfig) {
+    super(config);
+  }
+  getClassName(): string {
+    return 'Container';
+  }
+}
 
 describe('InputSpec', () => {
   it('initializes with expected default values.', () => {
@@ -51,8 +69,8 @@ describe('InputSpec', () => {
 describe('Node', () => {
   const outboundLayerName = 'outboundLayer';
   const inboundLayerName = 'inboundLayer';
-  const outboundLayer = new Layer({name: outboundLayerName});
-  const inboundLayers = [new Layer({name: inboundLayerName})];
+  const outboundLayer = new LayerForTest({name: outboundLayerName});
+  const inboundLayers = [new LayerForTest({name: inboundLayerName})];
   const nodeIndices = [0];
   const tensorIndices = [0];
   const inputTensors = [new SymbolicTensor(DType.float32, [1], null, [], {})];
@@ -126,7 +144,7 @@ describeMathCPU('Layer', () => {
     let defaultLayer: Layer;
 
     beforeEach(() => {
-      defaultLayer = new Layer({});
+      defaultLayer = new LayerForTest({});
     });
 
     it('has a default layer name of layer_....', () => {
@@ -190,12 +208,12 @@ describeMathCPU('Layer', () => {
     });
 
     it('produces a unique ID', () => {
-      const secondLayer = new Layer({});
+      const secondLayer = new LayerForTest({});
       expect(defaultLayer.id).not.toEqual(secondLayer.id);
     });
 
     it('stateful is false by default', () => {
-      const layer = new Layer({});
+      const layer = new LayerForTest({});
       expect(layer.stateful).toBe(false);
     });
 
@@ -229,7 +247,7 @@ describeMathCPU('Layer', () => {
   describe('A layer with non-default arguments', () => {
     it('initializes layer with given name.', () => {
       const name = 'layer name';
-      const layer = new Layer({name});
+      const layer = new LayerForTest({name});
       expect(layer.name).toMatch(name);
       const config = layer.getConfig();
       expect(config.name).toEqual(layer.name);
@@ -237,7 +255,7 @@ describeMathCPU('Layer', () => {
 
     for (const trainable of [true, false]) {
       it('initializes layer as trainable, if specified.', () => {
-        const layer = new Layer({trainable});
+        const layer = new LayerForTest({trainable});
         expect(layer.trainable).toEqual(trainable);
         const config = layer.getConfig();
         expect(config.trainable).toEqual(layer.trainable);
@@ -246,7 +264,7 @@ describeMathCPU('Layer', () => {
 
     for (const batchInputShape of [[], [1]]) {
       it('initializes batchInputShape to layerConfig.batchInputShape.', () => {
-        const layer = new Layer({batchInputShape});
+        const layer = new LayerForTest({batchInputShape});
         expect(layer.batchInputShape).toEqual(batchInputShape);
         const config = layer.getConfig();
         expect(config.batchInputShape).toEqual(layer.batchInputShape);
@@ -258,7 +276,7 @@ describeMathCPU('Layer', () => {
        () => {
          const batchInputShape = [1];
          const inputShape = [2, 3];
-         const layer = new Layer({batchInputShape, inputShape});
+         const layer = new LayerForTest({batchInputShape, inputShape});
          expect(layer.batchInputShape).toEqual(batchInputShape);
        });
 
@@ -266,14 +284,14 @@ describeMathCPU('Layer', () => {
              [null, [], [null]], [null, [1], [null, 1]], [3, [], [3]],
              [3, [1], [3, 1]]]) {
       it('initializes batchInputShape to layerConfig.inputShape.', () => {
-        const layer = new Layer(
+        const layer = new LayerForTest(
             {batchSize: batchSize as number, inputShape: inputShape as Shape});
         expect(layer.batchInputShape).toEqual(expectedBatchInputShape as Shape);
       });
     }
 
     it('initializes dtype to float32 if layerConfig.inputShape is set.', () => {
-      const layer = new Layer({inputShape: []});
+      const layer = new LayerForTest({inputShape: []});
       expect(layer.dtype).toEqual(DType.float32);
       const config = layer.getConfig();
       expect(config.dtype).toEqual(layer.dtype);
@@ -281,13 +299,13 @@ describeMathCPU('Layer', () => {
 
     it('initializes dtype to float32 if layerConfig.batchInputShape is set.',
        () => {
-         const layer = new Layer({batchInputShape: []});
+         const layer = new LayerForTest({batchInputShape: []});
          expect(layer.dtype).toEqual(DType.float32);
        });
 
     it('initializes initialWeights if present.', () => {
       const weights = [K.zeros([1])];
-      const layer = new Layer({weights});
+      const layer = new LayerForTest({weights});
       expect(layer.initialWeights).toEqual(weights);
     });
 
@@ -302,6 +320,9 @@ describeMathCPU('Layer', () => {
               'foo', [2, 3], DType.float32,
               initializers.getInitializer('zeros'));
         }
+        getClassName(): string {
+          return 'Layer';
+        }
       }
       expect(() => new LayerForTest({}))
           .toThrowError(/[Dd]uplicate weight name/);
@@ -310,7 +331,7 @@ describeMathCPU('Layer', () => {
 
 
   it('can be set to built.', () => {
-    const layer = new Layer({});
+    const layer = new LayerForTest({});
     layer.built = true;
     expect(layer.built).toEqual(true);
   });
@@ -319,7 +340,7 @@ describeMathCPU('Layer', () => {
   const trainableWeights = [K.zerosVariable([1])];
   const nonTrainableWeights = [K.onesVariable([1])];
   it('can set trainableWeights.', () => {
-    const layer = new Layer({});
+    const layer = new LayerForTest({});
     layer.trainableWeights = trainableWeights;
     expect(layer.trainableWeights).toEqual(trainableWeights);
   });
@@ -327,13 +348,13 @@ describeMathCPU('Layer', () => {
   it('doesn\'t return trainableWeights if layer is not trainable, even ' +
          'if they exist',
      () => {
-       const layer = new Layer({trainable: false});
+       const layer = new LayerForTest({trainable: false});
        layer.trainableWeights = trainableWeights;
        expect(layer.trainableWeights).toEqual([]);
      });
 
   it('can set nonTrainableWeights.', () => {
-    const layer = new Layer({});
+    const layer = new LayerForTest({});
     layer.nonTrainableWeights = nonTrainableWeights;
     expect(layer.nonTrainableWeights).toEqual(nonTrainableWeights);
   });
@@ -341,7 +362,7 @@ describeMathCPU('Layer', () => {
   it('only returns nonTrainableWeights for nonTrainableWeights if the layer ' +
          'is trainable.',
      () => {
-       const layer = new Layer({trainable: true});
+       const layer = new LayerForTest({trainable: true});
        layer.trainableWeights = trainableWeights;
        layer.nonTrainableWeights = nonTrainableWeights;
        expect(layer.nonTrainableWeights).toEqual(nonTrainableWeights);
@@ -350,7 +371,7 @@ describeMathCPU('Layer', () => {
   it('concats trainable and nonTrainableWeights for nonTrainableWeights if ' +
          'not trainable.',
      () => {
-       const layer = new Layer({trainable: false});
+       const layer = new LayerForTest({trainable: false});
        const expectedWeights = trainableWeights.concat(nonTrainableWeights);
        layer.trainableWeights = trainableWeights;
        layer.nonTrainableWeights = nonTrainableWeights;
@@ -361,7 +382,7 @@ describeMathCPU('Layer', () => {
     it('concats trainable and nonTrainableWeights for weights regardless of ' +
            'whether the layer is trainable trainable.',
        () => {
-         const layer = new Layer({trainable});
+         const layer = new LayerForTest({trainable});
          const expectedWeights = trainableWeights.concat(nonTrainableWeights);
          layer.trainableWeights = trainableWeights;
          layer.nonTrainableWeights = nonTrainableWeights;
@@ -383,7 +404,7 @@ describeMathCPU('Layer', () => {
 
     for (const inputs of testInputs) {
       it('doesn\'t raise an exception if no inputSpec is provided.', () => {
-        const layer = new Layer({});
+        const layer = new LayerForTest({});
         runAssert(layer, inputs());
       });
 
@@ -391,7 +412,7 @@ describeMathCPU('Layer', () => {
              'inputSpecs.',
          () => {
            const inputSpecs = [new InputSpec({})];
-           const layer = new Layer({});
+           const layer = new LayerForTest({});
            layer.inputSpec = inputSpecs;
            expect(() => runAssert(layer, inputs())).not.toThrowError();
          });
@@ -399,7 +420,7 @@ describeMathCPU('Layer', () => {
       it('throws exception if number of inputs != number of inputSpecs.',
          () => {
            const inputSpecs = [new InputSpec({}), new InputSpec({})];
-           const layer = new Layer({});
+           const layer = new LayerForTest({});
            layer.inputSpec = inputSpecs;
            expect(() => runAssert(layer, inputs()))
                .toThrowError(/expects [0-9]+ inputs/);
@@ -408,14 +429,14 @@ describeMathCPU('Layer', () => {
       it('doesn\'t raise exception if inputs\' ndim == inputSpecs.ndim.',
          () => {
            const inputSpecs = [new InputSpec({ndim: 1})];
-           const layer = new Layer({});
+           const layer = new LayerForTest({});
            layer.inputSpec = inputSpecs;
            expect(() => runAssert(layer, inputs())).not.toThrowError();
          });
 
       it('throws exception if inputs\' ndim != inputSpecs.ndim.', () => {
         const inputSpecs = [new InputSpec({ndim: 2})];
-        const layer = new Layer({});
+        const layer = new LayerForTest({});
         layer.inputSpec = inputSpecs;
         expect(() => runAssert(layer, inputs())).toThrowError(/expected ndim=/);
       });
@@ -423,14 +444,14 @@ describeMathCPU('Layer', () => {
       it('doesn\'t raise exception if inputs\' ndim <= inputSpecs.maxNdim.',
          () => {
            const inputSpecs = [new InputSpec({maxNDim: 1})];
-           const layer = new Layer({});
+           const layer = new LayerForTest({});
            layer.inputSpec = inputSpecs;
            expect(() => runAssert(layer, inputs())).not.toThrowError();
          });
 
       it('throws exception if inputs\' ndim > inputSpecs.maxNdim.', () => {
         const inputSpecs = [new InputSpec({maxNDim: 0})];
-        const layer = new Layer({});
+        const layer = new LayerForTest({});
         layer.inputSpec = inputSpecs;
         expect(() => runAssert(layer, inputs()))
             .toThrowError(/expected max_ndim=/);
@@ -439,14 +460,14 @@ describeMathCPU('Layer', () => {
       it('doesn\'t raise exception if inputs\' ndim >= inputSpecs.minNdim.',
          () => {
            const inputSpecs = [new InputSpec({minNDim: 1})];
-           const layer = new Layer({});
+           const layer = new LayerForTest({});
            layer.inputSpec = inputSpecs;
            expect(() => runAssert(layer, inputs())).not.toThrowError();
          });
 
       it('throws exception if inputs\' ndim < inputSpecs.minNdim.', () => {
         const inputSpecs = [new InputSpec({minNDim: 2})];
-        const layer = new Layer({});
+        const layer = new LayerForTest({});
         layer.inputSpec = inputSpecs;
         expect(() => runAssert(layer, inputs()))
             .toThrowError(/expected min_ndim=/);
@@ -455,7 +476,7 @@ describeMathCPU('Layer', () => {
       it('doesn\'t raise exception if inputs\' dtype == inputSpecs.dtype.',
          () => {
            const inputSpecs = [new InputSpec({dtype: DType.float32})];
-           const layer = new Layer({});
+           const layer = new LayerForTest({});
            layer.inputSpec = inputSpecs;
            expect(() => runAssert(layer, inputs())).not.toThrowError();
          });
@@ -465,14 +486,14 @@ describeMathCPU('Layer', () => {
       it('doesn\'t raise exception if inputs\' dimensions == inputSpecs.axes.',
          () => {
            const inputSpecs = [new InputSpec({axes: {0: 1}})];
-           const layer = new Layer({});
+           const layer = new LayerForTest({});
            layer.inputSpec = inputSpecs;
            expect(() => runAssert(layer, inputs())).not.toThrowError();
          });
 
       it('throws exception if inputs\' dimensions != inputSpecs.axes.', () => {
         const inputSpecs = [new InputSpec({axes: {0: 2}})];
-        const layer = new Layer({});
+        const layer = new LayerForTest({});
         layer.inputSpec = inputSpecs;
         expect(() => runAssert(layer, inputs())).toThrowError(/expected axis/);
       });
@@ -481,7 +502,7 @@ describeMathCPU('Layer', () => {
              'number of inputSpecs.axes.',
          () => {
            const inputSpecs = [new InputSpec({axes: {0: 1, 2: 1}})];
-           const layer = new Layer({});
+           const layer = new LayerForTest({});
            layer.inputSpec = inputSpecs;
            expect(() => runAssert(layer, inputs()))
                .toThrowError(/expected axis/);
@@ -490,14 +511,14 @@ describeMathCPU('Layer', () => {
       it('doesn\'t raise exception if inputs\' shape == inputSpecs.shape.',
          () => {
            const inputSpecs = [new InputSpec({shape: [1]})];
-           const layer = new Layer({});
+           const layer = new LayerForTest({});
            layer.inputSpec = inputSpecs;
            expect(() => runAssert(layer, inputs())).not.toThrowError();
          });
 
       it('throws exception if inputs\' shape != inputSpecs.shape.', () => {
         const inputSpecs = [new InputSpec({shape: [2]})];
-        const layer = new Layer({});
+        const layer = new LayerForTest({});
         layer.inputSpec = inputSpecs;
         expect(() => runAssert(layer, inputs())).toThrowError(/expected shape/);
       });
@@ -505,8 +526,8 @@ describeMathCPU('Layer', () => {
   });
 
   describe('apply() passed 1 SymbolicTensor', () => {
-    const firstLayer = new Layer({name: 'firstLayer'});
-    const secondLayer = new Layer({name: 'secondLayer'});
+    const firstLayer = new LayerForTest({name: 'firstLayer'});
+    const secondLayer = new LayerForTest({name: 'secondLayer'});
     const callArgs = {a: 1};
     const singleSymbolicTensor =
         new SymbolicTensor(DType.float32, [1], firstLayer, [], {});
@@ -544,8 +565,8 @@ describeMathCPU('Layer', () => {
 
   describe('apply() passed >1 SymbolicTensor', () => {
     it('throws an exception for multiple symbolic inputs.', () => {
-      const firstLayer = new Layer({name: 'first layer'});
-      const secondLayer = new Layer({name: 'second layer'});
+      const firstLayer = new LayerForTest({name: 'first layer'});
+      const secondLayer = new LayerForTest({name: 'second layer'});
       const symbolicTensorList = [
         new SymbolicTensor(
             DType.float32, [1], firstLayer, [], {}, 'first_symbolic_tensor'),
@@ -560,7 +581,7 @@ describeMathCPU('Layer', () => {
 
   describe('apply() passed SymbolicTensor and Tensor', () => {
     it('throws an exception.', () => {
-      const layer = new Layer({});
+      const layer = new LayerForTest({});
       const inputs = [
         new SymbolicTensor(
             DType.float32, [1], null, [], {}, 'first_symbolic_tensor'),
@@ -574,7 +595,7 @@ describeMathCPU('Layer', () => {
   it('apply() returns multiple symbolic tensors for multiple ' +
          'output shapes',
      () => {
-       const layer = new Layer({});
+       const layer = new LayerForTest({});
        const outputShapes = [[1], [2, 3]];
        const input = new SymbolicTensor(DType.float32, [1], null, [], {});
        // tslint:disable-next-line:no-any
@@ -592,7 +613,7 @@ describeMathCPU('Layer', () => {
       const anArray = K.ones([1]);
       // Test with both an Tensor and an array of Tensors.
       for (const inputs of [anArray, [anArray, anArray]]) {
-        const layer = new Layer({});
+        const layer = new LayerForTest({});
         const result = layer.apply(inputs) as Tensor | Tensor[];
 
         expect(result instanceof Tensor || (result[0] instanceof Tensor))
@@ -621,7 +642,7 @@ describeMathCPU('Layer', () => {
           new SymbolicTensor(DType.float32, [1], null, [], {});
       // Test with symbolic and concrete input.
       for (const inputs of [arrayInput, symbolicInput]) {
-        const layer = new Layer({weights: [initialWeights]});
+        const layer = new LayerForTest({weights: [initialWeights]});
         // Fake the build() method to test assignment to initialWeights.
         // tslint:disable-next-line:no-any
         spyOn((layer as any), 'build').and.callFake(() => {
@@ -640,7 +661,7 @@ describeMathCPU('Layer', () => {
     it('doesn\'t change inboundNodes or outboundNodes when called with ' +
            'concrete input',
        () => {
-         const layer = new Layer({});
+         const layer = new LayerForTest({});
          expect(layer.inboundNodes.length).toEqual(0);
          expect(layer.outboundNodes.length).toEqual(0);
          layer.apply(K.eye(1));
@@ -651,7 +672,7 @@ describeMathCPU('Layer', () => {
     it('changes inboundNodes and outboundNodes when called with ' +
            'symbolic input',
        () => {
-         const layer = new Layer({});
+         const layer = new LayerForTest({});
          const input = new SymbolicTensor(DType.float32, [1], null, [], {});
          expect(layer.inboundNodes.length).toEqual(0);
          expect(layer.outboundNodes.length).toEqual(0);
@@ -663,8 +684,8 @@ describeMathCPU('Layer', () => {
 
     it('updates inbound and outboundNodes when there are multiple layers',
        () => {
-         const firstLayer = new Layer({name: 'first_layer'});
-         const secondLayer = new Layer({name: 'second_layer'});
+         const firstLayer = new LayerForTest({name: 'first_layer'});
+         const secondLayer = new LayerForTest({name: 'second_layer'});
          const initialInput =
              new SymbolicTensor(DType.float32, [1], null, [], {});
          const firstOutput = firstLayer.apply(initialInput);
@@ -682,7 +703,7 @@ describeMathCPU('Layer', () => {
     it('throws exception if weights are not the same length ' +
            'as existing weights',
        () => {
-         const layer = new Layer({});
+         const layer = new LayerForTest({});
          layer.trainableWeights = [new LayerVariable(K.zeros([2, 2]))];
          const ones = K.ones([1]);
          expect(() => layer.setWeights([
@@ -693,7 +714,7 @@ describeMathCPU('Layer', () => {
     it('throws exception if weights are not the same shape ' +
            'as existing weights',
        () => {
-         const layer = new Layer({});
+         const layer = new LayerForTest({});
          const ones = K.ones([1]);
          layer.trainableWeights = [new LayerVariable(K.zeros([2, 2]))];
          expect(() => layer.setWeights([ones]))
@@ -701,7 +722,7 @@ describeMathCPU('Layer', () => {
        });
 
     it('updates weights.', () => {
-      const layer = new Layer({});
+      const layer = new LayerForTest({});
       const ones = K.ones([1]);
       layer.trainableWeights = [new LayerVariable(K.zeros([1]))];
       layer.setWeights([ones]);
@@ -711,7 +732,7 @@ describeMathCPU('Layer', () => {
 
   describe('computeOutputShape()', () => {
     it('returns the inputShape in the base class', () => {
-      const layer = new Layer({});
+      const layer = new LayerForTest({});
       const shape = [1];
       expect(layer.computeOutputShape(shape)).toEqual(shape);
     });
@@ -725,7 +746,7 @@ describeMathCPU('Layer', () => {
     beforeEach(() => {
       input =
           new SymbolicTensor(DType.float32, [1], null, [], {}, 'firstInput');
-      layer = new Layer({});
+      layer = new LayerForTest({});
       output = layer.apply(input) as SymbolicTensor;
     });
 
@@ -760,7 +781,7 @@ describeMathCPU('Layer', () => {
     beforeEach(() => {
       input =
           new SymbolicTensor(DType.float32, [1], null, [], {}, 'firstInput');
-      layer = new Layer({});
+      layer = new LayerForTest({});
       output = layer.apply(input) as SymbolicTensor;
     });
 
@@ -987,7 +1008,7 @@ describe('Input()', () => {
 
   it('produces output that can feed into a Layer.', () => {
     const inputTensor = Input({shape, name});
-    const otherLayer = new Layer({name: 'firstLayer'});
+    const otherLayer = new LayerForTest({name: 'firstLayer'});
     const output = otherLayer.apply(inputTensor) as SymbolicTensor;
     expect(output instanceof SymbolicTensor).toBe(true);
     expect(output.name).toEqual('firstLayer/firstLayer');
@@ -1004,7 +1025,7 @@ describeMathCPUAndGPU('Container.fromConfig', () => {
       outputLayers: [] as any[]
     };
     // tslint:enable
-    const container = Container.fromConfig(Container, config);
+    const container = Container.fromConfig(ContainerForTest, config);
     expect(container.name).toEqual('test');
   });
 
@@ -1060,7 +1081,7 @@ describeMathCPUAndGPU('Container.fromConfig', () => {
       name: 'test',
       outputLayers: [['dense_2', 0, 0]]
     };
-    const container = Container.fromConfig(Container, config);
+    const container = Container.fromConfig(ContainerForTest, config);
     expect(container.name).toEqual('test');
     const allZeros = zeros([1, 32]);
     expectTensorsClose(container.apply(allZeros) as Tensor, allZeros);
@@ -1079,27 +1100,27 @@ describeMathCPUAndGPU('Container', () => {
   beforeEach(() => {
     inputTensor =
         Input({shape: [1], name: inputLayerName, dtype: DType.float32});
-    layer = new Layer({name: layerName});
+    layer = new LayerForTest({name: layerName});
     output = layer.apply(inputTensor) as SymbolicTensor;
-    simpleContainer = new Container(
+    simpleContainer = new ContainerForTest(
         {inputs: [inputTensor], outputs: [output], name: containerName});
   });
 
   it('initializes with no inputs or outputs and a default name', () => {
-    const container = new Container({inputs: [], outputs: []});
+    const container = new ContainerForTest({inputs: [], outputs: []});
     expect(container.name).toMatch(/^container.+$/);
   });
 
   it('initializes with no inputs or outputs and a given name', () => {
     const name = 'xyz';
-    const container = new Container({inputs: [], outputs: [], name});
+    const container = new ContainerForTest({inputs: [], outputs: [], name});
     expect(container.name).toMatch(name);
   });
 
   it('throws an exception if same input provided twice', () => {
     const makeContainer = () => {
       // tslint:disable-next-line:no-unused-expression
-      new Container({inputs: [inputTensor, inputTensor], outputs: []});
+      new ContainerForTest({inputs: [inputTensor, inputTensor], outputs: []});
     };
     expect(makeContainer).toThrowError(/inputs.*redundant/);
   });
@@ -1107,7 +1128,7 @@ describeMathCPUAndGPU('Container', () => {
   it('throws an exception if graph is disconnected', () => {
     const makeContainer = () => {
       // tslint:disable-next-line:no-unused-expression
-      new Container({inputs: [], outputs: [output]});
+      new ContainerForTest({inputs: [], outputs: [output]});
     };
     expect(makeContainer).toThrowError(/disconnected/);
   });
@@ -1131,7 +1152,7 @@ describeMathCPUAndGPU('Container', () => {
   it('throws exception if given a non-input layer as input', () => {
     const makeContainer = () => {
       // tslint:disable-next-line:no-unused-expression
-      new Container({inputs: [output], outputs: []});
+      new ContainerForTest({inputs: [output], outputs: []});
     };
     expect(makeContainer).toThrowError(/must be InputLayer objects/);
   });
@@ -1141,10 +1162,11 @@ describeMathCPUAndGPU('Container', () => {
   });
 
   it('creates layers when multiple layers specified', () => {
-    const layer1 = new Layer({name: 'layer1'});
-    const layer2 = new Layer({name: 'layer2'});
+    const layer1 = new LayerForTest({name: 'layer1'});
+    const layer2 = new LayerForTest({name: 'layer2'});
     const output = layer2.apply(layer1.apply(inputTensor)) as SymbolicTensor;
-    const container = new Container({inputs: [inputTensor], outputs: [output]});
+    const container =
+        new ContainerForTest({inputs: [inputTensor], outputs: [output]});
     expect(container.layers).toEqual([inputTensor.sourceLayer, layer1, layer2]);
   });
 
@@ -1160,17 +1182,17 @@ describeMathCPUAndGPU('Container', () => {
          |
          C
     */
-    const layerA = new Layer({name: 'A'});
-    const layerB = new Layer({name: 'B'});
-    const layerC = new Layer({name: 'C'});
-    const layerX = new Layer({name: 'X'});
+    const layerA = new LayerForTest({name: 'A'});
+    const layerB = new LayerForTest({name: 'B'});
+    const layerC = new LayerForTest({name: 'C'});
+    const layerX = new LayerForTest({name: 'X'});
     const aOutput = layerA.apply(inputTensor);
     const output1 = layerC.apply(layerB.apply(aOutput)) as SymbolicTensor;
     const output2 =
         layerC.apply(layerB.apply(layerX.apply(aOutput))) as SymbolicTensor;
 
-    const container =
-        new Container({inputs: [inputTensor], outputs: [output1, output2]});
+    const container = new ContainerForTest(
+        {inputs: [inputTensor], outputs: [output1, output2]});
 
     const compareFunction = (a: Layer, b: Layer) => {
       if (a.name < b.name) {
@@ -1191,12 +1213,12 @@ describeMathCPUAndGPU('Container', () => {
 
   it('throws exception if multiple layers have the same name', () => {
     const name = 'abc';
-    const layer1 = new Layer({name});
-    const layer2 = new Layer({name});
+    const layer1 = new LayerForTest({name});
+    const layer2 = new LayerForTest({name});
     const output = layer2.apply(layer1.apply(inputTensor)) as SymbolicTensor;
     const makeContainer = () => {
       // tslint:disable-next-line:no-unused-expression
-      new Container({inputs: [inputTensor], outputs: [output]});
+      new ContainerForTest({inputs: [inputTensor], outputs: [output]});
     };
     expect(makeContainer).toThrowError(/layer names should be unique/);
   });
@@ -1208,7 +1230,8 @@ describeMathCPUAndGPU('Container', () => {
     const layer2 = tfl.layers.dense({units: 1, useBias: true});
     const output = layer2.apply(layer1.apply(inputLayer)) as SymbolicTensor;
 
-    const container = new Container({inputs: [inputLayer], outputs: [output]});
+    const container =
+        new ContainerForTest({inputs: [inputLayer], outputs: [output]});
     expect(container.weights.length).toEqual(3);
     expect(container.weights[0].name).toEqual(layer1.weights[0].name);
     expect(container.weights[1].name).toEqual(layer2.weights[0].name);
@@ -1222,7 +1245,8 @@ describeMathCPUAndGPU('Container', () => {
     const layer2 = tfl.layers.dense({units: 1, useBias: true});
     const output = layer2.apply(layer1.apply(inputLayer)) as SymbolicTensor;
 
-    const container = new Container({inputs: [inputLayer], outputs: [output]});
+    const container =
+        new ContainerForTest({inputs: [inputLayer], outputs: [output]});
     expect(container.trainableWeights.length).toEqual(3);
     expect(container.trainableWeights[0].name).toEqual(layer1.weights[0].name);
     expect(container.trainableWeights[1].name).toEqual(layer2.weights[0].name);
@@ -1238,7 +1262,8 @@ describeMathCPUAndGPU('Container', () => {
     const layer2 = new Reshape({name: 'layer2', targetShape: finalShape});
     const output = layer2.apply(layer1.apply(inputLayer)) as SymbolicTensor;
 
-    const container = new Container({inputs: [inputLayer], outputs: [output]});
+    const container =
+        new ContainerForTest({inputs: [inputLayer], outputs: [output]});
     const result = container.call(K.ones([1, 1, 6]), {}) as Tensor[];
     const resultShape = [1].concat(finalShape);
     expectTensorsClose(result[0], K.ones(resultShape));
@@ -1252,7 +1277,8 @@ describeMathCPUAndGPU('Container', () => {
     const layer2 = new Reshape({name: 'layer2', targetShape: finalShape});
     const output = layer2.apply(layer1.apply(inputLayer)) as SymbolicTensor;
 
-    const container = new Container({inputs: [inputLayer], outputs: [output]});
+    const container =
+        new ContainerForTest({inputs: [inputLayer], outputs: [output]});
     const result = container.apply(K.ones([1, 1, 6])) as Tensor;
     const resultShape = [1].concat(finalShape);
     expectTensorsClose(result, K.ones(resultShape));
@@ -1266,7 +1292,8 @@ describeMathCPUAndGPU('Container', () => {
     const layer2 = new Reshape({name: 'layer2', targetShape: finalShape});
     const output = layer2.apply(layer1.apply(inputLayer)) as SymbolicTensor;
 
-    const container = new Container({inputs: [inputLayer], outputs: [output]});
+    const container =
+        new ContainerForTest({inputs: [inputLayer], outputs: [output]});
 
     const newInput = Input({shape: [1, 6]});
     const symbolicResult = container.apply(newInput);
@@ -1284,7 +1311,8 @@ describeMathCPUAndGPU('Container', () => {
     const inputLayer = Input({shape: inputShape});
     const layer = new Reshape({targetShape: finalShape});
     const output = layer.apply(inputLayer) as SymbolicTensor;
-    const container = new Container({inputs: [inputLayer], outputs: [output]});
+    const container =
+        new ContainerForTest({inputs: [inputLayer], outputs: [output]});
     expect(container.computeOutputShape([1].concat(inputShape))).toEqual([
       1
     ].concat(finalShape));
@@ -1303,7 +1331,7 @@ describeMathCPUAndGPU('Container', () => {
         tfl.layers.dense({units: 2, useBias: false, name: 'denseLayer'});
     const layer2Output = layer2.apply(layer1Output) as SymbolicTensor;
     const container =
-        new Container({inputs: [inputLayer], outputs: [layer2Output]});
+        new ContainerForTest({inputs: [inputLayer], outputs: [layer2Output]});
     expect(container.trainableWeights.length).toEqual(1);
   });
 
@@ -1320,7 +1348,7 @@ describeMathCPUAndGPU('Container', () => {
         tfl.layers.dense({units: 2, useBias: false, name: 'denseLayer'});
     const layer2Output = layer2.apply(layer1Output) as SymbolicTensor;
     const container =
-        new Container({inputs: [inputLayer], outputs: [layer2Output]});
+        new ContainerForTest({inputs: [inputLayer], outputs: [layer2Output]});
     return [container, [container.inputLayers[0], layer1, layer2]];
   }
 
@@ -1377,7 +1405,7 @@ describeMathCPUAndGPU('Container.calculateLosses', () => {
     });
     const layer2Output = denseLayer.apply(inputLayer) as SymbolicTensor;
     const container =
-        new Container({inputs: [inputLayer], outputs: [layer2Output]});
+        new ContainerForTest({inputs: [inputLayer], outputs: [layer2Output]});
     return [container, [denseLayer]];
   }
 
@@ -1399,8 +1427,8 @@ describeMathCPUAndGPU('Container.calculateLosses', () => {
 describe('getSourceInputs()', () => {
   it('returns the single source input', () => {
     const inputTensor = Input({shape: [1]});
-    const layer1 = new Layer({name: 'layer1'});
-    const layer2 = new Layer({name: 'layer2'});
+    const layer1 = new LayerForTest({name: 'layer1'});
+    const layer2 = new LayerForTest({name: 'layer2'});
     const output = layer2.apply(layer1.apply(inputTensor)) as SymbolicTensor;
     expect(getSourceInputs(output)).toEqual([inputTensor]);
   });
@@ -1408,7 +1436,7 @@ describe('getSourceInputs()', () => {
   it('returns all inputs', () => {
     const input1 = Input({shape: [1], name: 'input1'});
     const input2 = Input({shape: [1], name: 'input2'});
-    const layer = new Layer({});
+    const layer = new LayerForTest({});
     const output1 = layer.apply(input1) as SymbolicTensor;
     const output2 = layer.apply(input2) as SymbolicTensor;
     expect(getSourceInputs(output1)).toEqual([input1]);

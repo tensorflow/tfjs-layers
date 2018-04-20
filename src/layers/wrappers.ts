@@ -231,6 +231,9 @@ export class TimeDistributed extends Wrapper {
     // TODO(cais): Add useLearningPhase.
     return y;
   }
+  getClassName(): string {
+    return 'TimeDistributed';
+  }
 }
 generic_utils.ClassNameMap.register('TimeDistributed', TimeDistributed);
 
@@ -276,8 +279,10 @@ export class Bidirectional extends Wrapper {
     const layerConfig = config.layer.getConfig();
     layerConfig['goBackwards'] =
         layerConfig['goBackwards'] === true ? false : true;
-    this.backwardLayer = deserialize(
-        {className: config.layer.constructor.name, config: layerConfig});
+    this.backwardLayer =
+        deserialize(
+            {className: config.layer.constructor.name, config: layerConfig}) as
+        RNN;
     this.forwardLayer.name = 'forward_' + this.forwardLayer.name;
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
     this.mergeMode = config.mergeMode;
@@ -461,6 +466,9 @@ export class Bidirectional extends Wrapper {
   get nonTrainableWeights(): LayerVariable[] {
     return this.forwardLayer.nonTrainableWeights.concat(
         this.backwardLayer.nonTrainableWeights);
+  }
+  getClassName(): string {
+    return 'Bidirectional';
   }
 
   // TODO(cais): Implement constraints().
