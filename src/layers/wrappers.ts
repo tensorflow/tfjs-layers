@@ -116,7 +116,7 @@ export abstract class Wrapper extends Layer {
   getConfig(): ConfigDict {
     const config: ConfigDict = {
       'layer': {
-        'className': this.layer.constructor.name,
+        'className': this.layer.getClassName(),
         'config': this.layer.getConfig(),
       }
     };
@@ -281,7 +281,7 @@ export class Bidirectional extends Wrapper {
         layerConfig['goBackwards'] === true ? false : true;
     this.backwardLayer =
         deserialize(
-            {className: config.layer.constructor.name, config: layerConfig}) as
+            {className: config.layer.getClassName(), config: layerConfig}) as
         RNN;
     this.forwardLayer.name = 'forward_' + this.forwardLayer.name;
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;

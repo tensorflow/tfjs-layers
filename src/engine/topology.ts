@@ -397,7 +397,7 @@ export abstract class Layer extends Serializable {
 
     let name = config.name;
     if (!name) {
-      const prefix = this.constructor.name;
+      const prefix = this.getClassName();
       name = generic_utils.toSnakeCase(prefix) + '_' + K.getUid(prefix);
     }
     this.name = name;
@@ -1556,7 +1556,7 @@ export abstract class Container extends Layer {
     super({});
     this.name = config.name;
     if (this.name == null) {
-      const prefix = this.constructor.name.toLowerCase();
+      const prefix = this.getClassName().toLowerCase();
       this.name = K.getUid(prefix);
     }
 
@@ -1668,7 +1668,7 @@ export abstract class Container extends Layer {
             'Input layers to a Model must be InputLayer objects. ' +
             `Received inputs: ${config.inputs}. ` +
             `Input ${i} (0-based) originates ` +
-            `from layer type ${layer.constructor.name}.`);
+            `from layer type ${layer.getClassName()}.`);
       }
       this.inputNames.push(layer.name);
       this.feedInputShapes.push(layer.batchInputShape);
@@ -2014,7 +2014,7 @@ export abstract class Container extends Layer {
   private updatedConfig(): ConfigDict {
     const theConfig = this.getConfig();
     const modelConfig: ConfigDict = {
-      className: this.constructor.name,
+      className: this.getClassName(),
       config: theConfig,
       // TODO(nielsene): Replace with Version constant once a
       // release workflow and versioning approach are selected.

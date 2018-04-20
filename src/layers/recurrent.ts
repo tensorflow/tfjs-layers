@@ -637,7 +637,7 @@ export class RNN extends Layer {
     }
     const cellConfig = this.cell.getConfig();
     config.cell = {
-      className: this.cell.constructor.name,
+      className: this.cell.getClassName(),
       config: cellConfig,
     };
     const baseConfig = super.getConfig();
@@ -1113,7 +1113,7 @@ export class SimpleRNN extends RNN {
   }
 
   getClassName(): string {
-    return 'SimlpeRNN';
+    return 'SimpleRNN';
   }
 
   getConfig(): ConfigDict {
@@ -2193,7 +2193,7 @@ export class StackedRNNCells extends RNNCell {
     const cellConfigs: ConfigDict[] = [];
     for (const cell of this.cells) {
       cellConfigs.push({
-        'className': this.constructor.name,
+        'className': this.getClassName(),
         'config': cell.getConfig(),
       });
     }

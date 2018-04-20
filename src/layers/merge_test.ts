@@ -76,7 +76,7 @@ describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
 
 describeMathCPUAndGPU('Add-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(add().constructor.name).toEqual('Add');
+    expect((add() as Layer).getClassName()).toEqual('Add');
   });
 
   it('Calling with config arg returns Layer', () => {
@@ -101,7 +101,7 @@ describeMathCPUAndGPU('Add-Functional', () => {
 
 describeMathCPUAndGPU('Multiply-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(multiply().constructor.name).toEqual('Multiply');
+    expect((multiply() as Layer).getClassName()).toEqual('Multiply');
   });
 
   it('Calling with config arg returns Layer', () => {
@@ -127,7 +127,7 @@ describeMathCPUAndGPU('Multiply-Functional', () => {
 
 describeMathCPUAndGPU('Average-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(average().constructor.name).toEqual('Average');
+    expect((average() as Layer).getClassName()).toEqual('Average');
   });
 
   it('Calling with config arg returns Layer', () => {
@@ -153,7 +153,7 @@ describeMathCPUAndGPU('Average-Functional', () => {
 
 describeMathCPUAndGPU('Maximum-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(maximum().constructor.name).toEqual('Maximum');
+    expect((maximum() as Layer).getClassName()).toEqual('Maximum');
   });
 
   it('Calling with config arg returns Layer', () => {
@@ -179,7 +179,7 @@ describeMathCPUAndGPU('Maximum-Functional', () => {
 
 describeMathCPUAndGPU('Minimum-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(minimum().constructor.name).toEqual('Minimum');
+    expect((minimum() as Layer).getClassName()).toEqual('Minimum');
   });
 
   it('Calling with config arg returns Layer', () => {
@@ -205,7 +205,7 @@ describeMathCPUAndGPU('Minimum-Functional', () => {
 
 describeMathCPUAndGPU('Concatenate-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(concatenate().constructor.name).toEqual('Concatenate');
+    expect((concatenate() as Layer).getClassName()).toEqual('Concatenate');
   });
 
   it('Calling with config arg returns Layer', () => {
