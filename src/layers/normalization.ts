@@ -269,6 +269,10 @@ export class BatchNormalization extends Layer {
     return normedTraining;
   }
 
+  getClassName(): string {
+    return 'BatchNormalization';
+  }
+
   getConfig(): ConfigDict {
     const config: ConfigDict = {
       axis: this.axis,
