@@ -1377,8 +1377,6 @@ export function cos(x: ConcreteTensor): Tensor {
 export function batchNormalization(
     x: Tensor, mean: Tensor, variance: Tensor, beta?: Tensor, gamma?: Tensor,
     epsilon = 1e-3): Tensor {
-  // console.log(
-  //     `K.batchNormalization: beta = ${beta}, gamma = ${gamma}`);  // DEBUG
   let out: Tensor;
   if (ndim(x) === 2) {
     out = tfc.batchNormalization2d(
@@ -1401,12 +1399,6 @@ export function batchNormalization(
         `batchNormalization is not implememnted for array of rank ${ndim(x)} ` +
         `yet`);
   }
-  // if (gamma != null) {
-  //   out = multiply(out, gamma);
-  // }
-  // if (beta != null) {
-  //   out = add(out, beta);
-  // }
   return out;
 }
 
