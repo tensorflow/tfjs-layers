@@ -17,7 +17,7 @@ import {DType, LayerVariable, NamedTensorMap, Shape} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {execute, FeedDict} from './executor';
-import {Container, getSourceInputs, InputSpec, Layer, LayerConfig, loadWeightsFromJson, loadWeightsFromNamedTensorMap, Node} from './topology';
+import {Container, getSourceInputs, InputLayer, InputSpec, Layer, LayerConfig, loadWeightsFromJson, loadWeightsFromNamedTensorMap, Node} from './topology';
 // tslint:enable
 
 // const Layer = tfl.layers.Layer;
@@ -798,7 +798,7 @@ describeMathCPU('InputLayer', () => {
   });
   describe('initialized with only an inputShape', () => {
     const inputShape = [1];
-    const inputLayer = tfl.layers.inputLayer({inputShape});
+    const inputLayer = tfl.layers.inputLayer({inputShape}) as InputLayer;
 
     it('is not trainable.', () => {
       expect(inputLayer.trainable).toBe(false);
@@ -921,7 +921,8 @@ describeMathCPU('InputLayer', () => {
 
   for (const sparse of [true, false]) {
     it('uses config.sparse during initialization.', () => {
-      const inputLayer = tfl.layers.inputLayer({inputShape: [1], sparse});
+      const inputLayer =
+          tfl.layers.inputLayer({inputShape: [1], sparse}) as InputLayer;
       expect(inputLayer.sparse).toEqual(sparse);
     });
   }

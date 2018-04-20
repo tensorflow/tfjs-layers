@@ -29,7 +29,7 @@ import {BatchNormalization, BatchNormalizationLayerConfig} from './layers/normal
 import {ZeroPadding2D, ZeroPadding2DLayerConfig} from './layers/padding';
 import {AveragePooling1D, AveragePooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerConfig, MaxPooling1D, MaxPooling2D, Pooling1DLayerConfig, Pooling2DLayerConfig} from './layers/pooling';
 import {GRU, GRUCell, GRUCellLayerConfig, GRULayerConfig, LSTM, LSTMCell, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNCell, RNNLayerConfig, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig, StackedRNNCells, StackedRNNCellsConfig} from './layers/recurrent';
-import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, WrapperLayerConfig} from './layers/wrappers';
+import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, Wrapper, WrapperLayerConfig} from './layers/wrappers';
 import {loadModelInternal, Sequential, SequentialConfig} from './models';
 import {l1, L1Config, L1L2, L1L2Config, l2, L2Config, Regularizer} from './regularizers';
 import {SymbolicTensor} from './types';
@@ -184,7 +184,7 @@ export class LayerExports {
     useDocsFrom: 'InputLayer',
     configParamIndices: [0]
   })
-  static inputLayer(config: InputLayerConfig): InputLayer {
+  static inputLayer(config: InputLayerConfig): Layer {
     return new InputLayer(config);
   }
 
@@ -672,7 +672,7 @@ export class LayerExports {
     useDocsFrom: 'Bidirectional',
     configParamIndices: [0]
   })
-  static bidirectional(config: BidirectionalLayerConfig): Bidirectional {
+  static bidirectional(config: BidirectionalLayerConfig): Wrapper {
     return new Bidirectional(config);
   }
 
