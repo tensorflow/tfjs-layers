@@ -108,7 +108,7 @@ describeMathCPUAndGPU('BatchNormalization Layers: Tensor', () => {
     expectTensorsClose(layer.getWeights()[1], onesLike(layer.getWeights()[1]));
   });
 
-  it('Fit: BatchNorm Layer Only', async done => {
+  it('Fit: 2D, BatchNorm Layer Only', async done => {
     // Use the following Python code to get the reference values for assertion:
     // ```python
     // import keras
@@ -156,8 +156,9 @@ describeMathCPUAndGPU('BatchNormalization Layers: Tensor', () => {
     }
   });
 
-  it('Fit: BatchNorm Layer sandwiched between two Dense Layers', async done => {
-    // Use the following Python code to get the reference values for assertion:
+  it('Fit: 2D, BatchNorm Layer between two Dense Layers', async done => {
+    // Use the following Python code to get the reference values for
+    // assertion:
     // ```python
     // import keras
     // from keras import backend as keras_backend
@@ -166,8 +167,8 @@ describeMathCPUAndGPU('BatchNormalization Layers: Tensor', () => {
     // layer1 = keras.layers.Dense(
     //     4, kernel_initializer='ones', use_bias=False, input_shape=(4,))
     // layer2 = keras.layers.BatchNormalization()
-    // layer3 = keras.layers.Dense(1, kernel_initializer='ones', use_bias=False)
-    // model = keras.Sequential([layer1, layer2, layer3])
+    // layer3 = keras.layers.Dense(1, kernel_initializer='ones',
+    // use_bias=False) model = keras.Sequential([layer1, layer2, layer3])
     //
     // optimizer = keras.optimizers.sgd(lr=0.1)
     // model.compile(loss='mean_squared_error', optimizer=optimizer)
@@ -228,6 +229,35 @@ describeMathCPUAndGPU('BatchNormalization Layers: Tensor', () => {
           tensor2d(
               [[0.18779878], [0.18779878], [0.18779878], [0.18779878]],
               [4, 1]));
+      done();
+    } catch (err) {
+      console.error(err.stack);
+    }
+  });
+
+  it('Fit: 3D, BatchNorm Layer Only', async done => {
+    // Use the following Python code to get the reference values for assertion:
+    // ```python
+    // ```
+    const layer1 = tfl.layers.batchNormalization({inputShape: [2, 2]});
+    const model = tfl.sequential({layers: [layer1]});
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xs1 = tensor3d(
+        [[[1, 2], [3, 4]], [[2, 4], [6, 8]], [[12, 11], [10, 9]]], [3, 2, 2]);
+    const ys = zeros([3, 2, 2]);
+    try {
+      const history = await model.fit(xs1, ys, {epochs: 2, batchSize: 3});
+      expect(history.history['loss'][0]).toBeCloseTo(0.9999215006828308);
+      expect(history.history['loss'][1]).toBeCloseTo(0.980024516582489);
+      const gammaValue = layer1.getWeights()[0];
+      expectTensorsClose(gammaValue, [0.98010117, 0.98010194]);
+      const betaValue = layer1.getWeights()[1];
+      expectTensorsClose(betaValue, [-1.1175870e-09, 8.1956386e-10]);
+      const movingMeanValue = layer1.getWeights()[2];
+      expectTensorsClose(movingMeanValue, [5.6666765, 6.333345]);
+      const movingVarianceValue = layer1.getWeights()[3];
+      expectTensorsClose(movingVarianceValue, [20.270758, 12.269142]);
       done();
     } catch (err) {
       console.error(err.stack);
