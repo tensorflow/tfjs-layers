@@ -14,6 +14,7 @@
 
 import {scalar, tensor1d, tensor2d} from '@tensorflow/tfjs-core';
 
+import * as tfl from './index';
 import {binaryAccuracy, categoricalAccuracy, get} from './metrics';
 import {describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 
@@ -21,27 +22,39 @@ describeMathCPUAndGPU('binaryAccuracy', () => {
   it('1D exact', () => {
     const x = tensor1d([1, 1, 1, 1, 0, 0, 0, 0]);
     const y = tensor1d([1, 0, 1, 0, 0, 1, 0, 1]);
-    const accuracy = binaryAccuracy(x, y);
+    const accuracy = tfl.metrics.binaryAccuracy(x, y);
     expectTensorsClose(accuracy, scalar(0.5));
   });
   it('2D thresholded', () => {
     const x = tensor1d([1, 1, 1, 1, 0, 0, 0, 0]);
     const y = tensor1d([0.2, 0.4, 0.6, 0.8, 0.2, 0.3, 0.4, 0.7]);
-    const accuracy = binaryAccuracy(x, y);
+    const accuracy = tfl.metrics.binaryAccuracy(x, y);
     expectTensorsClose(accuracy, scalar(5 / 8));
   });
   it('2D exact', () => {
     const x = tensor2d([[1, 1, 1, 1], [0, 0, 0, 0]], [2, 4]);
     const y = tensor2d([[1, 0, 1, 0], [0, 0, 0, 1]], [2, 4]);
-    const accuracy = binaryAccuracy(x, y);
+    const accuracy = tfl.metrics.binaryAccuracy(x, y);
     expectTensorsClose(accuracy, tensor1d([0.5, 0.75]));
   });
   it('2D thresholded', () => {
     const x = tensor2d([[1, 1], [1, 1], [0, 0], [0, 0]], [4, 2]);
     const y =
         tensor2d([[0.2, 0.4], [0.6, 0.8], [0.2, 0.3], [0.4, 0.7]], [4, 2]);
-    const accuracy = binaryAccuracy(x, y);
+    const accuracy = tfl.metrics.binaryAccuracy(x, y);
     expectTensorsClose(accuracy, tensor1d([0, 1, 1, 0.5]));
+  });
+});
+
+describeMathCPUAndGPU('binaryCrossentropy', () => {
+  it('2D single-value yTrue', () => {
+    const x = tensor2d([[0], [0], [0], [1], [1], [1]]);
+    const y = tensor2d([[0], [0.5], [1], [0], [0.5], [1]]);
+    const accuracy = tfl.metrics.binaryCrossentropy(x, y);
+    expectTensorsClose(accuracy, tensor1d([
+                         1.00000015e-07, 6.93147182e-01, 1.59423847e+01,
+                         1.61180954e+01, 6.93147182e-01, 1.19209332e-07
+                       ]));
   });
 });
 
@@ -49,7 +62,7 @@ describeMathCPUAndGPU('categoricalAccuracy', () => {
   it('1D', () => {
     const x = tensor1d([0, 0, 0, 1]);
     const y = tensor1d([0.1, 0.8, 0.05, 0.05]);
-    const accuracy = categoricalAccuracy(x, y);
+    const accuracy = tfl.metrics.categoricalAccuracy(x, y);
     expect(accuracy.dtype).toEqual('float32');
     expect(accuracy.shape).toEqual([]);
     expect(Array.from(accuracy.dataSync())).toEqual([0]);
@@ -58,10 +71,27 @@ describeMathCPUAndGPU('categoricalAccuracy', () => {
     const x = tensor2d([[0, 0, 0, 1], [0, 0, 0, 1]], [2, 4]);
     const y =
         tensor2d([[0.1, 0.8, 0.05, 0.05], [0.1, 0.05, 0.05, 0.8]], [2, 4]);
-    const accuracy = categoricalAccuracy(x, y);
+    const accuracy = tfl.metrics.categoricalAccuracy(x, y);
     expect(accuracy.dtype).toEqual('float32');
     expect(accuracy.shape).toEqual([2]);
     expect(Array.from(accuracy.dataSync())).toEqual([0, 1]);
+  });
+});
+
+describeMathCPUAndGPU('categoricalCrossentropy metric', () => {
+  it('1D', () => {
+    const x = tensor1d([0, 0, 0, 1]);
+    const y = tensor1d([0.1, 0.8, 0.05, 0.05]);
+    const accuracy = tfl.metrics.categoricalCrossentropy(x, y);
+    expect(accuracy.dtype).toEqual('float32');
+    expectTensorsClose(accuracy, scalar(2.995732));
+  });
+  it('2D', () => {
+    const x = tensor2d([[0, 0, 0, 1], [0, 0, 0, 1]]);
+    const y = tensor2d([[0.1, 0.8, 0.05, 0.05], [0.1, 0.05, 0.05, 0.8]]);
+    const accuracy = tfl.metrics.categoricalCrossentropy(x, y);
+    expect(accuracy.dtype).toEqual('float32');
+    expectTensorsClose(accuracy, tensor1d([2.995732, 0.22314353]));
   });
 });
 
