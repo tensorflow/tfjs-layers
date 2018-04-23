@@ -555,4 +555,4 @@ export class Sequential extends Model {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Sequential', Sequential);
+generic_utils.ClassNameMap.register(Sequential);

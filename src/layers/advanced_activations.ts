@@ -78,7 +78,7 @@ export class LeakyReLU extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('LeakyReLU', LeakyReLU);
+generic_utils.ClassNameMap.register(LeakyReLU);
 
 // TODO(cais): Implement PReLU
 
@@ -148,7 +148,7 @@ export class ELU extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('ELU', ELU);
+generic_utils.ClassNameMap.register(ELU);
 
 export interface ThresholdedReLULayerConfig extends LayerConfig {
   /**
@@ -212,7 +212,7 @@ export class ThresholdedReLU extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('ThresholdedReLU', ThresholdedReLU);
+generic_utils.ClassNameMap.register(ThresholdedReLU);
 
 export interface SoftmaxLayerConfig extends LayerConfig {
   /**
@@ -267,4 +267,4 @@ export class Softmax extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Softmax', Softmax);
+generic_utils.ClassNameMap.register(Softmax);

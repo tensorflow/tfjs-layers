@@ -126,7 +126,7 @@ export class Dropout extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Dropout', Dropout);
+generic_utils.ClassNameMap.register(Dropout);
 
 export interface DenseLayerConfig extends LayerConfig {
   /** Positive integer, dimensionality of the output space. */
@@ -319,7 +319,7 @@ export class Dense extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Dense', Dense);
+generic_utils.ClassNameMap.register(Dense);
 
 /**
  * Flattens the input. Does not affect the batch size.
@@ -368,7 +368,7 @@ export class Flatten extends Layer {
     return K.batchFlatten(generic_utils.getExactlyOneTensor(inputs));
   }
 }
-generic_utils.ClassNameMap.register('Flatten', Flatten);
+generic_utils.ClassNameMap.register(Flatten);
 
 export interface ActivationLayerConfig extends LayerConfig {
   /**
@@ -400,7 +400,7 @@ export class Activation extends Layer {
     return this.activation(input);
   }
 }
-generic_utils.ClassNameMap.register('Activation', Activation);
+generic_utils.ClassNameMap.register(Activation);
 
 export interface ReshapeLayerConfig extends LayerConfig {
   /** The target shape. Does not include the batch axis. */
@@ -450,7 +450,7 @@ export class RepeatVector extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('RepeatVector', RepeatVector);
+generic_utils.ClassNameMap.register(RepeatVector);
 
 
 /**
@@ -562,4 +562,4 @@ export class Reshape extends Layer {
     return K.reshape(input, outputShape);
   }
 }
-generic_utils.ClassNameMap.register('Reshape', Reshape);
+generic_utils.ClassNameMap.register(Reshape);

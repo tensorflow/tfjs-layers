@@ -99,7 +99,7 @@ export class MaxNorm extends Constraint {
     return {maxValue: this.maxValue, axis: this.axis};
   }
 }
-ClassNameMap.register('MaxNorm', MaxNorm);
+ClassNameMap.register(MaxNorm);
 
 export interface UnitNormConfig {
   /**
@@ -145,7 +145,7 @@ export class UnitNorm extends Constraint {
     return {axis: this.axis};
   }
 }
-ClassNameMap.register('UnitNorm', UnitNorm);
+ClassNameMap.register(UnitNorm);
 
 /**
  * Constains the weight to be non-negative.
@@ -158,7 +158,7 @@ export class NonNeg extends Constraint {
     return 'NonNeg';
   }
 }
-ClassNameMap.register('NonNeg', NonNeg);
+ClassNameMap.register(NonNeg);
 
 export interface MinMaxNormConfig {
   /**
@@ -239,7 +239,7 @@ export class MinMaxNorm extends Constraint {
     };
   }
 }
-ClassNameMap.register('MinMaxNorm', MinMaxNorm);
+ClassNameMap.register(MinMaxNorm);
 
 /** @docinline */
 export type ConstraintIdentifier =

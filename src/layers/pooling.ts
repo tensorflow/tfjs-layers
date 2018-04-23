@@ -125,7 +125,7 @@ export class MaxPooling1D extends Pooling1D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
-generic_utils.ClassNameMap.register('MaxPooling1D', MaxPooling1D);
+generic_utils.ClassNameMap.register(MaxPooling1D);
 
 /**
  * Average pooling operation for spatial data.
@@ -153,7 +153,7 @@ export class AveragePooling1D extends Pooling1D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-generic_utils.ClassNameMap.register('AveragePooling1D', AveragePooling1D);
+generic_utils.ClassNameMap.register(AveragePooling1D);
 
 export interface Pooling2DLayerConfig extends LayerConfig {
   /**
@@ -285,7 +285,7 @@ export class MaxPooling2D extends Pooling2D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
-generic_utils.ClassNameMap.register('MaxPooling2D', MaxPooling2D);
+generic_utils.ClassNameMap.register(MaxPooling2D);
 
 /**
  * Average pooling operation for spatial data.
@@ -325,7 +325,7 @@ export class AveragePooling2D extends Pooling2D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-generic_utils.ClassNameMap.register('AveragePooling2D', AveragePooling2D);
+generic_utils.ClassNameMap.register(AveragePooling2D);
 
 /**
  * Abstract class for different global pooling 1D layers.
@@ -368,8 +368,7 @@ export class GlobalAveragePooling1D extends GlobalPooling1D {
     return K.mean(input, 1);
   }
 }
-generic_utils.ClassNameMap.register(
-    'GlobalAveragePooling1D', GlobalAveragePooling1D);
+generic_utils.ClassNameMap.register(GlobalAveragePooling1D);
 
 /**
  * Global max pooling operation for temporal data.
@@ -393,7 +392,7 @@ export class GlobalMaxPooling1D extends GlobalPooling1D {
     return K.max(input, 1);
   }
 }
-generic_utils.ClassNameMap.register('GlobalMaxPooling1D', GlobalMaxPooling1D);
+generic_utils.ClassNameMap.register(GlobalMaxPooling1D);
 
 export interface GlobalPooling2DLayerConfig extends LayerConfig {
   /**
@@ -468,8 +467,7 @@ export class GlobalAveragePooling2D extends GlobalPooling2D {
     return 'GlobalAveragePooling2D';
   }
 }
-generic_utils.ClassNameMap.register(
-    'GlobalAveragePooling2D', GlobalAveragePooling2D);
+generic_utils.ClassNameMap.register(GlobalAveragePooling2D);
 
 /**
  * Global max pooling operation for spatial data.
@@ -497,4 +495,4 @@ export class GlobalMaxPooling2D extends GlobalPooling2D {
     return 'GlobalMaxPooling2D';
   }
 }
-generic_utils.ClassNameMap.register('GlobalMaxPooling2D', GlobalMaxPooling2D);
+generic_utils.ClassNameMap.register(GlobalMaxPooling2D);

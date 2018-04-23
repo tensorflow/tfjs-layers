@@ -181,4 +181,4 @@ export class ZeroPadding2D extends Layer {
     return config;
   }
 }
-ClassNameMap.register('ZeroPadding2D', ZeroPadding2D);
+ClassNameMap.register(ZeroPadding2D);

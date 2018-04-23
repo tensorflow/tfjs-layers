@@ -14,7 +14,8 @@
 import {Tensor} from '@tensorflow/tfjs-core';
 
 import {AssertionError, AttributeError, IndexError, ValueError} from '../errors';
-import {ConfigDict, ConfigDictValue, DType, Serializable, Shape} from '../types';
+import {ConfigDict, ConfigDictValue, DType, JsonDict, Serializable, Shape} from '../types';
+
 
 
 // tslint:enable
@@ -115,11 +116,14 @@ export function count<T>(array: T[], refernce: T) {
  */
 // tslint:disable-next-line:no-any
 export type Constructor<T> = new (...args: any[]) => T;
+export type FromConfigMethod<T> = (config: JsonDict) => T;
 
 export class ClassNameMap {
   private static instance: ClassNameMap;
-  // tslint:disable-next-line:no-any
-  pythonClassNameMap: {[className: string]: any};
+  pythonClassNameMap: {
+    [className: string]:
+        [Constructor<Serializable>, FromConfigMethod<Serializable>]
+  };
 
   private constructor() {
     this.pythonClassNameMap = {};
@@ -132,7 +136,8 @@ export class ClassNameMap {
     return ClassNameMap.instance;
   }
 
-  static register<T>(className: string, cls: Constructor<T>) {
+  static register<T extends Serializable>(cls: Constructor<T>) {
+    const className = new cls({}).getClassName();
     this.getMap().pythonClassNameMap[className] =
         // tslint:disable-next-line:no-any
         [cls, (cls as any).fromConfig];

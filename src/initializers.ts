@@ -90,7 +90,7 @@ export class Zeros extends Initializer {
     return K.zeros(shape, dtype);
   }
 }
-ClassNameMap.register('Zeros', Zeros);
+ClassNameMap.register(Zeros);
 
 /**
  * Initializer that generates tensors initialized to 1.
@@ -103,7 +103,7 @@ export class Ones extends Initializer {
     return K.ones(shape, dtype);
   }
 }
-ClassNameMap.register('Ones', Ones);
+ClassNameMap.register(Ones);
 
 export interface ConstantConfig {
   /** The value for each element in the variable. */
@@ -135,7 +135,7 @@ export class Constant extends Initializer {
     };
   }
 }
-ClassNameMap.register('Constant', Constant);
+ClassNameMap.register(Constant);
 
 export interface RandomUniformConfig {
   /** Lower bound of the range of random values to generate. */
@@ -179,7 +179,7 @@ export class RandomUniform extends Initializer {
     return {minval: this.minval, maxval: this.maxval, seed: this.seed};
   }
 }
-ClassNameMap.register('RandomUniform', RandomUniform);
+ClassNameMap.register(RandomUniform);
 
 export interface RandomNormalConfig {
   /** Mean of the random values to generate. */
@@ -219,7 +219,7 @@ export class RandomNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-ClassNameMap.register('RandomNormal', RandomNormal);
+ClassNameMap.register(RandomNormal);
 
 export interface TruncatedNormalConfig {
   /** Mean of the random values to generate. */
@@ -264,7 +264,7 @@ export class TruncatedNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-ClassNameMap.register('TruncatedNormal', TruncatedNormal);
+ClassNameMap.register(TruncatedNormal);
 
 export interface IdentityConfig {
   /**
@@ -299,7 +299,7 @@ export class Identity extends Initializer {
     return {gain: this.gain.get()};
   }
 }
-ClassNameMap.register('Identity', Identity);
+ClassNameMap.register(Identity);
 
 /**
  * Computes the number of input and output units for a weight shape.
@@ -421,7 +421,7 @@ export class VarianceScaling extends Initializer {
     };
   }
 }
-ClassNameMap.register('VarianceScaling', VarianceScaling);
+ClassNameMap.register(VarianceScaling);
 
 export interface SeedOnlyInitializerConfig {
   /** Random number generator seed. */
@@ -456,7 +456,7 @@ export class GlorotUniform extends VarianceScaling {
     });
   }
 }
-ClassNameMap.register('GlorotUniform', GlorotUniform);
+ClassNameMap.register(GlorotUniform);
 
 /**
  * Glorot normal initializer, also called Xavier normal initializer.
@@ -486,7 +486,7 @@ export class GlorotNormal extends VarianceScaling {
     });
   }
 }
-ClassNameMap.register('GlorotNormal', GlorotNormal);
+ClassNameMap.register(GlorotNormal);
 
 /**
  * He normal initializer.
@@ -504,7 +504,7 @@ export class HeNormal extends VarianceScaling {
         {scale: 2.0, mode: 'fanIn', distribution: 'normal', seed: config.seed});
   }
 }
-ClassNameMap.register('HeNormal', HeNormal);
+ClassNameMap.register(HeNormal);
 
 /**
  * LeCun normal initializer.
@@ -523,7 +523,7 @@ export class LeCunNormal extends VarianceScaling {
         {scale: 1.0, mode: 'fanIn', distribution: 'normal', seed: config.seed});
   }
 }
-ClassNameMap.register('LeCunNormal', LeCunNormal);
+ClassNameMap.register(LeCunNormal);
 
 export interface OrthogonalConfig extends SeedOnlyInitializerConfig {
   /**
@@ -583,7 +583,7 @@ export class Orthogonal extends Initializer {
     };
   }
 }
-ClassNameMap.register('Orthogonal', Orthogonal);
+ClassNameMap.register(Orthogonal);
 
 /** @docinline */
 export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|

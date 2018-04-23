@@ -645,7 +645,7 @@ export class RNN extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('RNN', RNN);
+generic_utils.ClassNameMap.register(RNN);
 
 /**
  * An RNNCell layer.
@@ -933,7 +933,7 @@ export class SimpleRNNCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('SimpleRNNCell', SimpleRNNCell);
+generic_utils.ClassNameMap.register(SimpleRNNCell);
 
 export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   /**
@@ -1139,7 +1139,7 @@ export class SimpleRNN extends RNN {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('SimpleRNN', SimpleRNN);
+generic_utils.ClassNameMap.register(SimpleRNN);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
@@ -1430,7 +1430,7 @@ export class GRUCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('GRUCell', GRUCell);
+generic_utils.ClassNameMap.register(GRUCell);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we inherit
 //   from that interface instead of repeating the fields here.
@@ -1587,7 +1587,7 @@ export class GRU extends RNN {
     return new cls(config);
   }
 }
-generic_utils.ClassNameMap.register('GRU', GRU);
+generic_utils.ClassNameMap.register(GRU);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
@@ -1917,7 +1917,7 @@ export class LSTMCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('LSTMCell', LSTMCell);
+generic_utils.ClassNameMap.register(LSTMCell);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we inherit
 //   from that interface instead of repeating the fields here.
@@ -2086,7 +2086,7 @@ export class LSTM extends RNN {
     return new cls(config);
   }
 }
-generic_utils.ClassNameMap.register('LSTM', LSTM);
+generic_utils.ClassNameMap.register(LSTM);
 
 export interface StackedRNNCellsConfig extends LayerConfig {
   /**
@@ -2272,4 +2272,4 @@ export class StackedRNNCells extends RNNCell {
 
   // TODO(cais): Maybe implemnt `losses` and `getLossesFor`.
 }
-generic_utils.ClassNameMap.register('StackedRNNCells', StackedRNNCells);
+generic_utils.ClassNameMap.register(StackedRNNCells);

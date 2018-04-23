@@ -266,7 +266,7 @@ export class Add extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Add', Add);
+generic_utils.ClassNameMap.register(Add);
 
 /**
  * Calculate the element-wise sum of inputs, which all have the same shape.
@@ -359,7 +359,7 @@ export class Multiply extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Multiply', Multiply);
+generic_utils.ClassNameMap.register(Multiply);
 
 /**
  * Calculate the element-wise product of inputs, which all have the same shape.
@@ -451,7 +451,7 @@ export class Average extends Merge {
     return K.scalarTimesArray(K.getScalar(1 / inputs.length), output);
   }
 }
-generic_utils.ClassNameMap.register('Average', Average);
+generic_utils.ClassNameMap.register(Average);
 
 /**
  * Calculate the element-wise arithmetic mean of inputs, which all have the same
@@ -544,7 +544,7 @@ export class Maximum extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Maximum', Maximum);
+generic_utils.ClassNameMap.register(Maximum);
 
 /**
  * Calculate the element-wise maximum of inputs, which all have the same shape.
@@ -636,7 +636,7 @@ export class Minimum extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Minimum', Minimum);
+generic_utils.ClassNameMap.register(Minimum);
 
 /**
  * Calculate the element-wise minimum of inputs, which all have the same shape.
@@ -809,7 +809,7 @@ export class Concatenate extends Merge {
   // TODO(cais): Implement computeMask();
   // TODO(cais): Add getConfig();
 }
-generic_utils.ClassNameMap.register('Concatenate', Concatenate);
+generic_utils.ClassNameMap.register(Concatenate);
 
 /**
  * Concatenate an `Array` of inputs.

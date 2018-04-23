@@ -341,7 +341,7 @@ export class Conv2D extends Conv {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Conv2D', Conv2D);
+generic_utils.ClassNameMap.register(Conv2D);
 
 /**
  * Transposed convolutional layer (sometimes called Deconvolution).
@@ -525,7 +525,7 @@ export class Conv2DTranspose extends Conv2D {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Conv2DTranspose', Conv2DTranspose);
+generic_utils.ClassNameMap.register(Conv2DTranspose);
 
 
 export interface SeparableConvLayerConfig extends ConvLayerConfig {
@@ -764,7 +764,7 @@ export class SeparableConv2D extends SeparableConv {
     return 'SeparableConv2D';
   }
 }
-generic_utils.ClassNameMap.register('SeparableConv2D', SeparableConv2D);
+generic_utils.ClassNameMap.register(SeparableConv2D);
 
 /**
  * 1D convolution layer (e.g., temporal convolution).
@@ -801,4 +801,4 @@ export class Conv1D extends Conv {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Conv1D', Conv1D);
+generic_utils.ClassNameMap.register(Conv1D);

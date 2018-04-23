@@ -93,7 +93,7 @@ export class L1L2 extends Regularizer {
     return new L1L2({l1: config.l1 as number, l2: config.l2 as number});
   }
 }
-ClassNameMap.register('L1L2', L1L2);
+ClassNameMap.register(L1L2);
 
 /**
  * Regularizer for L1 regularization.

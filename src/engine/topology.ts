@@ -1412,7 +1412,7 @@ export class InputLayer extends Layer {
     };
   }
 }
-generic_utils.ClassNameMap.register('InputLayer', InputLayer);
+generic_utils.ClassNameMap.register(InputLayer);
 
 /**
  * Config for the Input function.

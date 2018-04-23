@@ -161,4 +161,4 @@ export class DepthwiseConv2D extends Conv2D {
     }
   }
 }
-generic_utils.ClassNameMap.register('DepthwiseConv2D', DepthwiseConv2D);
+generic_utils.ClassNameMap.register(DepthwiseConv2D);
