@@ -12,7 +12,7 @@
  * Normalization layers.
  */
 
-import {movingAverage, Tensor, util} from '@tensorflow/tfjs-core';
+import {movingAverage, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -204,69 +204,72 @@ export class BatchNormalization extends Layer {
 
   // tslint:disable-next-line:no-any
   call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
-    const training = kwargs['training'] == null ? false : kwargs['training'];
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    const inputShape = K.shape(input);
-    const ndim = inputShape.length;
-    const reductionAxes = range(0, ndim);
-    const axis = this.axis >= 0 ? this.axis : (this.axis + ndim);
-    reductionAxes.splice(axis, 1);
-    const broadcastShape = generic_utils.pyListRepeat(1, ndim);
-    broadcastShape[axis] = inputShape[axis];
+    return tidy(() => {
+      const training = kwargs['training'] == null ? false : kwargs['training'];
+      const input = generic_utils.getExactlyOneTensor(inputs);
+      const inputShape = K.shape(input);
+      const ndim = inputShape.length;
+      const reductionAxes = range(0, ndim);
+      const axis = this.axis >= 0 ? this.axis : (this.axis + ndim);
+      reductionAxes.splice(axis, 1);
+      const broadcastShape = generic_utils.pyListRepeat(1, ndim);
+      broadcastShape[axis] = inputShape[axis];
 
-    const sortedReductionAxes = reductionAxes.slice();
-    sortedReductionAxes.sort();
-    const needsBroadcasting = !util.arraysEqual(
-        sortedReductionAxes, range(0, ndim).slice(0, ndim - 1));
+      const sortedReductionAxes = reductionAxes.slice();
+      sortedReductionAxes.sort();
+      const needsBroadcasting = !util.arraysEqual(
+          sortedReductionAxes, range(0, ndim).slice(0, ndim - 1));
 
-    const normalizeInference: () => Tensor = () => {
-      if (needsBroadcasting) {
-        const broadcastMovingMean =
-            K.reshape(this.movingMean.read(), broadcastShape);
-        const broadcastMovingVariance =
-            K.reshape(this.movingVariance.read(), broadcastShape);
-        const broadcastBeta =
-            this.center ? K.reshape(this.beta.read(), broadcastShape) : null;
-        const broadcastGamma =
-            this.scale ? K.reshape(this.gamma.read(), broadcastShape) : null;
-        return K.batchNormalization(
-            input, broadcastMovingMean, broadcastMovingVariance, broadcastBeta,
-            broadcastGamma, this.epsilon);
-      } else {
-        return K.batchNormalization(
-            input, this.movingMean.read(), this.movingVariance.read(),
-            this.beta == null ? null : this.beta.read(),
-            this.gamma == null ? null : this.gamma.read(), this.epsilon);
+      const normalizeInference: () => Tensor = () => {
+        if (needsBroadcasting) {
+          const broadcastMovingMean =
+              K.reshape(this.movingMean.read(), broadcastShape);
+          const broadcastMovingVariance =
+              K.reshape(this.movingVariance.read(), broadcastShape);
+          const broadcastBeta =
+              this.center ? K.reshape(this.beta.read(), broadcastShape) : null;
+          const broadcastGamma =
+              this.scale ? K.reshape(this.gamma.read(), broadcastShape) : null;
+          return K.batchNormalization(
+              input, broadcastMovingMean, broadcastMovingVariance,
+              broadcastBeta, broadcastGamma, this.epsilon);
+        } else {
+          return K.batchNormalization(
+              input, this.movingMean.read(), this.movingVariance.read(),
+              this.beta == null ? null : this.beta.read(),
+              this.gamma == null ? null : this.gamma.read(), this.epsilon);
+        }
+      };
+
+      if (!training) {
+        return normalizeInference();
       }
-    };
 
-    if (!training) {
-      return normalizeInference();
-    }
+      const [normedTraining, mean, variance] = K.normalizeBatchInTraining(
+          input, this.gamma.read(), this.beta.read(), reductionAxes,
+          this.epsilon);
 
-    const [normedTraining, mean, variance] = K.normalizeBatchInTraining(
-        input, this.gamma.read(), this.beta.read(), reductionAxes,
-        this.epsilon);
+      // Debias variance.
+      const sampleSize =
+          arrayProd(reductionAxes.map(axis => input.shape[axis]));
+      const varianceDebiased = variance.mul(
+          K.getScalar(sampleSize / (sampleSize - (1 + this.epsilon))));
 
-    // Debias variance.
-    const sampleSize = arrayProd(reductionAxes.map(axis => input.shape[axis]));
-    const varianceDebiased = variance.mul(
-        K.getScalar(sampleSize / (sampleSize - (1 + this.epsilon))));
+      // Perform updates to moving mean and moving variance for training.
+      this.stepCount++;
+      const updateMovingMeanAndVariance = () => {
+        const newMovingMean = movingAverage(
+            this.movingMean.read(), mean, this.momentum, this.stepCount);
+        this.movingMean.write(newMovingMean);
+        const newMovingVariance = movingAverage(
+            this.movingVariance.read(), varianceDebiased, this.momentum,
+            this.stepCount);
+        this.movingVariance.write(newMovingVariance);
+      };
+      updateMovingMeanAndVariance();
 
-    this.stepCount++;
-
-    // Perform updates to moving mean and moving variance for training.
-    const updateMovingMeanAndVariance = () => {
-      const newMovingMean = movingAverage(
-          this.movingMean.read(), mean, this.momentum, this.stepCount);
-      this.movingMean.write(newMovingMean);
-      const newMovingVariance = movingAverage(
-          this.movingVariance.read(), varianceDebiased, this.momentum,
-          this.stepCount);
-      this.movingVariance.write(newMovingVariance);
-    };
-    updateMovingMeanAndVariance();
-    return normedTraining;
+      return normedTraining;
+    });
   }
 
   getClassName(): string {

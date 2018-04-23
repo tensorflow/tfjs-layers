@@ -14,7 +14,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, tensor2d, Tensor3D, Tensor4D, util, variableGrads, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
+import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, tensor2d, Tensor3D, Tensor4D, tidy, util, variableGrads, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
 
 import {checkDataFormat, checkPaddingMode, checkPoolMode, DataFormat, nameScope as commonNameScope, PaddingMode, PoolMode} from '../common';
 import {Constraint} from '../constraints';
@@ -445,11 +445,14 @@ export function sliceAlongLastAxis(
 function regularNormalizeBatchInTraining(
     x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
     epsilon = 1e-3): [Tensor, Tensor, Tensor] {
-  const meanAndVariance = tfc.moments(x, reductionAxes);
-  const mean = meanAndVariance.mean;
-  const variance = meanAndVariance.variance;
-  const normed = batchNormalization(x, mean, variance, beta, gamma, epsilon);
-  return [normed, mean, variance];
+  return tidy(() => {
+           const meanAndVariance = tfc.moments(x, reductionAxes);
+           const mean = meanAndVariance.mean;
+           const variance = meanAndVariance.variance;
+           const normed =
+               batchNormalization(x, mean, variance, beta, gamma, epsilon);
+           return [normed, mean, variance];
+         }) as [Tensor, Tensor, Tensor];
 }
 
 /**
@@ -466,25 +469,29 @@ function regularNormalizeBatchInTraining(
 function broadcastNormalizeBatchInTraining(
     x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
     epsilon = 1e-3): [Tensor, Tensor, Tensor] {
-  const meanAndVariance = tfc.moments(x, reductionAxes);
-  const mean = meanAndVariance.mean;
-  const variance = meanAndVariance.variance;
-  const targetShape: number[] = [];
-  for (const axis of math_utils.range(0, ndim(x))) {
-    if (reductionAxes.indexOf(axis) !== -1) {
-      targetShape.push(1);
-    } else {
-      targetShape.push(x.shape[axis]);
-    }
-  }
-  const broadcastMean = reshape(mean, targetShape);
-  const broadcastVariance = reshape(variance, targetShape);
-  const broadcastGamma = gamma == null ? null : reshape(gamma, targetShape);
-  const broadcastBeta = beta == null ? null : reshape(beta, targetShape);
-  const normed = batchNormalization(
-      x, broadcastMean, broadcastVariance, broadcastBeta, broadcastGamma,
-      epsilon);
-  return [normed, mean, variance];
+  return tidy(() => {
+           const meanAndVariance = tfc.moments(x, reductionAxes);
+           const mean = meanAndVariance.mean;
+           const variance = meanAndVariance.variance;
+           const targetShape: number[] = [];
+           for (const axis of math_utils.range(0, ndim(x))) {
+             if (reductionAxes.indexOf(axis) !== -1) {
+               targetShape.push(1);
+             } else {
+               targetShape.push(x.shape[axis]);
+             }
+           }
+           const broadcastMean = reshape(mean, targetShape);
+           const broadcastVariance = reshape(variance, targetShape);
+           const broadcastGamma =
+               gamma == null ? null : reshape(gamma, targetShape);
+           const broadcastBeta =
+               beta == null ? null : reshape(beta, targetShape);
+           const normed = batchNormalization(
+               x, broadcastMean, broadcastVariance, broadcastBeta,
+               broadcastGamma, epsilon);
+           return [normed, mean, variance];
+         }) as [Tensor, Tensor, Tensor];
 }
 
 /**
