@@ -612,6 +612,26 @@ describeMathCPUAndGPU('sliceAlongLastAxis', () => {
 });
 
 describeMathCPUAndGPU('normalizeBatchInTraining', () => {
+  // The reference values for assertion below can be obtained with Python code
+  // as the following:
+  // ```python
+  // import keras
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // with tf.Session() as sess:
+  //   x = tf.Variable(np.array(
+  //       [[1, 2, 3, 4], [2, 4, 6, 8], [12, 11, 10, 9]], dtype=np.float32))
+  //   gamma = tf.Variable(np.array([1, 1, 1, 1], dtype=np.float32))
+  //   beta = tf.Variable(np.array([0, 0, 0, 0], dtype=np.float32))
+  //   reduction_axes = [0]
+  //   normed, mean, variance = keras.backend.normalize_batch_in_training(
+  //       x, gamma, beta, reduction_axes)
+  //   print(normed)
+  //   print(mean)
+  //   print(variance)
+  // ```
+
   it('2D, no broadcasting', () => {
     const x = tensor2d([[1, 2, 3, 4], [2, 4, 6, 8], [12, 11, 10, 9]], [3, 4]);
     const gamma = tensor1d([1, 1, 1, 1]);

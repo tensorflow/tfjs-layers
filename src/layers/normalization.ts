@@ -256,8 +256,13 @@ export class BatchNormalization extends Layer {
           K.getScalar(sampleSize / (sampleSize - (1 + this.epsilon))));
 
       // Perform updates to moving mean and moving variance for training.
-      this.stepCount++;
+      // Porting Note: In PyKeras, these updates to `movingMean` and
+      //   `movingAverage` are done as a deferred Graph, added to the `Layer`'s
+      //   `update`s using the `add_update()` method. Here we do it imperatively
+      //   and encapsulate the updates in a function that is invoked
+      //   immediately.
       const updateMovingMeanAndVariance = () => {
+        this.stepCount++;
         const newMovingMean = movingAverage(
             this.movingMean.read(), mean, this.momentum, this.stepCount);
         this.movingMean.write(newMovingMean);

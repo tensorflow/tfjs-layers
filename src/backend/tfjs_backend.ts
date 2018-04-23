@@ -434,6 +434,12 @@ export function sliceAlongLastAxis(
 /**
  * Non-broadcasting batch normalization for use in training (not inference).
  *
+ * The input is normalized to zero mean and unit variance along the
+ * `reductionAxes`, followed by scaling with `gamma` and shifted by `beta`.
+ * The result of that is returned as the first element
+ * of the returned `Array`. The other two elements are the mean and variance,
+ * respectively.
+ *
  * @param x Input tensor to be normalized.
  * @param gamma Tensor by which to scale the input.
  * @param beta Tensor by which to center the input.
@@ -457,6 +463,12 @@ function regularNormalizeBatchInTraining(
 
 /**
  * Broadcasting batch normalization for use in training (not inference).
+ *
+ * The input is normalized to zero mean and unit variance along the
+ * `reductionAxes`, followed by scaling with `gamma` and shifted by `beta`.
+ * The result of that is returned as the first element
+ * of the returned `Array`. The other two elements are the mean and variance,
+ * respectively.
  *
  * @param x Input tensor to be normalized.
  * @param gamma Tensor by which to scale the input.
