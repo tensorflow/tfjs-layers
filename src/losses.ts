@@ -19,7 +19,6 @@ import {LossOrMetricFn} from './types';
 /**
  * Loss or metric function: Mean squared error.
  *
- * Example:
  * ```js
  * const yTrue = tf.tensor2d([[0, 1], [3, 4]]);
  * const yPred = tf.tensor2d([[0, 1], [-3, -4]]);
@@ -29,9 +28,9 @@ import {LossOrMetricFn} from './types';
  *
  * Aliases: `tf.metrics.MSE`, `tf.metrics.mse`.
  *
- * @param yTrue Truth `Tensor`.
- * @param yPred Prediction `Tensor`.
- * @return Mean squared error `Tensor`.
+ * @param yTrue Truth Tensor.
+ * @param yPred Prediction Tensor.
+ * @return Mean squared error Tensor.
  */
 export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
   return K.mean(K.square(K.subtract(yPred, yTrue)), -1);
@@ -44,7 +43,6 @@ export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
  *   `mean(abs(yPred - yTrue))`,
  * wherein the `mean` is applied over feature dimensions.
  *
- * Example:
  * ```js
  * const yTrue = tf.tensor2d([[0, 1], [0, 0], [2, 3]]);
  * const yPred = tf.tensor2d([[0, 1], [0, 1], [-2, -3]]);
@@ -52,9 +50,9 @@ export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
  * mse.print();
  * ```
  *
- * @param yTrue Truth `Tensor`.
- * @param yPred Prediction `Tensor`.
- * @return Mean absolute error `Tensor`.
+ * @param yTrue Truth Tensor.
+ * @param yPred Prediction Tensor.
+ * @return Mean absolute error Tensor.
  */
 export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
   return K.mean(K.abs(K.subtract(yPred, yTrue)), -1);
@@ -63,7 +61,6 @@ export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
 /**
  * Loss or metric function: Mean absolute percentage error.
  *
- * Example:
  * ```js
  * const yTrue = tf.tensor2d([[0, 1], [10, 20]]);
  * const yPred = tf.tensor2d([[0, 1], [11, 24]]);
@@ -73,9 +70,9 @@ export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
  *
  * Aliases: `tf.metrics.MAPE`, `tf.metrics.mape`.
  *
- * @param yTrue Truth `Tensor`.
- * @param yPred Prediction `Tensor`.
- * @return Mean absolute percentage error `Tensor`.
+ * @param yTrue Truth Tensor.
+ * @param yPred Prediction Tensor.
+ * @return Mean absolute percentage error Tensor.
  */
 export function meanAbsolutePercentageError(
     yTrue: Tensor, yPred: Tensor): Tensor {
@@ -175,7 +172,6 @@ export function poisson(yTrue: Tensor, yPred: Tensor): Tensor {
  * wherein `l2Normalize()` normalize the L2 norm of the input to 1 and `*`
  * represents element-wise multiplication.
  *
- * Example:
  * ```js
  * const yTrue = tf.tensor2d([[1, 0], [1, 0]]);
  * const yPred = tf.tensor2d([[1 / Math.sqrt(2), 1 / Math.sqrt(2)], [0, 1]]);
@@ -183,9 +179,9 @@ export function poisson(yTrue: Tensor, yPred: Tensor): Tensor {
  * proximity.print();
  * ```
  *
- * @param yTrue Truth `Tensor`.
- * @param yPred Prediction `Tensor`.
- * @return Cosine proximity `Tensor`.
+ * @param yTrue Truth Tensor.
+ * @param yPred Prediction Tensor.
+ * @return Cosine proximity Tensor.
  */
 export function cosineProximity(yTrue: Tensor, yPred: Tensor): Tensor {
   const trueNormalized = K.l2Normalize(yTrue, -1);

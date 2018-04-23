@@ -41,9 +41,9 @@ import {LossOrMetricFn} from './types';
  * accuracy.print();
  * ```
  *
- * @param yTrue Binary `Tensor` of truth.
- * @param yPred Binary `Tensor` of prediction.
- * @return Accuracy `Tensor`.
+ * @param yTrue Binary Tensor of truth.
+ * @param yPred Binary Tensor of prediction.
+ * @return Accuracy Tensor.
  */
 export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
   // TODO(cais): Maybe avoid creating a new Scalar on every invocation.
@@ -63,10 +63,10 @@ export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  * accuracy.print();
  * ```
  *
- * @param yTrue Binary `Tensor` of truth: one-hot encoding of categories.
- * @param yPred Binary `Tensor` of prediction: probabilities or logits for the
+ * @param yTrue Binary Tensor of truth: one-hot encoding of categories.
+ * @param yPred Binary Tensor of prediction: probabilities or logits for the
  *   same categories as in `yTrue`.
- * @return Accuracy `Tensor`.
+ * @return Accuracy Tensor.
  */
 export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
   return K.cast(K.equal(K.argmax(yTrue, -1), K.argmax(yPred, -1)), 'float32');
@@ -83,9 +83,9 @@ export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  * crossentropy.print();
  * ```
  *
- * @param yTrue Binary `Tensor` of truth.
- * @param yPred Binary `Tensor` of prediction, probabilities for the `1` case.
- * @return Accuracy `Tensor`.
+ * @param yTrue Binary Tensor of truth.
+ * @param yPred Binary Tensor of prediction, probabilities for the `1` case.
+ * @return Accuracy Tensor.
  */
 export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
   return K.mean(K.binaryCrossentropy(yTrue, yPred), -1);
