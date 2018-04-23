@@ -19,7 +19,7 @@ import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../
 import {Initializer} from '../initializers';
 import {deserialize as deserializeLayer} from '../layers/serialization';
 import {Regularizer} from '../regularizers';
-import {ConfigDict, DType, JsonDict, LayerVariable, NamedTensorMap, RegularizerFn, Serializable, Shape, SymbolicTensor, TensorInterface} from '../types';
+import {ConfigDict, Constructor, DType, JsonDict, LayerVariable, NamedTensorMap, RegularizerFn, Serializable, Shape, SymbolicTensor, TensorInterface} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
 // tslint:enable:max-line-length
@@ -1237,8 +1237,8 @@ export abstract class Layer extends Serializable {
     return config;
   }
 
-  static fromConfig<T>(cls: generic_utils.Constructor<T>, config: ConfigDict):
-      T {
+  static fromConfig<T extends Serializable>(
+      cls: Constructor<T>, config: ConfigDict): T {
     return new cls(config);
   }
 }
@@ -1321,6 +1321,7 @@ export interface InputLayerConfig {
  * ```
  */
 export class InputLayer extends Layer {
+  static readonly className = 'InputLayer';
   sparse: boolean;
   constructor(config: InputLayerConfig) {
     super({
@@ -1401,7 +1402,7 @@ export class InputLayer extends Layer {
   }
 
   getClassName(): string {
-    return 'InputLayer';
+    return InputLayer.className;
   }
   getConfig(): ConfigDict {
     return {
@@ -2490,8 +2491,8 @@ export abstract class Container extends Layer {
    * @returns A model instance.
    * @throws ValueError: In case of improperly formatted config dict.
    */
-  static fromConfig<T>(cls: generic_utils.Constructor<T>, config: ConfigDict):
-      T {
+  static fromConfig<T extends Serializable>(
+      cls: Constructor<T>, config: ConfigDict): T {
     // Layer instances created during
     // the graph reconstruction process
     const createdLayers: {[layerName: string]: Layer} = {};

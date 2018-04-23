@@ -14,7 +14,7 @@
 import {Tensor} from '@tensorflow/tfjs-core';
 
 import {AssertionError, AttributeError, IndexError, ValueError} from '../errors';
-import {ConfigDict, ConfigDictValue, DType, JsonDict, Serializable, Shape} from '../types';
+import {ConfigDict, ConfigDictValue, Constructor, DType, FromConfigMethod, JsonDict, Serializable, Shape} from '../types';
 
 
 
@@ -109,15 +109,6 @@ export function count<T>(array: T[], refernce: T) {
   return counter;
 }
 
-/**
- * Type to represent class constructors.
- *
- * Source for this idea: https://stackoverflow.com/a/43607255
- */
-// tslint:disable-next-line:no-any
-export type Constructor<T> = new (...args: any[]) => T;
-export type FromConfigMethod<T> = (config: JsonDict) => T;
-
 export class ClassNameMap {
   private static instance: ClassNameMap;
   pythonClassNameMap: {
@@ -136,11 +127,9 @@ export class ClassNameMap {
     return ClassNameMap.instance;
   }
 
+  // tslint:disable-next-line:no-any
   static register<T extends Serializable>(cls: Constructor<T>) {
-    const className = new cls({}).getClassName();
-    this.getMap().pythonClassNameMap[className] =
-        // tslint:disable-next-line:no-any
-        [cls, (cls as any).fromConfig];
+    this.getMap().pythonClassNameMap[cls.className] = [cls, cls.fromConfig];
   }
 }
 

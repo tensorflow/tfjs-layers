@@ -56,6 +56,7 @@ export interface DropoutLayerConfig extends LayerConfig {
  * each update during training time, which helps prevent overfitting.
  */
 export class Dropout extends Layer {
+  static className = 'Dropout';
   private readonly rate: number;
   private readonly rateScalar: Scalar;
   private readonly noiseShape: number[];
@@ -112,7 +113,7 @@ export class Dropout extends Layer {
   }
 
   getClassName(): string {
-    return 'Dropout';
+    return Dropout.className;
   }
 
   getConfig(): ConfigDict {
@@ -210,6 +211,7 @@ export interface DenseLayerConfig extends LayerConfig {
  * flattened prior to the initial dot product with the kernel.
  */
 export class Dense extends Layer {
+  static className = 'Dense';
   private units: number;
   // Default activation: Linear (none).
   private activation: ActivationFn = null;
@@ -298,7 +300,7 @@ export class Dense extends Layer {
   }
 
   getClassName(): string {
-    return 'Dense';
+    return Dense.className;
   }
 
   getConfig(): ConfigDict {
@@ -339,6 +341,7 @@ generic_utils.ClassNameMap.register(Dense);
  * ```
  */
 export class Flatten extends Layer {
+  static className = 'Flatten';
   constructor(config?: LayerConfig) {
     super(config || {});
     this.inputSpec = [{minNDim: 3}];
@@ -359,7 +362,7 @@ export class Flatten extends Layer {
   }
 
   getClassName(): string {
-    return 'Flatten';
+    return Flatten.className;
   }
 
   // tslint:disable-next-line:no-any
@@ -381,6 +384,7 @@ export interface ActivationLayerConfig extends LayerConfig {
  * Applies an activation function to an output.
  */
 export class Activation extends Layer {
+  static className = 'Activation';
   activation: ActivationFn;
 
   constructor(config: ActivationLayerConfig) {
@@ -390,7 +394,7 @@ export class Activation extends Layer {
   }
 
   getClassName(): string {
-    return 'Activation';
+    return Activation.className;
   }
 
   // tslint:disable-next-line:no-any
@@ -419,6 +423,7 @@ export interface RepeatVectorLayerConfig extends LayerConfig {
  */
 // TODO(cais): Add example.
 export class RepeatVector extends Layer {
+  static className = 'RepeatVector';
   readonly n: number;
 
   constructor(config: RepeatVectorLayerConfig) {
@@ -438,7 +443,7 @@ export class RepeatVector extends Layer {
   }
 
   getClassName(): string {
-    return 'RepeatVector';
+    return RepeatVector.className;
   }
 
   getConfig(): ConfigDict {
@@ -467,6 +472,7 @@ generic_utils.ClassNameMap.register(RepeatVector);
  *    targetShape[targetShape.length - 1]].
  */
 export class Reshape extends Layer {
+  static className = 'Reshape';
   private targetShape: Shape;
 
   constructor(config: ReshapeLayerConfig) {
@@ -548,7 +554,7 @@ export class Reshape extends Layer {
   }
 
   getClassName(): string {
-    return 'Reshape';
+    return Reshape.className;
   }
 
 

@@ -16,7 +16,7 @@ import {checkDataFormat, DataFormat} from './common';
 import {NotImplementedError, ValueError} from './errors';
 import {DType, Serializable, Shape} from './types';
 import {ConfigDict, ConfigDictValue} from './types';
-import {ClassNameMap, Constructor, deserializeKerasObject, SerializableEnumRegistry, serializeKerasObject} from './utils/generic_utils';
+import {ClassNameMap, deserializeKerasObject, SerializableEnumRegistry, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
 
 // tslint:enable:max-line-length
@@ -59,10 +59,7 @@ export function checkDistribution(value?: string): void {
 @doc(
     {heading: 'Initializers', subheading: 'Classes', namespace: 'initializers'})
 export abstract class Initializer extends Serializable {
-  static fromConfig<T>(cls: Constructor<T>, config: ConfigDict): T {
-    return new cls(config);
-  }
-
+  static className = 'Override';
   public fromConfigUsesCustomObjects(): boolean {
     return false;
   }
@@ -83,8 +80,9 @@ export abstract class Initializer extends Serializable {
  * Initializer that generates tensors initialized to 0.
  */
 export class Zeros extends Initializer {
+  static className = 'Zeros';
   getClassName(): string {
-    return 'Zeros';
+    return Zeros.className;
   }
   apply(shape: Shape, dtype?: DType): Tensor {
     return K.zeros(shape, dtype);
@@ -96,8 +94,9 @@ ClassNameMap.register(Zeros);
  * Initializer that generates tensors initialized to 1.
  */
 export class Ones extends Initializer {
+  static className = 'Ones';
   getClassName(): string {
-    return 'Ones';
+    return Ones.className;
   }
   apply(shape: Shape, dtype?: DType): Tensor {
     return K.ones(shape, dtype);
@@ -114,8 +113,8 @@ export interface ConstantConfig {
  * Initializer that generates values initialized to some constant.
  */
 export class Constant extends Initializer {
+  static className = 'Constant';
   private value: number;
-
   constructor(config: ConstantConfig) {
     super();
     this.value = config.value;
@@ -126,7 +125,7 @@ export class Constant extends Initializer {
   }
 
   getClassName(): string {
-    return 'Constant';
+    return Constant.className;
   }
 
   getConfig(): ConfigDict {
@@ -154,6 +153,7 @@ export interface RandomUniformConfig {
  * maxval.
  */
 export class RandomUniform extends Initializer {
+  static className = 'RandomUniform';
   readonly DEFAULT_MINVAL = -0.05;
   readonly DEFAULT_MAXVAL = 0.05;
   private minval: number;
@@ -172,7 +172,7 @@ export class RandomUniform extends Initializer {
   }
 
   getClassName(): string {
-    return 'RandomUniform';
+    return RandomUniform.className;
   }
 
   getConfig(): ConfigDict {
@@ -195,6 +195,7 @@ export interface RandomNormalConfig {
  * distribution.
  */
 export class RandomNormal extends Initializer {
+  static className = 'RandomNormal';
   readonly DEFAULT_MEAN = 0.;
   readonly DEFAULT_STDDEV = 0.05;
   private mean: number;
@@ -213,7 +214,7 @@ export class RandomNormal extends Initializer {
   }
 
   getClassName(): string {
-    return 'RandomNormal';
+    return RandomNormal.className;
   }
   getConfig(): ConfigDict {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
@@ -239,6 +240,8 @@ export interface TruncatedNormalConfig {
  * This is the recommended initializer for neural network weights and filters.
  */
 export class TruncatedNormal extends Initializer {
+  static className = 'TruncatedNormal';
+
   readonly DEFAULT_MEAN = 0.;
   readonly DEFAULT_STDDEV = 0.05;
   private mean: number;
@@ -257,7 +260,7 @@ export class TruncatedNormal extends Initializer {
   }
 
   getClassName(): string {
-    return 'TruncatedNormal';
+    return TruncatedNormal.className;
   }
 
   getConfig(): ConfigDict {
@@ -278,6 +281,7 @@ export interface IdentityConfig {
  * Only use for square 2D matrices.
  */
 export class Identity extends Initializer {
+  static className = 'Identity';
   private gain: Scalar;
   constructor(config: IdentityConfig) {
     super();
@@ -293,7 +297,7 @@ export class Identity extends Initializer {
     }
   }
   getClassName(): string {
-    return 'Identity';
+    return Identity.className;
   }
   getConfig(): ConfigDict {
     return {gain: this.gain.get()};
@@ -363,6 +367,7 @@ export interface VarianceScalingConfig {
  * within [-limit, limit], with `limit = sqrt(3 * scale / n)`.
  */
 export class VarianceScaling extends Initializer {
+  static className = 'VarianceScaling';
   private scale: number;
   private mode: FanMode;
   private distribution: Distribution;
@@ -409,7 +414,7 @@ export class VarianceScaling extends Initializer {
     }
   }
   getClassName(): string {
-    return 'VarianceScaling';
+    return VarianceScaling.className;
   }
 
   getConfig(): ConfigDict {
@@ -452,11 +457,10 @@ export class GlorotUniform extends VarianceScaling {
       scale: 1.0,
       mode: 'fanAvg',
       distribution: 'uniform',
-      seed: config.seed
+      seed: config == null ? null : config.seed
     });
   }
 }
-ClassNameMap.register(GlorotUniform);
 
 /**
  * Glorot normal initializer, also called Xavier normal initializer.
@@ -482,11 +486,10 @@ export class GlorotNormal extends VarianceScaling {
       scale: 1.0,
       mode: 'fanAvg',
       distribution: 'normal',
-      seed: config.seed
+      seed: config == null ? null : config.seed
     });
   }
 }
-ClassNameMap.register(GlorotNormal);
 
 /**
  * He normal initializer.
@@ -500,11 +503,14 @@ ClassNameMap.register(GlorotNormal);
  */
 export class HeNormal extends VarianceScaling {
   constructor(config?: SeedOnlyInitializerConfig) {
-    super(
-        {scale: 2.0, mode: 'fanIn', distribution: 'normal', seed: config.seed});
+    super({
+      scale: 2.0,
+      mode: 'fanIn',
+      distribution: 'normal',
+      seed: config == null ? null : config.seed
+    });
   }
 }
-ClassNameMap.register(HeNormal);
 
 /**
  * LeCun normal initializer.
@@ -519,11 +525,14 @@ ClassNameMap.register(HeNormal);
  */
 export class LeCunNormal extends VarianceScaling {
   constructor(config?: SeedOnlyInitializerConfig) {
-    super(
-        {scale: 1.0, mode: 'fanIn', distribution: 'normal', seed: config.seed});
+    super({
+      scale: 1.0,
+      mode: 'fanIn',
+      distribution: 'normal',
+      seed: config == null ? null : config.seed
+    });
   }
 }
-ClassNameMap.register(LeCunNormal);
 
 export interface OrthogonalConfig extends SeedOnlyInitializerConfig {
   /**
@@ -539,6 +548,7 @@ export interface OrthogonalConfig extends SeedOnlyInitializerConfig {
  * [Saxe et al., http://arxiv.org/abs/1312.6120](http://arxiv.org/abs/1312.6120)
  */
 export class Orthogonal extends Initializer {
+  static className = 'Orthogonal';
   readonly DEFAULT_GAIN = 1;
   protected readonly gain: number;
   protected readonly seed: number;
@@ -573,7 +583,7 @@ export class Orthogonal extends Initializer {
   }
 
   getClassName(): string {
-    return 'Orthogonal';
+    return Orthogonal.className;
   }
 
   getConfig(): ConfigDict {
@@ -627,8 +637,21 @@ export function getInitializer(identifier: InitializerIdentifier|Initializer|
     const className = identifier in INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP ?
         INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP[identifier] :
         identifier;
-    const config = {className, config: {}};
-    return deserializeInitializer(config);
+    /* We have four 'helper' classes for common initializers that
+    all get serialized as 'VarianceScaling' and shouldn't go through
+    the deserializeInitializer pathway. */
+    if (className === 'GlorotUniform') {
+      return new GlorotUniform();
+    } else if (className === 'GlorotNormal') {
+      return new GlorotNormal();
+    } else if (className === 'HeNormal') {
+      return new HeNormal();
+    } else if (className === 'LeCunNormal') {
+      return new LeCunNormal();
+    } else {
+      const config = {className, config: {}};
+      return deserializeInitializer(config);
+    }
   } else if (identifier instanceof Initializer) {
     return identifier;
   } else {

@@ -321,6 +321,18 @@ export type NamedTensorMap = {
 };
 
 /**
+ * Type to represent class constructors.
+ *
+ * Source for this idea: https://stackoverflow.com/a/43607255
+ */
+// tslint:disable-next-line:no-any
+export type Constructor<T extends Serializable> = {
+  new (...args: any[]): T; className: string; fromConfig: FromConfigMethod<T>;
+};
+export type FromConfigMethod<T extends Serializable> =
+    (cls: Constructor<T>, config: JsonDict) => T;
+
+/**
  * Serializable defines the serialization contract.
  *
  * TFJS requires serializable classes to return their className when asked
@@ -344,4 +356,17 @@ export abstract class Serializable {
    * Return all the non-weight state needed to serialize this object.
    */
   abstract getConfig(): ConfigDict;
+
+  /**
+   * Creates an instance of T from a ConfigDict.
+   *
+   * This works for most descendans of serializable.  A few need to
+   * provide special handling.
+   * @param cls A Constructor for the class to instantiate.
+   * @param config The Configuration for the object.
+   */
+  static fromConfig<T extends Serializable>(
+      cls: Constructor<T>, config: ConfigDict): T {
+    return new cls(config);
+  }
 }

@@ -622,6 +622,7 @@ export interface ModelCompileConfig {
  */
 @doc({heading: 'Models', subheading: 'Classes'})
 export class Model extends Container {
+  static className = 'Model';
   optimizer: Optimizer;
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
       LossOrMetricFn[]|{[outputName: string]: LossOrMetricFn};
@@ -653,7 +654,7 @@ export class Model extends Container {
   }
 
   getClassName(): string {
-    return 'Model';
+    return Model.className;
   }
 
   /**
