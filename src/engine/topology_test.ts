@@ -1035,7 +1035,8 @@ describeMathCPUAndGPU('Container.fromConfig', () => {
       outputLayers: [] as any[]
     };
     // tslint:enable
-    const container = Container.fromConfig(ContainerForTest, config);
+    const container =
+        Container.fromConfig(ContainerForTest, config) as Container;
     expect(container.name).toEqual('test');
   });
 
@@ -1091,7 +1092,8 @@ describeMathCPUAndGPU('Container.fromConfig', () => {
       name: 'test',
       outputLayers: [['dense_2', 0, 0]]
     };
-    const container = Container.fromConfig(ContainerForTest, config);
+    const container =
+        Container.fromConfig(ContainerForTest, config) as Container;
     expect(container.name).toEqual('test');
     const allZeros = zeros([1, 32]);
     expectTensorsClose(container.apply(allZeros) as Tensor, allZeros);

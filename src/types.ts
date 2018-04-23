@@ -325,8 +325,8 @@ export type NamedTensorMap = {
  *
  * Source for this idea: https://stackoverflow.com/a/43607255
  */
-// tslint:disable-next-line:no-any
 export type Constructor<T extends Serializable> = {
+  // tslint:disable-next-line:no-any
   new (...args: any[]): T; className: string; fromConfig: FromConfigMethod<T>;
 };
 export type FromConfigMethod<T extends Serializable> =

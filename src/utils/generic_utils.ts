@@ -14,7 +14,7 @@
 import {Tensor} from '@tensorflow/tfjs-core';
 
 import {AssertionError, AttributeError, IndexError, ValueError} from '../errors';
-import {ConfigDict, ConfigDictValue, Constructor, DType, FromConfigMethod, JsonDict, Serializable, Shape} from '../types';
+import {ConfigDict, ConfigDictValue, Constructor, DType, FromConfigMethod, Serializable, Shape} from '../types';
 
 
 

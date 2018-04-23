@@ -1236,11 +1236,6 @@ export abstract class Layer extends Serializable {
     }
     return config;
   }
-
-  static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
-    return new cls(config);
-  }
 }
 
 /**

@@ -59,7 +59,6 @@ export function checkDistribution(value?: string): void {
 @doc(
     {heading: 'Initializers', subheading: 'Classes', namespace: 'initializers'})
 export abstract class Initializer extends Serializable {
-  static className = 'Override';
   public fromConfigUsesCustomObjects(): boolean {
     return false;
   }

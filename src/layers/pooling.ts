@@ -383,7 +383,7 @@ generic_utils.ClassNameMap.register(GlobalAveragePooling1D);
  * Output Shape:2D tensor with shape: `[batchSize, features]`.
  */
 export class GlobalMaxPooling1D extends GlobalPooling1D {
-  static className = 'GlobalMaxPooling1D'
+  static className = 'GlobalMaxPooling1D';
   constructor(config: LayerConfig) {
     super(config);
   }
