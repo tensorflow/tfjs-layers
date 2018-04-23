@@ -169,7 +169,7 @@ export function poisson(yTrue: Tensor, yPred: Tensor): Tensor {
  *
  * Mathematically, cosine proximity is defined as:
  *   `-sum(l2Normalize(yTrue) * l2Normalize(yPred))`,
- * wherein `l2Normalize()` normalize the L2 norm of the input to 1 and `*`
+ * wherein `l2Normalize()` normalizes the L2 norm of the input to 1 and `*`
  * represents element-wise multiplication.
  *
  * ```js

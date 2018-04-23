@@ -48,6 +48,24 @@ describeMathCPUAndGPU('binaryAccuracy', () => {
 
 describeMathCPUAndGPU('binaryCrossentropy', () => {
   it('2D single-value yTrue', () => {
+    // Use the following Python code to generate the reference values:
+    // ```python
+    // import keras
+    // import numpy as np
+    // import tensorflow as tf
+    //
+    // with tf.Session() as sess:
+    //   x = tf.Variable(np.array(
+    //       [[0], [0], [0], [1], [1], [1]],
+    //       dtype=np.float32))
+    //   y = tf.Variable(np.array(
+    //       [[0], [0.5], [1], [0], [0.5], [1]],
+    //       dtype=np.float32))
+    //   z = keras.metrics.binary_crossentropy(x, y)
+    //
+    //   sess.run(tf.global_variables_initializer())
+    //   print(sess.run(z))
+    // ```
     const x = tensor2d([[0], [0], [0], [1], [1], [1]]);
     const y = tensor2d([[0], [0.5], [1], [0], [0.5], [1]]);
     const accuracy = tfl.metrics.binaryCrossentropy(x, y);
@@ -57,6 +75,24 @@ describeMathCPUAndGPU('binaryCrossentropy', () => {
                        ]));
   });
   it('2D one-hot binary yTrue', () => {
+    // Use the following Python code to generate the reference values:
+    // ```python
+    // import keras
+    // import numpy as np
+    // import tensorflow as tf
+    //
+    // with tf.Session() as sess:
+    //   x = tf.Variable(np.array(
+    //       [[1, 0], [1, 0], [1, 0], [0, 1], [0, 1], [0, 1]],
+    //       dtype=np.float32))
+    //   y = tf.Variable(np.array(
+    //       [[1, 0], [0.5, 0.5], [0, 1], [1, 0], [0.5, 0.5], [0, 1]],
+    //       dtype=np.float32))
+    //   z = keras.metrics.binary_crossentropy(x, y)
+    //
+    //   sess.run(tf.global_variables_initializer())
+    //   print(sess.run(z))
+    // ```
     const x = tensor2d([[1, 0], [1, 0], [1, 0], [0, 1], [0, 1], [0, 1]]);
     const y =
         tensor2d([[1, 0], [0.5, 0.5], [0, 1], [1, 0], [0.5, 0.5], [0, 1]]);

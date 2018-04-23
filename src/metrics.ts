@@ -32,7 +32,9 @@ import {LossOrMetricFn} from './types';
  * ```
  *
  * `yTrue` and `yPred` can also have floating-number values between 0 and 1, in
- * which case the values will be thresholded at 0.5 to yield 0-1 values.
+ * which case the values will be thresholded at 0.5 to yield 0-1 values (i.e.,
+ * a value >= 0.5 and <= 1.0 is interpreted as 1.
+ * )
  * Example:
  * ```js
  * const x = tensor1d([1, 1, 1, 1, 0, 0, 0, 0]);
