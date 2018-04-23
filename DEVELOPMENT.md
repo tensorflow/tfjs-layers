@@ -1,5 +1,3 @@
-# Notes for TensorFlow.js Layers Developers
-
 ## Development process
 
 As a preparatory step, run `yarn` which installs all dev dependencies.
