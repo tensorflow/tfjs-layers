@@ -509,7 +509,11 @@ export interface ModelFitConfig {
 
   verbose?: ModelLoggingVerbosity;
 
-  /** List of callbacks to be called during training. */
+  /**
+   * List of callbacks to be called during training.
+   * Can be `onEpochBegin`, `onEpochEnd`, `onBatchBegin`, `onBatchEnd`,
+   * `onTrainBegin`, `onTrainEnd`.
+   */
   callbacks?: Callback[]|CustomCallbackConfig|CustomCallbackConfig[];
 
   /**
