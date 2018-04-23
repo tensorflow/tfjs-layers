@@ -127,7 +127,6 @@ export class ClassNameMap {
     return ClassNameMap.instance;
   }
 
-  // tslint:disable-next-line:no-any
   static register<T extends Serializable>(cls: Constructor<T>) {
     this.getMap().pythonClassNameMap[cls.className] = [cls, cls.fromConfig];
   }
