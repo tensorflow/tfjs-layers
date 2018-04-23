@@ -62,8 +62,8 @@ describeMathCPUAndGPU('binaryCrossentropy', () => {
         tensor2d([[1, 0], [0.5, 0.5], [0, 1], [1, 0], [0.5, 0.5], [0, 1]]);
     const accuracy = tfl.metrics.binaryCrossentropy(x, y);
     expectTensorsClose(accuracy, tensor1d([
-                         1.00000015e-07, 6.93147182e-01, 1.59423847e+01,
-                         1.61180954e+01, 6.93147182e-01, 1.19209332e-07
+                         1.0960467e-07, 6.9314718e-01, 1.6030239e+01,
+                         1.6030239e+01, 6.9314718e-01, 1.0960467e-07
                        ]));
   });
 });
