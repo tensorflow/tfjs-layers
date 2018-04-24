@@ -321,7 +321,10 @@ export type NamedTensorMap = {
 };
 
 /**
- * Type to represent class constructors.
+ * Type to represent the class-type of Serializable objects.
+ *
+ * Ie the class prototype with access to the constructor and any
+ * static members/methods.  Instance methods are not listed here.
  *
  * Source for this idea: https://stackoverflow.com/a/43607255
  */
@@ -360,7 +363,7 @@ export abstract class Serializable {
   /**
    * Creates an instance of T from a ConfigDict.
    *
-   * This works for most descendans of serializable.  A few need to
+   * This works for most descendants of serializable.  A few need to
    * provide special handling.
    * @param cls A Constructor for the class to instantiate.
    * @param config The Configuration for the object.
