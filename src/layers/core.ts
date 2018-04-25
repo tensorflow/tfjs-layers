@@ -56,6 +56,7 @@ export interface DropoutLayerConfig extends LayerConfig {
  * each update during training time, which helps prevent overfitting.
  */
 export class Dropout extends Layer {
+  static className = 'Dropout';
   private readonly rate: number;
   private readonly rateScalar: Scalar;
   private readonly noiseShape: number[];
@@ -111,10 +112,6 @@ export class Dropout extends Layer {
     return inputs;
   }
 
-  getClassName(): string {
-    return 'Dropout';
-  }
-
   getConfig(): ConfigDict {
     const config = {
       rate: this.rate,
@@ -126,7 +123,7 @@ export class Dropout extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Dropout', Dropout);
+generic_utils.ClassNameMap.register(Dropout);
 
 export interface DenseLayerConfig extends LayerConfig {
   /** Positive integer, dimensionality of the output space. */
@@ -210,6 +207,7 @@ export interface DenseLayerConfig extends LayerConfig {
  * flattened prior to the initial dot product with the kernel.
  */
 export class Dense extends Layer {
+  static className = 'Dense';
   private units: number;
   // Default activation: Linear (none).
   private activation: ActivationFn = null;
@@ -297,10 +295,6 @@ export class Dense extends Layer {
     return output;
   }
 
-  getClassName(): string {
-    return 'Dense';
-  }
-
   getConfig(): ConfigDict {
     const config: ConfigDict = {
       units: this.units,
@@ -319,7 +313,7 @@ export class Dense extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Dense', Dense);
+generic_utils.ClassNameMap.register(Dense);
 
 /**
  * Flattens the input. Does not affect the batch size.
@@ -339,6 +333,7 @@ generic_utils.ClassNameMap.register('Dense', Dense);
  * ```
  */
 export class Flatten extends Layer {
+  static className = 'Flatten';
   constructor(config?: LayerConfig) {
     super(config || {});
     this.inputSpec = [{minNDim: 3}];
@@ -358,17 +353,13 @@ export class Flatten extends Layer {
     return [inputShape[0], math_utils.arrayProd(inputShape, 1)];
   }
 
-  getClassName(): string {
-    return 'Flatten';
-  }
-
   // tslint:disable-next-line:no-any
   call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
     this.invokeCallHook(inputs, kwargs);
     return K.batchFlatten(generic_utils.getExactlyOneTensor(inputs));
   }
 }
-generic_utils.ClassNameMap.register('Flatten', Flatten);
+generic_utils.ClassNameMap.register(Flatten);
 
 export interface ActivationLayerConfig extends LayerConfig {
   /**
@@ -381,16 +372,13 @@ export interface ActivationLayerConfig extends LayerConfig {
  * Applies an activation function to an output.
  */
 export class Activation extends Layer {
+  static className = 'Activation';
   activation: ActivationFn;
 
   constructor(config: ActivationLayerConfig) {
     super(config);
     this.supportsMasking = true;
     this.activation = getActivation(config.activation);
-  }
-
-  getClassName(): string {
-    return 'Activation';
   }
 
   // tslint:disable-next-line:no-any
@@ -400,7 +388,7 @@ export class Activation extends Layer {
     return this.activation(input);
   }
 }
-generic_utils.ClassNameMap.register('Activation', Activation);
+generic_utils.ClassNameMap.register(Activation);
 
 export interface ReshapeLayerConfig extends LayerConfig {
   /** The target shape. Does not include the batch axis. */
@@ -419,6 +407,7 @@ export interface RepeatVectorLayerConfig extends LayerConfig {
  */
 // TODO(cais): Add example.
 export class RepeatVector extends Layer {
+  static className = 'RepeatVector';
   readonly n: number;
 
   constructor(config: RepeatVectorLayerConfig) {
@@ -437,10 +426,6 @@ export class RepeatVector extends Layer {
     return K.repeat(inputs, this.n);
   }
 
-  getClassName(): string {
-    return 'RepeatVector';
-  }
-
   getConfig(): ConfigDict {
     const config = {
       n: this.n,
@@ -450,7 +435,7 @@ export class RepeatVector extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('RepeatVector', RepeatVector);
+generic_utils.ClassNameMap.register(RepeatVector);
 
 
 /**
@@ -467,6 +452,7 @@ generic_utils.ClassNameMap.register('RepeatVector', RepeatVector);
  *    targetShape[targetShape.length - 1]].
  */
 export class Reshape extends Layer {
+  static className = 'Reshape';
   private targetShape: Shape;
 
   constructor(config: ReshapeLayerConfig) {
@@ -547,11 +533,6 @@ export class Reshape extends Layer {
     }
   }
 
-  getClassName(): string {
-    return 'Reshape';
-  }
-
-
   // tslint:disable-next-line:no-any
   call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
     this.invokeCallHook(inputs, kwargs);
@@ -562,4 +543,4 @@ export class Reshape extends Layer {
     return K.reshape(input, outputShape);
   }
 }
-generic_utils.ClassNameMap.register('Reshape', Reshape);
+generic_utils.ClassNameMap.register(Reshape);

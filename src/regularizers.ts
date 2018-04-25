@@ -14,8 +14,7 @@
 import {doc, Scalar, Tensor, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
-import {ConfigDict, ConfigDictValue, Serializable} from './types';
-import * as generic_utils from './utils/generic_utils';
+import {ConfigDict, ConfigDictValue, Constructor, Serializable} from './types';
 import {ClassNameMap, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 // tslint:enable:max-line-length
 
@@ -51,6 +50,8 @@ export interface L2Config {
  */
 @doc({heading: 'Regularizers', namespace: 'regularizers'})
 export class L1L2 extends Regularizer {
+  static className = 'L1L2';
+
   private readonly l1: Scalar;
   private readonly l2: Scalar;
   private readonly hasL1: boolean;
@@ -66,6 +67,7 @@ export class L1L2 extends Regularizer {
     this.l1 = K.getScalar(l1);
     this.l2 = K.getScalar(l2);
   }
+
   /**
    * Porting note: Renamed from __call__.
    * @param x Variable of which to calculate the regularization score.
@@ -82,18 +84,17 @@ export class L1L2 extends Regularizer {
     }
     return regularization.asScalar();
   }
-  getClassName(): string {
-    return 'L1L2';
-  }
+
   getConfig(): ConfigDict {
     return {'l1': this.l1.dataSync()[0], 'l2': this.l2.dataSync()[0]};
   }
-  static fromConfig(cls: generic_utils.Constructor<L1L2>, config: ConfigDict):
-      L1L2 {
-    return new L1L2({l1: config.l1 as number, l2: config.l2 as number});
+
+  static fromConfig<T extends Serializable>(
+      cls: Constructor<T>, config: ConfigDict): T {
+    return new cls({l1: config.l1 as number, l2: config.l2 as number});
   }
 }
-ClassNameMap.register('L1L2', L1L2);
+ClassNameMap.register(L1L2);
 
 /**
  * Regularizer for L1 regularization.

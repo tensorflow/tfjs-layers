@@ -109,12 +109,9 @@ export abstract class Pooling1D extends Layer {
  * Output shape: `[batchSize, pooledLength, channels]`
  */
 export class MaxPooling1D extends Pooling1D {
+  static className = 'MaxPooling1D';
   constructor(config: Pooling1DLayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'MaxPooling1D';
   }
 
   protected poolingFunction(
@@ -125,7 +122,7 @@ export class MaxPooling1D extends Pooling1D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
-generic_utils.ClassNameMap.register('MaxPooling1D', MaxPooling1D);
+generic_utils.ClassNameMap.register(MaxPooling1D);
 
 /**
  * Average pooling operation for spatial data.
@@ -137,12 +134,9 @@ generic_utils.ClassNameMap.register('MaxPooling1D', MaxPooling1D);
  * `tf.avgPool1d` is an alias.
  */
 export class AveragePooling1D extends Pooling1D {
+  static className = 'AveragePooling1D';
   constructor(config: Pooling1DLayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'AveragePooling1D';
   }
 
   protected poolingFunction(
@@ -153,7 +147,7 @@ export class AveragePooling1D extends Pooling1D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-generic_utils.ClassNameMap.register('AveragePooling1D', AveragePooling1D);
+generic_utils.ClassNameMap.register(AveragePooling1D);
 
 export interface Pooling2DLayerConfig extends LayerConfig {
   /**
@@ -269,12 +263,9 @@ export abstract class Pooling2D extends Layer {
  *       `[batchSize, channels, pooleRows, pooledCols]`
  */
 export class MaxPooling2D extends Pooling2D {
+  static className = 'MaxPooling2D';
   constructor(config: Pooling2DLayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'MaxPooling2D';
   }
 
   protected poolingFunction(
@@ -285,7 +276,7 @@ export class MaxPooling2D extends Pooling2D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
-generic_utils.ClassNameMap.register('MaxPooling2D', MaxPooling2D);
+generic_utils.ClassNameMap.register(MaxPooling2D);
 
 /**
  * Average pooling operation for spatial data.
@@ -309,12 +300,9 @@ generic_utils.ClassNameMap.register('MaxPooling2D', MaxPooling2D);
  * `tf.avgPool2d` is an alias.
  */
 export class AveragePooling2D extends Pooling2D {
+  static className = 'AveragePooing2D';
   constructor(config: Pooling2DLayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'AveragePooling2D';
   }
 
   protected poolingFunction(
@@ -325,7 +313,7 @@ export class AveragePooling2D extends Pooling2D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-generic_utils.ClassNameMap.register('AveragePooling2D', AveragePooling2D);
+generic_utils.ClassNameMap.register(AveragePooling2D);
 
 /**
  * Abstract class for different global pooling 1D layers.
@@ -354,12 +342,9 @@ export abstract class GlobalPooling1D extends Layer {
  * Output Shape:2D tensor with shape: `[batchSize, features]`.
  */
 export class GlobalAveragePooling1D extends GlobalPooling1D {
+  static className = 'GlobalAveragePooling1D';
   constructor(config: LayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'GlobalAveragePooling1D';
   }
 
   // tslint:disable-next-line:no-any
@@ -368,8 +353,7 @@ export class GlobalAveragePooling1D extends GlobalPooling1D {
     return K.mean(input, 1);
   }
 }
-generic_utils.ClassNameMap.register(
-    'GlobalAveragePooling1D', GlobalAveragePooling1D);
+generic_utils.ClassNameMap.register(GlobalAveragePooling1D);
 
 /**
  * Global max pooling operation for temporal data.
@@ -379,12 +363,9 @@ generic_utils.ClassNameMap.register(
  * Output Shape:2D tensor with shape: `[batchSize, features]`.
  */
 export class GlobalMaxPooling1D extends GlobalPooling1D {
+  static className = 'GlobalMaxPooling1D';
   constructor(config: LayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'GlobalMaxPooling1D';
   }
 
   // tslint:disable-next-line:no-any
@@ -393,7 +374,7 @@ export class GlobalMaxPooling1D extends GlobalPooling1D {
     return K.max(input, 1);
   }
 }
-generic_utils.ClassNameMap.register('GlobalMaxPooling1D', GlobalMaxPooling1D);
+generic_utils.ClassNameMap.register(GlobalMaxPooling1D);
 
 export interface GlobalPooling2DLayerConfig extends LayerConfig {
   /**
@@ -455,6 +436,7 @@ export abstract class GlobalPooling2D extends Layer {
  *   2D tensor with shape: `[batchSize, channels]`.
  */
 export class GlobalAveragePooling2D extends GlobalPooling2D {
+  static className = 'GlobalAveragePooling2D';
   // tslint:disable-next-line:no-any
   call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
     const input = generic_utils.getExactlyOneTensor(inputs);
@@ -464,12 +446,8 @@ export class GlobalAveragePooling2D extends GlobalPooling2D {
       return K.mean(input, [2, 3]);
     }
   }
-  getClassName(): string {
-    return 'GlobalAveragePooling2D';
-  }
 }
-generic_utils.ClassNameMap.register(
-    'GlobalAveragePooling2D', GlobalAveragePooling2D);
+generic_utils.ClassNameMap.register(GlobalAveragePooling2D);
 
 /**
  * Global max pooling operation for spatial data.
@@ -484,6 +462,7 @@ generic_utils.ClassNameMap.register(
  *   2D tensor with shape: `[batchSize, channels]`.
  */
 export class GlobalMaxPooling2D extends GlobalPooling2D {
+  static className = 'GlobalMaxPooling2D';
   // tslint:disable-next-line:no-any
   call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
     const input = generic_utils.getExactlyOneTensor(inputs);
@@ -493,8 +472,5 @@ export class GlobalMaxPooling2D extends GlobalPooling2D {
       return K.max(input, [2, 3]);
     }
   }
-  getClassName(): string {
-    return 'GlobalMaxPooling2D';
-  }
 }
-generic_utils.ClassNameMap.register('GlobalMaxPooling2D', GlobalMaxPooling2D);
+generic_utils.ClassNameMap.register(GlobalMaxPooling2D);

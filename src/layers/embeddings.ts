@@ -84,6 +84,7 @@ export interface EmbeddingLayerConfig extends LayerConfig {
  * outputDim]`.
  */
 export class Embedding extends Layer {
+  static className = 'Embedding';
   private inputDim: number;
   private outputDim: number;
   private embeddingsInitializer: Initializer;
@@ -185,10 +186,6 @@ export class Embedding extends Layer {
         output, getExactlyOneShape(this.computeOutputShape(input.shape)));
   }
 
-  getClassName(): string {
-    return 'Embedding';
-  }
-
   getConfig(): ConfigDict {
     const config = {
       inputDim: this.inputDim,
@@ -206,4 +203,4 @@ export class Embedding extends Layer {
   }
 }
 
-generic_utils.ClassNameMap.register('Embedding', Embedding);
+generic_utils.ClassNameMap.register(Embedding);

@@ -22,20 +22,16 @@ import {Container, ContainerConfig, getSourceInputs, Input, InputLayer, InputSpe
 // tslint:enable
 
 class LayerForTest extends tfl.layers.Layer {
+  static className = 'LayerForTest';
   constructor(config: LayerConfig) {
     super(config);
-  }
-  getClassName(): string {
-    return 'Layer';
   }
 }
 
 class ContainerForTest extends Container {
+  static className = 'ContainerForTest';
   constructor(config: ContainerConfig) {
     super(config);
-  }
-  getClassName(): string {
-    return 'Container';
   }
 }
 
@@ -313,6 +309,7 @@ describeMathCPU('Layer', () => {
 
     it('Layer with duplicate weight names throws error', () => {
       class LayerForTest extends tfl.layers.Layer {
+        static className = 'LayerForTest';
         constructor(config: LayerConfig) {
           super(config);
           this.addWeight(
@@ -321,9 +318,6 @@ describeMathCPU('Layer', () => {
           this.addWeight(
               'foo', [2, 3], DType.float32,
               initializers.getInitializer('zeros'));
-        }
-        getClassName(): string {
-          return 'Layer';
         }
       }
       expect(() => new LayerForTest({}))
@@ -1033,7 +1027,8 @@ describeMathCPUAndGPU('Container.fromConfig', () => {
       outputLayers: [] as any[]
     };
     // tslint:enable
-    const container = Container.fromConfig(ContainerForTest, config);
+    const container =
+        Container.fromConfig(ContainerForTest, config) as Container;
     expect(container.name).toEqual('test');
   });
 
@@ -1089,7 +1084,8 @@ describeMathCPUAndGPU('Container.fromConfig', () => {
       name: 'test',
       outputLayers: [['dense_2', 0, 0]]
     };
-    const container = Container.fromConfig(ContainerForTest, config);
+    const container =
+        Container.fromConfig(ContainerForTest, config) as Container;
     expect(container.name).toEqual('test');
     const allZeros = zeros([1, 32]);
     expectTensorsClose(container.apply(allZeros) as Tensor, allZeros);

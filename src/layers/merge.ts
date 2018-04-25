@@ -26,16 +26,12 @@ import * as mathUtils from '../utils/math_utils';
  *
  * Used to implement `Sum`, `Average`, `Concatenate`, etc.
  */
-export class Merge extends Layer {
+export abstract class Merge extends Layer {
   protected reshapeRequired: boolean;
 
   constructor(config?: LayerConfig) {
     super(config || {});
     this.supportsMasking = true;
-  }
-
-  getClassName(): string {
-    return 'Merge';
   }
 
   /**
@@ -250,12 +246,9 @@ export class Merge extends Layer {
  * ```
  */
 export class Add extends Merge {
+  static className = 'Add';
   constructor(config?: LayerConfig) {
     super(config as LayerConfig);
-  }
-
-  getClassName(): string {
-    return 'Add';
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -266,7 +259,7 @@ export class Add extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Add', Add);
+generic_utils.ClassNameMap.register(Add);
 
 /**
  * Calculate the element-wise sum of inputs, which all have the same shape.
@@ -343,12 +336,9 @@ export function add(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  * // dimension.
  */
 export class Multiply extends Merge {
+  static className = 'Multiply';
   constructor(config?: LayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'Multiply';
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -359,7 +349,7 @@ export class Multiply extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Multiply', Multiply);
+generic_utils.ClassNameMap.register(Multiply);
 
 /**
  * Calculate the element-wise product of inputs, which all have the same shape.
@@ -435,12 +425,9 @@ export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  * ```
  */
 export class Average extends Merge {
+  static className = 'Average';
   constructor(config?: LayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'Average';
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -451,7 +438,7 @@ export class Average extends Merge {
     return K.scalarTimesArray(K.getScalar(1 / inputs.length), output);
   }
 }
-generic_utils.ClassNameMap.register('Average', Average);
+generic_utils.ClassNameMap.register(Average);
 
 /**
  * Calculate the element-wise arithmetic mean of inputs, which all have the same
@@ -528,12 +515,9 @@ export function average(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  * ```
  */
 export class Maximum extends Merge {
+  static className = 'Maximum';
   constructor(config?: LayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'Maximum';
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -544,7 +528,7 @@ export class Maximum extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Maximum', Maximum);
+generic_utils.ClassNameMap.register(Maximum);
 
 /**
  * Calculate the element-wise maximum of inputs, which all have the same shape.
@@ -620,12 +604,9 @@ export function maximum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  * ```
  */
 export class Minimum extends Merge {
+  static className = 'Minimum';
   constructor(config?: LayerConfig) {
     super(config);
-  }
-
-  getClassName(): string {
-    return 'Minimum';
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -636,7 +617,7 @@ export class Minimum extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Minimum', Minimum);
+generic_utils.ClassNameMap.register(Minimum);
 
 /**
  * Calculate the element-wise minimum of inputs, which all have the same shape.
@@ -721,6 +702,7 @@ export interface ConcatenateLayerConfig extends LayerConfig {
  * ```
  */
 export class Concatenate extends Merge {
+  static className = 'Concatenate';
   readonly DEFAULT_AXIS = -1;
   private readonly axis: number;
 
@@ -732,10 +714,6 @@ export class Concatenate extends Merge {
     this.axis = config.axis == null ? this.DEFAULT_AXIS : config.axis;
     this.supportsMasking = true;
     this.reshapeRequired = false;
-  }
-
-  getClassName(): string {
-    return 'Concatenate';
   }
 
   build(inputShape: Shape|Shape[]): void {
@@ -809,7 +787,7 @@ export class Concatenate extends Merge {
   // TODO(cais): Implement computeMask();
   // TODO(cais): Add getConfig();
 }
-generic_utils.ClassNameMap.register('Concatenate', Concatenate);
+generic_utils.ClassNameMap.register(Concatenate);
 
 /**
  * Concatenate an `Array` of inputs.
