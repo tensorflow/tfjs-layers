@@ -473,7 +473,7 @@ export class GlorotNormal extends VarianceScaling {
   }
 
   getClassName(): string {
-    // In Python Keras, GlorotUniform is not a class, but a helper method
+    // In Python Keras, GlorotNormal is not a class, but a helper method
     // that creates a VarianceScaling object. Use 'VarianceScaling' as
     // class name to be compatible with that.
     return VarianceScaling.className;
@@ -501,7 +501,7 @@ export class HeNormal extends VarianceScaling {
   }
 
   getClassName(): string {
-    // In Python Keras, GlorotUniform is not a class, but a helper method
+    // In Python Keras, HeNormal is not a class, but a helper method
     // that creates a VarianceScaling object. Use 'VarianceScaling' as
     // class name to be compatible with that.
     return VarianceScaling.className;
@@ -530,7 +530,7 @@ export class LeCunNormal extends VarianceScaling {
   }
 
   getClassName(): string {
-    // In Python Keras, GlorotUniform is not a class, but a helper method
+    // In Python Keras, LeCunNormal is not a class, but a helper method
     // that creates a VarianceScaling object. Use 'VarianceScaling' as
     // class name to be compatible with that.
     return VarianceScaling.className;
