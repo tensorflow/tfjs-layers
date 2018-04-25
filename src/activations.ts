@@ -9,11 +9,10 @@
  */
 
 // Layer activation functions
-import {scalar, Tensor} from '@tensorflow/tfjs-core';
+import {ConfigDictValue, scalar, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {ValueError} from './errors';
-import {ConfigDictValue} from './types';
 
 export type ActivationFn = (tensor: Tensor, axis?: number) => Tensor;
 /** @docinline */

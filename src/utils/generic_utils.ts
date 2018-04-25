@@ -11,10 +11,10 @@
 /* Original source: utils/generic_utils.py */
 
 // tslint:disable:max-line-length
-import {Tensor} from '@tensorflow/tfjs-core';
+import {ConfigDict, ConfigDictValue, Serializable, Tensor} from '@tensorflow/tfjs-core';
 
 import {AssertionError, AttributeError, IndexError, ValueError} from '../errors';
-import {ConfigDict, ConfigDictValue, Constructor, DType, FromConfigMethod, Serializable, Shape} from '../types';
+import {DType, Shape} from '../types';
 
 
 
@@ -107,29 +107,6 @@ export function count<T>(array: T[], refernce: T) {
     }
   }
   return counter;
-}
-
-export class ClassNameMap {
-  private static instance: ClassNameMap;
-  pythonClassNameMap: {
-    [className: string]:
-        [Constructor<Serializable>, FromConfigMethod<Serializable>]
-  };
-
-  private constructor() {
-    this.pythonClassNameMap = {};
-  }
-
-  static getMap() {
-    if (ClassNameMap.instance == null) {
-      ClassNameMap.instance = new ClassNameMap();
-    }
-    return ClassNameMap.instance;
-  }
-
-  static register<T extends Serializable>(cls: Constructor<T>) {
-    this.getMap().pythonClassNameMap[cls.className] = [cls, cls.fromConfig];
-  }
 }
 
 export class SerializableEnumRegistry {

@@ -11,11 +11,10 @@
 /* original source: keras/regularizers.py */
 
 // tslint:disable:max-line-length
-import {doc, Scalar, Tensor, zeros} from '@tensorflow/tfjs-core';
+import {ConfigDict, ConfigDictValue, Constructor, doc, Scalar, Serializable, SerializationMap, Tensor, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
-import {ConfigDict, ConfigDictValue, Constructor, Serializable} from './types';
-import {ClassNameMap, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
+import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 // tslint:enable:max-line-length
 
 /**
@@ -94,7 +93,7 @@ export class L1L2 extends Regularizer {
     return new cls({l1: config.l1 as number, l2: config.l2 as number});
   }
 }
-ClassNameMap.register(L1L2);
+SerializationMap.register(L1L2);
 
 /**
  * Regularizer for L1 regularization.
@@ -134,7 +133,7 @@ export function serializeRegularizer(constraint: Regularizer): ConfigDictValue {
 export function deserializeRegularizer(
     config: ConfigDict, customObjects: ConfigDict = {}): Regularizer {
   return deserializeKerasObject(
-      config, ClassNameMap.getMap().pythonClassNameMap, customObjects,
+      config, SerializationMap.getMap().pythonClassNameMap, customObjects,
       'regularizer');
 }
 

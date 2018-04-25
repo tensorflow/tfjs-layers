@@ -13,7 +13,7 @@
  *
  * Original source: keras/constraints.py
  */
-import {Tensor} from '@tensorflow/tfjs-core';
+import {ConfigDict, SerializationMap, Tensor} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -23,7 +23,7 @@ import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Shape} from '../types';
-import {ConfigDict, LayerVariable} from '../types';
+import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneShape} from '../utils/generic_utils';
 // tslint:enable:max-line-length
@@ -203,4 +203,4 @@ export class Embedding extends Layer {
   }
 }
 
-generic_utils.ClassNameMap.register(Embedding);
+SerializationMap.register(Embedding);

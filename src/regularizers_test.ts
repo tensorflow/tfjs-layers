@@ -10,12 +10,11 @@
 
 /* Unit tests for constraints */
 
-import {scalar, Tensor, tensor1d} from '@tensorflow/tfjs-core';
+import {ConfigDict, scalar, Tensor, tensor1d} from '@tensorflow/tfjs-core';
 import * as tfl from './index';
 
 // tslint:disable:max-line-length
 import {deserializeRegularizer, getRegularizer, serializeRegularizer} from './regularizers';
-import {ConfigDict} from './types';
 import {describeMathCPU, expectTensorsClose} from './utils/test_utils';
 // tslint:enable:max-line-length
 

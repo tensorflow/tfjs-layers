@@ -11,7 +11,7 @@
 /* Original source: keras/engine/topology.py */
 
 // tslint:disable:max-line-length
-import {doc, Scalar, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+import {ConfigDict, Constructor, doc, JsonDict, Scalar, Serializable, SerializationMap, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {Constraint} from '../constraints';
@@ -19,7 +19,7 @@ import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../
 import {Initializer} from '../initializers';
 import {deserialize as deserializeLayer} from '../layers/serialization';
 import {Regularizer} from '../regularizers';
-import {ConfigDict, Constructor, DType, JsonDict, LayerVariable, NamedTensorMap, RegularizerFn, Serializable, Shape, SymbolicTensor, TensorInterface} from '../types';
+import {DType, LayerVariable, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor, TensorInterface} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
 // tslint:enable:max-line-length
@@ -1405,7 +1405,7 @@ export class InputLayer extends Layer {
     };
   }
 }
-generic_utils.ClassNameMap.register(InputLayer);
+SerializationMap.register(InputLayer);
 
 /**
  * Config for the Input function.

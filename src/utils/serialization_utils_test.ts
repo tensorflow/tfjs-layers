@@ -13,7 +13,7 @@
  * Porting Note: serialization_utils is a tfjs-layers only file, not found
  * int the original PyKeras.
  */
-import {ConfigDictValue, JsonValue} from '../types';
+import {ConfigDictValue, JsonValue} from '@tensorflow/tfjs-core';
 
 import {convertPythonicToTs, convertTsToPythonic} from './serialization_utils';
 

@@ -13,14 +13,14 @@
  */
 
 // tslint:disable:max-line-length
-import {Tensor} from '@tensorflow/tfjs-core';
+import {ConfigDict, SerializationMap, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {checkDataFormat, checkPaddingMode, DataFormat, PaddingMode} from '../common';
 import {InputSpec} from '../engine/topology';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError} from '../errors';
-import {ConfigDict, Shape} from '../types';
+import {Shape} from '../types';
 import {convOutputLength} from '../utils/conv_utils';
 import * as generic_utils from '../utils/generic_utils';
 // tslint:enable:max-line-length
@@ -122,7 +122,7 @@ export class MaxPooling1D extends Pooling1D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
-generic_utils.ClassNameMap.register(MaxPooling1D);
+SerializationMap.register(MaxPooling1D);
 
 /**
  * Average pooling operation for spatial data.
@@ -147,7 +147,7 @@ export class AveragePooling1D extends Pooling1D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-generic_utils.ClassNameMap.register(AveragePooling1D);
+SerializationMap.register(AveragePooling1D);
 
 export interface Pooling2DLayerConfig extends LayerConfig {
   /**
@@ -276,7 +276,7 @@ export class MaxPooling2D extends Pooling2D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
-generic_utils.ClassNameMap.register(MaxPooling2D);
+SerializationMap.register(MaxPooling2D);
 
 /**
  * Average pooling operation for spatial data.
@@ -313,7 +313,7 @@ export class AveragePooling2D extends Pooling2D {
     return K.pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-generic_utils.ClassNameMap.register(AveragePooling2D);
+SerializationMap.register(AveragePooling2D);
 
 /**
  * Abstract class for different global pooling 1D layers.
@@ -353,7 +353,7 @@ export class GlobalAveragePooling1D extends GlobalPooling1D {
     return K.mean(input, 1);
   }
 }
-generic_utils.ClassNameMap.register(GlobalAveragePooling1D);
+SerializationMap.register(GlobalAveragePooling1D);
 
 /**
  * Global max pooling operation for temporal data.
@@ -374,7 +374,7 @@ export class GlobalMaxPooling1D extends GlobalPooling1D {
     return K.max(input, 1);
   }
 }
-generic_utils.ClassNameMap.register(GlobalMaxPooling1D);
+SerializationMap.register(GlobalMaxPooling1D);
 
 export interface GlobalPooling2DLayerConfig extends LayerConfig {
   /**
@@ -447,7 +447,7 @@ export class GlobalAveragePooling2D extends GlobalPooling2D {
     }
   }
 }
-generic_utils.ClassNameMap.register(GlobalAveragePooling2D);
+SerializationMap.register(GlobalAveragePooling2D);
 
 /**
  * Global max pooling operation for spatial data.
@@ -473,4 +473,4 @@ export class GlobalMaxPooling2D extends GlobalPooling2D {
     }
   }
 }
-generic_utils.ClassNameMap.register(GlobalMaxPooling2D);
+SerializationMap.register(GlobalMaxPooling2D);

@@ -12,7 +12,7 @@
  * TensorFlow.js Layers: Recurrent Neural Network Layers.
  */
 
-import {doc, Tensor, util} from '@tensorflow/tfjs-core';
+import {ConfigDict, Constructor, doc, Serializable, SerializationMap, Tensor, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import {ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
@@ -23,8 +23,8 @@ import {Layer, LayerConfig} from '../engine/topology';
 import {AttributeError, NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
-import {DType, Serializable, Shape, SymbolicTensor} from '../types';
-import {ConfigDict, Constructor, LayerVariable} from '../types';
+import {DType, Shape, SymbolicTensor} from '../types';
+import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
 
@@ -642,7 +642,7 @@ export class RNN extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(RNN);
+SerializationMap.register(RNN);
 
 /**
  * An RNNCell layer.
@@ -927,7 +927,7 @@ export class SimpleRNNCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(SimpleRNNCell);
+SerializationMap.register(SimpleRNNCell);
 
 export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   /**
@@ -1130,7 +1130,7 @@ export class SimpleRNN extends RNN {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(SimpleRNN);
+SerializationMap.register(SimpleRNN);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
@@ -1418,7 +1418,7 @@ export class GRUCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(GRUCell);
+SerializationMap.register(GRUCell);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we inherit
 //   from that interface instead of repeating the fields here.
@@ -1572,7 +1572,7 @@ export class GRU extends RNN {
     return new cls(config);
   }
 }
-generic_utils.ClassNameMap.register(GRU);
+SerializationMap.register(GRU);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
@@ -1898,7 +1898,7 @@ export class LSTMCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(LSTMCell);
+SerializationMap.register(LSTMCell);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we inherit
 //   from that interface instead of repeating the fields here.
@@ -2064,7 +2064,7 @@ export class LSTM extends RNN {
     return new cls(config);
   }
 }
-generic_utils.ClassNameMap.register(LSTM);
+SerializationMap.register(LSTM);
 
 export interface StackedRNNCellsConfig extends LayerConfig {
   /**
@@ -2247,4 +2247,4 @@ export class StackedRNNCells extends RNNCell {
 
   // TODO(cais): Maybe implemnt `losses` and `getLossesFor`.
 }
-generic_utils.ClassNameMap.register(StackedRNNCells);
+SerializationMap.register(StackedRNNCells);

@@ -11,11 +11,10 @@
 /* Original source: keras/contraints.py */
 
 // tslint:disable:max-line-length
-import {doc, Tensor} from '@tensorflow/tfjs-core';
+import {ConfigDict, ConfigDictValue, doc, Serializable, SerializationMap, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
-import {ConfigDict, ConfigDictValue, Serializable} from './types';
-import {ClassNameMap, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
+import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 // tslint:enable:max-line-length
 
 /**
@@ -96,7 +95,7 @@ export class MaxNorm extends Constraint {
     return {maxValue: this.maxValue, axis: this.axis};
   }
 }
-ClassNameMap.register(MaxNorm);
+SerializationMap.register(MaxNorm);
 
 export interface UnitNormConfig {
   /**
@@ -138,7 +137,7 @@ export class UnitNorm extends Constraint {
     return {axis: this.axis};
   }
 }
-ClassNameMap.register(UnitNorm);
+SerializationMap.register(UnitNorm);
 
 /**
  * Constains the weight to be non-negative.
@@ -149,7 +148,7 @@ export class NonNeg extends Constraint {
     return K.relu(w);
   }
 }
-ClassNameMap.register(NonNeg);
+SerializationMap.register(NonNeg);
 
 export interface MinMaxNormConfig {
   /**
@@ -227,7 +226,7 @@ export class MinMaxNorm extends Constraint {
     };
   }
 }
-ClassNameMap.register(MinMaxNorm);
+SerializationMap.register(MinMaxNorm);
 
 /** @docinline */
 export type ConstraintIdentifier =
@@ -250,7 +249,7 @@ export function serializeConstraint(constraint: Constraint): ConfigDictValue {
 export function deserializeConstraint(
     config: ConfigDict, customObjects: ConfigDict = {}): Constraint {
   return deserializeKerasObject(
-      config, ClassNameMap.getMap().pythonClassNameMap, customObjects,
+      config, SerializationMap.getMap().pythonClassNameMap, customObjects,
       'constraint');
 }
 

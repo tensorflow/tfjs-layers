@@ -13,13 +13,12 @@
  */
 
 // tslint:disable:max-line-length
-import {Tensor, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
+import {ConfigDict, Tensor, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 
 import {Layer} from '../engine/topology';
 import * as tfl from '../index';
 import {deserialize} from '../layers/serialization';
 import {DType, Shape} from '../types';
-import {ConfigDict} from '../types';
 import {convertPythonicToTs} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 

@@ -9,14 +9,13 @@
  */
 
 // tslint:disable:max-line-length
-import {doc, scalar, Scalar, Tensor, Tensor2D} from '@tensorflow/tfjs-core';
+import {ConfigDict, ConfigDictValue, doc, scalar, Scalar, Serializable, SerializationMap, Tensor, Tensor2D} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
 import {NotImplementedError, ValueError} from './errors';
-import {DType, Serializable, Shape} from './types';
-import {ConfigDict, ConfigDictValue} from './types';
-import {ClassNameMap, deserializeKerasObject, SerializableEnumRegistry, serializeKerasObject} from './utils/generic_utils';
+import {DType, Shape} from './types';
+import {deserializeKerasObject, SerializableEnumRegistry, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
 
 // tslint:enable:max-line-length
@@ -85,7 +84,7 @@ export class Zeros extends Initializer {
     return K.zeros(shape, dtype);
   }
 }
-ClassNameMap.register(Zeros);
+SerializationMap.register(Zeros);
 
 /**
  * Initializer that generates tensors initialized to 1.
@@ -97,7 +96,7 @@ export class Ones extends Initializer {
     return K.ones(shape, dtype);
   }
 }
-ClassNameMap.register(Ones);
+SerializationMap.register(Ones);
 
 export interface ConstantConfig {
   /** The value for each element in the variable. */
@@ -125,7 +124,7 @@ export class Constant extends Initializer {
     };
   }
 }
-ClassNameMap.register(Constant);
+SerializationMap.register(Constant);
 
 export interface RandomUniformConfig {
   /** Lower bound of the range of random values to generate. */
@@ -166,7 +165,7 @@ export class RandomUniform extends Initializer {
     return {minval: this.minval, maxval: this.maxval, seed: this.seed};
   }
 }
-ClassNameMap.register(RandomUniform);
+SerializationMap.register(RandomUniform);
 
 export interface RandomNormalConfig {
   /** Mean of the random values to generate. */
@@ -204,7 +203,7 @@ export class RandomNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-ClassNameMap.register(RandomNormal);
+SerializationMap.register(RandomNormal);
 
 export interface TruncatedNormalConfig {
   /** Mean of the random values to generate. */
@@ -247,7 +246,7 @@ export class TruncatedNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-ClassNameMap.register(TruncatedNormal);
+SerializationMap.register(TruncatedNormal);
 
 export interface IdentityConfig {
   /**
@@ -281,7 +280,7 @@ export class Identity extends Initializer {
     return {gain: this.gain.get()};
   }
 }
-ClassNameMap.register(Identity);
+SerializationMap.register(Identity);
 
 /**
  * Computes the number of input and output units for a weight shape.
@@ -401,7 +400,7 @@ export class VarianceScaling extends Initializer {
     };
   }
 }
-ClassNameMap.register(VarianceScaling);
+SerializationMap.register(VarianceScaling);
 
 export interface SeedOnlyInitializerConfig {
   /** Random number generator seed. */
@@ -592,7 +591,7 @@ export class Orthogonal extends Initializer {
     };
   }
 }
-ClassNameMap.register(Orthogonal);
+SerializationMap.register(Orthogonal);
 
 /** @docinline */
 export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
@@ -621,7 +620,7 @@ export const INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:
 function deserializeInitializer(
     config: ConfigDict, customObjects: ConfigDict = {}): Initializer {
   return deserializeKerasObject(
-      config, ClassNameMap.getMap().pythonClassNameMap, customObjects,
+      config, SerializationMap.getMap().pythonClassNameMap, customObjects,
       'initializer');
 }
 

@@ -11,7 +11,7 @@
 /* Original source keras/models.py */
 
 // tslint:disable:max-line-length
-import {doc, loadWeights, Scalar, Tensor, WeightsManifestConfig} from '@tensorflow/tfjs-core';
+import {ConfigDict, ConfigDictArray, Constructor, doc, JsonDict, loadWeights, Scalar, Serializable, SerializationMap, Tensor, WeightsManifestConfig} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {History} from './callbacks';
@@ -19,8 +19,8 @@ import {getSourceInputs, Input, Layer, Node} from './engine/topology';
 import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig, ModelPredictConfig} from './engine/training';
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
-import {NamedTensorMap, Serializable, Shape} from './types';
-import {ConfigDict, ConfigDictArray, Constructor, JsonDict, SymbolicTensor} from './types';
+import {NamedTensorMap, Shape} from './types';
+import {SymbolicTensor} from './types';
 import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 // tslint:enable:max-line-length
@@ -554,4 +554,4 @@ export class Sequential extends Model {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(Sequential);
+SerializationMap.register(Sequential);

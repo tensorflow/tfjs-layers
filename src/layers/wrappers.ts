@@ -13,13 +13,13 @@
  */
 
 // tslint:disable:max-line-length
-import {Tensor} from '@tensorflow/tfjs-core';
+import {ConfigDict, Constructor, Serializable, SerializationMap, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {Serializable, Shape, TensorInterface} from '../types';
-import {ConfigDict, Constructor, LayerVariable, RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
+import {Shape, TensorInterface} from '../types';
+import {LayerVariable, RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 
 import {RNN} from './recurrent';
@@ -233,7 +233,7 @@ export class TimeDistributed extends Wrapper {
     return y;
   }
 }
-generic_utils.ClassNameMap.register(TimeDistributed);
+SerializationMap.register(TimeDistributed);
 
 export enum BidirectionalMergeMode {
   SUM,
@@ -470,4 +470,4 @@ export class Bidirectional extends Wrapper {
   // TODO(cais): Implement constraints().
   // TODO(cais): Implement getConfig().
 }
-generic_utils.ClassNameMap.register(Bidirectional);
+SerializationMap.register(Bidirectional);

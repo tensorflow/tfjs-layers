@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {conv2dTranspose, separableConv2d, Tensor, Tensor4D, tidy} from '@tensorflow/tfjs-core';
+import {ConfigDict, conv2dTranspose, separableConv2d, SerializationMap, Tensor, Tensor4D, tidy} from '@tensorflow/tfjs-core';
 
 import {ActivationFn, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/tfjs_backend';
@@ -24,7 +24,7 @@ import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Shape} from '../types';
-import {ConfigDict, DType, LayerVariable} from '../types';
+import {DType, LayerVariable} from '../types';
 import {convOutputLength, deconvLength, normalizeArray} from '../utils/conv_utils';
 import * as generic_utils from '../utils/generic_utils';
 // tslint:enable:max-line-length
@@ -338,7 +338,7 @@ export class Conv2D extends Conv {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(Conv2D);
+SerializationMap.register(Conv2D);
 
 /**
  * Transposed convolutional layer (sometimes called Deconvolution).
@@ -518,7 +518,7 @@ export class Conv2DTranspose extends Conv2D {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(Conv2DTranspose);
+SerializationMap.register(Conv2DTranspose);
 
 
 export interface SeparableConvLayerConfig extends ConvLayerConfig {
@@ -753,7 +753,7 @@ export class SeparableConv2D extends SeparableConv {
     super(2, config);
   }
 }
-generic_utils.ClassNameMap.register(SeparableConv2D);
+SerializationMap.register(SeparableConv2D);
 
 /**
  * 1D convolution layer (e.g., temporal convolution).
@@ -787,4 +787,4 @@ export class Conv1D extends Conv {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(Conv1D);
+SerializationMap.register(Conv1D);

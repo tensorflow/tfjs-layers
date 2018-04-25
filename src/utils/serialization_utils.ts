@@ -14,8 +14,9 @@
 // serialized Python Config format.
 
 // tslint:disable:max-line-length
+import {ConfigDict, ConfigDictValue, JsonValue} from '@tensorflow/tfjs-core';
+
 import {ValueError} from '../errors';
-import {ConfigDict, ConfigDictValue, JsonValue} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 // tslint:enable
 

@@ -12,7 +12,7 @@
  * Normalization layers.
  */
 
-import {movingAverage, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+import {ConfigDict, movingAverage, SerializationMap, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -22,7 +22,7 @@ import {ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Shape} from '../types';
-import {ConfigDict, LayerVariable} from '../types';
+import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {arrayProd, range} from '../utils/math_utils';
 
@@ -300,4 +300,4 @@ export class BatchNormalization extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(BatchNormalization);
+SerializationMap.register(BatchNormalization);

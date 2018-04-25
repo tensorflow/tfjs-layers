@@ -9,9 +9,9 @@
  */
 
 /* Original Source layers/__init__.py */
+import {ConfigDict, Serializable, SerializationMap} from '@tensorflow/tfjs-core';
 
-import {ConfigDict, Serializable} from '../types';
-import {ClassNameMap, deserializeKerasObject} from '../utils/generic_utils';
+import {deserializeKerasObject} from '../utils/generic_utils';
 
 /**
  * Instantiate a layer from a config dictionary.
@@ -23,5 +23,6 @@ import {ClassNameMap, deserializeKerasObject} from '../utils/generic_utils';
 export function deserialize(
     config: ConfigDict, customObjects = {} as ConfigDict): Serializable {
   return deserializeKerasObject(
-      config, ClassNameMap.getMap().pythonClassNameMap, customObjects, 'layer');
+      config, SerializationMap.getMap().pythonClassNameMap, customObjects,
+      'layer');
 }

@@ -8,9 +8,9 @@
  * =============================================================================
  */
 
-import {Initializer, Ones, Zeros} from '../initializers';
-import {ConfigDict} from '../types';
+import {ConfigDict} from '@tensorflow/tfjs-core';
 
+import {Initializer, Ones, Zeros} from '../initializers';
 import {deserialize} from './serialization';
 
 describe('Deserialization', () => {
