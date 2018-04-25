@@ -11,7 +11,7 @@
 /* Original source keras/models.py */
 
 // tslint:disable:max-line-length
-import {ConfigDict, ConfigDictArray, Constructor, doc, JsonDict, loadWeights, Scalar, Serializable, SerializationMap, Tensor, WeightsManifestConfig} from '@tensorflow/tfjs-core';
+import {ConfigDict, ConfigDictArray, Constructor, doc, loadWeights, Scalar, Serializable, SerializationMap, Tensor, WeightsManifestConfig} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {History} from './callbacks';
@@ -20,7 +20,7 @@ import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig, ModelPre
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
 import {NamedTensorMap, Shape} from './types';
-import {SymbolicTensor} from './types';
+import {JsonDict, SymbolicTensor} from './types';
 import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 // tslint:enable:max-line-length

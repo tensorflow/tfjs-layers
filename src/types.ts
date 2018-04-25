@@ -282,3 +282,18 @@ export type RnnStepFunction =
 export type NamedTensorMap = {
   [name: string]: Tensor;
 };
+
+/**
+ * Types to support JSON.
+ *
+ * Serialization/deserialization uses stringified-JSON as the storage
+ * representation. Typically this should be used for materialized JSON
+ * stored on disk/received over the wire.  Internally this is normally
+ * converted to a ConfigDict that has renamed fields (TS naming conventions)
+ * and support for Enums.
+ */
+export type JsonValue = boolean|number|string|null|JsonArray|JsonDict;
+export interface JsonDict {
+  [key: string]: JsonValue;
+}
+export interface JsonArray extends Array<JsonValue> {}
