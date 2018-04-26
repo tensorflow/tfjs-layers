@@ -611,6 +611,58 @@ describeMathCPUAndGPU('sliceAlongLastAxis', () => {
   });
 });
 
+
+describeMathCPUAndGPU('sliceAlongAxis', () => {
+  const array1DData = [10, 20, 30, 40];
+  it('1D', () => {
+    const x = tensor1d(array1DData);
+    expectTensorsClose(K.sliceAlongAxis(x, 1, 2 , 1), tensor1d([20, 30]));
+  });
+
+  const array2DData = [[10, 11], [20, 21], [30, 31], [40, 41]];
+  it('2D-1', () => {
+    const x = tensor2d(array2DData, [4, 2]);
+    expectTensorsClose(
+        K.sliceAlongAxis(x, 1, 2, 1), tensor2d([[20, 21], [30, 31]], [2, 2]));
+  });
+
+  it('2D-2', () => {
+    const x = tensor2d(array2DData, [4, 2]);
+    expectTensorsClose(
+        K.sliceAlongAxis(x, 0, 1, 2), tensor2d([[10], [20], [30], [40]], [4, 1]));
+  });
+
+  const array3DData = [[[1,2],[3,4]],[[5,6],[7,8]]];
+  it('3D-1', () => {
+    const x = tensor3d(array3DData, [2, 2, 2]);
+    expectTensorsClose(
+        K.sliceAlongAxis(x, 0, 1, 1), tensor3d([[[1,2],[3,4]]], [1, 2, 2]));
+  });
+  it('3D-2', () => {
+    const x = tensor3d(array3DData, [2, 2, 2]);
+    expectTensorsClose(
+        K.sliceAlongAxis(x, 0, 1, 2), tensor3d([[[1,2]],[[5,6]]], [2, 1, 2]));
+  });
+  it('3D-3', () => {
+    const x = tensor3d(array3DData, [2, 2, 2]);
+    expectTensorsClose(
+        K.sliceAlongAxis(x, 0, 1, 3), tensor3d([[[1],[3]],[[5],[7]]], [2, 2, 1]));
+  });
+
+  const array4DData = [[[[10,1]]], [[[20,2]]], [[[30,3]]], [[[40,4]]]];
+  it('4D', () => {
+    const x = tensor4d(array4DData, [4, 1, 1, 2]);
+    expectTensorsClose(
+        K.sliceAlongAxis(x, 0, 1,4),
+        tensor4d([[[[10]]], [[[20]]], [[[30]]], [[[40]]]], [4, 1, 1, 1]));
+  });
+
+  it('Scalar leads to error', () => {
+    expect(() => {
+      K.sliceAlongFirstAxis(scalar(24), 0, 1);
+    }).toThrow();
+  });
+});
 describeMathCPUAndGPU('normalizeBatchInTraining', () => {
   // The reference values for assertion below can be obtained with Python code
   // as the following:
