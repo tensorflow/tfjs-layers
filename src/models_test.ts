@@ -110,7 +110,7 @@ describeMathCPU('model_from_json', () => {
         .then(model => {
           const serializedModel = model.toJSON() as string;
           // toJSON() returns a string by default.
-          expect(typeof serializedModel === 'string').toEqual(true);
+          expect(typeof serializedModel).toEqual('string');
           const reparsedJson = JSON.parse(serializedModel);
           expect(reparsedJson['class_name'])
               .toEqual(fakeRoundtripModel.modelTopology['class_name']);
@@ -126,7 +126,6 @@ describeMathCPU('model_from_json', () => {
     modelFromJSON(fakeRoundtripModel)
         .then(model => {
           const serializedModel = model.toJSON(null, false) as JsonDict;
-          expect(typeof serializedModel === 'string').toEqual(false);
           expect(serializedModel['class_name'])
               .toEqual(fakeRoundtripModel.modelTopology['class_name']);
           expect(serializedModel['config'])
