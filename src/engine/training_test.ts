@@ -462,7 +462,7 @@ describeMathCPUAndGPU('Model.fit', () => {
     createDenseModelAndData();
 
     model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
-    model.fit(inputs, targets)
+    model.fit(inputs, targets, {epochs: 100})
         .then(history => {
           expect(history.epoch.length).toEqual(100);
           // 100 is the default number of epochs.
