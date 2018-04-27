@@ -476,6 +476,21 @@ describeMathCPUAndGPU('Model.fit', () => {
         });
   });
 
+  it('Default Model.fit epochs is 1', async done => {
+    createDenseModelAndData();
+
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    model.fit(inputs, targets)
+        .then(history => {
+          expect(history.epoch.length).toEqual(1);
+          expect(history.epoch[0]).toEqual(0);
+          done();
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
   it('1 input, 1 output, dense, 1 weight, string optimizer, 2 epochs',
      async done => {
        createDenseModelAndData();
