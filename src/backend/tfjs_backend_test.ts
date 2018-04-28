@@ -613,8 +613,8 @@ describeMathCPUAndGPU('sliceAlongLastAxis', () => {
 
 
 describeMathCPUAndGPU('sliceAlongAxis', () => {
-  const array1DData = [10, 20, 30, 40];
   it('1D', () => {
+    const array1DData = [10, 20, 30, 40];
     const x = tensor1d(array1DData);
     expectTensorsClose(K.sliceAlongAxis(x, 1, 2, 1), tensor1d([20, 30]));
   });
@@ -652,18 +652,13 @@ describeMathCPUAndGPU('sliceAlongAxis', () => {
         tensor3d([[[1], [3]], [[5], [7]]], [2, 2, 1]));
   });
 
-  const array4DData = [[[[10, 1]]], [[[20, 2]]], [[[30, 3]]], [[[40, 4]]]];
+
   it('4D', () => {
+    const array4DData = [[[[10, 1]]], [[[20, 2]]], [[[30, 3]]], [[[40, 4]]]];
     const x = tensor4d(array4DData, [4, 1, 1, 2]);
     expectTensorsClose(
         K.sliceAlongAxis(x, 0, 1, 4),
         tensor4d([[[[10]]], [[[20]]], [[[30]]], [[[40]]]], [4, 1, 1, 1]));
-  });
-
-  it('Scalar leads to error', () => {
-    expect(() => {
-      K.sliceAlongFirstAxis(scalar(24), 0, 1);
-    }).toThrow();
   });
 });
 describeMathCPUAndGPU('normalizeBatchInTraining', () => {

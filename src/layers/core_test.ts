@@ -24,7 +24,7 @@ import {pyListRepeat} from '../utils/generic_utils';
 import {arrayProd} from '../utils/math_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {Activation, Cropping2D, RepeatVector, Reshape} from './core';
+import {Activation, RepeatVector, Reshape} from './core';
 
 // tslint:enable
 
@@ -566,59 +566,5 @@ describeMathCPUAndGPU('Reshape Layer: Tensor', () => {
         tensor3d([[[10, 20], [30, 40]], [[-10, -20], [-30, -40]]], [2, 2, 2]);
     expect(() => reshapeLayer.apply(x, null))
         .toThrowError(/Can only specifiy one unknown dimension/);
-  });
-});
-
-describe('Cropping2D Layer', () => {
-  it('check 1', () => {
-    const layer = new Cropping2D({cropping: [[1, 0], [1, 0]]});
-    const x = tensor4d(
-        [
-          [[[1], [2], [3]], [[4], [5], [6]], [[7], [8], [9]]],
-        ],
-        [1, 3, 3, 1]);
-
-    const y = tensor4d(
-        [
-          [[[5], [6]], [[8], [9]]],
-        ],
-        [1, 2, 2, 1]);
-
-    expectTensorsClose(layer.apply(x, null) as Tensor, y);
-  });
-
-  it('check with channels last', () => {
-    const layer = new Cropping2D(
-        {cropping: [[1, 1], [1, 1]], dataFormat: 'channelsLast'});
-    const x = tensor4d(
-        [
-          [[[1], [2], [3]], [[4], [5], [6]], [[7], [8], [9]]],
-        ],
-        [1, 3, 3, 1]);
-    const y = tensor4d(
-        [
-          [[[5]]],
-        ],
-        [1, 1, 1, 1]);
-
-    expectTensorsClose(layer.apply(x, null) as Tensor, y);
-  });
-
-
-  it('check with channels first', () => {
-    const layer = new Cropping2D(
-        {cropping: [[1, 1], [1, 1]], dataFormat: 'channelsFirst'});
-    const x = tensor4d(
-        [
-          [[[1, 2, 3], [3, 4, 5], [6, 7, 8]]],
-        ],
-        [1, 1, 3, 3]);
-    const y = tensor4d(
-        [
-          [[[4]]],
-        ],
-        [1, 1, 1, 1]);
-
-    expectTensorsClose(layer.apply(x, null) as Tensor, y);
   });
 });

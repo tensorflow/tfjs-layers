@@ -14,11 +14,11 @@
 
 import {Scalar, Tensor, util} from '@tensorflow/tfjs-core';
 
-import {ActivationFn, ActivationIdentifier, getActivation, 
-	   serializeActivation} from '../activations';
+import {ActivationFn, ActivationIdentifier, 
+	    getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/tfjs_backend';
+
 // tslint:disable:max-line-length
-import {DataFormat} from '../common';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
@@ -547,87 +547,3 @@ export class Reshape extends Layer {
   }
 }
 generic_utils.ClassNameMap.register(Reshape);
-
-/**
- * Crops a tensor of size 4D
- *
- * Input shape:
- *   Tensor of size 4D.
- *
- * Output shape:
- *   Cropped tensor.
- */
-
-export interface Cropping2DLayerConfig extends LayerConfig {
-  cropping: number|[number, number]|[[number, number], [number, number]];
-
-  dataFormat?: DataFormat;
-}
-
-export class Cropping2D extends Layer {
-  static className = 'Cropping2D';
-  protected readonly cropping: [[number, number], [number, number]];
-  protected readonly dataFormat: DataFormat;
-
-  constructor(config: Cropping2DLayerConfig) {
-    super(config);
-    if (typeof config.cropping === 'number')
-      this.cropping = [
-        [config.cropping, config.cropping], [config.cropping, config.cropping]
-      ];
-    else if (typeof config.cropping[0] === 'number')
-      this.cropping = [
-        [config.cropping[0] as number, config.cropping[0] as number],
-        [config.cropping[0] as number, config.cropping[0] as number]
-      ];
-    else
-      this.cropping = config.cropping as [[number, number], [number, number]];
-    this.dataFormat =
-        config.dataFormat === undefined ? 'channelsLast' : config.dataFormat;
-    this.inputSpec = [{ndim: 4}];
-  }
-
-  computeOutputShape(inputShape: Shape): Shape {
-    if (this.dataFormat === 'channelsFirst')
-      return [
-        inputShape[0], inputShape[1],
-        inputShape[2] - this.cropping[0][0] - this.cropping[0][1],
-        inputShape[2] - this.cropping[1][0] - this.cropping[1][1]
-      ];
-    else
-      return [
-        inputShape[0],
-        inputShape[1] - this.cropping[0][0] - this.cropping[0][1],
-        inputShape[2] - this.cropping[1][0] - this.cropping[1][1], inputShape[3]
-      ];
-  }
-
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
-    inputs = getExactlyOneTensor(inputs);
-
-    if (this.dataFormat === 'channelsLast') {
-      const hSliced = K.sliceAlongAxis(
-          inputs, this.cropping[0][0],
-          inputs.shape[1] - this.cropping[0][0] - this.cropping[0][1], 2);
-      return K.sliceAlongAxis(
-          hSliced, this.cropping[1][0],
-          inputs.shape[2] - this.cropping[1][1] - this.cropping[1][0], 3);
-    } else {
-      const hSliced = K.sliceAlongAxis(
-          inputs, this.cropping[0][0],
-          inputs.shape[2] - this.cropping[0][0] - this.cropping[0][1], 3);
-      return K.sliceAlongAxis(
-          hSliced, this.cropping[1][0],
-          inputs.shape[3] - this.cropping[1][1] - this.cropping[1][0], 4);
-    }
-  }
-
-  getConfig(): ConfigDict {
-    const config = {cropping: this.cropping, dataFormat: this.dataFormat};
-    const baseConfig = super.getConfig();
-    Object.assign(config, baseConfig);
-    return config;
-  }
-}
-generic_utils.ClassNameMap.register(Cropping2D);
