@@ -640,7 +640,7 @@ describeMathGPU('SeparableConv2D Layer: Tensor', () => {
 });
 
 describe('Cropping2D Layer', () => {
-  it('check 1', () => {
+  it('check with undefined channels type', () => {
     const layer = tfl.layers.cropping2D({cropping: [[1, 0], [1, 0]]});
     const x = tensor4d(
         [

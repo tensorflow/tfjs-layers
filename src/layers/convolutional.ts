@@ -789,16 +789,6 @@ export class Conv1D extends Conv {
 }
 generic_utils.ClassNameMap.register(Conv1D);
 
-/**
- * Crops a tensor of size 4D
- *
- * Input shape:
- *   Tensor of size 4D.
- *
- * Output shape:
- *   Cropped tensor.
- */
-
 export interface Cropping2DLayerConfig extends LayerConfig {
   /**
    * Dimension of the corpping along the width and the height.
@@ -850,12 +840,13 @@ export interface Cropping2DLayerConfig extends LayerConfig {
  *     `[batch, channels, croppedRows, croppedCols]`.
  *
  * Examples
- * `javascript`
+ * ```js
  *
  * const model = tf.sequential();
- * model.add(tf.layers.cropping2D({cropping:[[2, 2], [2, 2]], inputShape: [128,
- * 128, 3]}));
+ * model.add(tf.layers.cropping2D({cropping:[[2, 2], [2, 2]],
+ *                                inputShape: [128, 128, 3]}));
  * //now output shape is [batch, 124, 124, 3]
+ * ```
  */
 export class Cropping2D extends Layer {
   static className = 'Cropping2D';
