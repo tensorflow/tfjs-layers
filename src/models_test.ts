@@ -12,12 +12,16 @@
 import {io, ones, Scalar, scalar, Tensor, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
+import {Model} from './engine/training';
 import * as tfl from './index';
 import {Reshape} from './layers/core';
+import {deserialize} from './layers/serialization';
 import {ModelAndWeightsConfig, modelFromJSON} from './models';
-import {JsonDict} from './types';
+import {ConfigDict, JsonDict} from './types';
+import {convertPythonicToTs} from './utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 import {version as layersVersion} from './version';
+
 // tslint:enable:max-line-length
 
 describeMathCPU('model_from_json', () => {
@@ -297,6 +301,19 @@ describeMathCPU('loadModel', () => {
     } catch (e) {
       done.fail(e.stack);
     }
+  });
+
+  it('Repeated saving and loading of Model works', () => {
+    const model1 = tfl.sequential();
+    model1.add(
+        tfl.layers.dense({units: 3, inputShape: [4], activation: 'relu'}));
+    model1.add(
+        tfl.layers.dense({units: 1, inputShape: [4], activation: 'sigmoid'}));
+    const json1 = model1.toJSON(null, false);
+    const model2 =
+        deserialize(convertPythonicToTs(json1) as ConfigDict) as Model;
+    const json2 = model2.toJSON(null, false);
+    expect(json2).toEqual(json1);
   });
 });
 
