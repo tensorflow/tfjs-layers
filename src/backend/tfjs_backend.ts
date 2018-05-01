@@ -1143,48 +1143,56 @@ export function qr(x: Tensor2D): [Tensor, Tensor] {
            let r = x;                   // Transformed matrix so far.
 
            const one2D = tensor2d([[1]], [1, 1]);
+           let w: Tensor2D;
            for (let j = 0; j < n; ++j) {
-             // Find H = I - tau * w * w', to put zeros below R(j, j).
-             const rjEnd1 = r.slice([j, j], [m - j, 1]);
-             const normX = tfc.norm(rjEnd1);
-             const rjj = r.slice([j, j], [1, 1]);
-             const s = tfc.neg(sign(rjj)) as Tensor2D;
-             const u1 = rjj.sub(multiply(s, normX)) as Tensor2D;
-             const wPre = divide(rjEnd1, u1);
-             let w: Tensor2D;
-             if (wPre.shape[0] === 1) {
-               w = one2D;
-             } else {
-               w = one2D.concat(
-                       wPre.slice([1, 0], [wPre.shape[0] - 1, wPre.shape[1]]),
-                       0) as Tensor2D;
-             }
-             const tau = tfc.neg(divide(tfc.matMul(s, u1), normX)) as Tensor2D;
+             // This tidy within the for-loop ensures we clean up temporary
+             // tensors as soon as they are no longer needed.
+             [w, r, q] =
+                 tidy(() => {
+                   // Find H = I - tau * w * w', to put zeros below R(j, j).
+                   const rjEnd1 = r.slice([j, j], [m - j, 1]);
+                   const normX = tfc.norm(rjEnd1);
+                   const rjj = r.slice([j, j], [1, 1]);
+                   const s = tfc.neg(sign(rjj)) as Tensor2D;
+                   const u1 = rjj.sub(multiply(s, normX)) as Tensor2D;
+                   const wPre = divide(rjEnd1, u1);
+                   if (wPre.shape[0] === 1) {
+                     w = one2D;
+                   } else {
+                     w = one2D.concat(
+                             wPre.slice(
+                                 [1, 0], [wPre.shape[0] - 1, wPre.shape[1]]),
+                             0) as Tensor2D;
+                   }
+                   const tau =
+                       tfc.neg(divide(tfc.matMul(s, u1), normX)) as Tensor2D;
 
-             // -- R := HR, Q := QH.
-             const rjEndAll = r.slice([j, 0], [m - j, n]);
-             const tauTimesW = tau.mul(w) as Tensor2D;
-             if (j === 0) {
-               r = rjEndAll.sub(
-                   tauTimesW.matMul(w.transpose().matMul(rjEndAll)));
-             } else {
-               r = r.slice([0, 0], [j, n])
-                       .concat(
-                           rjEndAll.sub(tauTimesW.matMul(
-                               w.transpose().matMul(rjEndAll))),
-                           0) as Tensor2D;
-             }
-             const qAllJEnd = q.slice([0, j], [m, q.shape[1] - j]);
-             if (j === 0) {
-               q = qAllJEnd.sub(
-                   qAllJEnd.matMul(w).matMul(tauTimesW.transpose()));
-             } else {
-               q = q.slice([0, 0], [m, j])
-                       .concat(
-                           qAllJEnd.sub(qAllJEnd.matMul(w).matMul(
-                               tauTimesW.transpose())),
-                           1) as Tensor2D;
-             }
+                   // -- R := HR, Q := QH.
+                   const rjEndAll = r.slice([j, 0], [m - j, n]);
+                   const tauTimesW = tau.mul(w) as Tensor2D;
+                   if (j === 0) {
+                     r = rjEndAll.sub(
+                         tauTimesW.matMul(w.transpose().matMul(rjEndAll)));
+                   } else {
+                     r = r.slice([0, 0], [j, n])
+                             .concat(
+                                 rjEndAll.sub(tauTimesW.matMul(
+                                     w.transpose().matMul(rjEndAll))),
+                                 0) as Tensor2D;
+                   }
+                   const qAllJEnd = q.slice([0, j], [m, q.shape[1] - j]);
+                   if (j === 0) {
+                     q = qAllJEnd.sub(
+                         qAllJEnd.matMul(w).matMul(tauTimesW.transpose()));
+                   } else {
+                     q = q.slice([0, 0], [m, j])
+                             .concat(
+                                 qAllJEnd.sub(qAllJEnd.matMul(w).matMul(
+                                     tauTimesW.transpose())),
+                                 1) as Tensor2D;
+                   }
+                   return [w, r, q];
+                 }) as [Tensor2D, Tensor2D, Tensor2D];
            }
 
            return [q, r];
