@@ -319,14 +319,18 @@ describeMathCPU('Glorot normal initializer', () => {
       let weights = init.apply([30], DType.float32);
       expect(weights.shape).toEqual([30]);
       expect(weights.dtype).toEqual(DType.float32);
-      const variance1 = math_utils.variance(weights.dataSync() as Float32Array);
+      // const variance1 = math_utils.variance(weights.dataSync() as
+      // Float32Array);
 
       weights = init.apply([120], DType.float32);
       expect(weights.shape).toEqual([120]);
       expect(weights.dtype).toEqual(DType.float32);
-      const variance2 = math_utils.variance(weights.dataSync() as Float32Array);
+      // const variance2 = math_utils.variance(weights.dataSync() as
+      // Float32Array);
 
-      expect(variance2).toBeLessThan(variance1);
+      // TODO(bileschi): This test is flaky.  Tracked in github issue #210.
+      // Re - enable it once it no longer flakes.
+      // expect(variance2).toBeLessThan(variance1);
       expect(init.getClassName()).toEqual(VarianceScaling.className);
     });
 
@@ -335,14 +339,18 @@ describeMathCPU('Glorot normal initializer', () => {
       let weights = init.apply([5, 6], DType.float32);
       expect(weights.shape).toEqual([5, 6]);
       expect(weights.dtype).toEqual(DType.float32);
-      const variance1 = math_utils.variance(weights.dataSync() as Float32Array);
+      // const variance1 = math_utils.variance(weights.dataSync() as
+      // Float32Array);
 
       weights = init.apply([10, 12], DType.float32);
       expect(weights.shape).toEqual([10, 12]);
       expect(weights.dtype).toEqual(DType.float32);
-      const variance2 = math_utils.variance(weights.dataSync() as Float32Array);
+      // const variance2 = math_utils.variance(weights.dataSync() as
+      // Float32Array);
 
-      expect(variance2).toBeLessThan(variance1);
+      // TODO(bileschi): This test is flaky.  Tracked in github issue #210.
+      // Re - enable it once it no longer flakes.
+      // expect(variance2).toBeLessThan(variance1);
     });
   });
 });
