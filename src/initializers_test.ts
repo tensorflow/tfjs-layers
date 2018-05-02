@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
+import {abs, Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import * as tfl from './index';
@@ -314,43 +314,47 @@ describeMathCPU('Glorot uniform initializer', () => {
 
 describeMathCPU('Glorot normal initializer', () => {
   ['glorotNormal', 'GlorotNormal'].forEach(initializer => {
-    it('1D ' + initializer, () => {
+    it('1D shape (1200, )' + initializer, () => {
       const init = getInitializer('glorotNormal');
-      let weights = init.apply([30], DType.float32);
-      expect(weights.shape).toEqual([30]);
-      expect(weights.dtype).toEqual(DType.float32);
-      // const variance1 = math_utils.variance(weights.dataSync() as
-      // Float32Array);
+      // With a shape of (1200, ), we expect the initialized elements to have
+      // mean == 0 and a standard deviation of approximately
+      // sqrt(1.0 / (sqrt(1200)) ~= 0.1700
+      const expectedVariance = 0.1700;
+      const expectedMean = 0.0;
+      const varianceTolerance = 0.10;
+      const meanTolerance = 0.10;
 
-      weights = init.apply([120], DType.float32);
-      expect(weights.shape).toEqual([120]);
-      expect(weights.dtype).toEqual(DType.float32);
-      // const variance2 = math_utils.variance(weights.dataSync() as
-      // Float32Array);
+      const NUM_TRIALS = 4;
 
-      // TODO(bileschi): This test is flaky.  Tracked in github issue #210.
-      // Re - enable it once it no longer flakes.
-      // expect(variance2).toBeLessThan(variance1);
-      expect(init.getClassName()).toEqual(VarianceScaling.className);
+      let numOutOfBounds = 0;
+      for (let i = 0; i < NUM_TRIALS; ++i) {
+        const weights = init.apply([1200], DType.float32);
+        expect(weights.shape).toEqual([1200]);
+        expect(weights.dtype).toEqual(DType.float32);
+        expect(init.getClassName()).toEqual(VarianceScaling.className);
+        const variance =
+            math_utils.variance(weights.dataSync() as Float32Array);
+        const mean = math_utils.mean(weights.dataSync() as Float32Array);
+        if ((Math.abs(variance - expectedVariance) > varianceTolerance) ||
+            (Math.abs(mean - expectedMean) > meanTolerance)) {
+          numOutOfBounds++;
+        }
+      }
+      expect(numOutOfBounds).toBeLessThan(NUM_TRIALS);
     });
-
     it('2D ' + initializer, () => {
       const init = getInitializer('glorotNormal');
       let weights = init.apply([5, 6], DType.float32);
       expect(weights.shape).toEqual([5, 6]);
       expect(weights.dtype).toEqual(DType.float32);
-      // const variance1 = math_utils.variance(weights.dataSync() as
-      // Float32Array);
+      const variance1 = math_utils.variance(weights.dataSync() as Float32Array);
 
       weights = init.apply([10, 12], DType.float32);
       expect(weights.shape).toEqual([10, 12]);
       expect(weights.dtype).toEqual(DType.float32);
-      // const variance2 = math_utils.variance(weights.dataSync() as
-      // Float32Array);
+      const variance2 = math_utils.variance(weights.dataSync() as Float32Array);
 
-      // TODO(bileschi): This test is flaky.  Tracked in github issue #210.
-      // Re - enable it once it no longer flakes.
-      // expect(variance2).toBeLessThan(variance1);
+      expect(variance2).toBeLessThan(variance1);
     });
   });
 });
@@ -450,8 +454,8 @@ describeMathCPUAndGPU('Orthogonal Initializer', () => {
     const w = init.apply([1, 1], DType.float32) as Tensor2D;
     expect(w.shape).toEqual([1, 1]);
     expect(w.dtype).toEqual(DType.float32);
-    // Assert that columns of w are orthogonal (w is a unitary matrix) and the
-    // gain has been reflected.
+    // Assert that columns of w are orthogonal (w is a unitary matrix) and
+    // the gain has been reflected.
     expectTensorsClose(w.transpose().matMul(w), tensor2d([[9]], [1, 1]));
   });
 

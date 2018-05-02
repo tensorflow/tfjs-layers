@@ -373,8 +373,13 @@ export class VarianceScaling extends Initializer {
     const fans = computeFans(shape);
     const fanIn = fans[0];
     const fanOut = fans[1];
-
+    console.log('apply -----------------------');
+    console.log('shape ' + shape);
+    console.log('fanIn ' + fanIn);
+    console.log('fanOut ' + fanOut);
     let scale = this.scale;
+    console.log('initial Scale ' + scale);
+    console.log('this.mode ' + this.mode);
     if (this.mode === 'fanIn') {
       scale /= Math.max(1, fanIn);
     } else if (this.mode === 'fanOut') {
@@ -382,9 +387,11 @@ export class VarianceScaling extends Initializer {
     } else {
       scale /= Math.max(1, (fanIn + fanOut) / 2);
     }
+    console.log('post Scale ' + scale);
 
     if (this.distribution === 'normal') {
       const stddev = Math.sqrt(scale);
+      console.log('stddev ' + stddev);
       return K.truncatedNormal(shape, 0, stddev, dtype, this.seed);
     } else {
       const limit = Math.sqrt(3 * scale);
