@@ -1122,7 +1122,7 @@ export function sign(x: Tensor): Tensor {
  * @throws ValueError if `x.shape[0] < x.shape[1]`, or if `x`'s rank is not 2.
  */
 export function qr(x: Tensor2D): [Tensor, Tensor] {
-  const [q_outer, r_outer]: [Tensor, Tensor] = tidy((): [Tensor, Tensor] => {
+  const [qOuter, rOuter]: [Tensor, Tensor] = tidy((): [Tensor, Tensor] => {
     // TODO(cais): Extend support to >2D as in `tf.qr` and move this
     // function to the core.
     if (x.shape.length !== 2) {
@@ -1147,9 +1147,9 @@ export function qr(x: Tensor2D): [Tensor, Tensor] {
     for (let j = 0; j < n; ++j) {
       // This tidy within the for-loop ensures we clean up temporary
       // tensors as soon as they are no longer needed.
-      const r_temp = r;
-      const w_temp = w;
-      const q_temp = q;
+      const rTemp = r;
+      const wTemp = w;
+      const qTemp = q;
       [w, r, q] = tidy((): [Tensor2D, Tensor2D, Tensor2D] => {
         // Find H = I - tau * w * w', to put zeros below R(j, j).
         const rjEnd1 = r.slice([j, j], [m - j, 1]);
@@ -1191,12 +1191,12 @@ export function qr(x: Tensor2D): [Tensor, Tensor] {
         }
         return [w, r, q];
       });
-      dispose([r_temp, w_temp, q_temp]);
+      dispose([rTemp, wTemp, qTemp]);
     }
 
     return [q, r];
   });
-  return [q_outer, r_outer];
+  return [qOuter, rOuter];
 }
 
 /**
