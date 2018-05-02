@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {abs, Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
+import {Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import * as tfl from './index';
@@ -314,46 +314,52 @@ describeMathCPU('Glorot uniform initializer', () => {
 
 describeMathCPU('Glorot normal initializer', () => {
   ['glorotNormal', 'GlorotNormal'].forEach(initializer => {
-    it('1D shape (1200, )' + initializer, () => {
-      const init = getInitializer('glorotNormal');
-      // With a shape of (1200, ), we expect the initialized elements to have
-      // mean == 0 and a standard deviation of approximately
-      // sqrt(1.0 / (sqrt(1200)) ~= 0.1700
-      const expectedVariance = 0.1700;
-      const expectedMean = 0.0;
-      const varianceTolerance = 0.10;
-      const meanTolerance = 0.10;
-
+    it('1D ' + initializer, () => {
+      const init = getInitializer(initializer);
       const NUM_TRIALS = 4;
+      const varianceArr1: number[] = [];
+      const varianceArr2: number[] = [];
 
-      let numOutOfBounds = 0;
       for (let i = 0; i < NUM_TRIALS; ++i) {
-        const weights = init.apply([1200], DType.float32);
+        let weights = init.apply([30], DType.float32);
+        expect(weights.shape).toEqual([30]);
+        expect(weights.dtype).toEqual(DType.float32);
+        varianceArr1.push(
+            math_utils.variance(weights.dataSync() as Float32Array));
+
+        weights = init.apply([1200], DType.float32);
         expect(weights.shape).toEqual([1200]);
         expect(weights.dtype).toEqual(DType.float32);
+        varianceArr2.push(
+            math_utils.variance(weights.dataSync() as Float32Array));
         expect(init.getClassName()).toEqual(VarianceScaling.className);
-        const variance =
-            math_utils.variance(weights.dataSync() as Float32Array);
-        const mean = math_utils.mean(weights.dataSync() as Float32Array);
-        if ((Math.abs(variance - expectedVariance) > varianceTolerance) ||
-            (Math.abs(mean - expectedMean) > meanTolerance)) {
-          numOutOfBounds++;
-        }
       }
-      expect(numOutOfBounds).toBeLessThan(NUM_TRIALS);
+      const variance1 = math_utils.median(varianceArr1);
+      const variance2 = math_utils.median(varianceArr2);
+      expect(variance2).toBeLessThan(variance1);
     });
+
     it('2D ' + initializer, () => {
-      const init = getInitializer('glorotNormal');
-      let weights = init.apply([5, 6], DType.float32);
-      expect(weights.shape).toEqual([5, 6]);
-      expect(weights.dtype).toEqual(DType.float32);
-      const variance1 = math_utils.variance(weights.dataSync() as Float32Array);
+      const init = getInitializer(initializer);
+      const NUM_TRIALS = 4;
+      const varianceArr1: number[] = [];
+      const varianceArr2: number[] = [];
 
-      weights = init.apply([10, 12], DType.float32);
-      expect(weights.shape).toEqual([10, 12]);
-      expect(weights.dtype).toEqual(DType.float32);
-      const variance2 = math_utils.variance(weights.dataSync() as Float32Array);
+      for (let i = 0; i < NUM_TRIALS; ++i) {
+        let weights = init.apply([5, 6], DType.float32);
+        expect(weights.shape).toEqual([5, 6]);
+        expect(weights.dtype).toEqual(DType.float32);
+        varianceArr1.push(
+            math_utils.variance(weights.dataSync() as Float32Array));
 
+        weights = init.apply([30, 50], DType.float32);
+        expect(weights.shape).toEqual([30, 50]);
+        expect(weights.dtype).toEqual(DType.float32);
+        varianceArr2.push(
+            math_utils.variance(weights.dataSync() as Float32Array));
+      }
+      const variance1 = math_utils.median(varianceArr1);
+      const variance2 = math_utils.median(varianceArr2);
       expect(variance2).toBeLessThan(variance1);
     });
   });
@@ -454,8 +460,8 @@ describeMathCPUAndGPU('Orthogonal Initializer', () => {
     const w = init.apply([1, 1], DType.float32) as Tensor2D;
     expect(w.shape).toEqual([1, 1]);
     expect(w.dtype).toEqual(DType.float32);
-    // Assert that columns of w are orthogonal (w is a unitary matrix) and
-    // the gain has been reflected.
+    // Assert that columns of w are orthogonal (w is a unitary matrix) and the
+    // gain has been reflected.
     expectTensorsClose(w.transpose().matMul(w), tensor2d([[9]], [1, 1]));
   });
 

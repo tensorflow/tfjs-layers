@@ -106,6 +106,17 @@ describeMathCPU('variance', () => {
   });
 });
 
+describeMathCPU('median', () => {
+  it('Number array', () => {
+    expect(math_utils.median([-100, -200, 150, 50])).toEqual(-25);
+  });
+
+  it('Float32Array', () => {
+    expect(math_utils.median(new Float32Array([-100, -200, 150, 50])))
+        .toEqual(-25);
+  });
+});
+
 describe('range', () => {
   it('end > begin', () => {
     expect(math_utils.range(0, 1)).toEqual([0]);

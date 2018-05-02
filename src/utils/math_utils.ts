@@ -113,6 +113,23 @@ export function variance(array: number[]|Float32Array): number {
 }
 
 /**
+ * Compute median of array.
+ * @param array
+ * @return The median value.
+ */
+export function median(array: number[]|Float32Array): number {
+  array.sort((a, b) => a - b);
+  const lowIdx = Math.floor((array.length - 1) / 2);
+  const highIdx = Math.ceil((array.length - 1) / 2);
+  if (lowIdx === highIdx) {
+    return array[lowIdx];
+  }
+  return (array[lowIdx] + array[highIdx]) / 2;
+}
+
+
+
+/**
  * Generate an array of integers in [begin, end).
  * @param begin Beginning integer, inclusive.
  * @param end Ending integer, inclusive.
