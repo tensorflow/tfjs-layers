@@ -43,6 +43,5 @@
   },
   "peerDependencies": {
     "@tensorflow/tfjs-core": "0.8.4"
-  },
-  "dependencies": {}
+  }
 }
