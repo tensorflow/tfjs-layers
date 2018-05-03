@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {ConfigDict, conv2dTranspose, separableConv2d, SerializationMap, Tensor, Tensor4D, tidy} from '@tensorflow/tfjs-core';
+import {conv2dTranspose, separableConv2d, serialization, Tensor, Tensor4D, tidy} from '@tensorflow/tfjs-core';
 
 import {ActivationFn, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/tfjs_backend';
@@ -284,8 +284,8 @@ export abstract class Conv extends Layer {
     return outputShape;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       rank: this.rank,
       filters: this.filters,
       kernelSize: this.kernelSize,
@@ -332,13 +332,13 @@ export class Conv2D extends Conv {
     super(2, config);
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
     return config;
   }
 }
-SerializationMap.register(Conv2D);
+serialization.SerializationMap.register(Conv2D);
 
 /**
  * Transposed convolutional layer (sometimes called Deconvolution).
@@ -512,13 +512,13 @@ export class Conv2DTranspose extends Conv2D {
     return outputShape;
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['dilationRate'];
     return config;
   }
 }
-SerializationMap.register(Conv2DTranspose);
+serialization.SerializationMap.register(Conv2DTranspose);
 
 
 export interface SeparableConvLayerConfig extends ConvLayerConfig {
@@ -698,7 +698,7 @@ export class SeparableConv extends Conv {
     return output;
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
     delete config['kernelInitializer'];
@@ -753,7 +753,7 @@ export class SeparableConv2D extends SeparableConv {
     super(2, config);
   }
 }
-SerializationMap.register(SeparableConv2D);
+serialization.SerializationMap.register(SeparableConv2D);
 
 /**
  * 1D convolution layer (e.g., temporal convolution).
@@ -780,11 +780,11 @@ export class Conv1D extends Conv {
     this.inputSpec = [{ndim: 3}];
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
     delete config['dataFormat'];
     return config;
   }
 }
-SerializationMap.register(Conv1D);
+serialization.SerializationMap.register(Conv1D);

@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "devDependencies": {
-    "@tensorflow/tfjs-core": "0.8.4",
+    "@tensorflow/tfjs-core": "link:.yalc/@tensorflow/tfjs-core",
     "@types/jasmine": "~2.5.53",
     "browserify": "~16.1.0",
     "clang-format": "~1.2.2",
@@ -43,5 +43,6 @@
   },
   "peerDependencies": {
     "@tensorflow/tfjs-core": "0.8.4"
-  }
+  },
+  "dependencies": {}
 }

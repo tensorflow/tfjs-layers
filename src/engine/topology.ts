@@ -11,7 +11,7 @@
 /* Original source: keras/engine/topology.py */
 
 // tslint:disable:max-line-length
-import {ConfigDict, Constructor, doc, Scalar, Serializable, SerializationMap, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+import {doc, Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {Constraint} from '../constraints';
@@ -254,7 +254,7 @@ export class Node {
     config.outboundLayer.inboundNodes.push(this);
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const inboundNames: string[] = [];
     for (const layer of this.inboundLayers) {
       if (layer != null) {
@@ -330,7 +330,7 @@ let _nextLayerID = 0;
  * [tf.layers](#Layers-Basic) namespace.
  */
 @doc({heading: 'Layers', subheading: 'Classes', namespace: 'layers'})
-export abstract class Layer extends Serializable {
+export abstract class Layer extends serialization.Serializable {
   /** Name for this layer. Must be unique within a model. */
   name: string;
   /**
@@ -1226,8 +1226,9 @@ export abstract class Layer extends Serializable {
    *
    * @returns TS dictionary of configuration.
    */
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {name: this.name, trainable: this.trainable};
+  getConfig(): serialization.ConfigDict {
+    const config:
+        serialization.ConfigDict = {name: this.name, trainable: this.trainable};
     if (this.batchInputShape != null) {
       config['batchInputShape'] = this.batchInputShape;
     }
@@ -1396,7 +1397,7 @@ export class InputLayer extends Layer {
         `InputLayer's apply() method. InputLayer name: ${this.name}`);
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     return {
       batchInputShape: this.batchInputShape,
       dtype: this.dtype,
@@ -1405,7 +1406,7 @@ export class InputLayer extends Layer {
     };
   }
 }
-SerializationMap.register(InputLayer);
+serialization.SerializationMap.register(InputLayer);
 
 /**
  * Config for the Input function.
@@ -2004,9 +2005,9 @@ export abstract class Container extends Layer {
    * Util shared between different serialization methods.
    * @returns Model config with Keras version information added.
    */
-  private updatedConfig(): ConfigDict {
+  private updatedConfig(): serialization.ConfigDict {
     const theConfig = this.getConfig();
-    const modelConfig: ConfigDict = {
+    const modelConfig: serialization.ConfigDict = {
       className: this.getClassName(),
       config: theConfig,
       // TODO(nielsene): Replace with Version constant once a
@@ -2380,8 +2381,8 @@ export abstract class Container extends Layer {
     });
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {name: this.name};
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {name: this.name};
 
     // Build a map from layer unique name (self._node_key)
     // to the index of the nodes that are saved in the config.
@@ -2489,8 +2490,9 @@ export abstract class Container extends Layer {
    * @returns A model instance.
    * @throws ValueError: In case of improperly formatted config dict.
    */
-  static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
     // Layer instances created during
     // the graph reconstruction process
     const createdLayers: {[layerName: string]: Layer} = {};
@@ -2500,8 +2502,10 @@ export abstract class Container extends Layer {
     // It acts as a queue that maintains any unprocessed
     // layer call until it becomes possible to process it
     // (i.e. until the input tensors to the call all exist).
-    const unprocessedNodes: {[layer: string]: ConfigDict[][]} = {};
-    function addUnprocessedNode(layer: Layer, nodeData: ConfigDict[]) {
+    const unprocessedNodes:
+        {[layer: string]: serialization.ConfigDict[][]} = {};
+    function addUnprocessedNode(
+        layer: Layer, nodeData: serialization.ConfigDict[]) {
       if (!(layer.name in unprocessedNodes)) {
         unprocessedNodes[layer.name] = [nodeData];
       } else {
@@ -2509,7 +2513,7 @@ export abstract class Container extends Layer {
       }
     }
 
-    function processNode(layer: Layer, nodeData: ConfigDict[]) {
+    function processNode(layer: Layer, nodeData: serialization.ConfigDict[]) {
       const inputTensors: SymbolicTensor[] = [];
       let kwargs;
       for (const inputData of nodeData) {
@@ -2519,7 +2523,7 @@ export abstract class Container extends Layer {
         if (inputData.length === 3) {
           kwargs = {};
         } else if (inputData.length === 4) {
-          kwargs = inputData[3] as ConfigDict;
+          kwargs = inputData[3] as serialization.ConfigDict;
         } else {
           throw new ValueError(`Improperly formatted model config for layer ${
               JSON.stringify(layer)}: ${JSON.stringify(inputData)}`);
@@ -2552,17 +2556,18 @@ export abstract class Container extends Layer {
      * @throws ValueError: In case of improperly formatted `layer_data`
      * dict.
      */
-    function processLayer(layerData: ConfigDict|null) {
+    function processLayer(layerData: serialization.ConfigDict|null) {
       const layerName = layerData.name as string;
       // Instantiate layer.
       const layer = deserializeLayer(
                         layerData,
                         config.customObjects != null ?
-                            config.customObjects as ConfigDict :
+                            config.customObjects as serialization.ConfigDict :
                             {}) as Layer;
       createdLayers[layerName] = layer;
       // Gather layer inputs.
-      const inboundNodesData = layerData.inboundNodes as ConfigDict[];
+      const inboundNodesData =
+          layerData.inboundNodes as serialization.ConfigDict[];
       for (const nodeData of inboundNodesData) {
         if (!(nodeData instanceof Array)) {
           throw new ValueError(
@@ -2579,7 +2584,7 @@ export abstract class Container extends Layer {
 
     // First, we create all layers and enqueue nodes to be processed
     const name = config.name;
-    const layersFromConfig = config.layers as ConfigDict[];
+    const layersFromConfig = config.layers as serialization.ConfigDict[];
     for (const layerData of layersFromConfig) {
       processLayer(layerData);
     }
@@ -2601,7 +2606,8 @@ export abstract class Container extends Layer {
     }
     const inputTensors: SymbolicTensor[] = [];
     const outputTensors: SymbolicTensor[] = [];
-    const inputLayersFromConfig = config.inputLayers as ConfigDict[];
+    const inputLayersFromConfig =
+        config.inputLayers as serialization.ConfigDict[];
     for (const layerData of inputLayersFromConfig) {
       const layerName = layerData[0] as string;
       const nodeIndex = layerData[1] as number;
@@ -2611,7 +2617,8 @@ export abstract class Container extends Layer {
       const layerOutputTensors = layer.inboundNodes[nodeIndex].outputTensors;
       inputTensors.push(layerOutputTensors[tensorIndex]);
     }
-    const outputLayersFromConfig = config.outputLayers as ConfigDict[];
+    const outputLayersFromConfig =
+        config.outputLayers as serialization.ConfigDict[];
     for (const layerData of outputLayersFromConfig) {
       const layerName = layerData[0] as string;
       const nodeIndex = layerData[1] as number;

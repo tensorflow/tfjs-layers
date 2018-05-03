@@ -12,7 +12,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {doc, Optimizer, Scalar, SerializationMap, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
+import {doc, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {BaseLogger, Callback, CallbackList, CustomCallbackConfig, disposeTensorsInLogs, History, standardizeCallbacks, UnresolvedLogs} from '../callbacks';
@@ -1638,4 +1638,4 @@ export class Model extends Container {
   }
 }
 
-SerializationMap.register(Model);
+serialization.SerializationMap.register(Model);

@@ -11,7 +11,7 @@
 /* Unit tests for constraints */
 
 // tslint:disable:max-line-length
-import {ConfigDict, Tensor1D, tensor1d} from '@tensorflow/tfjs-core';
+import {serialization, Tensor1D, tensor1d} from '@tensorflow/tfjs-core';
 
 import {ConstraintIdentifier, deserializeConstraint, getConstraint, serializeConstraint} from './constraints';
 import * as tfl from './index';
@@ -94,16 +94,16 @@ describeMathCPU('Built-in Constraints', () => {
 describeMathCPU('constraints.get', () => {
   it('by string', () => {
     const constraint = getConstraint('maxNorm');
-    const config = serializeConstraint(constraint) as ConfigDict;
-    const nestedConfig = config.config as ConfigDict;
+    const config = serializeConstraint(constraint) as serialization.ConfigDict;
+    const nestedConfig = config.config as serialization.ConfigDict;
     expect(nestedConfig.maxValue).toEqual(2);
     expect(nestedConfig.axis).toEqual(0);
   });
 
   it('by string, upper case', () => {
     const constraint = getConstraint('maxNorm');
-    const config = serializeConstraint(constraint) as ConfigDict;
-    const nestedConfig = config.config as ConfigDict;
+    const config = serializeConstraint(constraint) as serialization.ConfigDict;
+    const nestedConfig = config.config as serialization.ConfigDict;
     expect(nestedConfig.maxValue).toEqual(2);
     expect(nestedConfig.axis).toEqual(0);
   });
@@ -115,8 +115,8 @@ describeMathCPU('constraints.get', () => {
   it('by config dict', () => {
     const origConstraint = tfl.constraints.minMaxNorm(
         {minValue: 0, maxValue: 2, rate: 3, axis: 4});
-    const constraint =
-        getConstraint(serializeConstraint(origConstraint) as ConfigDict);
+    const constraint = getConstraint(
+        serializeConstraint(origConstraint) as serialization.ConfigDict);
     expect(serializeConstraint(constraint))
         .toEqual(serializeConstraint(origConstraint));
   });
@@ -131,7 +131,8 @@ describe('Constraints Serialization', () => {
     ];
     for (const name of constraints) {
       const constraint = getConstraint(name);
-      const config = serializeConstraint(constraint) as ConfigDict;
+      const config =
+          serializeConstraint(constraint) as serialization.ConfigDict;
       const reconstituted = deserializeConstraint(config);
       expect(reconstituted).toEqual(constraint);
     }

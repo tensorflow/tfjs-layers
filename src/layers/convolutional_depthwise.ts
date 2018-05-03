@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {SerializationMap, Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -158,4 +158,4 @@ export class DepthwiseConv2D extends Conv2D {
     }
   }
 }
-SerializationMap.register(DepthwiseConv2D);
+serialization.SerializationMap.register(DepthwiseConv2D);

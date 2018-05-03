@@ -11,7 +11,7 @@
 /* Original source: utils/generic_utils.py */
 
 // tslint:disable:max-line-length
-import {ConfigDict, ConfigDictValue, Serializable, Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {AssertionError, AttributeError, IndexError, ValueError} from '../errors';
 import {DType, Shape} from '../types';
@@ -258,7 +258,8 @@ export function toCamelCase(identifier: string): string {
 // tslint:disable-next-line:no-any
 let _GLOBAL_CUSTOM_OBJECTS = {} as {[objName: string]: any};
 
-export function serializeKerasObject(instance: Serializable): ConfigDictValue {
+export function serializeKerasObject(instance: serialization.Serializable):
+    serialization.ConfigDictValue {
   if (instance === null || instance === undefined) {
     return null;
   }
@@ -275,7 +276,7 @@ export function serializeKerasObject(instance: Serializable): ConfigDictValue {
  */
 // tslint:disable:no-any
 export function deserializeKerasObject(
-    identifier: string|ConfigDict,
+    identifier: string|serialization.ConfigDict,
     moduleObjects = {} as {[objName: string]: any},
     customObjects = {} as {[objName: string]: any},
     printableModuleName = 'object'): any {
@@ -330,7 +331,7 @@ export function deserializeKerasObject(
         customObjectsCombined[key] = customObjects[key];
       }
       // Add the customObjects to config
-      const nestedConfig = config.config as ConfigDict;
+      const nestedConfig = config.config as serialization.ConfigDict;
       nestedConfig.customObjects = customObjectsCombined;
 
       const backupCustomObjects = {..._GLOBAL_CUSTOM_OBJECTS};

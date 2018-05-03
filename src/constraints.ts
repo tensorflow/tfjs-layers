@@ -11,7 +11,7 @@
 /* Original source: keras/contraints.py */
 
 // tslint:disable:max-line-length
-import {ConfigDict, ConfigDictValue, doc, Serializable, SerializationMap, Tensor} from '@tensorflow/tfjs-core';
+import {doc, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
@@ -28,10 +28,10 @@ function calcL2Norms(w: Tensor, axis: number): Tensor {
  * Base class for functions that impose constraints on weight values
  */
 @doc({heading: 'Constraints', subheading: 'Classes', namespace: 'constraints'})
-export abstract class Constraint extends Serializable {
+export abstract class Constraint extends serialization.Serializable {
   /* Porting note: was __call__, apply chosen to match other similar choices */
   abstract apply(w: Tensor): Tensor;
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     return {};
   }
 }
@@ -91,11 +91,11 @@ export class MaxNorm extends Constraint {
         K.divide(desired, K.scalarPlusArray(K.getScalar(K.epsilon()), norms)));
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     return {maxValue: this.maxValue, axis: this.axis};
   }
 }
-SerializationMap.register(MaxNorm);
+serialization.SerializationMap.register(MaxNorm);
 
 export interface UnitNormConfig {
   /**
@@ -133,11 +133,11 @@ export class UnitNorm extends Constraint {
         K.scalarPlusArray(K.getScalar(K.epsilon()), calcL2Norms(w, this.axis)));
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     return {axis: this.axis};
   }
 }
-SerializationMap.register(UnitNorm);
+serialization.SerializationMap.register(UnitNorm);
 
 /**
  * Constains the weight to be non-negative.
@@ -148,7 +148,7 @@ export class NonNeg extends Constraint {
     return K.relu(w);
   }
 }
-SerializationMap.register(NonNeg);
+serialization.SerializationMap.register(NonNeg);
 
 export interface MinMaxNormConfig {
   /**
@@ -217,7 +217,7 @@ export class MinMaxNorm extends Constraint {
         K.divide(desired, K.scalarPlusArray(K.getScalar(K.epsilon()), norms)));
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     return {
       minValue: this.minValue,
       maxValue: this.maxValue,
@@ -226,7 +226,7 @@ export class MinMaxNorm extends Constraint {
     };
   }
 }
-SerializationMap.register(MinMaxNorm);
+serialization.SerializationMap.register(MinMaxNorm);
 
 /** @docinline */
 export type ConstraintIdentifier =
@@ -242,19 +242,21 @@ export const CONSTRAINT_IDENTIFIER_REGISTRY_SYMBOL_MAP:
       'unitNorm': 'UnitNorm'
     };
 
-export function serializeConstraint(constraint: Constraint): ConfigDictValue {
+export function serializeConstraint(constraint: Constraint):
+    serialization.ConfigDictValue {
   return serializeKerasObject(constraint);
 }
 
 export function deserializeConstraint(
-    config: ConfigDict, customObjects: ConfigDict = {}): Constraint {
+    config: serialization.ConfigDict,
+    customObjects: serialization.ConfigDict = {}): Constraint {
   return deserializeKerasObject(
-      config, SerializationMap.getMap().pythonClassNameMap, customObjects,
-      'constraint');
+      config, serialization.SerializationMap.getMap().classNameMap,
+      customObjects, 'constraint');
 }
 
-export function getConstraint(identifier: ConstraintIdentifier|ConfigDict|
-                              Constraint): Constraint {
+export function getConstraint(identifier: ConstraintIdentifier|
+                              serialization.ConfigDict|Constraint): Constraint {
   if (identifier == null) {
     return null;
   }

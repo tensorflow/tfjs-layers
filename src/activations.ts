@@ -9,7 +9,7 @@
  */
 
 // Layer activation functions
-import {ConfigDictValue, scalar, Tensor} from '@tensorflow/tfjs-core';
+import {scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {ValueError} from './errors';
@@ -152,6 +152,7 @@ export function softmax(x: Tensor, axis: number = (-1)): Tensor {
   return K.softmax(x, axis);
 }
 
-export function serializeActivation(activation: ActivationFn): ConfigDictValue {
+export function serializeActivation(activation: ActivationFn):
+    serialization.ConfigDictValue {
   return activation.name;
 }

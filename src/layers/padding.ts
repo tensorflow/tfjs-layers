@@ -16,7 +16,7 @@
 //   but we decided to put them in a separate file (padding.ts) for clarity.
 
 // tslint:disable:max-line-length
-import {ConfigDict, SerializationMap, Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {imageDataFormat} from '../backend/common';
 import * as K from '../backend/tfjs_backend';
@@ -168,8 +168,8 @@ export class ZeroPadding2D extends Layer {
         getExactlyOneTensor(inputs), this.padding, this.dataFormat);
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       padding: this.padding,
       dataFormat: this.dataFormat,
     };
@@ -178,4 +178,4 @@ export class ZeroPadding2D extends Layer {
     return config;
   }
 }
-SerializationMap.register(ZeroPadding2D);
+serialization.SerializationMap.register(ZeroPadding2D);

@@ -13,7 +13,7 @@
  *
  * Original source: keras/constraints.py
  */
-import {ConfigDict, SerializationMap, Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -186,7 +186,7 @@ export class Embedding extends Layer {
         output, getExactlyOneShape(this.computeOutputShape(input.shape)));
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const config = {
       inputDim: this.inputDim,
       outputDim: this.outputDim,
@@ -203,4 +203,4 @@ export class Embedding extends Layer {
   }
 }
 
-SerializationMap.register(Embedding);
+serialization.SerializationMap.register(Embedding);

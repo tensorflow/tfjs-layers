@@ -11,7 +11,7 @@
 /* Original source keras/models.py */
 
 // tslint:disable:max-line-length
-import {ConfigDict, ConfigDictArray, Constructor, doc, loadWeights, Scalar, Serializable, SerializationMap, Tensor, WeightsManifestConfig} from '@tensorflow/tfjs-core';
+import {doc, loadWeights, Scalar, serialization, Tensor, WeightsManifestConfig} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {History} from './callbacks';
@@ -36,7 +36,7 @@ import {convertPythonicToTs} from './utils/serialization_utils';
  */
 export async function modelFromJSON(
     modelAndWeightsConfig: ModelAndWeightsConfig,
-    customObjects?: ConfigDict): Promise<Model> {
+    customObjects?: serialization.ConfigDict): Promise<Model> {
   let modelTopology = modelAndWeightsConfig.modelTopology;
   if (modelTopology['model_config'] != null) {
     // If the model-topology JSON contains a 'model_config' field, then it is
@@ -46,7 +46,8 @@ export async function modelFromJSON(
     // 'model_config' field currently.
     modelTopology = modelTopology['model_config'] as JsonDict;
   }
-  const tsConfig = convertPythonicToTs(modelTopology) as ConfigDict;
+  const tsConfig =
+      convertPythonicToTs(modelTopology) as serialization.ConfigDict;
   const model = deserialize(tsConfig, customObjects) as Model;
 
   if (modelAndWeightsConfig.weightsManifest != null) {
@@ -516,8 +517,9 @@ export class Sequential extends Model {
   }
 
   /* See parent class for JsDoc */
-  static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
     const model = new cls({});
     if (!(model instanceof Sequential)) {
       throw new ValueError(
@@ -530,8 +532,8 @@ export class Sequential extends Model {
     if (!(config[0].className != null) || config[0]['className'] === 'Merge') {
       throw new ValueError('Legacy serialization format not supported yet.');
     }
-    for (const conf of config as ConfigDictArray) {
-      const layer = deserialize(conf as ConfigDict) as Layer;
+    for (const conf of config as serialization.ConfigDictArray) {
+      const layer = deserialize(conf as serialization.ConfigDict) as Layer;
       model.add(layer);
     }
     return model;
@@ -544,7 +546,7 @@ export class Sequential extends Model {
     // NOTE(cais): We override the return type of getConfig() to `any` here,
     //   because the `Sequential` class is a special case among `Container`
     //   subtypes in that its getConfig() method returns an Array (not a dict).
-    const config: ConfigDict[] = [];
+    const config: serialization.ConfigDict[] = [];
     for (const layer of this.layers) {
       config.push({
         className: layer.getClassName(),
@@ -554,4 +556,4 @@ export class Sequential extends Model {
     return config;
   }
 }
-SerializationMap.register(Sequential);
+serialization.SerializationMap.register(Sequential);

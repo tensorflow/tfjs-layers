@@ -12,7 +12,7 @@
  * Normalization layers.
  */
 
-import {ConfigDict, movingAverage, SerializationMap, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+import {movingAverage, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -278,8 +278,8 @@ export class BatchNormalization extends Layer {
     });
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       axis: this.axis,
       momentum: this.momentum,
       epsilon: this.epsilon,
@@ -300,4 +300,4 @@ export class BatchNormalization extends Layer {
     return config;
   }
 }
-SerializationMap.register(BatchNormalization);
+serialization.SerializationMap.register(BatchNormalization);
