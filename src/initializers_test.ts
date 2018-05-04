@@ -334,6 +334,7 @@ describeMathCPU('Glorot normal initializer', () => {
             math_utils.variance(weights.dataSync() as Float32Array));
         expect(init.getClassName()).toEqual(VarianceScaling.className);
       }
+
       const variance1 = math_utils.median(varianceArr1);
       const variance2 = math_utils.median(varianceArr2);
       expect(variance2).toBeLessThan(variance1);
@@ -358,6 +359,7 @@ describeMathCPU('Glorot normal initializer', () => {
         varianceArr2.push(
             math_utils.variance(weights.dataSync() as Float32Array));
       }
+
       const variance1 = math_utils.median(varianceArr1);
       const variance2 = math_utils.median(varianceArr2);
       expect(variance2).toBeLessThan(variance1);

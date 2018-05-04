@@ -127,8 +127,6 @@ export function median(array: number[]|Float32Array): number {
   return (array[lowIdx] + array[highIdx]) / 2;
 }
 
-
-
 /**
  * Generate an array of integers in [begin, end).
  * @param begin Beginning integer, inclusive.
