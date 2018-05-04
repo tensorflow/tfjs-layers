@@ -111,7 +111,6 @@ export interface ModelAndWeightsConfig {
  *      the model in the canonical TensorFlow.js format. This path will be
  *      interpreted as a relative HTTP path, to which `fetch` will be used to
  *      request the model topology and weight manifest JSON.
- *
  *      The content of the JSON file is assumed to be a JSON object with the
  *      following fields and values:
  *      - 'modelTopology': A JSON object that can be either of:
@@ -119,9 +118,7 @@ export interface ModelAndWeightsConfig {
  *            value of `keras.Model.to_json()`
  *        2. a full model JSON in the format of `keras.models.save_model()`.
  *      - 'weightsManifest': A TensorFlow.js weights manifest.
- *
  *      See the Python converter function `save_model()` for more details.
- *
  *      It is also assumed that model weights can be accessed from relative
  * paths described by the `paths` fields in weights manifest.
  *   2. An `tf.io.IOHandler` object that loads model artifacts with its `load`
