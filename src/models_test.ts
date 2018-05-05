@@ -384,7 +384,7 @@ describeMathCPU('loadModel from IOHandler', () => {
   ];
   const weightData = new Float32Array([1.1, 2.2, 3.3, 4.4, 5.5]).buffer;
 
-  // A dummy IOHandler that returns hard-coded model artifiacts when its `load`
+  // A dummy IOHandler that returns hard-coded model artifacts when its `load`
   // method is called.
   class IOHandlerForTest implements io.IOHandler {
     private readonly includeWeights: boolean;

@@ -990,8 +990,8 @@ export abstract class Layer extends Serializable {
    * @returns Weight values as an `Array` of `Tensor`s.
    */
   getWeights(trainableOnly = false): Tensor[] {
-    return trainableOnly ? K.batchGetValue(this.trainableWeights) :
-                           K.batchGetValue(this.weights);
+    return K.batchGetValue(
+        trainableOnly ? this.trainableWeights : this.weights);
   }
 
   /**
