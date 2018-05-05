@@ -18,17 +18,13 @@ describeMathCPUAndGPU('Model.save', () => {
   class IOHandlerForTest implements io.IOHandler {
     savedArtifacts: io.ModelArtifacts;
 
-    constructor() {}
-
     async save(modelArtifacts: io.ModelArtifacts): Promise<io.SaveResult> {
       this.savedArtifacts = modelArtifacts;
       return {modelArtifactsInfo: null};
     }
   }
 
-  class EmptyIOHanlder implements io.IOHandler {
-    constructor() {}
-  }
+  class EmptyIOHandler implements io.IOHandler {}
 
   it('Saving all weights succeeds', async done => {
     const model = new Sequential();
@@ -90,7 +86,7 @@ describeMathCPUAndGPU('Model.save', () => {
   it('Saving to a handler without save method fails', async done => {
     const model = new Sequential();
     model.add(new Dense({units: 3, inputShape: [5]}));
-    const handler = new EmptyIOHanlder();
+    const handler = new EmptyIOHandler();
     model.save(handler)
         .then(saveResult => {
           fail(
