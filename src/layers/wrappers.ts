@@ -239,12 +239,9 @@ export type BidirectionalMergeMode = 'sum'|'mul'|'concat'|'ave';
 export const VALID_BIDIRECTIONAL_MERGE_MODES =
     ['sum', 'mul', 'concat', 'ave', undefined, null];
 export function checkBidirectionalMergeMode(value?: string): void {
-  if (value == null) {
-    return;
-  }
   if (VALID_BIDIRECTIONAL_MERGE_MODES.indexOf(value) < 0) {
     throw new ValueError(
-        `${value} is not a valid BidrectionalMergeMode.  Valid values as ${
+        `${value} is not a valid BidrectionalMergeMode.  Valid values are ${
             VALID_BIDIRECTIONAL_MERGE_MODES}`);
   }
 }

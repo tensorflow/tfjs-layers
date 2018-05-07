@@ -25,12 +25,9 @@ export type DataFormat = 'channelsFirst'|'channelsLast';
 export const VALID_DATA_FORMAT_VALUES =
     ['channelsFirst', 'channelsLast', undefined, null];
 export function checkDataFormat(value?: string): void {
-  if (value == null) {
-    return;
-  }
   if (VALID_DATA_FORMAT_VALUES.indexOf(value) < 0) {
     throw new ValueError(
-        `${value} is not a valid DataFormat.  Valid values as ${
+        `${value} is not a valid DataFormat.  Valid values are ${
             VALID_DATA_FORMAT_VALUES}`);
   }
 }
@@ -40,12 +37,9 @@ export type PaddingMode = 'valid'|'same'|'causal';
 export const VALID_PADDING_MODE_VALUES =
     ['valid', 'same', 'causal', undefined, null];
 export function checkPaddingMode(value?: string): void {
-  if (value == null) {
-    return;
-  }
   if (VALID_PADDING_MODE_VALUES.indexOf(value) < 0) {
     throw new ValueError(
-        `${value} is not a valid PaddingMode.  Valid values as ${
+        `${value} is not a valid PaddingMode.  Valid values are ${
             VALID_PADDING_MODE_VALUES}`);
   }
 }
@@ -54,11 +48,8 @@ export function checkPaddingMode(value?: string): void {
 export type PoolMode = 'max'|'avg';
 export const VALID_POOL_MODE_VALUES = ['max', 'avg', undefined, null];
 export function checkPoolMode(value?: string): void {
-  if (value == null) {
-    return;
-  }
   if (VALID_POOL_MODE_VALUES.indexOf(value) < 0) {
-    throw new ValueError(`${value} is not a valid PoolMode.  Valid values as ${
+    throw new ValueError(`${value} is not a valid PoolMode.  Valid values are ${
         VALID_POOL_MODE_VALUES}`);
   }
 }

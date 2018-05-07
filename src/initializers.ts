@@ -25,11 +25,8 @@ export type FanMode = 'fanIn'|'fanOut'|'fanAvg';
 export const VALID_FAN_MODE_VALUES =
     ['fanIn', 'fanOut', 'fanAvg', undefined, null];
 export function checkFanMode(value?: string): void {
-  if (value == null) {
-    return;
-  }
   if (VALID_FAN_MODE_VALUES.indexOf(value) < 0) {
-    throw new ValueError(`${value} is not a valid FanMode.  Valid values as ${
+    throw new ValueError(`${value} is not a valid FanMode.  Valid values are ${
         VALID_FAN_MODE_VALUES}`);
   }
 }
@@ -38,12 +35,9 @@ export function checkFanMode(value?: string): void {
 export type Distribution = 'normal'|'uniform';
 export const VALID_DISTRIBUTION_VALUES = ['normal', 'uniform', undefined, null];
 export function checkDistribution(value?: string): void {
-  if (value == null) {
-    return;
-  }
   if (VALID_DISTRIBUTION_VALUES.indexOf(value) < 0) {
     throw new ValueError(
-        `${value} is not a valid Distribution.  Valid values as ${
+        `${value} is not a valid Distribution.  Valid values are ${
             VALID_DISTRIBUTION_VALUES}`);
   }
 }
