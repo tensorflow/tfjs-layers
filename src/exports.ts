@@ -13,14 +13,14 @@
  */
 
 // tslint:disable:max-line-length
-import {doc, Tensor} from '@tensorflow/tfjs-core';
+import {doc, io, Tensor} from '@tensorflow/tfjs-core';
 
 import {Constraint, MaxNorm, MaxNormConfig, MinMaxNorm, MinMaxNormConfig, NonNeg, UnitNorm, UnitNormConfig} from './constraints';
 import {ContainerConfig, Input, InputConfig, InputLayer, InputLayerConfig, Layer, LayerConfig} from './engine/topology';
 import {Model} from './engine/training';
 import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
 import {ELU, ELULayerConfig, LeakyReLU, LeakyReLULayerConfig, Softmax, SoftmaxLayerConfig, ThresholdedReLU, ThresholdedReLULayerConfig} from './layers/advanced_activations';
-import {Conv1D, Conv2D, Conv2DTranspose, ConvLayerConfig, SeparableConv2D, SeparableConvLayerConfig} from './layers/convolutional';
+import {Conv1D, Conv2D, Conv2DTranspose, ConvLayerConfig, Cropping2D, Cropping2DLayerConfig, SeparableConv2D, SeparableConvLayerConfig} from './layers/convolutional';
 import {DepthwiseConv2D, DepthwiseConv2DLayerConfig} from './layers/convolutional_depthwise';
 import {Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, DropoutLayerConfig, Flatten, RepeatVector, RepeatVectorLayerConfig, Reshape, ReshapeLayerConfig} from './layers/core';
 import {Embedding, EmbeddingLayerConfig} from './layers/embeddings';
@@ -155,8 +155,8 @@ export class ModelExports {
     subheading: 'Loading',
     useDocsFrom: 'loadModelInternal'
   })
-  static loadModel(modelConfigPath: string): Promise<Model> {
-    return loadModelInternal(modelConfigPath);
+  static loadModel(pathOrIOHandler: string|io.IOHandler): Promise<Model> {
+    return loadModelInternal(pathOrIOHandler);
   }
 
   @doc({
@@ -283,6 +283,17 @@ export class LayerExports {
   })
   static separableConv2d(config: SeparableConvLayerConfig): Layer {
     return new SeparableConv2D(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Convolutional',
+    namespace: 'layers',
+    useDocsFrom: 'Cropping2D',
+    configParamIndices: [0]
+  })
+  static cropping2D(config: Cropping2DLayerConfig): Layer {
+    return new Cropping2D(config);
   }
 
   // Convolutional (depthwise) Layers.

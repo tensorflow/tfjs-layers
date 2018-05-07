@@ -22,6 +22,7 @@ import {Regularizer} from '../regularizers';
 import {DType, JsonDict, LayerVariable, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor, TensorInterface} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
+import {version as layersVersion} from '../version';
 // tslint:enable:max-line-length
 
 // TODO(michaelterry): This is a stub until it's defined.
@@ -984,9 +985,13 @@ export abstract class Layer extends serialization.Serializable {
 
   /**
    * Returns the current values of the weights of the layer.
+   *
+   * @param trainableOnly Whether to get the values of only trainable weights.
+   * @returns Weight values as an `Array` of `Tensor`s.
    */
-  getWeights(): Tensor[] {
-    return K.batchGetValue(this.weights);
+  getWeights(trainableOnly = false): Tensor[] {
+    return K.batchGetValue(
+        trainableOnly ? this.trainableWeights : this.weights);
   }
 
   /**
@@ -2010,9 +2015,7 @@ export abstract class Container extends Layer {
     const modelConfig: serialization.ConfigDict = {
       className: this.getClassName(),
       config: theConfig,
-      // TODO(nielsene): Replace with Version constant once a
-      // release workflow and versioning approach are selected.
-      kerasVersion: 'tfjs-layers pre-release',
+      kerasVersion: `tfjs-layers ${layersVersion}`,
       // TODO(nielsene): Replace something like K.backend() once
       // possible.
       backend: 'TensorFlow.js'
@@ -2025,13 +2028,16 @@ export abstract class Container extends Layer {
    *
    * To load a network from a JSON save file, use
    * models.modelFromJSON(jsonString);
-   * @param extraJsonArgs unused in tfjs-layers, maintained for PyKeras
-   * @returns a JSON string
+   * @param extraJsonArgs Unused in tfjs-layers, maintained for PyKeras
+   * @param returnString Whether the return value should be stringified
+   *    (default: `true`).
+   * @returns a JSON string if `returnString` (default), or a JSON object if
+   *   `!returnString`.
    */
   // tslint:disable-next-line:no-any
-  toJSON(unused?: any): string {
-    const modelConfig = this.updatedConfig();
-    return JSON.stringify(convertTsToPythonic(modelConfig));
+  toJSON(unused?: any, returnString = true): string|JsonDict {
+    const modelConfig = convertTsToPythonic(this.updatedConfig()) as JsonDict;
+    return returnString ? JSON.stringify(modelConfig) : modelConfig;
   }
 
   /**
@@ -2756,10 +2762,10 @@ export function loadWeightsFromNamedTensorMap(
   let totalWeightsCount = 0;
   for (const layer of layers) {
     for (const weight of layer.weights) {
-      if (nameToWeight[weight.name] != null) {
-        throw new ValueError(`Duplicate weight name: ${weight.name}`);
+      if (nameToWeight[weight.originalName] != null) {
+        throw new ValueError(`Duplicate weight name: ${weight.originalName}`);
       }
-      nameToWeight[weight.name] = weight;
+      nameToWeight[weight.originalName] = weight;
       totalWeightsCount++;
     }
   }

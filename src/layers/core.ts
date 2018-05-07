@@ -14,9 +14,10 @@
 
 import {Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
-// tslint:disable:max-line-length
 import {ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/tfjs_backend';
+
+// tslint:disable:max-line-length
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
@@ -27,6 +28,7 @@ import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneTensor} from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
+
 // tslint:enable:max-line-length
 
 export interface DropoutLayerConfig extends LayerConfig {
