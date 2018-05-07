@@ -13,21 +13,25 @@
  */
 
 // tslint:disable:max-line-length
-import {doc} from '@tensorflow/tfjs-core';
+import {doc, io, Tensor} from '@tensorflow/tfjs-core';
 
 import {Constraint, MaxNorm, MaxNormConfig, MinMaxNorm, MinMaxNormConfig, NonNeg, UnitNorm, UnitNormConfig} from './constraints';
 import {ContainerConfig, Input, InputConfig, InputLayer, InputLayerConfig, Layer, LayerConfig} from './engine/topology';
 import {Model} from './engine/training';
 import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
-import {Conv1D, Conv2D, ConvLayerConfig} from './layers/convolutional';
+import {ELU, ELULayerConfig, LeakyReLU, LeakyReLULayerConfig, Softmax, SoftmaxLayerConfig, ThresholdedReLU, ThresholdedReLULayerConfig} from './layers/advanced_activations';
+import {Conv1D, Conv2D, Conv2DTranspose, ConvLayerConfig, Cropping2D, Cropping2DLayerConfig, SeparableConv2D, SeparableConvLayerConfig} from './layers/convolutional';
 import {DepthwiseConv2D, DepthwiseConv2DLayerConfig} from './layers/convolutional_depthwise';
-import {Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, DropoutLayerConfig, Flatten, RepeatVector, RepeatVectorLayerConfig} from './layers/core';
+import {Activation, ActivationLayerConfig, Dense, DenseLayerConfig, Dropout, DropoutLayerConfig, Flatten, RepeatVector, RepeatVectorLayerConfig, Reshape, ReshapeLayerConfig} from './layers/core';
 import {Embedding, EmbeddingLayerConfig} from './layers/embeddings';
 import {Add, Average, Concatenate, ConcatenateLayerConfig, Maximum, Minimum, Multiply} from './layers/merge';
 import {BatchNormalization, BatchNormalizationLayerConfig} from './layers/normalization';
-import {AvgPooling1D, AvgPooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerConfig, MaxPooling1D, MaxPooling2D, Pooling1DLayerConfig, Pooling2DLayerConfig} from './layers/pooling';
+import {ZeroPadding2D, ZeroPadding2DLayerConfig} from './layers/padding';
+import {AveragePooling1D, AveragePooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerConfig, MaxPooling1D, MaxPooling2D, Pooling1DLayerConfig, Pooling2DLayerConfig} from './layers/pooling';
 import {GRU, GRUCell, GRUCellLayerConfig, GRULayerConfig, LSTM, LSTMCell, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNCell, RNNLayerConfig, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig, StackedRNNCells, StackedRNNCellsConfig} from './layers/recurrent';
-import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, WrapperLayerConfig} from './layers/wrappers';
+import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, Wrapper, WrapperLayerConfig} from './layers/wrappers';
+import {categoricalCrossentropy, cosineProximity, meanAbsoluteError, meanAbsolutePercentageError, meanSquaredError} from './losses';
+import {binaryAccuracy, binaryCrossentropy, categoricalAccuracy} from './metrics';
 import {loadModelInternal, Sequential, SequentialConfig} from './models';
 import {l1, L1Config, L1L2, L1L2Config, l2, L2Config, Regularizer} from './regularizers';
 import {SymbolicTensor} from './types';
@@ -103,7 +107,7 @@ export class ModelExports {
    * ```js
    * const model = tf.sequential();
    *
-   * // First layer must have a defined input shape
+   * // First layer must have an input shape defined.
    * model.add(tf.layers.dense({units: 32, inputShape: [50]}));
    * // Afterwards, TF.js does automatic shape inference.
    * model.add(tf.layers.dense({units: 4}));
@@ -111,7 +115,7 @@ export class ModelExports {
    * // Inspect the inferred shape of the model's output, which equals
    * // `[null, 4]`. The 1st dimension is the undetermined batch dimension; the
    * // 2nd is the output size of the model's last layer.
-   * console.log(model.outputs[0].shape);
+   * console.log(JSON.stringify(model.outputs[0].shape));
    * ```
    *
    * It is also possible to specify a batch size (with potentially undetermined
@@ -127,7 +131,7 @@ export class ModelExports {
    * model.add(tf.layers.dense({units: 4}));
    *
    * // Inspect the inferred shape of the model's output.
-   * console.log(model.outputs[0].shape);
+   * console.log(JSON.stringify(model.outputs[0].shape));
    * ```
    *
    * You can also use an `Array` of already-constructed `Layer`s to create
@@ -138,7 +142,7 @@ export class ModelExports {
    *   layers: [tf.layers.dense({units: 32, inputShape: [50]}),
    *            tf.layers.dense({units: 4})]
    * });
-   * console.log(model.outputs[0].shape);
+   * console.log(JSON.stringify(model.outputs[0].shape));
    * ```
    */
   @doc({heading: 'Models', subheading: 'Creation', configParamIndices: [0]})
@@ -151,8 +155,8 @@ export class ModelExports {
     subheading: 'Loading',
     useDocsFrom: 'loadModelInternal'
   })
-  static loadModel(modelConfigPath: string): Promise<Model> {
-    return loadModelInternal(modelConfigPath);
+  static loadModel(pathOrIOHandler: string|io.IOHandler): Promise<Model> {
+    return loadModelInternal(pathOrIOHandler);
   }
 
   @doc({
@@ -189,6 +193,52 @@ export class LayerExports {
   // Alias for `tf.input`.
   static input = ModelExports.input;
 
+  // Advanced Activation Layers.
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Advanced Activation',
+    namespace: 'layers',
+    useDocsFrom: 'ELU',
+    configParamIndices: [0]
+  })
+  static elu(config?: ELULayerConfig): Layer {
+    return new ELU(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Advanced Activation',
+    namespace: 'layers',
+    useDocsFrom: 'LeakyReLU',
+    configParamIndices: [0]
+  })
+  static leakyReLU(config?: LeakyReLULayerConfig): Layer {
+    return new LeakyReLU(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Advanced Activation',
+    namespace: 'layers',
+    useDocsFrom: 'Softmax',
+    configParamIndices: [0]
+  })
+  static softmax(config?: SoftmaxLayerConfig): Layer {
+    return new Softmax(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Advanced Activation',
+    namespace: 'layers',
+    useDocsFrom: 'ThresholdedReLU',
+    configParamIndices: [0]
+  })
+  static thresholdedReLU(config?: ThresholdedReLULayerConfig): Layer {
+    return new ThresholdedReLU(config);
+  }
+
   // Convolutional Layers.
 
   @doc({
@@ -211,6 +261,39 @@ export class LayerExports {
   })
   static conv2d(config: ConvLayerConfig): Layer {
     return new Conv2D(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Convolutional',
+    namespace: 'layers',
+    useDocsFrom: 'Conv2DTranspose',
+    configParamIndices: [0]
+  })
+  static conv2dTranspose(config: ConvLayerConfig): Layer {
+    return new Conv2DTranspose(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Convolutional',
+    namespace: 'layers',
+    useDocsFrom: 'SeparableConv2D',
+    configParamIndices: [0]
+  })
+  static separableConv2d(config: SeparableConvLayerConfig): Layer {
+    return new SeparableConv2D(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Convolutional',
+    namespace: 'layers',
+    useDocsFrom: 'Cropping2D',
+    configParamIndices: [0]
+  })
+  static cropping2D(config: Cropping2DLayerConfig): Layer {
+    return new Cropping2D(config);
   }
 
   // Convolutional (depthwise) Layers.
@@ -286,6 +369,17 @@ export class LayerExports {
     heading: 'Layers',
     subheading: 'Basic',
     namespace: 'layers',
+    useDocsFrom: 'Reshape',
+    configParamIndices: [0]
+  })
+  static reshape(config: ReshapeLayerConfig): Layer {
+    return new Reshape(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Basic',
+    namespace: 'layers',
     useDocsFrom: 'Embedding',
     configParamIndices: [0]
   })
@@ -324,7 +418,7 @@ export class LayerExports {
     useDocsFrom: 'Concatenate',
     configParamIndices: [0]
   })
-  static concatenate(config: ConcatenateLayerConfig): Layer {
+  static concatenate(config?: ConcatenateLayerConfig): Layer {
     return new Concatenate(config);
   }
 
@@ -374,27 +468,56 @@ export class LayerExports {
     return new BatchNormalization(config);
   }
 
+  // Padding Layers.
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Padding',
+    namespace: 'layers',
+    useDocsFrom: 'ZeroPadding2D',
+    configParamIndices: [0]
+  })
+  static zeroPadding2d(config?: ZeroPadding2DLayerConfig): Layer {
+    return new ZeroPadding2D(config);
+  }
+
   // Pooling Layers.
   @doc({
     heading: 'Layers',
     subheading: 'Pooling',
     namespace: 'layers',
-    useDocsFrom: 'AvgPooling1D',
+    useDocsFrom: 'AveragePooling1D',
     configParamIndices: [0]
   })
+  static averagePooling1d(config: Pooling1DLayerConfig): Layer {
+    return new AveragePooling1D(config);
+  }
+  static avgPool1d(config: Pooling1DLayerConfig): Layer {
+    return LayerExports.averagePooling1d(config);
+  }
+  // For backwards compatibility.
+  // See https://github.com/tensorflow/tfjs/issues/152
   static avgPooling1d(config: Pooling1DLayerConfig): Layer {
-    return new AvgPooling1D(config);
+    return LayerExports.averagePooling1d(config);
   }
 
   @doc({
     heading: 'Layers',
     subheading: 'Pooling',
     namespace: 'layers',
-    useDocsFrom: 'AvgPooling2D',
+    useDocsFrom: 'AveragePooling2D',
     configParamIndices: [0]
   })
+  static averagePooling2d(config: Pooling2DLayerConfig): Layer {
+    return new AveragePooling2D(config);
+  }
+  static avgPool2d(config: Pooling2DLayerConfig): Layer {
+    return LayerExports.averagePooling2d(config);
+  }
+  // For backwards compatibility.
+  // See https://github.com/tensorflow/tfjs/issues/152
   static avgPooling2d(config: Pooling2DLayerConfig): Layer {
-    return new AvgPooling2D(config);
+    return LayerExports.averagePooling2d(config);
   }
 
   @doc({
@@ -562,7 +685,7 @@ export class LayerExports {
     useDocsFrom: 'Bidirectional',
     configParamIndices: [0]
   })
-  static bidirectional(config: BidirectionalLayerConfig): Layer {
+  static bidirectional(config: BidirectionalLayerConfig): Wrapper {
     return new Bidirectional(config);
   }
 
@@ -750,6 +873,93 @@ export class InitializerExports {
   })
   static orthogonal(config: OrthogonalConfig): Initializer {
     return new Orthogonal(config);
+  }
+}
+
+export class MetricExports {
+  @doc(
+      {heading: 'Metrics', namespace: 'metrics', useDocsFrom: 'binaryAccuracy'})
+  static binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
+    return binaryAccuracy(yTrue, yPred);
+  }
+
+  @doc({
+    heading: 'Metrics',
+    namespace: 'metrics',
+    useDocsFrom: 'binaryCrossentropy'
+  })
+  static binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
+    return binaryCrossentropy(yTrue, yPred);
+  }
+
+  @doc({
+    heading: 'Metrics',
+    namespace: 'metrics',
+    useDocsFrom: 'categoricalAccuracy'
+  })
+  static categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
+    return categoricalAccuracy(yTrue, yPred);
+  }
+
+  @doc({
+    heading: 'Metrics',
+    namespace: 'metrics',
+    useDocsFrom: 'categoricalCrossentropy'
+  })
+  static categoricalCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
+    return categoricalCrossentropy(yTrue, yPred);
+  }
+
+  @doc({
+    heading: 'Metrics',
+    namespace: 'metrics',
+    useDocsFrom: 'cosineProximity'
+  })
+  static cosineProximity(yTrue: Tensor, yPred: Tensor): Tensor {
+    return cosineProximity(yTrue, yPred);
+  }
+
+  @doc({
+    heading: 'Metrics',
+    namespace: 'metrics',
+    useDocsFrom: 'meanAbsoluteError'
+  })
+  meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
+    return meanAbsoluteError(yTrue, yPred);
+  }
+
+  @doc({
+    heading: 'Metrics',
+    namespace: 'metrics',
+    useDocsFrom: 'meanAbsolutePercentageError'
+  })
+  meanAbsolutePercentageError(yTrue: Tensor, yPred: Tensor): Tensor {
+    return meanAbsolutePercentageError(yTrue, yPred);
+  }
+
+  MAPE(yTrue: Tensor, yPred: Tensor): Tensor {
+    return meanAbsolutePercentageError(yTrue, yPred);
+  }
+
+  mape(yTrue: Tensor, yPred: Tensor): Tensor {
+    return meanAbsolutePercentageError(yTrue, yPred);
+  }
+
+  @doc({
+    heading: 'Metrics',
+    namespace: 'metrics',
+    useDocsFrom: 'meanSquaredError'
+  })
+  static meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
+    return meanSquaredError(yTrue, yPred);
+  }
+
+  static MSE(yTrue: Tensor, yPred: Tensor): Tensor {
+    return meanSquaredError(yTrue, yPred);
+  }
+
+  static mse(yTrue: Tensor, yPred: Tensor): Tensor {
+    return meanSquaredError(yTrue, yPred);
   }
 }
 

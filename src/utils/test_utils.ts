@@ -13,19 +13,12 @@
  */
 
 // tslint:disable:max-line-length
-import {environment, Tensor, test_util} from '@tensorflow/tfjs-core';
-
-import {setBackend} from '../backend/tfjs_backend';
+import {Tensor, test_util} from '@tensorflow/tfjs-core';
+import * as jasmine_util from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {disposeScalarCache} from '../backend/tfjs_backend';
 import {ValueError} from '../errors';
 
 // tslint:enable:max-line-length
-
-const webgl2Features: environment.Features[] = [{
-  'BACKEND': 'webgl',
-  'WEBGL_FLOAT_TEXTURE_ENABLED': true,
-  'WEBGL_VERSION': 2
-}];
-
 
 /**
  * Expect values are close between an Tensor or ConcreteTensor.
@@ -76,9 +69,9 @@ export function describeMathCPUAndGPU(testName: string, tests: () => void) {
  * @param tests
  */
 export function describeMathCPU(testName: string, tests: () => void) {
-  test_util.describeWithFlags(testName, test_util.CPU_ENVS, () => {
+  jasmine_util.describeWithFlags(testName, test_util.CPU_ENVS, () => {
     beforeEach(() => {
-      setBackend('cpu');
+      disposeScalarCache();
     });
     tests();
   });
@@ -90,9 +83,9 @@ export function describeMathCPU(testName: string, tests: () => void) {
  * @param tests
  */
 export function describeMathGPU(testName: string, tests: () => void) {
-  test_util.describeWithFlags(testName, webgl2Features, () => {
+  jasmine_util.describeWithFlags(testName, test_util.WEBGL_ENVS, () => {
     beforeEach(() => {
-      setBackend('webgl');
+      disposeScalarCache();
     });
     tests();
   });

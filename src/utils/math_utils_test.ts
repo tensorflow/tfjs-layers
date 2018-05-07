@@ -12,6 +12,8 @@
  * Unit tests for math_utils.
  */
 
+import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
+
 import * as math_utils from './math_utils';
 import {describeMathCPU} from './test_utils';
 
@@ -103,5 +105,38 @@ describeMathCPU('variance', () => {
   it('Float32Array', () => {
     expect(math_utils.variance(new Float32Array([-100, -200, 150, 50])))
         .toEqual(18125);
+  });
+});
+
+describeMathCPU('median', () => {
+  it('Number array', () => {
+    expect(math_utils.median([-100, -200, 150, 50])).toEqual(-25);
+  });
+
+  it('Float32Array', () => {
+    expect(math_utils.median(new Float32Array([-100, -200, 150, 50])))
+        .toEqual(-25);
+  });
+
+  it('does not mutate input array', () => {
+    const numbers = [-100, -200, 150, 50];
+    math_utils.median(numbers);
+    expectArraysClose(numbers, [-100, -200, 150, 50]);
+  });
+});
+
+describe('range', () => {
+  it('end > begin', () => {
+    expect(math_utils.range(0, 1)).toEqual([0]);
+    expect(math_utils.range(0, 5)).toEqual([0, 1, 2, 3, 4]);
+    expect(math_utils.range(-10, -5)).toEqual([-10, -9, -8, -7, -6]);
+    expect(math_utils.range(-3, 3)).toEqual([-3, -2, -1, 0, 1, 2]);
+  });
+  it('end === begin', () => {
+    expect(math_utils.range(0, 0)).toEqual([]);
+    expect(math_utils.range(-2, -2)).toEqual([]);
+  });
+  it('end < begin throws error', () => {
+    expect(() => math_utils.range(0, -2)).toThrowError(/.*-2.*0.*forbidden/);
   });
 });

@@ -12,19 +12,20 @@
  * Normalization layers.
  */
 
-import {Tensor} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
-
 // tslint:disable:max-line-length
+import {movingAverage, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, Layer, LayerConfig} from '../engine/topology';
-import {NotImplementedError, ValueError} from '../errors';
+import {ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
-import {Shape} from '../types';
-import {ConfigDict, LayerVariable} from '../types';
+import {Kwargs, Shape} from '../types';
+import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
+import {arrayProd, range} from '../utils/math_utils';
+
 // tslint:enable:max-line-length
 
 export interface BatchNormalizationLayerConfig extends LayerConfig {
@@ -51,7 +52,7 @@ export interface BatchNormalizationLayerConfig extends LayerConfig {
   /**
    * If `true`, add offset of `beta` to normalized tensor.
    * If `false`, `beta` is ignored.
-   * Defaults to true.
+   * Defaults to `true`.
    */
   center?: boolean;
 
@@ -60,7 +61,7 @@ export interface BatchNormalizationLayerConfig extends LayerConfig {
    * If `false`, `gamma` is not used.
    * When the next layer is linear (also e.g. `nn.relu`),
    * this can be disabled since the scaling will be done by the next layer.
-   * Defaults to true.
+   * Defaults to `true`.
    */
   scale?: boolean;
 
@@ -130,6 +131,7 @@ export interface BatchNormalizationLayerConfig extends LayerConfig {
  * Internal Covariate Shift](https://arxiv.org/abs/1502.03167)
  */
 export class BatchNormalization extends Layer {
+  static className = 'BatchNormalization';
   private readonly axis: number;
   private readonly momentum: number;
   private readonly epsilon: number;
@@ -147,6 +149,7 @@ export class BatchNormalization extends Layer {
   private beta: LayerVariable;
   private movingMean: LayerVariable;
   private movingVariance: LayerVariable;
+  private stepCount: number;
 
   constructor(config: BatchNormalizationLayerConfig) {
     super(config);
@@ -166,6 +169,7 @@ export class BatchNormalization extends Layer {
     this.gammaConstraint = getConstraint(config.gammaConstraint);
     this.betaRegularizer = getRegularizer(config.betaRegularizer);
     this.gammaRegularizer = getRegularizer(config.gammaRegularizer);
+    this.stepCount = 0;
   }
 
   public build(inputShape: Shape|Shape[]): void {
@@ -199,54 +203,82 @@ export class BatchNormalization extends Layer {
     this.built = true;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
-    const training = kwargs['training'] == null ? false : kwargs['training'];
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    const inputShape = K.shape(input);
-    const ndim = inputShape.length;
-    const reductionAxes = _.range(ndim);
-    const axis = this.axis >= 0 ? this.axis : (this.axis + ndim);
-    reductionAxes.splice(axis, 1);
-    const broadcastShape = generic_utils.pyListRepeat(1, ndim);
-    broadcastShape[axis] = inputShape[axis];
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+    return tidy(() => {
+      const training = kwargs['training'] == null ? false : kwargs['training'];
+      const input = generic_utils.getExactlyOneTensor(inputs);
+      const inputShape = K.shape(input);
+      const ndim = inputShape.length;
+      const reductionAxes = range(0, ndim);
+      const axis = this.axis >= 0 ? this.axis : (this.axis + ndim);
+      reductionAxes.splice(axis, 1);
+      const broadcastShape = generic_utils.pyListRepeat(1, ndim);
+      broadcastShape[axis] = inputShape[axis];
 
-    const sortedReductionAxes = reductionAxes.slice();
-    sortedReductionAxes.sort();
-    const needsBroadcasting =
-        !_.isEqual(sortedReductionAxes, _.range(ndim).slice(0, ndim - 1));
+      const sortedReductionAxes = reductionAxes.slice();
+      sortedReductionAxes.sort();
+      const needsBroadcasting = !util.arraysEqual(
+          sortedReductionAxes, range(0, ndim).slice(0, ndim - 1));
 
-    const normalizeInference: () => Tensor = () => {
-      if (needsBroadcasting) {
-        const broadcastMovingMean =
-            K.reshape(this.movingMean.read(), broadcastShape);
-        const broadcastMovingVariance =
-            K.reshape(this.movingVariance.read(), broadcastShape);
-        const broadcastBeta =
-            this.center ? K.reshape(this.beta.read(), broadcastShape) : null;
-        const broadcastGamma =
-            this.center ? K.reshape(this.gamma.read(), broadcastShape) : null;
-        return K.batchNormalization(
-            input, broadcastMovingMean, broadcastMovingVariance, broadcastBeta,
-            broadcastGamma, this.epsilon);
-      } else {
-        return K.batchNormalization(
-            input, this.movingMean.read(), this.movingVariance.read(),
-            this.beta.read(), this.gamma.read(), this.epsilon);
+      const normalizeInference: () => Tensor = () => {
+        if (needsBroadcasting) {
+          const broadcastMovingMean =
+              K.reshape(this.movingMean.read(), broadcastShape);
+          const broadcastMovingVariance =
+              K.reshape(this.movingVariance.read(), broadcastShape);
+          const broadcastBeta =
+              this.center ? K.reshape(this.beta.read(), broadcastShape) : null;
+          const broadcastGamma =
+              this.scale ? K.reshape(this.gamma.read(), broadcastShape) : null;
+          return K.batchNormalization(
+              input, broadcastMovingMean, broadcastMovingVariance,
+              broadcastBeta, broadcastGamma, this.epsilon);
+        } else {
+          return K.batchNormalization(
+              input, this.movingMean.read(), this.movingVariance.read(),
+              this.beta == null ? null : this.beta.read(),
+              this.gamma == null ? null : this.gamma.read(), this.epsilon);
+        }
+      };
+
+      if (!training) {
+        return normalizeInference();
       }
-    };
 
-    if (!training) {
-      return normalizeInference();
-    }
+      const [normedTraining, mean, variance] = K.normalizeBatchInTraining(
+          input, this.gamma.read(), this.beta.read(), reductionAxes,
+          this.epsilon);
 
-    throw new NotImplementedError(
-        'BatchNormalization.call() has not been implemented for training ' +
-        'mode yet.');
+      // Debias variance.
+      const sampleSize =
+          arrayProd(reductionAxes.map(axis => input.shape[axis]));
+      const varianceDebiased = variance.mul(
+          K.getScalar(sampleSize / (sampleSize - (1 + this.epsilon))));
+
+      // Perform updates to moving mean and moving variance for training.
+      // Porting Note: In PyKeras, these updates to `movingMean` and
+      //   `movingAverage` are done as a deferred Graph, added to the `Layer`'s
+      //   `update`s using the `add_update()` method. Here we do it imperatively
+      //   and encapsulate the updates in a function that is invoked
+      //   immediately.
+      const updateMovingMeanAndVariance = () => {
+        this.stepCount++;
+        const newMovingMean = movingAverage(
+            this.movingMean.read(), mean, this.momentum, this.stepCount);
+        this.movingMean.write(newMovingMean);
+        const newMovingVariance = movingAverage(
+            this.movingVariance.read(), varianceDebiased, this.momentum,
+            this.stepCount);
+        this.movingVariance.write(newMovingVariance);
+      };
+      updateMovingMeanAndVariance();
+
+      return normedTraining;
+    });
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       axis: this.axis,
       momentum: this.momentum,
       epsilon: this.epsilon,
@@ -267,4 +299,4 @@ export class BatchNormalization extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('BatchNormalization', BatchNormalization);
+serialization.SerializationMap.register(BatchNormalization);

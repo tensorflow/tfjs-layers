@@ -13,14 +13,16 @@
  */
 
 // tslint:disable:max-line-length
-import {Tensor, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
+import {serialization, Tensor, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 
-import {Input, Layer} from '../engine/topology';
+import {Layer} from '../engine/topology';
+import * as tfl from '../index';
+import {deserialize} from '../layers/serialization';
 import {DType, Shape} from '../types';
-import {SymbolicTensor} from '../types';
+import {convertPythonicToTs} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {Add, add, Average, average, Concatenate, concatenate, Maximum, maximum, Minimum, minimum, Multiply, multiply} from './merge';
+import {Add, Average, Concatenate, Maximum, Minimum, Multiply} from './merge';
 
 // tslint:enable:max-line-length
 
@@ -39,13 +41,13 @@ describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
             `layer=${layer.name}; inputShape=${JSON.stringify(inputShape)}; ` +
             `numInputs=${numInputs}`;
         it(testTitle, () => {
-          const addLayer = new layer({name: 'Add'});
-          const symbolicInputs: SymbolicTensor[] = [];
+          const addLayer = new layer({name: layer.name});
+          const symbolicInputs: tfl.SymbolicTensor[] = [];
           for (let i = 0; i < numInputs; ++i) {
-            symbolicInputs.push(
-                new SymbolicTensor(DType.float32, inputShape, null, [], null));
+            symbolicInputs.push(new tfl.SymbolicTensor(
+                DType.float32, inputShape, null, [], null));
           }
-          const output = addLayer.apply(symbolicInputs) as SymbolicTensor;
+          const output = addLayer.apply(symbolicInputs) as tfl.SymbolicTensor;
           expect(output.dtype).toEqual(symbolicInputs[0].dtype);
           expect(output.shape).toEqual(inputShape);
         });
@@ -54,7 +56,7 @@ describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
   }
 
   it('Single input leads to exception', () => {
-    const x = new SymbolicTensor(DType.float32, [2, 2], null, [], null);
+    const x = new tfl.SymbolicTensor(DType.float32, [2, 2], null, [], null);
     const addLayer = new Add({name: 'Add'});
     expect(() => {
       addLayer.apply([x]);
@@ -62,8 +64,8 @@ describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
   });
 
   it('Non-unique batch sizes to exception', () => {
-    const x1 = new SymbolicTensor(DType.float32, [1, 2], null, [], null);
-    const x2 = new SymbolicTensor(DType.float32, [2, 2], null, [], null);
+    const x1 = new tfl.SymbolicTensor(DType.float32, [1, 2], null, [], null);
+    const x2 = new tfl.SymbolicTensor(DType.float32, [2, 2], null, [], null);
     const addLayer = new Add({name: 'Add'});
     expect(() => {
       addLayer.apply([x1, x2]);
@@ -73,155 +75,163 @@ describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
 
 describeMathCPUAndGPU('Add-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(add().constructor.name).toEqual('Add');
+    expect((tfl.layers.add() as Layer).getClassName()).toEqual('Add');
   });
 
   it('Calling with config arg returns Layer', () => {
-    expect((add({name: 'addLayer'}) as Layer).name.indexOf('addLayer'))
+    expect(
+        (tfl.layers.add({name: 'addLayer'}) as Layer).name.indexOf('addLayer'))
         .toEqual(0);
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = Input({shape: [2, 2]});
-    const input2 = Input({shape: [2, 2]});
-    const output = add([input1, input2]) as SymbolicTensor;
+    const input1 = tfl.layers.input({shape: [2, 2]});
+    const input2 = tfl.layers.input({shape: [2, 2]});
+    const output =
+        tfl.layers.add().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
   });
 
   it('Calling with tensors returns tensor', () => {
     const input1 = tensor2d([1, 2, 3, 4], [2, 2]);
     const input2 = tensor2d([10, 20, 30, 40], [2, 2]);
-    const output = add([input1, input2]) as Tensor;
+    const output = tfl.layers.add().apply([input1, input2]) as Tensor;
     expectTensorsClose(output, tensor2d([11, 22, 33, 44], [2, 2]));
   });
 });
 
 describeMathCPUAndGPU('Multiply-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(multiply().constructor.name).toEqual('Multiply');
+    expect((tfl.layers.multiply() as Layer).getClassName()).toEqual('Multiply');
   });
 
   it('Calling with config arg returns Layer', () => {
-    expect((multiply({name: 'multiplyLayer'}) as Layer)
+    expect((tfl.layers.multiply({name: 'multiplyLayer'}) as Layer)
                .name.indexOf('multiplyLayer'))
         .toEqual(0);
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = Input({shape: [2, 2]});
-    const input2 = Input({shape: [2, 2]});
-    const output = multiply([input1, input2]) as SymbolicTensor;
+    const input1 = tfl.layers.input({shape: [2, 2]});
+    const input2 = tfl.layers.input({shape: [2, 2]});
+    const output =
+        tfl.layers.multiply().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
   });
 
   it('Calling with tensors returns tensor', () => {
     const input1 = tensor2d([1, 2, 3, 4], [2, 2]);
     const input2 = tensor2d([10, 20, 30, 40], [2, 2]);
-    const output = multiply([input1, input2]) as Tensor;
+    const output = tfl.layers.multiply().apply([input1, input2]) as Tensor;
     expectTensorsClose(output, tensor2d([10, 40, 90, 160], [2, 2]));
   });
 });
 
 describeMathCPUAndGPU('Average-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(average().constructor.name).toEqual('Average');
+    expect((tfl.layers.average() as Layer).getClassName()).toEqual('Average');
   });
 
   it('Calling with config arg returns Layer', () => {
-    expect(
-        (average({name: 'averageLayer'}) as Layer).name.indexOf('averageLayer'))
+    expect((tfl.layers.average({name: 'averageLayer'}) as Layer)
+               .name.indexOf('averageLayer'))
         .toEqual(0);
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = Input({shape: [2, 2]});
-    const input2 = Input({shape: [2, 2]});
-    const output = average([input1, input2]) as SymbolicTensor;
+    const input1 = tfl.layers.input({shape: [2, 2]});
+    const input2 = tfl.layers.input({shape: [2, 2]});
+    const output =
+        tfl.layers.average().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
   });
 
   it('Calling with tensors returns tensor', () => {
     const input1 = tensor2d([1, 2, 3, 4], [2, 2]);
     const input2 = tensor2d([10, 20, 30, 40], [2, 2]);
-    const output = average([input1, input2]) as Tensor;
+    const output = tfl.layers.average().apply([input1, input2]) as Tensor;
     expectTensorsClose(output, tensor2d([5.5, 11, 16.5, 22], [2, 2]));
   });
 });
 
 describeMathCPUAndGPU('Maximum-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(maximum().constructor.name).toEqual('Maximum');
+    expect((tfl.layers.maximum() as Layer).getClassName()).toEqual('Maximum');
   });
 
   it('Calling with config arg returns Layer', () => {
-    expect(
-        (maximum({name: 'maximumLayer'}) as Layer).name.indexOf('maximumLayer'))
+    expect((tfl.layers.maximum({name: 'maximumLayer'}) as Layer)
+               .name.indexOf('maximumLayer'))
         .toEqual(0);
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = Input({shape: [2, 2]});
-    const input2 = Input({shape: [2, 2]});
-    const output = maximum([input1, input2]) as SymbolicTensor;
+    const input1 = tfl.layers.input({shape: [2, 2]});
+    const input2 = tfl.layers.input({shape: [2, 2]});
+    const output =
+        tfl.layers.maximum().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
   });
 
   it('Calling with tensors returns tensor', () => {
     const input1 = tensor2d([1, 20, 3, 40], [2, 2]);
     const input2 = tensor2d([10, 2, 30, 4], [2, 2]);
-    const output = maximum([input1, input2]) as Tensor;
+    const output = tfl.layers.maximum().apply([input1, input2]) as Tensor;
     expectTensorsClose(output, tensor2d([10, 20, 30, 40], [2, 2]));
   });
 });
 
 describeMathCPUAndGPU('Minimum-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(minimum().constructor.name).toEqual('Minimum');
+    expect((tfl.layers.minimum() as Layer).getClassName()).toEqual('Minimum');
   });
 
   it('Calling with config arg returns Layer', () => {
-    expect(
-        (minimum({name: 'minimumLayer'}) as Layer).name.indexOf('minimumLayer'))
+    expect((tfl.layers.minimum({name: 'minimumLayer'}) as Layer)
+               .name.indexOf('minimumLayer'))
         .toEqual(0);
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = Input({shape: [2, 2]});
-    const input2 = Input({shape: [2, 2]});
-    const output = minimum([input1, input2]) as SymbolicTensor;
+    const input1 = tfl.layers.input({shape: [2, 2]});
+    const input2 = tfl.layers.input({shape: [2, 2]});
+    const output =
+        tfl.layers.minimum().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
   });
 
   it('Calling with tensors returns tensor', () => {
     const input1 = tensor2d([1, 20, 3, 40], [2, 2]);
     const input2 = tensor2d([10, 2, 30, 4], [2, 2]);
-    const output = minimum([input1, input2]) as Tensor;
+    const output = tfl.layers.minimum().apply([input1, input2]) as Tensor;
     expectTensorsClose(output, tensor2d([1, 2, 3, 4], [2, 2]));
   });
 });
 
 describeMathCPUAndGPU('Concatenate-Functional', () => {
   it('Calling without arg returns Layer', () => {
-    expect(concatenate().constructor.name).toEqual('Concatenate');
+    expect((tfl.layers.concatenate() as Layer).getClassName())
+        .toEqual('Concatenate');
   });
 
   it('Calling with config arg returns Layer', () => {
-    expect((concatenate({name: 'concatenateLayer'}) as Layer)
+    expect((tfl.layers.concatenate({name: 'concatenateLayer'}) as Layer)
                .name.indexOf('concatenateLayer'))
         .toEqual(0);
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = Input({shape: [2, 3]});
-    const input2 = Input({shape: [2, 4]});
-    const output = concatenate([input1, input2]) as SymbolicTensor;
+    const input1 = tfl.layers.input({shape: [2, 3]});
+    const input2 = tfl.layers.input({shape: [2, 4]});
+    const output =
+        tfl.layers.concatenate().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 7]);
   });
 
   it('Calling with tensors returns tensor', () => {
     const input1 = tensor2d([[1, 2], [3, 4]], [2, 2]);
     const input2 = tensor2d([[10, 20], [30, 40]], [2, 2]);
-    const output = concatenate([input1, input2]) as Tensor;
+    const output = tfl.layers.concatenate().apply([input1, input2]) as Tensor;
     expectTensorsClose(
         output, tensor2d([[1, 2, 10, 20], [3, 4, 30, 40]], [2, 4]));
   });
@@ -230,43 +240,55 @@ describeMathCPUAndGPU('Concatenate-Functional', () => {
 
 describeMathCPU('Concatenate Layer: Symbolic', () => {
   it('All known shapes', () => {
-    const x1 = new SymbolicTensor(DType.float32, [2, 3, 4], null, [], null);
-    const x2 = new SymbolicTensor(DType.float32, [2, 3, 4], null, [], null);
+    const x1 = new tfl.SymbolicTensor(DType.float32, [2, 3, 4], null, [], null);
+    const x2 = new tfl.SymbolicTensor(DType.float32, [2, 3, 4], null, [], null);
     const layer0 = new Concatenate({});
-    expect((layer0.apply([x1, x2]) as SymbolicTensor).shape).toEqual([2, 3, 8]);
+    expect((layer0.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
+      2, 3, 8
+    ]);
     const layer1 = new Concatenate({axis: -1});
-    expect((layer1.apply([x1, x2]) as SymbolicTensor).shape).toEqual([2, 3, 8]);
+    expect((layer1.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
+      2, 3, 8
+    ]);
     const layer2 = new Concatenate({axis: 0});
-    expect((layer2.apply([x1, x2]) as SymbolicTensor).shape).toEqual([4, 3, 4]);
+    expect((layer2.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
+      4, 3, 4
+    ]);
     const layer3 = new Concatenate({axis: 1});
-    expect((layer3.apply([x1, x2]) as SymbolicTensor).shape).toEqual([2, 6, 4]);
+    expect((layer3.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
+      2, 6, 4
+    ]);
   });
   it('Concat axis has unknown shape', () => {
-    const x1 = new SymbolicTensor(DType.float32, [2, null, 4], null, [], null);
-    const x2 = new SymbolicTensor(DType.float32, [2, null, 4], null, [], null);
+    const x1 =
+        new tfl.SymbolicTensor(DType.float32, [2, null, 4], null, [], null);
+    const x2 =
+        new tfl.SymbolicTensor(DType.float32, [2, null, 4], null, [], null);
     const layer = new Concatenate({axis: 1});
-    expect((layer.apply([x1, x2]) as SymbolicTensor).shape).toEqual([
+    expect((layer.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
       2, null, 4
     ]);
   });
   it('Non-concat axis has unknown shape', () => {
-    const x1 = new SymbolicTensor(DType.float32, [null, 3, 4], null, [], null);
-    const x2 = new SymbolicTensor(DType.float32, [null, 5, 4], null, [], null);
+    const x1 =
+        new tfl.SymbolicTensor(DType.float32, [null, 3, 4], null, [], null);
+    const x2 =
+        new tfl.SymbolicTensor(DType.float32, [null, 5, 4], null, [], null);
     const layer = new Concatenate({axis: 1});
-    expect((layer.apply([x1, x2]) as SymbolicTensor).shape).toEqual([
+    expect((layer.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
       null, 8, 4
     ]);
   });
   it('Incompatible shape leads to error', () => {
-    const x1 = new SymbolicTensor(DType.float32, [2, 3, 5], null, [], null);
-    const x2 = new SymbolicTensor(DType.float32, [2, 4, 5], null, [], null);
+    const x1 = new tfl.SymbolicTensor(DType.float32, [2, 3, 5], null, [], null);
+    const x2 = new tfl.SymbolicTensor(DType.float32, [2, 4, 5], null, [], null);
     const layer = new Concatenate({});
     expect(() => layer.apply([
       x1, x2
     ])).toThrowError(/requires inputs with matching shapes except/);
   });
   it('Single shape leads to error', () => {
-    const x1 = new SymbolicTensor(DType.float32, [2, 3, 5], null, [], null);
+    const x1 = new tfl.SymbolicTensor(DType.float32, [2, 3, 5], null, [], null);
     const layer = new Concatenate({});
     expect(() => layer.apply([x1]))
         .toThrowError(/should be called on a list of at least 2 inputs/);
@@ -375,4 +397,140 @@ describeMathCPUAndGPU('Concatenate Layer: Tensor', () => {
       expectTensorsClose(layer.apply([x1, x2]) as Tensor, expected);
     });
   }
+});
+
+describeMathCPU('Deserialize Merge Layers', () => {
+  it('Model with Add Layer', () => {
+    // The following model config JSON can be obtained with Python code:
+    // ```python
+    // import keras
+    //
+    // input1 = keras.Input(shape=[4])
+    // input2 = keras.Input(shape=[4])
+    //
+    // output = keras.layers.add([input1, input2])
+    // model = keras.Model([input1, input2], output)
+    //
+    // model_json = model.to_json()
+    // print(model_json)
+
+    const modelWithMergeJSON: {} = {
+      'class_name': 'Model',
+      'keras_version': '2.1.5',
+      'config': {
+        'layers': [
+          {
+            'class_name': 'InputLayer',
+            'config': {
+              'dtype': 'float32',
+              'batch_input_shape': [null, 4],
+              'name': 'input_1',
+              'sparse': false
+            },
+            'inbound_nodes': [],
+            'name': 'input_1'
+          },
+          {
+            'class_name': 'InputLayer',
+            'config': {
+              'dtype': 'float32',
+              'batch_input_shape': [null, 4],
+              'name': 'input_2',
+              'sparse': false
+            },
+            'inbound_nodes': [],
+            'name': 'input_2'
+          },
+          {
+            'class_name': 'Add',
+            'config': {'trainable': true, 'name': 'add_1'},
+            'inbound_nodes': [[['input_1', 0, 0, {}], ['input_2', 0, 0, {}]]],
+            'name': 'add_1'
+          }
+        ],
+        'input_layers': [['input_1', 0, 0], ['input_2', 0, 0]],
+        'output_layers': [['add_1', 0, 0]],
+        'name': 'model_1'
+      },
+      'backend': 'tensorflow'
+    };
+
+    const tsConfig =
+        convertPythonicToTs(modelWithMergeJSON) as serialization.ConfigDict;
+    const model = deserialize(tsConfig) as tfl.Model;
+    expect(model.inputs.length).toEqual(2);
+    expect(model.inputs[0].shape).toEqual([null, 4]);
+    expect(model.inputs[1].shape).toEqual([null, 4]);
+    expect(model.layers.length).toEqual(3);
+    expect(model.layers[2] instanceof Add);
+    expect(model.outputs.length).toEqual(1);
+    expect(model.outputs[0].shape).toEqual([null, 4]);
+  });
+
+  it('Model with Concatenate Layer', () => {
+    // The following model config JSON can be obtained with Python code:
+    // ```python
+    // import keras
+    //
+    // input1 = keras.Input(shape=[4])
+    // input2 = keras.Input(shape=[4])
+    //
+    // output = keras.layers.concatenate([input1, input2])
+    // model = keras.Model([input1, input2], output)
+    //
+    // model_json = model.to_json()
+    // print(model_json)
+
+    const modelWithMergeJSON: {} = {
+      'class_name': 'Model',
+      'keras_version': '2.1.5',
+      'config': {
+        'layers': [
+          {
+            'class_name': 'InputLayer',
+            'config': {
+              'dtype': 'float32',
+              'batch_input_shape': [null, 4],
+              'name': 'input_1',
+              'sparse': false
+            },
+            'inbound_nodes': [],
+            'name': 'input_1'
+          },
+          {
+            'class_name': 'InputLayer',
+            'config': {
+              'dtype': 'float32',
+              'batch_input_shape': [null, 4],
+              'name': 'input_2',
+              'sparse': false
+            },
+            'inbound_nodes': [],
+            'name': 'input_2'
+          },
+          {
+            'class_name': 'Concatenate',
+            'config': {'trainable': true, 'name': 'concatenate_1', 'axis': -1},
+            'inbound_nodes': [[['input_1', 0, 0, {}], ['input_2', 0, 0, {}]]],
+            'name': 'concatenate_1'
+          }
+        ],
+        'input_layers': [['input_1', 0, 0], ['input_2', 0, 0]],
+        'output_layers': [['concatenate_1', 0, 0]],
+        'name': 'model_1'
+      },
+      'backend': 'tensorflow'
+    };
+
+    const tsConfig =
+        convertPythonicToTs(modelWithMergeJSON) as serialization.ConfigDict;
+    const model = deserialize(tsConfig) as tfl.Model;
+    expect(model.inputs.length).toEqual(2);
+    expect(model.inputs[0].shape).toEqual([null, 4]);
+    expect(model.inputs[1].shape).toEqual([null, 4]);
+    expect(model.layers.length).toEqual(3);
+    expect(model.layers[2] instanceof Concatenate);
+    expect(model.outputs.length).toEqual(1);
+    expect(model.outputs[0].shape).toEqual([null, 8]);
+  });
 });

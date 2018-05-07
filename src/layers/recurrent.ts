@@ -12,8 +12,7 @@
  * TensorFlow.js Layers: Recurrent Neural Network Layers.
  */
 
-import {doc, Tensor} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
+import {doc, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import {ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
@@ -24,8 +23,8 @@ import {Layer, LayerConfig} from '../engine/topology';
 import {AttributeError, NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
-import {DType, Shape, SymbolicTensor} from '../types';
-import {ConfigDict, LayerVariable} from '../types';
+import {DType, Kwargs, Shape, SymbolicTensor} from '../types';
+import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
 
@@ -179,6 +178,7 @@ export interface RNNLayerConfig extends BaseRNNLayerConfig {
  *   (not changing over time), a.k.a an attention mechanism.
  */
 export class RNN extends Layer {
+  static className = 'RNN';
   public readonly cell: RNNCell;
   public readonly returnSequences: boolean;
   public readonly returnState: boolean;
@@ -230,7 +230,7 @@ export class RNN extends Layer {
     if (this.states == null) {
       const numStates =
           Array.isArray(this.cell.stateSize) ? this.cell.stateSize.length : 1;
-      return _.range(numStates).map(x => null);
+      return math_utils.range(0, numStates).map(x => null);
     } else {
       return this.states;
     }
@@ -314,7 +314,7 @@ export class RNN extends Layer {
     }
 
     if (this.stateSpec != null) {
-      if (!_.isEqual(
+      if (!util.arraysEqual(
               this.stateSpec.map(spec => spec.shape[spec.shape.length - 1]),
               stateSize)) {
         throw new ValueError(
@@ -379,7 +379,7 @@ export class RNN extends Layer {
             this.cell.stateSize[index] :
             this.cell.stateSize;
         const expectedShape = [batchSize, dim];
-        if (!_.isEqual(value.shape, expectedShape)) {
+        if (!util.arraysEqual(value.shape, expectedShape)) {
           throw new ValueError(
               `State ${index} is incompatible with layer ${this.name}: ` +
               `expected shape=${expectedShape}, received shape=${value.shape}`);
@@ -453,8 +453,7 @@ export class RNN extends Layer {
 
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
-      // tslint:disable-next-line:no-any
-      kwargs?: any): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
+      kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
     // TODO(cais): Figure out whether initialState is in kwargs or inputs.
     let initialState: Tensor[]|SymbolicTensor[] =
         kwargs == null ? null : kwargs['initialState'];
@@ -512,7 +511,7 @@ export class RNN extends Layer {
   }
 
   // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // Input shape: `[samples, time (padded with zeros), input_dim]`.
     // Note that the .build() method of subclasses **must** define
     // this.inputSpec and this.stateSpec owith complete input shapes.
@@ -548,8 +547,7 @@ export class RNN extends Layer {
           'Ignoring unroll = true for RNN layer, due to imperative backend.');
     }
 
-    // tslint:disable-next-line:no-any
-    const cellCallKwargs: {[key: string]: any} = {training};
+    const cellCallKwargs: Kwargs = {training};
 
     // TODO(cais): Add support for constants.
     const step = (inputs: Tensor, states: Tensor[]) => {
@@ -621,8 +619,8 @@ export class RNN extends Layer {
     return this.cell.nonTrainableWeights;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       returnSequences: this.returnSequences,
       returnState: this.returnState,
       goBackwards: this.goBackwards,
@@ -634,7 +632,7 @@ export class RNN extends Layer {
     }
     const cellConfig = this.cell.getConfig();
     config.cell = {
-      className: this.cell.constructor.name,
+      className: this.cell.getClassName(),
       config: cellConfig,
     };
     const baseConfig = super.getConfig();
@@ -642,7 +640,7 @@ export class RNN extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('RNN', RNN);
+serialization.SerializationMap.register(RNN);
 
 /**
  * An RNNCell layer.
@@ -750,7 +748,7 @@ export interface SimpleRNNCellLayerConfig extends LayerConfig {
  * const input = tf.input({shape: [10]});
  * const output = cell.apply(input);
  *
- * console.log(output.shape);
+ * console.log(JSON.stringify(output.shape));
  * // [null, 10]: This is the cell's output at a single time step. The 1st
  * // dimension is the unknown batch size.
  * ```
@@ -771,7 +769,7 @@ export interface SimpleRNNCellLayerConfig extends LayerConfig {
  * const input = tf.input({shape: [10, 20]});
  * const output = rnn.apply(input);
  *
- * console.log(output);
+ * console.log(JSON.stringify(output.shape));
  * // [null, 10, 8]: 1st dimension is unknown batch size; 2nd dimension is the
  * // same as the sequence length of `input`, due to `returnSequences`: `true`;
  * // 3rd dimension is the last `SimpleRNNCell`'s number of units.
@@ -781,6 +779,7 @@ export interface SimpleRNNCellLayerConfig extends LayerConfig {
  * `tf.layers.simpleRNN`.
  */
 export class SimpleRNNCell extends RNNCell {
+  static className = 'SimpleRNNCell';
   readonly units: number;
   readonly activation: ActivationFn;
   readonly useBias: boolean;
@@ -872,8 +871,7 @@ export class SimpleRNNCell extends RNNCell {
   //   Similarly, PyKeras' equivalent of this method returns two values:
   //    `output` and `[output]`. Here the two are combined into one length-2
   //    `Tensor[]`, consisting of `output` repeated.
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = inputs as Tensor[];
     if (inputs.length !== 2) {
       throw new ValueError(
@@ -903,8 +901,8 @@ export class SimpleRNNCell extends RNNCell {
     return [output, output];
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -926,7 +924,7 @@ export class SimpleRNNCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('SimpleRNNCell', SimpleRNNCell);
+serialization.SerializationMap.register(SimpleRNNCell);
 
 export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   /**
@@ -1024,21 +1022,21 @@ export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
  * const input = tf.input({shape: [10, 20]});
  * const output = rnn.apply(input);
  *
- * console.log(output);
+ * console.log(JSON.stringify(output.shape));
  * // [null, 10, 8]: 1st dimension is unknown batch size; 2nd dimension is the
  * // same as the sequence length of `input`, due to `returnSequences`: `true`;
  * // 3rd dimension is the `SimpleRNNCell`'s number of units.
  * ```
  */
 export class SimpleRNN extends RNN {
+  static className = 'SimpleRNN';
   constructor(config: SimpleRNNLayerConfig) {
     config.cell = new SimpleRNNCell(config);
     super(config as RNNLayerConfig);
     // TODO(cais): Add activityRegularizer.
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Add dropoutMask and recurrentDropoutMask.
     const mask = kwargs == null ? null : kwargs['mask'];
     const training = kwargs == null ? null : kwargs['training'];
@@ -1105,8 +1103,8 @@ export class SimpleRNN extends RNN {
     return (this.cell as SimpleRNNCell).recurrentDropout;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -1128,7 +1126,7 @@ export class SimpleRNN extends RNN {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('SimpleRNN', SimpleRNN);
+serialization.SerializationMap.register(SimpleRNN);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
@@ -1168,7 +1166,7 @@ export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
  * const input = tf.input({shape: [10]});
  * const output = cell.apply(input);
  *
- * console.log(output.shape);
+ * console.log(JSON.stringify(output.shape));
  * // [null, 10]: This is the cell's output at a single time step. The 1st
  * // dimension is the unknown batch size.
  * ```
@@ -1189,7 +1187,7 @@ export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
  * const input = tf.input({shape: [10, 20]});
  * const output = rnn.apply(input);
  *
- * console.log(output);
+ * console.log(JSON.stringify(output.shape));
  * // [null, 10, 8]: 1st dimension is unknown batch size; 2nd dimension is the
  * // same as the sequence length of `input`, due to `returnSequences`: `true`;
  * // 3rd dimension is the last `gruCell`'s number of units.
@@ -1199,6 +1197,7 @@ export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
  * `tf.layers.gru`.
  */
 export class GRUCell extends RNNCell {
+  static className = 'GRUCell';
   readonly units: number;
   readonly activation: ActivationFn;
   readonly recurrentActivation: ActivationFn;
@@ -1294,8 +1293,7 @@ export class GRUCell extends RNNCell {
     this.built = true;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Implement dropout.
     if (this.dropout !== 0 || this.recurrentDropout !== 0) {
       throw new NotImplementedError(
@@ -1391,8 +1389,8 @@ export class GRUCell extends RNNCell {
     return [h, h];
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -1415,7 +1413,7 @@ export class GRUCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('GRUCell', GRUCell);
+serialization.SerializationMap.register(GRUCell);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we inherit
 //   from that interface instead of repeating the fields here.
@@ -1449,12 +1447,13 @@ export interface GRULayerConfig extends SimpleRNNLayerConfig {
  * const input = tf.input({shape: [10, 20]});
  * const output = rnn.apply(input);
  *
- * console.log(output);
+ * console.log(JSON.stringify(output.shape));
  * // [null, 10, 8]: 1st dimension is unknown batch size; 2nd dimension is the
  * // same as the sequence length of `input`, due to `returnSequences`: `true`;
  * // 3rd dimension is the `GRUCell`'s number of units.
  */
 export class GRU extends RNN {
+  static className = 'GRU';
   constructor(config: GRULayerConfig) {
     if (config.implementation === 0) {
       console.warn(
@@ -1466,8 +1465,7 @@ export class GRU extends RNN {
     // TODO(cais): Add activityRegularizer.
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Add dropoutMask and recurrentDropoutMask.
     const mask = kwargs == null ? null : kwargs['mask'];
     const training = kwargs == null ? null : kwargs['training'];
@@ -1536,8 +1534,8 @@ export class GRU extends RNN {
     return (this.cell as GRUCell).implementation;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -1560,15 +1558,16 @@ export class GRU extends RNN {
     return config;
   }
 
-  static fromConfig<T>(cls: generic_utils.Constructor<T>, config: ConfigDict):
-      T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
     if (config['implmentation'] === 0) {
       config['implementation'] = 1;
     }
     return new cls(config);
   }
 }
-generic_utils.ClassNameMap.register('GRU', GRU);
+serialization.SerializationMap.register(GRU);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
@@ -1617,7 +1616,7 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
  * const input = tf.input({shape: [10]});
  * const output = cell.apply(input);
  *
- * console.log(output.shape);
+ * console.log(JSON.stringify(output.shape));
  * // [null, 10]: This is the cell's output at a single time step. The 1st
  * // dimension is the unknown batch size.
  * ```
@@ -1638,7 +1637,7 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
  * const input = tf.input({shape: [10, 20]});
  * const output = rnn.apply(input);
  *
- * console.log(output);
+ * console.log(JSON.stringify(output.shape));
  * // [null, 10, 8]: 1st dimension is unknown batch size; 2nd dimension is the
  * // same as the sequence length of `input`, due to `returnSequences`: `true`;
  * // 3rd dimension is the last `lstmCell`'s number of units.
@@ -1648,6 +1647,7 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
  * `tf.layers.lstm`.
  */
 export class LSTMCell extends RNNCell {
+  static className = 'LSTMCell';
   readonly units: number;
   readonly activation: ActivationFn;
   readonly recurrentActivation: ActivationFn;
@@ -1739,6 +1739,8 @@ export class LSTMCell extends RNNCell {
         const capturedBiasInit = this.biasInitializer;
         const capturedUnits = this.units;
         biasInitializer = new (class CustomInit extends Initializer {
+          static className = 'CustomInit';
+
           apply(shape: Shape, dtype?: DType): Tensor {
             // TODO(cais): More informative variable names?
             const bI = capturedBiasInit.apply([capturedUnits]);
@@ -1762,8 +1764,7 @@ export class LSTMCell extends RNNCell {
     this.built = true;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Implement dropout.
     if (this.dropout !== 0 || this.recurrentDropout !== 0) {
       throw new NotImplementedError(
@@ -1866,8 +1867,8 @@ export class LSTMCell extends RNNCell {
     return [h, h, c];
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -1891,7 +1892,7 @@ export class LSTMCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('LSTMCell', LSTMCell);
+serialization.SerializationMap.register(LSTMCell);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we inherit
 //   from that interface instead of repeating the fields here.
@@ -1930,14 +1931,15 @@ export interface LSTMLayerConfig extends SimpleRNNLayerConfig {
  *
  * // Create an input with 10 time steps.
  * const input = tf.input({shape: [10, 20]});
- * const output = rnn.apply(input);
+ * const output = lstm.apply(input);
  *
- * console.log(output);
+ * console.log(JSON.stringify(output.shape));
  * // [null, 10, 8]: 1st dimension is unknown batch size; 2nd dimension is the
  * // same as the sequence length of `input`, due to `returnSequences`: `true`;
  * // 3rd dimension is the `LSTMCell`'s number of units.
  */
 export class LSTM extends RNN {
+  static className = 'LSTM';
   constructor(config: LSTMLayerConfig) {
     if (config.implementation as number === 0) {
       console.warn(
@@ -1949,8 +1951,7 @@ export class LSTM extends RNN {
     // TODO(cais): Add activityRegularizer.
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Add dropoutMask and recurrentDropoutMask.
     const mask = kwargs == null ? null : kwargs['mask'];
     const training = kwargs == null ? null : kwargs['training'];
@@ -2023,8 +2024,8 @@ export class LSTM extends RNN {
     return (this.cell as LSTMCell).implementation;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -2048,15 +2049,16 @@ export class LSTM extends RNN {
     return config;
   }
 
-  static fromConfig<T>(cls: generic_utils.Constructor<T>, config: ConfigDict):
-      T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
     if (config['implmentation'] === 0) {
       config['implementation'] = 1;
     }
     return new cls(config);
   }
 }
-generic_utils.ClassNameMap.register('LSTM', LSTM);
+serialization.SerializationMap.register(LSTM);
 
 export interface StackedRNNCellsConfig extends LayerConfig {
   /**
@@ -2071,6 +2073,7 @@ export interface StackedRNNCellsConfig extends LayerConfig {
  * Used to implement efficient stacked RNNs.
  */
 export class StackedRNNCells extends RNNCell {
+  static className = 'StackedRNNCells';
   protected cells: RNNCell[];
 
   constructor(config: StackedRNNCellsConfig) {
@@ -2094,8 +2097,7 @@ export class StackedRNNCells extends RNNCell {
     return stateSize;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = inputs as Tensor[];
     let states = inputs.slice(1);
 
@@ -2155,26 +2157,27 @@ export class StackedRNNCells extends RNNCell {
     this.built = true;
   }
 
-  getConfig(): ConfigDict {
-    const cellConfigs: ConfigDict[] = [];
+  getConfig(): serialization.ConfigDict {
+    const cellConfigs: serialization.ConfigDict[] = [];
     for (const cell of this.cells) {
       cellConfigs.push({
-        'className': this.constructor.name,
+        'className': this.getClassName(),
         'config': cell.getConfig(),
       });
     }
-    const config: ConfigDict = {'cells': cellConfigs};
+    const config: serialization.ConfigDict = {'cells': cellConfigs};
     const baseConfig = super.getConfig();
     Object.assign(config, baseConfig);
     return config;
   }
 
-  static fromConfig<T>(
-      cls: generic_utils.Constructor<T>, config: ConfigDict,
-      customObjects = {} as ConfigDict): T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict,
+      customObjects = {} as serialization.ConfigDict): T {
     const cells: RNNCell[] = [];
-    for (const cellConfig of (config['cells'] as ConfigDict[])) {
-      cells.push(deserialize(cellConfig, customObjects));
+    for (const cellConfig of (config['cells'] as serialization.ConfigDict[])) {
+      cells.push(deserialize(cellConfig, customObjects) as RNNCell);
     }
     return new cls({cells});
   }
@@ -2238,4 +2241,4 @@ export class StackedRNNCells extends RNNCell {
 
   // TODO(cais): Maybe implemnt `losses` and `getLossesFor`.
 }
-generic_utils.ClassNameMap.register('StackedRNNCells', StackedRNNCells);
+serialization.SerializationMap.register(StackedRNNCells);

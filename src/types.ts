@@ -14,7 +14,7 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {doc, Scalar, Tensor, variable} from '@tensorflow/tfjs-core';
 
-import {getUniqueTensorName} from './common';
+import {getScopedTensorName, getUniqueTensorName} from './common';
 import {Constraint} from './constraints';
 import {Layer} from './engine/topology';
 // tslint:enable:max-line-length
@@ -68,7 +68,12 @@ let _nextUniqueTensorId = 0;
 export class SymbolicTensor implements TensorInterface {
   /* A unique ID for the tensor to be able to differentiate tensors. */
   readonly id: number;
+  // The fully scoped name of this Variable, including a unique suffix if needed
   readonly name?: string;
+  // The originally requested fully scoped name of this Variable, not including
+  // any unique suffix.  This may be needed when restoring weights because this
+  // original name is used as a key.
+  readonly originalName?: string;
   /**
    * Replacement for _keras_history.
    */
@@ -93,13 +98,12 @@ export class SymbolicTensor implements TensorInterface {
    */
   constructor(
       readonly dtype: DType, readonly shape: Shape, public sourceLayer: Layer,
-      readonly inputs: SymbolicTensor[],
-      // tslint:disable-next-line:no-any
-      readonly callArgs: any, name?: string,
-      readonly outputTensorIndex?: number) {
+      readonly inputs: SymbolicTensor[], readonly callArgs: Kwargs,
+      name?: string, readonly outputTensorIndex?: number) {
     this.id = _nextUniqueTensorId++;
     if (name != null) {
-      this.name = getUniqueTensorName(name);
+      this.originalName = getScopedTensorName(name);
+      this.name = getUniqueTensorName(this.originalName);
     }
   }
 }
@@ -113,7 +117,12 @@ export class ConcreteTensor implements TensorInterface {
   readonly shape: Shape;
 
   readonly id: number;
+  // The fully scoped name of this Variable, including a unique suffix if needed
   readonly name?: string;
+  // The originally requested fully scoped name of this Variable, not including
+  // any unique suffix.  This may be needed when restoring weights because this
+  // original name is used as a key.
+  readonly originalName?: string;
 
   protected val: Tensor;
 
@@ -132,7 +141,8 @@ export class ConcreteTensor implements TensorInterface {
     this.id = _nextUniqueTensorId++;
 
     if (name != null) {
-      this.name = getUniqueTensorName(name);
+      this.originalName = getScopedTensorName(name);
+      this.name = getUniqueTensorName(this.originalName);
     }
   }
 
@@ -170,7 +180,12 @@ export class LayerVariable {
   readonly shape: Shape;
 
   readonly id: number;
+  // The fully scoped name of this Variable, including a unique suffix if needed
   readonly name: string;
+  // The originally requested fully scoped name of this Variable, not including
+  // any unique suffix.  This may be needed when restoring weights because this
+  // original name is used as a key.
+  readonly originalName: string;
   readonly trainable: boolean;
 
   protected readonly val: tfc.Variable;
@@ -196,8 +211,11 @@ export class LayerVariable {
     this.dtype = dtype == null ? DType.float32 : dtype;
     this.shape = val.shape;
     this.id = _nextUniqueTensorId++;
-    this.name =
-        getUniqueTensorName(name == null ? DEFAULT_VARIABLE_NAME_PREFIX : name);
+
+    name = name == null ? DEFAULT_VARIABLE_NAME_PREFIX : name;
+    this.originalName = getScopedTensorName(name);
+    this.name = getUniqueTensorName(this.originalName);
+
     this.trainable = trainable;
     this.constraint = constraint;
 
@@ -259,6 +277,10 @@ export type RegularizerFn = () => Scalar;
 export type RnnStepFunction =
     (inputs: Tensor, states: Tensor[]) => [Tensor, Tensor[]];
 
+export type NamedTensorMap = {
+  [name: string]: Tensor;
+};
+
 /**
  * Types to support JSON.
  *
@@ -269,29 +291,22 @@ export type RnnStepFunction =
  * and support for Enums.
  */
 export type JsonValue = boolean|number|string|null|JsonArray|JsonDict;
-export interface JsonDict { [key: string]: JsonValue; }
+export interface JsonDict {
+  [key: string]: JsonValue;
+}
 export interface JsonArray extends Array<JsonValue> {}
 
 /**
- * Types to support JSON-esque data structures internally.
+ * Type representing a loosely-typed bundle of keyword arguments.
  *
- * Internally ConfigDict's use camelCase keys and values where the
- * values are class names to be instantiated.  On the python side, these
- * will be snake_case.  Internally we allow Enums into the values for better
- * type safety, but these need to be converted to raw primitives (usually
- * strings) for round-tripping with python.
- *
- * toConfig returns the TS-friendly representation. model.toJSON() returns
- * the pythonic version as that's the portable format.  If you need to
- * python-ify a non-model level toConfig output, you'll need to use a
- * to-be-written-helper doing the inverse of models::convertPythonicToTs.
- *
+ * This is a looser type than JsonDict/serialization.ConfigDict as it
+ * can contain arbitrary objects as its values.  It is most appropriate
+ * for functions that pass through keyword arguments to other functions
+ * without knowledge of the structure.  If the function can place type
+ * restrictions on the keyword arguments, it should via the Config
+ * interface convention used throughout.
  */
-export type ConfigDictValue =
-    boolean|number|string|null|ConfigDictArray|ConfigDict;
-export interface ConfigDict { [key: string]: ConfigDictValue; }
-export interface ConfigDictArray extends Array<ConfigDictValue> {}
-
-export type NamedTensorMap = {
-  [name: string]: Tensor;
+export type Kwargs = {
+  // tslint:disable-next-line:no-any
+  [key: string]: any
 };

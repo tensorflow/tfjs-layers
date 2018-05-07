@@ -11,18 +11,16 @@
 /* original source: keras/regularizers.py */
 
 // tslint:disable:max-line-length
-import {doc, Scalar, Tensor, zeros} from '@tensorflow/tfjs-core';
+import {doc, Scalar, serialization, Tensor, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
-import {ConfigDict, ConfigDictValue} from './types';
-import * as generic_utils from './utils/generic_utils';
-import {ClassNameMap, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
+import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 // tslint:enable:max-line-length
 
 /**
  * Regularizer base class.
  */
-export abstract class Regularizer {
+export abstract class Regularizer extends serialization.Serializable {
   abstract apply(x: Tensor): Scalar;
 }
 
@@ -51,6 +49,8 @@ export interface L2Config {
  */
 @doc({heading: 'Regularizers', namespace: 'regularizers'})
 export class L1L2 extends Regularizer {
+  static className = 'L1L2';
+
   private readonly l1: Scalar;
   private readonly l2: Scalar;
   private readonly hasL1: boolean;
@@ -66,6 +66,7 @@ export class L1L2 extends Regularizer {
     this.l1 = K.getScalar(l1);
     this.l2 = K.getScalar(l2);
   }
+
   /**
    * Porting note: Renamed from __call__.
    * @param x Variable of which to calculate the regularization score.
@@ -82,15 +83,18 @@ export class L1L2 extends Regularizer {
     }
     return regularization.asScalar();
   }
-  getConfig(): ConfigDict {
+
+  getConfig(): serialization.ConfigDict {
     return {'l1': this.l1.dataSync()[0], 'l2': this.l2.dataSync()[0]};
   }
-  static fromConfig(cls: generic_utils.Constructor<L1L2>, config: ConfigDict):
-      L1L2 {
-    return new L1L2({l1: config.l1 as number, l2: config.l2 as number});
+
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
+    return new cls({l1: config.l1 as number, l2: config.l2 as number});
   }
 }
-ClassNameMap.register('L1L2', L1L2);
+serialization.SerializationMap.register(L1L2);
 
 /**
  * Regularizer for L1 regularization.
@@ -123,18 +127,21 @@ export const REGULARIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:
       'l1l2': 'L1L2'
     };
 
-export function serializeRegularizer(constraint: Regularizer): ConfigDictValue {
+export function serializeRegularizer(constraint: Regularizer):
+    serialization.ConfigDictValue {
   return serializeKerasObject(constraint);
 }
 
 export function deserializeRegularizer(
-    config: ConfigDict, customObjects: ConfigDict = {}): Regularizer {
+    config: serialization.ConfigDict,
+    customObjects: serialization.ConfigDict = {}): Regularizer {
   return deserializeKerasObject(
-      config, ClassNameMap.getMap().pythonClassNameMap, customObjects,
-      'regularizer');
+      config, serialization.SerializationMap.getMap().classNameMap,
+      customObjects, 'regularizer');
 }
 
-export function getRegularizer(identifier: RegularizerIdentifier|ConfigDict|
+export function getRegularizer(identifier: RegularizerIdentifier|
+                               serialization.ConfigDict|
                                Regularizer): Regularizer {
   if (identifier == null) {
     return null;

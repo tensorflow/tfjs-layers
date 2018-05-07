@@ -12,8 +12,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {doc, Optimizer, Scalar, Tensor, Tensor1D, tensor1d} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
+import {doc, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {BaseLogger, Callback, CallbackList, CustomCallbackConfig, disposeTensorsInLogs, History, standardizeCallbacks, UnresolvedLogs} from '../callbacks';
@@ -22,7 +21,8 @@ import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LayerVariable, LossOrMetricFn, Shape} from '../types';
-import {ClassNameMap, count, singletonOrArray} from '../utils/generic_utils';
+import {count, singletonOrArray, unique} from '../utils/generic_utils';
+import {range} from '../utils/math_utils';
 
 import {execute, FeedDict} from './executor';
 import {Container, ContainerConfig} from './topology';
@@ -178,9 +178,9 @@ export function standardizeInputData(
  */
 export function checkArrayLengths(
     inputs: Tensor[], targets: Tensor[], weights?: Tensor[]) {
-  const setX = _.unique(inputs.map(input => input.shape[0]));
+  const setX = unique(inputs.map(input => input.shape[0]));
   setX.sort();
-  const setY = _.unique(targets.map(target => target.shape[0]));
+  const setY = unique(targets.map(target => target.shape[0]));
   setY.sort();
   // TODO(cais): Check `weights` as well.
   if (setX.length > 1) {
@@ -195,7 +195,7 @@ export function checkArrayLengths(
         `Got array shapes: ` +
         `${JSON.stringify(targets.map(target => target.shape))}`);
   }
-  if (setX.length > 0 && setY.length > 0 && !_.isEqual(setX, setY)) {
+  if (setX.length > 0 && setY.length > 0 && !util.arraysEqual(setX, setY)) {
     throw new ValueError(
         `Input Tensors should have the same number of samples as target ` +
         `Tensors. Found ${setX[0]} input sample(s) and ${setY[0]} target ` +
@@ -236,7 +236,7 @@ function checkLossAndTargetCompatibility(
         // TODO(cais): Example code in error message.
       }
     }
-    if (_.contains(keyLosses, loss)) {
+    if (keyLosses.indexOf(loss) !== -1) {
       const slicedYShape = y.shape.slice(1);
       const slicedShape = shape.slice(1);
       for (let j = 0; j < slicedYShape.length; ++j) {
@@ -325,7 +325,8 @@ export function sliceArraysByIndices(
   } else {
     // TODO(cais): indices should be oa pre-constructed Tensor1D to avoid
     //   tensor1d() calls.
-    return K.gather(arrays, indices);
+    return K.gather(
+        arrays, indices.dtype === 'int32' ? indices : indices.toInt());
   }
 }
 
@@ -508,7 +509,11 @@ export interface ModelFitConfig {
 
   verbose?: ModelLoggingVerbosity;
 
-  /** List of callbacks to be called during training. */
+  /**
+   * List of callbacks to be called during training.
+   * Can consist of one or more of the following fields: `onTrainBegin`,
+   * `onTrainEnd`, `onEpochBegin`, `onEpochEnd`, `onBatchBegin`, `onBatchEnd`.
+   */
   callbacks?: Callback[]|CustomCallbackConfig|CustomCallbackConfig[];
 
   /**
@@ -588,13 +593,14 @@ export interface ModelCompileConfig {
   optimizer: string|Optimizer;
 
   /**
-   * String (name of objective function) or objective function.
+   * Object function(s) or name(s) of object function(s).
    * If the model has multiple outputs, you can use a different loss
    * on each output by passing a dictionary or an Array of losses.
    * The loss value that will be minimized by the model will then be the sum
    * of all individual losses.
    */
-  loss: string|string[]|{[outputName: string]: string};
+  loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
+      LossOrMetricFn[]|{[outputName: string]: LossOrMetricFn};
 
   /**
    * List of metrics to be evaluated by the model during training and testing.
@@ -620,8 +626,10 @@ export interface ModelCompileConfig {
  */
 @doc({heading: 'Models', subheading: 'Classes'})
 export class Model extends Container {
-  optimizer: optimizers.LayersOptimizer;
-  loss: string|string[]|{[outputName: string]: string};
+  static className = 'Model';
+  optimizer: Optimizer;
+  loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
+      LossOrMetricFn[]|{[outputName: string]: LossOrMetricFn};
   lossFunctions: LossOrMetricFn[];
 
   // TODO(cais): These private variables should probably not have the string
@@ -664,22 +672,26 @@ export class Model extends Container {
     }
     this.loss = config.loss;
 
-    const optimizerConstructor = optimizers.get(config.optimizer);
     if (typeof config.optimizer === 'string') {
-      this.optimizer = new optimizerConstructor({});
+      this.optimizer = optimizers.getOptimizer(config.optimizer);
     } else {
-      this.optimizer = new optimizerConstructor(config.optimizer);
-      // TODO(cais): This should call a factory method.
+      if (!(config.optimizer instanceof Optimizer)) {
+        throw new ValueError(
+            `User-defined optimizer must be an instance of tf.Optimizer.`);
+      }
+      this.optimizer = config.optimizer;
     }
+
     // TODO(cais): Add lossWeights.
     // TODO(cais): Add sampleWeightMode.
 
     // Prepare loss functions.
     let lossFunctions: LossOrMetricFn[] = [];
-    if (!Array.isArray(config.loss) && typeof config.loss !== 'string') {
+    if (!Array.isArray(config.loss) && typeof config.loss !== 'string' &&
+        typeof config.loss !== 'function') {
       config.loss = config.loss as {[outputName: string]: string};
       for (const name in config.loss) {
-        if (!_.contains(this.outputNames, name)) {
+        if (this.outputNames.indexOf(name) === -1) {
           throw new ValueError(
               `Unknown entry in loss dictionary: "${name}". Only expect the ` +
               `following keys: ${this.outputNames}`);
@@ -701,7 +713,8 @@ export class Model extends Container {
             `model output. The model has ${this.outputs.length} output(s), ` +
             `but you passed loss=${config.loss}.`);
       }
-      lossFunctions = config.loss.map(l => losses.get(l));
+      const theLosses = config.loss as Array<string|LossOrMetricFn>;
+      lossFunctions = theLosses.map(l => losses.get(l));
     } else {
       const lossFunction = losses.get(config.loss);
       this.outputs.map(layer => {
@@ -907,8 +920,8 @@ export class Model extends Container {
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
   evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[],
-      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
+      Scalar|Scalar[] {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
@@ -1159,7 +1172,7 @@ export class Model extends Container {
       batchSize = 32;
     }
     if (epochs == null) {
-      epochs = 100;
+      epochs = 1;
     }
     if (shuffle == null) {
       shuffle = true;
@@ -1187,7 +1200,7 @@ export class Model extends Container {
         this.checkNumSamples(ins, batchSize, stepsPerEpoch, 'steps_per_epoch');
     let indexArray: number[];
     if (numTrainSamples != null) {
-      indexArray = _.range(numTrainSamples);
+      indexArray = range(0, numTrainSamples);
     }
 
     this.history = new History();
@@ -1222,7 +1235,6 @@ export class Model extends Container {
     for (let epoch = initialEpoch; epoch < epochs; ++epoch) {
       await callbackList.onEpochBegin(epoch);
       const epochLogs: UnresolvedLogs = {};
-      let epochIndexArray = indexArray;
       if (stepsPerEpoch != null) {
         throw new NotImplementedError(
             'stepsPerEpoch mode is not implemented yet.');
@@ -1231,11 +1243,11 @@ export class Model extends Container {
           throw new NotImplementedError(
               'batch shuffling is not implemneted yet');
         } else if (shuffle) {
-          epochIndexArray = _.shuffle(indexArray);
+          util.shuffle(indexArray);
         }
         // Convert the potentially shuffled indices to Tensor1D, to avoid the
         // cost of repeated creation of Array1Ds later on.
-        const epochIndexArray1D = tensor1d(epochIndexArray);
+        const epochIndexArray1D = tensor1d(indexArray);
 
         const batches = makeBatches(numTrainSamples, batchSize);
         for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
@@ -1324,7 +1336,7 @@ export class Model extends Container {
           'steps mode in testLoop() is not implemented yet');
     } else {
       const batches = makeBatches(numSamples, batchSize);
-      const indexArray = tensor1d(_.range(numSamples));
+      const indexArray = tensor1d(range(0, numSamples));
       for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
         const batchStart = batches[batchIndex][0];
         const batchEnd = batches[batchIndex][1];
@@ -1476,8 +1488,8 @@ export class Model extends Container {
       } else {
         throw new ValueError(
             `When passing validation data, it must contain 2 (valX, valY) ` +
-            `or 3 (valX, valY, valSampleWeight) items, however it contains ` +
-            `${config.validationData.length} items`);
+            `or 3 (valX, valY, valSampleWeight) items; ` +
+            `${config.validationData} is invalid.`);
       }
 
       const valStandardized =
@@ -1596,8 +1608,11 @@ export class Model extends Container {
         return totalLoss as Scalar;
       };
 
-      const totalLossValue = this.optimizer.updateVariables(
-          totalLossFunction, this.collectedTrainableWeights);
+      const variables = this.collectedTrainableWeights.map(
+          param => param.read() as tfc.Variable);
+      const returnCost = true;
+      const totalLossValue =
+          this.optimizer.minimize(totalLossFunction, returnCost, variables);
 
       return [totalLossValue].concat(metricsValues);
     };
@@ -1627,4 +1642,4 @@ export class Model extends Container {
   }
 }
 
-ClassNameMap.register('Model', Model);
+serialization.SerializationMap.register(Model);

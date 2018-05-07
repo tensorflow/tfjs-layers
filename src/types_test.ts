@@ -16,7 +16,7 @@
 import {scalar, tensor1d, zeros} from '@tensorflow/tfjs-core';
 
 import {nameScope} from './backend/tfjs_backend';
-import {NonNeg} from './constraints';
+import * as tfl from './index';
 import {DType} from './types';
 import {ConcreteTensor, LayerVariable, SymbolicTensor} from './types';
 import {describeMathCPU} from './utils/test_utils';
@@ -93,10 +93,6 @@ describeMathCPU('ConcreteTensor Test', () => {
 
   it('Read value', () => {
     const v1 = new CT(scalar(10), 'foo');
-    expect(v1.value().dataSync()).toEqual(new Float32Array([10]));
-
-    let v1Value = v1.value();
-    v1Value = scalar(20);
     expect(v1.value().dataSync()).toEqual(new Float32Array([10]));
   });
 
@@ -185,10 +181,6 @@ describeMathCPU('Variable', () => {
   it('Read value', () => {
     const v1 = new LayerVariable(scalar(10), null, 'foo');
     expect(v1.read().dataSync()).toEqual(new Float32Array([10]));
-
-    let v1Value = v1.read();
-    v1Value = scalar(20);
-    expect(v1.read().dataSync()).toEqual(new Float32Array([10]));
   });
 
   it('Update value: Compatible shape', () => {
@@ -204,8 +196,8 @@ describeMathCPU('Variable', () => {
   });
 
   it('Update value: w/ constraint', () => {
-    const v =
-        new LayerVariable(tensor1d([10, -10]), null, 'bar', true, new NonNeg());
+    const v = new LayerVariable(
+        tensor1d([10, -10]), null, 'bar', true, tfl.constraints.nonNeg());
 
     v.write(tensor1d([-10, 10]));
     expect(v.read().dataSync()).toEqual(new Float32Array([0, 10]));

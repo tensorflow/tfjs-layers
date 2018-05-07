@@ -9,16 +9,23 @@
  */
 
 // tslint:disable:max-line-length
-import {ones, Scalar, scalar, Tensor, WeightsManifestConfig, zeros} from '@tensorflow/tfjs-core';
+import {io, ones, Scalar, scalar, serialization, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
+import {Model} from './engine/training';
 import * as tfl from './index';
 import {Reshape} from './layers/core';
-import {ModelAndWeightsConfig, modelFromJSON} from './models';
+import {deserialize} from './layers/serialization';
+import {loadModelInternal, ModelAndWeightsConfig, modelFromJSON} from './models';
+import {JsonDict} from './types';
+import {convertPythonicToTs} from './utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
+import {version as layersVersion} from './version';
+
+// tslint:enable:max-line-length
 
 describeMathCPU('model_from_json', () => {
-  it(`reconstitutes pythonic json string`, done => {
+  it('reconstitutes pythonic json string', done => {
     /* python generating code
         a=Input(shape=(32,))
         b=Dense(32)(a)
@@ -34,6 +41,16 @@ describeMathCPU('model_from_json', () => {
         })
         .catch(done.fail);
   });
+  // TODO(bileschi): Uncomment once we are able to load the full RNN model.
+  /*
+  it('reconstitutes rnn model', done => {
+    modelFromJSON(fakeRNNModel)
+        .then(model => {
+          console.log(model);
+          done();
+        })
+        .catch(done.fail);
+  });*/
 
   it('reconstitutes mnist non-sequential mode.', async done => {
     /*
@@ -105,7 +122,9 @@ describeMathCPU('model_from_json', () => {
   it('Serialization round-tripping', done => {
     modelFromJSON(fakeRoundtripModel)
         .then(model => {
-          const serializedModel = model.toJSON();
+          const serializedModel = model.toJSON() as string;
+          // toJSON() returns a string by default.
+          expect(typeof serializedModel).toEqual('string');
           const reparsedJson = JSON.parse(serializedModel);
           expect(reparsedJson['class_name'])
               .toEqual(fakeRoundtripModel.modelTopology['class_name']);
@@ -116,9 +135,33 @@ describeMathCPU('model_from_json', () => {
         .then(done)
         .catch(done.fail);
   });
+
+  it('toJSON with returnString = false', done => {
+    modelFromJSON(fakeRoundtripModel)
+        .then(model => {
+          const serializedModel = model.toJSON(null, false) as JsonDict;
+          expect(serializedModel['class_name'])
+              .toEqual(fakeRoundtripModel.modelTopology['class_name']);
+          expect(serializedModel['config'])
+              .toEqual(fakeRoundtripModel.modelTopology['config']);
+        })
+        .then(done)
+        .catch(done.fail);
+  });
+
+  it('toJSON return value includes correct versions', done => {
+    modelFromJSON(fakeRoundtripModel)
+        .then(model => {
+          const serializedModel = model.toJSON(null, false) as JsonDict;
+          expect(serializedModel['keras_version'])
+              .toEqual(`tfjs-layers ${layersVersion}`);
+        })
+        .then(done)
+        .catch(done.fail);
+  });
 });
 
-describeMathCPU('loadModel', () => {
+describeMathCPU('loadModel from URL', () => {
   const setupFakeWeightFiles =
       (fileBufferMap:
            {[filename: string]: Float32Array|Int32Array|ArrayBuffer}) => {
@@ -145,7 +188,7 @@ describeMathCPU('loadModel', () => {
         // Use a randomly generated layer name to prevent interaction with
         // other unit tests that load the same sample JSON.
         const denseLayerName = 'dense_' + Math.floor(Math.random() * 1e9);
-        const weightsManifest: WeightsManifestConfig = [
+        const weightsManifest: io.WeightsManifestConfig = [
           {
             'paths': ['weight_0'],
             'weights': [{
@@ -172,11 +215,7 @@ describeMathCPU('loadModel', () => {
           // `model_config`, but also other data, such as training.
           modelTopology = {'model_config': modelTopology};
         }
-        modelFromJSON({
-          modelTopology,
-          weightsManifest,
-          pathPrefix,
-        })
+        modelFromJSON({modelTopology, weightsManifest, pathPrefix})
             .then(model => {
               expectTensorsClose(
                   model.weights[0].read(), ones([32, 32], 'float32'));
@@ -189,7 +228,7 @@ describeMathCPU('loadModel', () => {
     }
   }
 
-  it(`Missing weight in manifest leads to error`, done => {
+  it('Missing weight in manifest leads to error', done => {
     setupFakeWeightFiles({
       './weight_0': ones([32, 32], 'float32').dataSync() as Float32Array,
       './weight_1': ones([32], 'float32').dataSync() as Float32Array,
@@ -197,7 +236,7 @@ describeMathCPU('loadModel', () => {
     // Use a randomly generated layer name to prevent interaction with other
     // unit tests that load the same sample JSON.
     const denseLayerName = 'dense_' + Math.floor(Math.random() * 1e9);
-    const weightsManifest: WeightsManifestConfig = [
+    const weightsManifest: io.WeightsManifestConfig = [
       {
         'paths': ['weight_0'],
         'weights': [{
@@ -211,12 +250,208 @@ describeMathCPU('loadModel', () => {
     const configJson =
         JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
     configJson['config']['layers'][1]['config']['name'] = denseLayerName;
-    modelFromJSON({
-      modelTopology: configJson,
-      weightsManifest,
-    })
+    modelFromJSON({modelTopology: configJson, weightsManifest, pathPrefix: '.'})
         .then(() => done.fail)
         .catch(done);
+  });
+
+  it('Loads weights despite uniqueified tensor names', async done => {
+    try {
+      setupFakeWeightFiles({
+        './weight_0': ones([32, 32], 'float32').dataSync() as Float32Array,
+        './weight_1': ones([32], 'float32').dataSync() as Float32Array,
+      });
+      const denseLayerName = 'dense_uniqueify';
+      const weightsManifest: io.WeightsManifestConfig = [
+        {
+          'paths': ['weight_0'],
+          'weights': [{
+            'name': `${denseLayerName}/kernel`,
+            'dtype': 'float32',
+            'shape': [32, 32]
+          }],
+        },
+        {
+          'paths': ['weight_1'],
+          'weights': [{
+            'name': `${denseLayerName}/bias`,
+            'dtype': 'float32',
+            'shape': [32]
+          }],
+        }
+      ];
+      // JSON.parse and stringify to deep copy fakeSequentialModel.
+      const configJson =
+          JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
+      configJson['config']['layers'][1]['config']['name'] = denseLayerName;
+      const model1 = await modelFromJSON(
+          {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
+      expect(model1.weights[0].name).toEqual('dense_uniqueify/kernel');
+      expect(model1.weights[0].originalName).toEqual('dense_uniqueify/kernel');
+      expect(model1.weights[1].name).toEqual('dense_uniqueify/bias');
+      expect(model1.weights[1].originalName).toEqual('dense_uniqueify/bias');
+      expectTensorsClose(model1.weights[0].read(), ones([32, 32], 'float32'));
+      expectTensorsClose(model1.weights[1].read(), ones([32], 'float32'));
+
+      // On the second load, the variable names will be uniqueified.  This test
+      // succeeds only because we maintain the name mapping, so we can load
+      // weights--keyed by non-unique names in the weight manifest--into
+      // variables with newly uniqueified names.
+      const model2 = await modelFromJSON(
+          {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
+      // note unique suffix
+      expect(model2.weights[0].name).toEqual('dense_uniqueify/kernel_1');
+      expect(model2.weights[0].originalName).toEqual('dense_uniqueify/kernel');
+      // note unique suffix
+      expect(model2.weights[1].name).toEqual('dense_uniqueify/bias_1');
+      expect(model2.weights[1].originalName).toEqual('dense_uniqueify/bias');
+      expectTensorsClose(model2.weights[0].read(), ones([32, 32], 'float32'));
+      expectTensorsClose(model2.weights[1].read(), ones([32], 'float32'));
+      done();
+    } catch (e) {
+      done.fail(e.stack);
+    }
+  });
+
+  it('Repeated saving and loading of Model works', () => {
+    const model1 = tfl.sequential();
+    model1.add(
+        tfl.layers.dense({units: 3, inputShape: [4], activation: 'relu'}));
+    model1.add(
+        tfl.layers.dense({units: 1, inputShape: [4], activation: 'sigmoid'}));
+    const json1 = model1.toJSON(null, false);
+    const model2 =
+        deserialize(convertPythonicToTs(json1) as serialization.ConfigDict) as
+        Model;
+    const json2 = model2.toJSON(null, false);
+    expect(json2).toEqual(json1);
+  });
+});
+
+describeMathCPU('loadModel from IOHandler', () => {
+  // The model topology JSON can be obtained with the following Python Keras
+  // code:
+  //
+  // ```python
+  // import keras
+  // model = keras.Sequential([
+  //     keras.layers.Dense(1, input_shape=[4], activation='sigmoid')
+  // ])
+  // print(model.to_json())
+  // ```
+  const modelTopology: {} = {
+    'class_name': 'Sequential',
+    'keras_version': '2.1.4',
+    'config': [{
+      'class_name': 'Dense',
+      'config': {
+        'kernel_initializer': {
+          'class_name': 'VarianceScaling',
+          'config': {
+            'distribution': 'uniform',
+            'scale': 1.0,
+            'seed': null,
+            'mode': 'fan_avg'
+          }
+        },
+        'name': 'dense_1',
+        'kernel_constraint': null,
+        'bias_regularizer': null,
+        'bias_constraint': null,
+        'dtype': 'float32',
+        'activation': 'sigmoid',
+        'trainable': true,
+        'kernel_regularizer': null,
+        'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+        'units': 1,
+        'batch_input_shape': [null, 4],
+        'use_bias': true,
+        'activity_regularizer': null
+      }
+    }],
+    'backend': 'tensorflow'
+  };
+  const weightSpecs: io.WeightsManifestEntry[] = [
+    {
+      name: 'dense_1/kernel',
+      shape: [4, 1],
+      dtype: 'float32',
+    },
+    {
+      name: 'dense_1/bias',
+      shape: [1],
+      dtype: 'float32',
+    }
+  ];
+  const weightData = new Float32Array([1.1, 2.2, 3.3, 4.4, 5.5]).buffer;
+
+  // A dummy IOHandler that returns hard-coded model artifacts when its `load`
+  // method is called.
+  class IOHandlerForTest implements io.IOHandler {
+    private readonly includeWeights: boolean;
+
+    constructor(includeWeights = true) {
+      this.includeWeights = includeWeights;
+    }
+
+    async load(): Promise<io.ModelArtifacts> {
+      return this.includeWeights ? {modelTopology, weightSpecs, weightData} :
+                                   {modelTopology};
+    }
+  }
+
+  // A dummy IOHandler that doesn't have the `load` method implemented and is
+  // expected to cause `loadModel` or `loadModelInternal` to fail.
+  class IOHandlerWithoutLoad implements io.IOHandler {
+    constructor() {}
+  }
+
+  it('load topology and weights', async done => {
+    loadModelInternal(new IOHandlerForTest(true))
+        .then(model => {
+          expect(model.layers.length).toEqual(1);
+          expect(model.inputs.length).toEqual(1);
+          expect(model.inputs[0].shape).toEqual([null, 4]);
+          expect(model.outputs.length).toEqual(1);
+          expect(model.outputs[0].shape).toEqual([null, 1]);
+          const weightValues = model.getWeights();
+          expect(weightValues.length).toEqual(2);
+          expectTensorsClose(
+              weightValues[0], tensor2d([1.1, 2.2, 3.3, 4.4], [4, 1]));
+          expectTensorsClose(weightValues[1], tensor1d([5.5]));
+          done();
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('load topology only', async done => {
+    loadModelInternal(new IOHandlerForTest(false))
+        .then(model => {
+          expect(model.layers.length).toEqual(1);
+          expect(model.inputs.length).toEqual(1);
+          expect(model.inputs[0].shape).toEqual([null, 4]);
+          expect(model.outputs.length).toEqual(1);
+          expect(model.outputs[0].shape).toEqual([null, 1]);
+          done();
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+
+  it('IOHandler without load method causes error', async done => {
+    loadModelInternal(new IOHandlerWithoutLoad())
+        .then(model => {
+          done.fail(
+              'Loading with an IOHandler without load method succeeded ' +
+              'unexpectedly.');
+        })
+        .catch(err => {
+          expect(err.message).toMatch(/does not have .*load.* method/);
+          done();
+        });
   });
 });
 
@@ -348,6 +583,13 @@ describeMathCPUAndGPU('Sequential', () => {
     const losses = model.evaluate(xs, ys, {batchSize}) as Scalar;
     expectTensorsClose(losses, scalar(121));
   });
+
+  it('getConfig returns an Array', () => {
+    const model = tfl.sequential({layers});
+    const config = model.getConfig();
+    expect(Array.isArray(config)).toEqual(true);
+    expect(config.length).toEqual(layers.length);
+  });
 });
 
 // Fake models.
@@ -404,6 +646,123 @@ const fakeSequentialModel: ModelAndWeightsConfig = {
     'backend': 'tensorflow'
   }
 };
+
+// TODO(bileschi): Uncomment once we are able to load a model of this size.
+/*
+const fakeRNNModel: ModelAndWeightsConfig = {
+  modelTopology: {
+    'keras_version': '2.1.5',
+    'training_config': {
+      'optimizer_config': {
+        'config': {
+          'rho': 0.8999999761581421,
+          'epsilon': 1e-07,
+          'lr': 0.009999999776482582,
+          'decay': 0.0
+        },
+        'class_name': 'RMSprop'
+      },
+      'loss': 'categorical_crossentropy',
+      'metrics': ['acc'],
+      'sample_weight_mode': null,
+      'loss_weights': null
+    },
+    'backend': 'tensorflow',
+    'model_config': {
+      'config': [
+        {
+          'config': {
+            'unroll': false,
+            'name': 'lstm_9',
+            'trainable': true,
+            'implementation': 1,
+            'recurrent_constraint': null,
+            'stateful': false,
+            'return_sequences': false,
+            'recurrent_initializer': {
+              'config': {'gain': 1.0, 'seed': null},
+              'class_name': 'Orthogonal'
+            },
+            'bias_regularizer': null,
+            'kernel_constraint': null,
+            'dtype': 'float32',
+            'bias_initializer': {'config': {}, 'class_name': 'Zeros'},
+            'kernel_regularizer': null,
+            'go_backwards': false,
+            'units': 256,
+            'recurrent_regularizer': null,
+            'kernel_initializer': {
+              'config': {
+                'distribution': 'uniform',
+                'scale': 1.0,
+                'mode': 'fan_avg',
+                'seed': null
+              },
+              'class_name': 'VarianceScaling'
+            },
+            'use_bias': true,
+            'bias_constraint': null,
+            'activation': 'tanh',
+            'recurrent_activation': 'hard_sigmoid',
+            'recurrent_dropout': 0.0,
+            'return_state': false,
+            'dropout': 0.0,
+            'batch_input_shape': [null, 10, 393],
+            'activity_regularizer': null,
+            'unit_forget_bias': true
+          },
+          'class_name': 'LSTM'
+        },
+        {
+          'config': {
+            'rate': 0.2,
+            'name': 'dropout_4',
+            'noise_shape': null,
+            'seed': null,
+            'trainable': true
+          },
+          'class_name': 'Dropout'
+        },
+        {
+          'config': {
+            'name': 'dense_4',
+            'trainable': true,
+            'use_bias': true,
+            'bias_constraint': null,
+            'units': 393,
+            'kernel_initializer': {
+              'config': {
+                'distribution': 'uniform',
+                'scale': 1.0,
+                'mode': 'fan_avg',
+                'seed': null
+              },
+              'class_name': 'VarianceScaling'
+            },
+            'activation': 'linear',
+            'bias_regularizer': null,
+            'kernel_constraint': null,
+            'bias_initializer': {'config': {}, 'class_name': 'Zeros'},
+            'activity_regularizer': null,
+            'kernel_regularizer': null
+          },
+          'class_name': 'Dense'
+        },
+        {
+          'config': {
+            'name': 'activation_4',
+            'trainable': true,
+            'activation': 'softmax'
+          },
+          'class_name': 'Activation'
+        }
+      ],
+      'class_name': 'Sequential'
+    }
+  }
+} */
+
+
 const fakeNonSequentialModel: ModelAndWeightsConfig = {
   modelTopology: {
     'backend': 'tensorflow',

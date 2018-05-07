@@ -11,8 +11,7 @@
 /* Original source: keras/engine/topology.py */
 
 // tslint:disable:max-line-length
-import {doc, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
+import {doc, Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {Constraint} from '../constraints';
@@ -20,9 +19,10 @@ import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../
 import {Initializer} from '../initializers';
 import {deserialize as deserializeLayer} from '../layers/serialization';
 import {Regularizer} from '../regularizers';
-import {ConfigDict, DType, JsonDict, LayerVariable, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor, TensorInterface} from '../types';
+import {DType, JsonDict, Kwargs, LayerVariable, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor, TensorInterface} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
+import {version as layersVersion} from '../version';
 // tslint:enable:max-line-length
 
 // TODO(michaelterry): This is a stub until it's defined.
@@ -194,8 +194,7 @@ export class Node {
   constructor(
       config: NodeConfig,
       // TODO(michaelterry): Define actual type for this.
-      // tslint:disable-next-line:no-any
-      public callArgs?: any) {
+      public callArgs?: Kwargs) {
     this.id = _nextNodeID++;
     /*
       Layer instance (NOT a list).
@@ -255,7 +254,7 @@ export class Node {
     config.outboundLayer.inboundNodes.push(this);
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const inboundNames: string[] = [];
     for (const layer of this.inboundLayers) {
       if (layer != null) {
@@ -318,8 +317,7 @@ export interface LayerConfig {
 // If necessary, add `output` arguments to the CallHook function.
 // This is currently used for testing only, but may be used for debugger-related
 // purposes in the future.
-// tslint:disable-next-line:no-any
-export type CallHook = (inputs: Tensor|Tensor[], kwargs: any) => void;
+export type CallHook = (inputs: Tensor|Tensor[], kwargs: Kwargs) => void;
 
 let _nextLayerID = 0;
 
@@ -331,7 +329,7 @@ let _nextLayerID = 0;
  * [tf.layers](#Layers-Basic) namespace.
  */
 @doc({heading: 'Layers', subheading: 'Classes', namespace: 'layers'})
-export class Layer {
+export abstract class Layer extends serialization.Serializable {
   /** Name for this layer. Must be unique within a model. */
   name: string;
   /**
@@ -363,6 +361,8 @@ export class Layer {
   private _built: boolean;
   private _callHook: CallHook = null;
 
+  private _addedWeightNames: string[] = [];
+
   readonly id: number;
 
   // Porting Notes: PyKeras does not have this property in this base Layer
@@ -372,6 +372,7 @@ export class Layer {
   protected _stateful = false;
 
   constructor(config: LayerConfig) {
+    super();
     this.id = _nextLayerID++;
 
     this.activityRegularizer = null;
@@ -395,7 +396,7 @@ export class Layer {
 
     let name = config.name;
     if (!name) {
-      const prefix = this.constructor.name;
+      const prefix = this.getClassName();
       name = generic_utils.toSnakeCase(prefix) + '_' + K.getUid(prefix);
     }
     this.name = name;
@@ -693,16 +694,15 @@ export class Layer {
       // Check specific shape axes.
       if (spec.axes) {
         const xShape = K.intShape(x);
-        for (const pair of _.pairs(spec.axes)) {
-          let axis = pair[0];
-          const value = pair[1];
+        for (const key in spec.axes) {
+          const axis = Number(key);
+          const value = spec.axes[key];
           // Perform Python-style slicing in case axis < 0;
-          axis = Number(axis);
           // TODO(cais): Use https://github.com/alvivi/typescript-underscore to
           // ensure type safety through Underscore calls.
           const xShapeAtAxis =
               axis >= 0 ? xShape[axis] : xShape[xShape.length + axis];
-          if (value != null && !_.contains([value, null], xShapeAtAxis)) {
+          if (value != null && [value, null].indexOf(xShapeAtAxis) === -1) {
             throw new ValueError(
                 `Input ${inputIndex} is incompatible with layer ` +
                 `${this.name}: expected axis ${axis} of input shape to ` +
@@ -714,7 +714,9 @@ export class Layer {
       // Check shape.
       if (spec.shape != null) {
         const xShape = K.intShape(x);
-        for (const [specDim, dim] of _.zip(spec.shape, xShape)) {
+        for (let i = 0; i < spec.shape.length; ++i) {
+          const specDim = spec.shape[i];
+          const dim = xShape[i];
           if (specDim != null && dim != null) {
             if (specDim !== dim) {
               throw new ValueError(
@@ -736,13 +738,11 @@ export class Layer {
    *
    * @return A tensor or list/tuple of tensors.
    */
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return inputs;
   }
 
-  // tslint:disable-next-line:no-any
-  protected invokeCallHook(inputs: Tensor|Tensor[], kwargs: any) {
+  protected invokeCallHook(inputs: Tensor|Tensor[], kwargs: Kwargs) {
     if (this._callHook != null) {
       this._callHook(inputs, kwargs);
     }
@@ -807,7 +807,7 @@ export class Layer {
    * // output1.shape is [null, 4]. The first dimension is the undetermined
    * // batch size. The second dimension comes from flattening the [2, 2]
    * // shape.
-   * console.log(output1.shape);
+   * console.log(JSON.stringify(output1.shape));
    *
    * // The output SymbolicTensor of the flatten layer can be used to call
    * // the apply() of the dense layer:
@@ -816,7 +816,7 @@ export class Layer {
    * // output2.shape is [null, 1]. The first dimension is the undetermined
    * // batch size. The second dimension matches the number of units of the
    * // dense layer.
-   * console.log(output2.shape);
+   * console.log(JSON.stringify(output2.shape));
    *
    * // The input and output and be used to construct a model that consists
    * // of the flatten and dense layers.
@@ -834,17 +834,28 @@ export class Layer {
   // Porting Note: This is a replacement for __call__() in Python.
   @doc({heading: 'Models', 'subheading': 'Classes'})
   apply(
-      inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
-      // tslint:disable-next-line:no-any
-      kwargs?: any): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
+      inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[], kwargs?: Kwargs):
+      Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
     kwargs = kwargs || {};
 
     // Ensure inputs are all the same type.
     const inputsList = generic_utils.toList(inputs);
-    const allAreSymbolic =
-        _.every(inputsList, (x) => x instanceof SymbolicTensor);
-    const noneAreSymbolic =
-        _.every(inputsList, (x) => !(x instanceof SymbolicTensor));
+
+    let allAreSymbolic = true;
+    for (const input of inputsList) {
+      if (!(input instanceof SymbolicTensor)) {
+        allAreSymbolic = false;
+        break;
+      }
+    }
+    let noneAreSymbolic = true;
+    for (const input of inputsList) {
+      if (input instanceof SymbolicTensor) {
+        noneAreSymbolic = false;
+        break;
+      }
+    }
+
     if (allAreSymbolic === noneAreSymbolic) {
       throw new ValueError(
           'Arguments to apply() must be all ' +
@@ -896,7 +907,7 @@ export class Layer {
         // TODO(michaelterry): This copying may not be necessary given our eager
         // backend.
         for (let x of outputList) {
-          if (_.contains(inputsList, x)) {
+          if (inputsList.indexOf(x) !== -1) {
             x = K.identity(x);
           }
           outputListCopy.push(x);
@@ -969,9 +980,13 @@ export class Layer {
 
   /**
    * Returns the current values of the weights of the layer.
+   *
+   * @param trainableOnly Whether to get the values of only trainable weights.
+   * @returns Weight values as an `Array` of `Tensor`s.
    */
-  getWeights(): Tensor[] {
-    return K.batchGetValue(this.weights);
+  getWeights(trainableOnly = false): Tensor[] {
+    return K.batchGetValue(
+        trainableOnly ? this.trainableWeights : this.weights);
   }
 
   /**
@@ -1002,8 +1017,11 @@ export class Layer {
     }
     const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
     const paramValues = K.batchGetValue(params);
-    for (const [pv, p, w] of _.zip(paramValues, params, weights)) {
-      if (!_.isEqual(pv.shape, w.shape)) {
+    for (let i = 0; i < paramValues.length; ++i) {
+      const pv = paramValues[i];
+      const p = params[i];
+      const w = weights[i];
+      if (!util.arraysEqual(pv.shape, w.shape)) {
         throw new ValueError(
             `Layer weight shape ${pv.shape} ` +
             `not compatible with provided weight shape ${w.shape}`);
@@ -1030,6 +1048,13 @@ export class Layer {
       name: string, shape: Shape, dtype?: DType, initializer?: Initializer,
       regularizer?: Regularizer, trainable?: boolean,
       constraint?: Constraint): LayerVariable {
+    // Reject duplicate weight names.
+    if (this._addedWeightNames.indexOf(name) !== -1) {
+      throw new ValueError(
+          `Duplicate weight name ${name} for layer ${this.name}`);
+    }
+    this._addedWeightNames.push(name);
+
     if (dtype == null) {
       dtype = K.floatx();
     }
@@ -1094,11 +1119,13 @@ export class Layer {
     if (!this.supportsMasking) {
       if (mask != null) {
         if (Array.isArray(mask)) {
-          if (_.any(mask)) {
-            throw new TypeError(
-                `Layer ${this.name} does not support masking,` +
-                'but was passed an inputMask.');
-          }
+          mask.forEach(maskElement => {
+            if (maskElement != null) {
+              throw new TypeError(
+                  `Layer ${this.name} does not support masking,` +
+                  'but was passed an inputMask.');
+            }
+          });
         } else {
           throw new TypeError(
               `Layer ${this.name} does not support masking,` +
@@ -1199,8 +1226,9 @@ export class Layer {
    *
    * @returns TS dictionary of configuration.
    */
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {name: this.name, trainable: this.trainable};
+  getConfig(): serialization.ConfigDict {
+    const config:
+        serialization.ConfigDict = {name: this.name, trainable: this.trainable};
     if (this.batchInputShape != null) {
       config['batchInputShape'] = this.batchInputShape;
     }
@@ -1208,11 +1236,6 @@ export class Layer {
       config['dtype'] = this.dtype;
     }
     return config;
-  }
-
-  static fromConfig<T>(cls: generic_utils.Constructor<T>, config: ConfigDict):
-      T {
-    return new cls(config);
   }
 }
 
@@ -1294,6 +1317,7 @@ export interface InputLayerConfig {
  * ```
  */
 export class InputLayer extends Layer {
+  static readonly className = 'InputLayer';
   sparse: boolean;
   constructor(config: InputLayerConfig) {
     super({
@@ -1366,14 +1390,13 @@ export class InputLayer extends Layer {
 
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
-      // tslint:disable-next-line:no-any
-      kwargs?: any): Tensor|Tensor[]|SymbolicTensor {
+      kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor {
     throw new ValueError(
         'Cannot pass any input to an ' +
         `InputLayer's apply() method. InputLayer name: ${this.name}`);
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     return {
       batchInputShape: this.batchInputShape,
       dtype: this.dtype,
@@ -1382,7 +1405,7 @@ export class InputLayer extends Layer {
     };
   }
 }
-generic_utils.ClassNameMap.register('InputLayer', InputLayer);
+serialization.SerializationMap.register(InputLayer);
 
 /**
  * Config for the Input function.
@@ -1487,7 +1510,7 @@ export interface ContainerConfig {
  * is simply a Container with added training routines.
  *
  */
-export class Container extends Layer {
+export abstract class Container extends Layer {
   inputs: SymbolicTensor[];
   outputs: SymbolicTensor[];
 
@@ -1526,7 +1549,7 @@ export class Container extends Layer {
     super({});
     this.name = config.name;
     if (this.name == null) {
-      const prefix = this.constructor.name.toLowerCase();
+      const prefix = this.getClassName().toLowerCase();
       this.name = K.getUid(prefix);
     }
 
@@ -1549,7 +1572,7 @@ export class Container extends Layer {
     }
 
     // Check for redundancy in inputs.
-    if (_.uniq(this.inputs).length !== this.inputs.length) {
+    if (generic_utils.unique(this.inputs).length !== this.inputs.length) {
       throw new ValueError(
           'The list of inputs passed to the model is ' +
           'redundant. All inputs should only appear once. Found: ' +
@@ -1557,7 +1580,7 @@ export class Container extends Layer {
     }
 
     // Check for redundancy in outputs.
-    if (_.uniq(this.outputs).length !== this.outputs.length) {
+    if (generic_utils.unique(this.outputs).length !== this.outputs.length) {
       console.warn(
           'The list of outputs passed to the model is redundant. ' +
           'All outputs should only appear once. Found: ' +
@@ -1638,7 +1661,7 @@ export class Container extends Layer {
             'Input layers to a Model must be InputLayer objects. ' +
             `Received inputs: ${config.inputs}. ` +
             `Input ${i} (0-based) originates ` +
-            `from layer type ${layer.constructor.name}.`);
+            `from layer type ${layer.getClassName()}.`);
       }
       this.inputNames.push(layer.name);
       this.feedInputShapes.push(layer.batchInputShape);
@@ -1695,14 +1718,14 @@ export class Container extends Layer {
           const node = layer.inboundNodes[nodeIndex];
 
           // Prevent cycles.
-          if (_.contains(nodesInProgress, node)) {
+          if (nodesInProgress.indexOf(node) !== -1) {
             throw new RuntimeError(
                 `The tensor ${tensor.name} at layer "${layer.name}" ` +
                 'is part of a cycle.');
           }
 
           // Don't repeat work for shared subgraphs
-          if (_.contains(finishedNodes, node)) {
+          if (finishedNodes.indexOf(node) !== -1) {
             return;
           }
 
@@ -1711,10 +1734,10 @@ export class Container extends Layer {
 
           // Store the traversal order for layer sorting.
           if (!(layer.id in layerIndices)) {
-            layerIndices[layer.id] = _.keys(layerIndices).length;
+            layerIndices[layer.id] = Object.keys(layerIndices).length;
           }
 
-          if (!_.contains(nodesInProgress, node)) {
+          if (nodesInProgress.indexOf(node) === -1) {
             nodesInProgress.push(node);
           }
 
@@ -1783,7 +1806,8 @@ export class Container extends Layer {
 
     // Build a dict {depth: list of nodes with this depth}
     const nodesByDepth: {[depth: string]: Node[]} = {};
-    for (const [nodeID, depth] of _.pairs(nodesDepths)) {
+    for (const nodeID in nodesDepths) {
+      const depth = nodesDepths[nodeID];
       if (!(depth in nodesByDepth)) {
         nodesByDepth[depth] = [];
       }
@@ -1792,7 +1816,8 @@ export class Container extends Layer {
 
     // Build a dict {depth: list of layers with this depth}
     const layersByDepth: {[depth: string]: Layer[]} = {};
-    for (const [layerID, depth] of _.pairs(layersDepths)) {
+    for (const layerID in layersDepths) {
+      const depth = layersDepths[layerID];
       if (!(depth in layersByDepth)) {
         layersByDepth[depth] = [];
       }
@@ -1800,7 +1825,7 @@ export class Container extends Layer {
     }
 
     // Get sorted list of layer depths.
-    let depthKeys = _.keys(layersByDepth)
+    let depthKeys = Object.keys(layersByDepth)
                         .map(x => parseInt(x, 10))
                         .sort(generic_utils.reverseNumberCompare);
 
@@ -1828,7 +1853,7 @@ export class Container extends Layer {
     this.layersByDepth = layersByDepth;
 
     // Get sorted list of node depths;
-    depthKeys = _.keys(nodesByDepth)
+    depthKeys = Object.keys(nodesByDepth)
                     .map(x => parseInt(x, 10))
                     .sort(generic_utils.reverseNumberCompare);
 
@@ -1844,7 +1869,7 @@ export class Container extends Layer {
         const layer = node.outboundLayer;
         if (layer != null) {
           for (const x of node.inputTensors) {
-            if (!_.contains(computableTensors, x)) {
+            if (computableTensors.indexOf(x) === -1) {
               throw new RuntimeError(
                   `Graph disconnected: cannot obtain value for tensor ${x}` +
                   ` at layer "${layer.name}". ` +
@@ -1979,14 +2004,12 @@ export class Container extends Layer {
    * Util shared between different serialization methods.
    * @returns Model config with Keras version information added.
    */
-  private updatedConfig(): ConfigDict {
+  private updatedConfig(): serialization.ConfigDict {
     const theConfig = this.getConfig();
-    const modelConfig: ConfigDict = {
-      className: this.constructor.name,
+    const modelConfig: serialization.ConfigDict = {
+      className: this.getClassName(),
       config: theConfig,
-      // TODO(nielsene): Replace with Version constant once a
-      // release workflow and versioning approach are selected.
-      kerasVersion: 'tfjs-layers pre-release',
+      kerasVersion: `tfjs-layers ${layersVersion}`,
       // TODO(nielsene): Replace something like K.backend() once
       // possible.
       backend: 'TensorFlow.js'
@@ -1999,13 +2022,16 @@ export class Container extends Layer {
    *
    * To load a network from a JSON save file, use
    * models.modelFromJSON(jsonString);
-   * @param extraJsonArgs unused in tfjs-layers, maintained for PyKeras
-   * @returns a JSON string
+   * @param extraJsonArgs Unused in tfjs-layers, maintained for PyKeras
+   * @param returnString Whether the return value should be stringified
+   *    (default: `true`).
+   * @returns a JSON string if `returnString` (default), or a JSON object if
+   *   `!returnString`.
    */
   // tslint:disable-next-line:no-any
-  toJSON(unused?: any): string {
-    const modelConfig = this.updatedConfig();
-    return JSON.stringify(convertTsToPythonic(modelConfig));
+  toJSON(unused?: any, returnString = true): string|JsonDict {
+    const modelConfig = convertTsToPythonic(this.updatedConfig()) as JsonDict;
+    return returnString ? JSON.stringify(modelConfig) : modelConfig;
   }
 
   /**
@@ -2021,8 +2047,7 @@ export class Container extends Layer {
    * @return A tensor if there is a single output, or a list of tensors if there
    *   are more than one outputs.
    */
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = generic_utils.toList(inputs);
     let masks: Tensor[];
 
@@ -2095,7 +2120,7 @@ export class Container extends Layer {
         for (const node of nodes) {
           // This is always a single layer, never a list.
           const layer = node.outboundLayer;
-          if (_.contains(this.inputLayers.map(x => x.id), layer.id)) {
+          if (this.inputLayers.map(x => x.id).indexOf(layer.id) !== -1) {
             // We've already covered the input layers a few lines above.
             continue;
           }
@@ -2166,7 +2191,10 @@ export class Container extends Layer {
     // TODO: raise exception when a `.computeMask()` call
     // does not return a list the same size as `call`
     const tensorMap: {[tensorID: string]: [Tensor, Tensor]} = {};
-    for (const [x, y, mask] of _.zip(this.inputs, inputs, masks)) {
+    for (let i = 0; i < this.inputs.length; ++i) {
+      const x = this.inputs[i];
+      const y = inputs[i];
+      const mask = masks[i];
       tensorMap[x.id] = [y, mask];
     }
 
@@ -2192,8 +2220,7 @@ export class Container extends Layer {
         }
         if (computedData.length === referenceInputTensors.length) {
           // TODO(michaelterry): Add K.name_scope here, if we need it.
-          // tslint:disable-next-line:no-any
-          let kwargs: any = {};
+          let kwargs: Kwargs = {};
           let computedTensors: Tensor[];
           let computedMasks: Tensor[];
           let outputTensors: Tensor[];
@@ -2233,8 +2260,10 @@ export class Container extends Layer {
           // TODO(michaelterry): Add model updates and losses
 
           // Update tensor map.
-          for (const [x, y, mask] of _.zip(
-                   referenceOutputTensors, outputTensors, outputMasks)) {
+          for (let i = 0; i < referenceOutputTensors.length; ++i) {
+            const x = referenceOutputTensors[i];
+            const y = outputTensors[i];
+            const mask = outputMasks[i];
             tensorMap[x.id] = [y, mask];
           }
         }
@@ -2295,6 +2324,12 @@ export class Container extends Layer {
    * @returns A Layer instance.
    * @throws ValueError: In case of invalid layer name or index.
    */
+  @doc({
+    heading: 'Layers',
+    subheading: 'Classes',
+    namespace: 'layers',
+    subclasses: ['Model']
+  })
   getLayer(name?: string, index?: number): Layer {
     if (index != null) {
       if (this.layers.length <= index) {
@@ -2344,8 +2379,8 @@ export class Container extends Layer {
     });
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {name: this.name};
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {name: this.name};
 
     // Build a map from layer unique name (self._node_key)
     // to the index of the nodes that are saved in the config.
@@ -2356,7 +2391,7 @@ export class Container extends Layer {
     // Serialize and save the layers in layerConfigs
     const layerConfigs = [];
     for (const layer of this.layers) {
-      const layerClassName = layer.constructor.name;
+      const layerClassName = layer.getClassName();
       const layerConfig = layer.getConfig();
       const filteredInboundNodes = [];
       for (let originalNodeIndex = 0;
@@ -2453,8 +2488,9 @@ export class Container extends Layer {
    * @returns A model instance.
    * @throws ValueError: In case of improperly formatted config dict.
    */
-  static fromConfig<T>(cls: generic_utils.Constructor<T>, config: ConfigDict):
-      T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
     // Layer instances created during
     // the graph reconstruction process
     const createdLayers: {[layerName: string]: Layer} = {};
@@ -2464,8 +2500,10 @@ export class Container extends Layer {
     // It acts as a queue that maintains any unprocessed
     // layer call until it becomes possible to process it
     // (i.e. until the input tensors to the call all exist).
-    const unprocessedNodes: {[layer: string]: ConfigDict[][]} = {};
-    function addUnprocessedNode(layer: Layer, nodeData: ConfigDict[]) {
+    const unprocessedNodes:
+        {[layer: string]: serialization.ConfigDict[][]} = {};
+    function addUnprocessedNode(
+        layer: Layer, nodeData: serialization.ConfigDict[]) {
       if (!(layer.name in unprocessedNodes)) {
         unprocessedNodes[layer.name] = [nodeData];
       } else {
@@ -2473,7 +2511,7 @@ export class Container extends Layer {
       }
     }
 
-    function processNode(layer: Layer, nodeData: ConfigDict[]) {
+    function processNode(layer: Layer, nodeData: serialization.ConfigDict[]) {
       const inputTensors: SymbolicTensor[] = [];
       let kwargs;
       for (const inputData of nodeData) {
@@ -2483,7 +2521,7 @@ export class Container extends Layer {
         if (inputData.length === 3) {
           kwargs = {};
         } else if (inputData.length === 4) {
-          kwargs = inputData[3] as ConfigDict;
+          kwargs = inputData[3] as serialization.ConfigDict;
         } else {
           throw new ValueError(`Improperly formatted model config for layer ${
               JSON.stringify(layer)}: ${JSON.stringify(inputData)}`);
@@ -2503,7 +2541,7 @@ export class Container extends Layer {
       // Call layer on its inputs, thus creating the node
       // and building the layer if needed.
       // Note: This has Eager vs Graph Implications.
-      if (!_.isEmpty(inputTensors)) {
+      if (inputTensors.length > 0) {
         layer.apply(
             generic_utils.singletonOrArray(inputTensors),
             kwargs);  // was ** kwargs
@@ -2516,16 +2554,18 @@ export class Container extends Layer {
      * @throws ValueError: In case of improperly formatted `layer_data`
      * dict.
      */
-    function processLayer(layerData: ConfigDict|null) {
+    function processLayer(layerData: serialization.ConfigDict|null) {
       const layerName = layerData.name as string;
       // Instantiate layer.
       const layer = deserializeLayer(
-          layerData,
-          config.customObjects != null ? config.customObjects as ConfigDict :
-                                         {});
+                        layerData,
+                        config.customObjects != null ?
+                            config.customObjects as serialization.ConfigDict :
+                            {}) as Layer;
       createdLayers[layerName] = layer;
       // Gather layer inputs.
-      const inboundNodesData = layerData.inboundNodes as ConfigDict[];
+      const inboundNodesData =
+          layerData.inboundNodes as serialization.ConfigDict[];
       for (const nodeData of inboundNodesData) {
         if (!(nodeData instanceof Array)) {
           throw new ValueError(
@@ -2542,7 +2582,7 @@ export class Container extends Layer {
 
     // First, we create all layers and enqueue nodes to be processed
     const name = config.name;
-    const layersFromConfig = config.layers as ConfigDict[];
+    const layersFromConfig = config.layers as serialization.ConfigDict[];
     for (const layerData of layersFromConfig) {
       processLayer(layerData);
     }
@@ -2551,7 +2591,7 @@ export class Container extends Layer {
     // Nodes that cannot yet be processed(if the inbound node
     // does not yet exist) are re - enqueued, and the process
     // is repeated until all nodes are processed.
-    while (!_.isEmpty(unprocessedNodes)) {
+    while (!generic_utils.isObjectEmpty(unprocessedNodes)) {
       for (const layerData of layersFromConfig) {
         const layer = createdLayers[layerData.name as string];
         if (layer.name in unprocessedNodes) {
@@ -2564,7 +2604,8 @@ export class Container extends Layer {
     }
     const inputTensors: SymbolicTensor[] = [];
     const outputTensors: SymbolicTensor[] = [];
-    const inputLayersFromConfig = config.inputLayers as ConfigDict[];
+    const inputLayersFromConfig =
+        config.inputLayers as serialization.ConfigDict[];
     for (const layerData of inputLayersFromConfig) {
       const layerName = layerData[0] as string;
       const nodeIndex = layerData[1] as number;
@@ -2574,7 +2615,8 @@ export class Container extends Layer {
       const layerOutputTensors = layer.inboundNodes[nodeIndex].outputTensors;
       inputTensors.push(layerOutputTensors[tensorIndex]);
     }
-    const outputLayersFromConfig = config.outputLayers as ConfigDict[];
+    const outputLayersFromConfig =
+        config.outputLayers as serialization.ConfigDict[];
     for (const layerData of outputLayersFromConfig) {
       const layerName = layerData[0] as string;
       const nodeIndex = layerData[1] as number;
@@ -2644,7 +2686,7 @@ export function getSourceInputs(
         const previousSources = getSourceInputs(x, layer, nodeIndex);
         // Avoid input redundancy.
         for (const x of previousSources) {
-          if (!_.contains(sourceTensors, x)) {
+          if (sourceTensors.indexOf(x) === -1) {
             sourceTensors.push(x);
           }
         }
@@ -2666,7 +2708,8 @@ export function getSourceInputs(
 function loadTensor(dtype: string, shape: Shape, value: any): Tensor {
   const dataType = generic_utils.stringToDType(dtype);
   return Tensor.make(
-      shape, {values: shape.length === 0 ? value : _.flatten(value)}, dataType);
+      shape, {values: shape.length === 0 ? value : util.flatten(value)},
+      dataType);
 }
 
 /**
@@ -2711,10 +2754,10 @@ export function loadWeightsFromNamedTensorMap(
   let totalWeightsCount = 0;
   for (const layer of layers) {
     for (const weight of layer.weights) {
-      if (nameToWeight[weight.name] != null) {
-        throw new ValueError(`Duplicate weight name: ${weight.name}`);
+      if (nameToWeight[weight.originalName] != null) {
+        throw new ValueError(`Duplicate weight name: ${weight.originalName}`);
       }
-      nameToWeight[weight.name] = weight;
+      nameToWeight[weight.originalName] = weight;
       totalWeightsCount++;
     }
   }
@@ -2812,7 +2855,8 @@ export function loadWeightsFromJson(
       // Set values.
       for (let i = 0; i < weightValues.length; ++i) {
         if (skipMismatch) {
-          if (!_.isEqual(symbolicWeights[i].shape, weightValues[i].shape)) {
+          if (!util.arraysEqual(
+                  symbolicWeights[i].shape, weightValues[i].shape)) {
             console.warn(
                 `Skipping loading of weights for layer ${layer.name} due ` +
                 `to mismatch in shape (${symbolicWeights[i].shape} vs ` +

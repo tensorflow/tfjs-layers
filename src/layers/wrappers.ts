@@ -13,13 +13,13 @@
  */
 
 // tslint:disable:max-line-length
-import {Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {Shape, TensorInterface} from '../types';
-import {ConfigDict, LayerVariable, RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
+import {Kwargs, Shape, TensorInterface} from '../types';
+import {LayerVariable, RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 
 import {RNN} from './recurrent';
@@ -43,12 +43,6 @@ export interface WrapperLayerConfig extends LayerConfig {
  */
 export abstract class Wrapper extends Layer {
   readonly layer: Layer;
-  /**
-   * Tracks mapping of Wrapper inputs to inner layer inputs. Useful when
-   * the inner layer has update ops that depend on its inputs (as opposed
-   * to the inputs to the Wrapper layer).
-   */
-  private inputMap: {[key: string]: SymbolicTensor[]};
 
   constructor(config: WrapperLayerConfig) {
     // Porting Note: In PyKeras, `self.layer` is set prior to the calling
@@ -60,7 +54,6 @@ export abstract class Wrapper extends Layer {
     //   and the setter of `this.layer`.
     super(config);
     this.layer = config.layer;
-    this.inputMap = {};
   }
 
   build(inputShape: Shape|Shape[]): void {
@@ -120,10 +113,10 @@ export abstract class Wrapper extends Layer {
     this.layer.setWeights(weights);
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       'layer': {
-        'className': this.layer.constructor.name,
+        'className': this.layer.getClassName(),
         'config': this.layer.getConfig(),
       }
     };
@@ -132,10 +125,11 @@ export abstract class Wrapper extends Layer {
     return config;
   }
 
-  static fromConfig<T>(
-      cls: generic_utils.Constructor<T>, config: ConfigDict,
-      customObjects = {} as ConfigDict): T {
-    const layerConfig = config['layer'] as ConfigDict;
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict,
+      customObjects = {} as serialization.ConfigDict): T {
+    const layerConfig = config['layer'] as serialization.ConfigDict;
     const layer = deserialize(layerConfig, customObjects) as Layer;
     delete config['layer'];
     const newConfig = {layer};
@@ -170,6 +164,7 @@ export abstract class Wrapper extends Layer {
  *
  * // In subsequent layers, there is no need for `inputShape`:
  * model.add(tf.layers.timeDistributed({layer: tf.layers.dense({units: 32})}));
+ * console.log(JSON.stringify(model.outputs[0].shape));
  * // Now model.outputShape = [null, 10, 32].
  * ```
  *
@@ -184,9 +179,11 @@ export abstract class Wrapper extends Layer {
  *   layer: tf.layers.conv2d({filters: 64, kernelSize: [3, 3]}),
  *   inputShape: [10, 299, 299, 3],
  * }));
+ * console.log(JSON.stringify(model.outputs[0].shape));
  * ```
  */
 export class TimeDistributed extends Wrapper {
+  static className = 'TimeDistributed';
   constructor(config: WrapperLayerConfig) {
     super(config);
     this.supportsMasking = true;
@@ -217,8 +214,7 @@ export class TimeDistributed extends Wrapper {
     return [childOutputShape[0], timesteps].concat(childOutputShape.slice(1));
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Add 'training' and 'useLearningPhase' to kwargs.
     inputs = generic_utils.getExactlyOneTensor(inputs);
     // Porting Note: In tfjs-layers, `inputs` are always concrete tensor values.
@@ -237,7 +233,7 @@ export class TimeDistributed extends Wrapper {
     return y;
   }
 }
-generic_utils.ClassNameMap.register('TimeDistributed', TimeDistributed);
+serialization.SerializationMap.register(TimeDistributed);
 
 export enum BidirectionalMergeMode {
   SUM,
@@ -267,6 +263,7 @@ export interface BidirectionalLayerConfig extends WrapperLayerConfig {
 }
 
 export class Bidirectional extends Wrapper {
+  static className = 'Bidirectional';
   private forwardLayer: RNN;
   private backwardLayer: RNN;
   private mergeMode: BidirectionalMergeMode;
@@ -281,8 +278,10 @@ export class Bidirectional extends Wrapper {
     const layerConfig = config.layer.getConfig();
     layerConfig['goBackwards'] =
         layerConfig['goBackwards'] === true ? false : true;
-    this.backwardLayer = deserialize(
-        {className: config.layer.constructor.name, config: layerConfig});
+    this.backwardLayer =
+        deserialize(
+            {className: config.layer.getClassName(), config: layerConfig}) as
+        RNN;
     this.forwardLayer.name = 'forward_' + this.forwardLayer.name;
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
     this.mergeMode = config.mergeMode;
@@ -365,8 +364,7 @@ export class Bidirectional extends Wrapper {
 
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
-      // tslint:disable-next-line:no-any
-      kwargs?: any): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
+      kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
     let initialState: Tensor[]|SymbolicTensor[] = null;
     if (kwargs != null) {
       initialState = kwargs['initialState'];
@@ -386,8 +384,7 @@ export class Bidirectional extends Wrapper {
     }
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     if (kwargs['mask'] != null) {
       throw new NotImplementedError(
           'The support for masking is not implemented for ' +
@@ -471,4 +468,4 @@ export class Bidirectional extends Wrapper {
   // TODO(cais): Implement constraints().
   // TODO(cais): Implement getConfig().
 }
-generic_utils.ClassNameMap.register('Bidirectional', Bidirectional);
+serialization.SerializationMap.register(Bidirectional);

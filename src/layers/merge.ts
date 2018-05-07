@@ -12,13 +12,12 @@
  * TensorFlow.js Layers: Merge Layers.
  */
 
-import {Tensor} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
+import {serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {Shape, SymbolicTensor} from '../types';
+import {Kwargs, Shape, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as mathUtils from '../utils/math_utils';
 
@@ -27,7 +26,7 @@ import * as mathUtils from '../utils/math_utils';
  *
  * Used to implement `Sum`, `Average`, `Concatenate`, etc.
  */
-export class Merge extends Layer {
+export abstract class Merge extends Layer {
   protected reshapeRequired: boolean;
 
   constructor(config?: LayerConfig) {
@@ -104,7 +103,7 @@ export class Merge extends Layer {
         batchSizes.push(shape[0]);
       }
     }
-    batchSizes = _.uniq(batchSizes);
+    batchSizes = generic_utils.unique(batchSizes);
     if (batchSizes.length > 1) {
       throw new ValueError(
           `Can not merge tensors with different batch sizes. ` +
@@ -120,23 +119,23 @@ export class Merge extends Layer {
     // If the inputs have different ranks, we have to reshape them to make them
     // broadcastable.
     const allRanks = inputShape.map(shape => shape.length);
-    if (!_.contains(inputShape, null) && _.uniq(allRanks).length === 1) {
+    if (inputShape.indexOf(null) === -1 &&
+        generic_utils.unique(allRanks).length === 1) {
       this.reshapeRequired = false;
     } else {
       this.reshapeRequired = true;
     }
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = inputs as Tensor[];
     if (this.reshapeRequired) {
       const reshapedInputs: Tensor[] = [];
       const inputDims = inputs.map(input => K.ndim(input));
-      if (!_.contains(inputDims, null)) {
+      if (inputDims.indexOf(null) === -1) {
         // If ranks of all inputs are available, we simply expand each of them
         // at axis=1 until all of them have the same rank.
-        const maxNDim = _.max(inputDims);
+        const maxNDim = mathUtils.max(inputDims);
         for (let x of inputs) {
           const xNDim = K.ndim(x);
           for (let k = 0; k < maxNDim - xNDim; ++k) {
@@ -162,7 +161,7 @@ export class Merge extends Layer {
             reshapedInputs.push(xTransposed);
             transposed = true;
           } else if (xNDim > 1) {
-            const dims = _.range(1, xNDim).concat([0]);
+            const dims = mathUtils.range(1, xNDim).concat([0]);
             reshapedInputs.push(K.permuteDimensions(x, dims));
             transposed = true;
           } else {
@@ -185,7 +184,7 @@ export class Merge extends Layer {
                 K.permuteDimensions(K.reshape(y, [-1, batchSize]), [1, 0]),
                 newShape);
           } else if (yNDim > 1) {
-            const dims = [yNDim - 1].concat(_.range(0, yNDim - 1));
+            const dims = [yNDim - 1].concat(mathUtils.range(0, yNDim - 1));
             y = K.permuteDimensions(y, dims);
           }
         }
@@ -215,7 +214,7 @@ export class Merge extends Layer {
         batchSizes.push(shape[0]);
       }
     }
-    batchSizes = _.uniq(batchSizes);
+    batchSizes = generic_utils.unique(batchSizes);
     if (batchSizes.length === 1) {
       outputShape = batchSizes.concat(outputShape);
     } else {
@@ -240,12 +239,13 @@ export class Merge extends Layer {
  * const input2 = tf.input({shape: [2, 2]});
  * const addLayer = tf.layers.add();
  * const sum = addLayer.apply([input1, input2]);
- * console.log(sum.shape);
+ * console.log(JSON.stringify(sum.shape));
  * // You get [null, 2, 2], with the first dimension as the undetermined batch
  * // dimension.
  * ```
  */
 export class Add extends Merge {
+  static className = 'Add';
   constructor(config?: LayerConfig) {
     super(config as LayerConfig);
   }
@@ -258,7 +258,7 @@ export class Add extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Add', Add);
+serialization.SerializationMap.register(Add);
 
 /**
  * Calculate the element-wise sum of inputs, which all have the same shape.
@@ -335,6 +335,7 @@ export function add(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  * // dimension.
  */
 export class Multiply extends Merge {
+  static className = 'Multiply';
   constructor(config?: LayerConfig) {
     super(config);
   }
@@ -347,7 +348,7 @@ export class Multiply extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Multiply', Multiply);
+serialization.SerializationMap.register(Multiply);
 
 /**
  * Calculate the element-wise product of inputs, which all have the same shape.
@@ -417,12 +418,13 @@ export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  * const input2 = tf.input({shape: [2, 2]});
  * const averageLayer = tf.layers.average();
  * const average = averageLayer.apply([input1, input2]);
- * console.log(average.shape);
+ * console.log(JSON.stringify(average.shape));
  * // You get [null, 2, 2], with the first dimension as the undetermined batch
  * // dimension.
  * ```
  */
 export class Average extends Merge {
+  static className = 'Average';
   constructor(config?: LayerConfig) {
     super(config);
   }
@@ -435,7 +437,7 @@ export class Average extends Merge {
     return K.scalarTimesArray(K.getScalar(1 / inputs.length), output);
   }
 }
-generic_utils.ClassNameMap.register('Average', Average);
+serialization.SerializationMap.register(Average);
 
 /**
  * Calculate the element-wise arithmetic mean of inputs, which all have the same
@@ -506,12 +508,13 @@ export function average(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  * const input2 = tf.input({shape: [2, 2]});
  * const maxLayer = tf.layers.maximum();
  * const max = maxLayer.apply([input1, input2]);
- * console.log(max.shape);
+ * console.log(JSON.stringify(max.shape));
  * // You get [null, 2, 2], with the first dimension as the undetermined batch
  * // dimension.
  * ```
  */
 export class Maximum extends Merge {
+  static className = 'Maximum';
   constructor(config?: LayerConfig) {
     super(config);
   }
@@ -524,7 +527,7 @@ export class Maximum extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Maximum', Maximum);
+serialization.SerializationMap.register(Maximum);
 
 /**
  * Calculate the element-wise maximum of inputs, which all have the same shape.
@@ -594,12 +597,13 @@ export function maximum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  * const input2 = tf.input({shape: [2, 2]});
  * const minLayer = tf.layers.minimum();
  * const min = minLayer.apply([input1, input2]);
- * console.log(min.shape);
+ * console.log(JSON.stringify(min.shape));
  * // You get [null, 2, 2], with the first dimension as the undetermined batch
  * // dimension.
  * ```
  */
 export class Minimum extends Merge {
+  static className = 'Minimum';
   constructor(config?: LayerConfig) {
     super(config);
   }
@@ -612,7 +616,7 @@ export class Minimum extends Merge {
     return output;
   }
 }
-generic_utils.ClassNameMap.register('Minimum', Minimum);
+serialization.SerializationMap.register(Minimum);
 
 /**
  * Calculate the element-wise minimum of inputs, which all have the same shape.
@@ -690,13 +694,14 @@ export interface ConcatenateLayerConfig extends LayerConfig {
  * const input2 = tf.input({shape: [2, 3]});
  * const concatLayer = tf.layers.concatenate();
  * const output = concatLayer.apply([input1, input2]);
- * console.log(output.shape);
+ * console.log(JSON.stringify(output.shape));
  * // You get [null, 2, 5], with the first dimension as the undetermined batch
  * // dimension. The last dimension (5) is the result of concatenating the
  * // last dimensions of the inputs (2 and 3).
  * ```
  */
 export class Concatenate extends Merge {
+  static className = 'Concatenate';
   readonly DEFAULT_AXIS = -1;
   private readonly axis: number;
 
@@ -737,7 +742,7 @@ export class Concatenate extends Merge {
       shapeWithoutConcatAxis.splice(this.axis, 1);
       let exists = false;
       for (const shape of shapeSet) {
-        if (_.isEqual(shape, shapeWithoutConcatAxis)) {
+        if (util.arraysEqual(shape, shapeWithoutConcatAxis)) {
           exists = true;
           break;
         }
@@ -781,7 +786,7 @@ export class Concatenate extends Merge {
   // TODO(cais): Implement computeMask();
   // TODO(cais): Add getConfig();
 }
-generic_utils.ClassNameMap.register('Concatenate', Concatenate);
+serialization.SerializationMap.register(Concatenate);
 
 /**
  * Concatenate an `Array` of inputs.

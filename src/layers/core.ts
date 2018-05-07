@@ -12,8 +12,7 @@
  * TensorFlow.js Layers: Basic Layers.
  */
 
-import {Scalar, Tensor} from '@tensorflow/tfjs-core';
-import * as _ from 'underscore';
+import {Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import {ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
@@ -23,11 +22,12 @@ import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
-import {Shape} from '../types';
-import {ConfigDict, LayerVariable} from '../types';
+import {Kwargs, Shape} from '../types';
+import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneTensor} from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
+
 // tslint:enable:max-line-length
 
 export interface DropoutLayerConfig extends LayerConfig {
@@ -57,6 +57,7 @@ export interface DropoutLayerConfig extends LayerConfig {
  * each update during training time, which helps prevent overfitting.
  */
 export class Dropout extends Layer {
+  static className = 'Dropout';
   private readonly rate: number;
   private readonly rateScalar: Scalar;
   private readonly noiseShape: number[];
@@ -90,11 +91,11 @@ export class Dropout extends Layer {
     return noiseShape;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     this.invokeCallHook(inputs, kwargs);
     const input = generic_utils.getExactlyOneTensor(inputs);
-    if (this.noiseShape != null && !_.isEqual(input.shape, this.noiseShape)) {
+    if (this.noiseShape != null &&
+        !util.arraysEqual(input.shape, this.noiseShape)) {
       throw new NotImplementedError(
           'Non-default noise shape is not implemented in Dropout layer yet: ' +
           JSON.stringify(this.noiseShape));
@@ -111,7 +112,7 @@ export class Dropout extends Layer {
     return inputs;
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const config = {
       rate: this.rate,
       noiseShape: this.noiseShape,
@@ -122,7 +123,7 @@ export class Dropout extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Dropout', Dropout);
+serialization.SerializationMap.register(Dropout);
 
 export interface DenseLayerConfig extends LayerConfig {
   /** Positive integer, dimensionality of the output space. */
@@ -206,6 +207,7 @@ export interface DenseLayerConfig extends LayerConfig {
  * flattened prior to the initial dot product with the kernel.
  */
 export class Dense extends Layer {
+  static className = 'Dense';
   private units: number;
   // Default activation: Linear (none).
   private activation: ActivationFn = null;
@@ -278,8 +280,7 @@ export class Dense extends Layer {
     return outputShape;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     this.invokeCallHook(inputs, kwargs);
     // Dense layer accepts only a single input.
     const input = generic_utils.getExactlyOneTensor(inputs);
@@ -293,8 +294,8 @@ export class Dense extends Layer {
     return output;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -311,7 +312,7 @@ export class Dense extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('Dense', Dense);
+serialization.SerializationMap.register(Dense);
 
 /**
  * Flattens the input. Does not affect the batch size.
@@ -327,10 +328,11 @@ generic_utils.ClassNameMap.register('Dense', Dense);
  * // Inspect the inferred output shape of the flatten layer, which
  * // equals `[null, 12]`. The 2nd dimension is 4 * 3, i.e., the result of the
  * // flattening. (The 1st dimension is the undermined batch size.)
- * console.log(flattenLayer.apply(input).shape);
+ * console.log(JSON.stringify(flattenLayer.apply(input).shape));
  * ```
  */
 export class Flatten extends Layer {
+  static className = 'Flatten';
   constructor(config?: LayerConfig) {
     super(config || {});
     this.inputSpec = [{minNDim: 3}];
@@ -350,13 +352,12 @@ export class Flatten extends Layer {
     return [inputShape[0], math_utils.arrayProd(inputShape, 1)];
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     this.invokeCallHook(inputs, kwargs);
     return K.batchFlatten(generic_utils.getExactlyOneTensor(inputs));
   }
 }
-generic_utils.ClassNameMap.register('Flatten', Flatten);
+serialization.SerializationMap.register(Flatten);
 
 export interface ActivationLayerConfig extends LayerConfig {
   /**
@@ -396,6 +397,7 @@ export interface ActivationLayerConfig extends LayerConfig {
  *
  */
 export class Activation extends Layer {
+  static className = 'Activation';
   activation: ActivationFn;
 
   constructor(config: ActivationLayerConfig) {
@@ -404,14 +406,13 @@ export class Activation extends Layer {
     this.activation = getActivation(config.activation);
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     this.invokeCallHook(inputs, kwargs);
     const input = generic_utils.getExactlyOneTensor(inputs);
     return this.activation(input);
   }
 }
-generic_utils.ClassNameMap.register('Activation', Activation);
+serialization.SerializationMap.register(Activation);
 
 export interface ReshapeLayerConfig extends LayerConfig {
   /** The target shape. Does not include the batch axis. */
@@ -438,6 +439,7 @@ export interface RepeatVectorLayerConfig extends LayerConfig {
  * ```
  */
 export class RepeatVector extends Layer {
+  static className = 'RepeatVector';
   readonly n: number;
 
   constructor(config: RepeatVectorLayerConfig) {
@@ -450,13 +452,12 @@ export class RepeatVector extends Layer {
     return [inputShape[0], this.n, inputShape[1]];
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = getExactlyOneTensor(inputs);
     return K.repeat(inputs, this.n);
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const config = {
       n: this.n,
     };
@@ -465,7 +466,7 @@ export class RepeatVector extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register('RepeatVector', RepeatVector);
+serialization.SerializationMap.register(RepeatVector);
 
 
 /**
@@ -482,6 +483,7 @@ generic_utils.ClassNameMap.register('RepeatVector', RepeatVector);
  *    targetShape[targetShape.length - 1]].
  */
 export class Reshape extends Layer {
+  static className = 'Reshape';
   private targetShape: Shape;
 
   constructor(config: ReshapeLayerConfig) {
@@ -562,8 +564,7 @@ export class Reshape extends Layer {
     }
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     this.invokeCallHook(inputs, kwargs);
     const input = generic_utils.getExactlyOneTensor(inputs);
     const inputShape = K.shape(input);
@@ -572,4 +573,4 @@ export class Reshape extends Layer {
     return K.reshape(input, outputShape);
   }
 }
-generic_utils.ClassNameMap.register('Reshape', Reshape);
+serialization.SerializationMap.register(Reshape);
