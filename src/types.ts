@@ -98,10 +98,8 @@ export class SymbolicTensor implements TensorInterface {
    */
   constructor(
       readonly dtype: DType, readonly shape: Shape, public sourceLayer: Layer,
-      readonly inputs: SymbolicTensor[],
-      // tslint:disable-next-line:no-any
-      readonly callArgs: any, name?: string,
-      readonly outputTensorIndex?: number) {
+      readonly inputs: SymbolicTensor[], readonly callArgs: Kwargs,
+      name?: string, readonly outputTensorIndex?: number) {
     this.id = _nextUniqueTensorId++;
     if (name != null) {
       this.originalName = getScopedTensorName(name);
@@ -297,3 +295,18 @@ export interface JsonDict {
   [key: string]: JsonValue;
 }
 export interface JsonArray extends Array<JsonValue> {}
+
+/**
+ * Type representing a loosely-typed bundle of key-word arguments.
+ *
+ * This is a looser type name JsonDict/serialization.ConfigDict as it
+ * can contain arbitray objects as it values.  It is most appropriate
+ * for functions that pass through key word arguments to other functions
+ * without knowledge of the structure.  If the function can place type
+ * restrictions on the keyword arguments, it should via the Config
+ * interface convention used throughout.
+ */
+export type Kwargs = {
+  // tslint:disable-next-line:no-any
+  [key: string]: any
+};
