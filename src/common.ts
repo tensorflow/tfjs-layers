@@ -12,7 +12,6 @@
  * Common functions for TensorFlow.js Layers.
  */
 import {ValueError} from './errors';
-import {SerializableEnumRegistry} from './utils/generic_utils';
 
 // A map from the requested scoped name of a Tensor to the number of Tensors
 // wanting that name so far.  This allows enforcing name uniqueness by appending
@@ -23,11 +22,6 @@ const nameMap: Map<string, number> = new Map<string, number>();
 //   constants.ts.
 /** @docinline */
 export type DataFormat = 'channelsFirst'|'channelsLast';
-SerializableEnumRegistry.register(
-    'data_format',
-    {'channels_first': 'channelsFirst', 'channels_last': 'channelsLast'});
-// TODO(nielsene): Unify the registry with the valid constant list for
-// less repetition.
 export const VALID_DATA_FORMAT_VALUES =
     ['channelsFirst', 'channelsLast', undefined, null];
 export function checkDataFormat(value?: string): void {
@@ -43,8 +37,6 @@ export function checkDataFormat(value?: string): void {
 
 /** @docinline */
 export type PaddingMode = 'valid'|'same'|'causal';
-SerializableEnumRegistry.register(
-    'padding', {'valid': 'valid', 'same': 'same', 'causal': 'causal'});
 export const VALID_PADDING_MODE_VALUES =
     ['valid', 'same', 'causal', undefined, null];
 export function checkPaddingMode(value?: string): void {

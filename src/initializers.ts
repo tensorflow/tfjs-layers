@@ -15,15 +15,13 @@ import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
 import {NotImplementedError, ValueError} from './errors';
 import {DType, Shape} from './types';
-import {deserializeKerasObject, SerializableEnumRegistry, serializeKerasObject} from './utils/generic_utils';
+import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
 
 // tslint:enable:max-line-length
 
 /** @docinline */
 export type FanMode = 'fanIn'|'fanOut'|'fanAvg';
-SerializableEnumRegistry.register(
-    'mode', {'fan_in': 'fanIn', 'fan_out': 'fanOut', 'fan_avg': 'fanAvg'});
 export const VALID_FAN_MODE_VALUES =
     ['fanIn', 'fanOut', 'fanAvg', undefined, null];
 export function checkFanMode(value?: string): void {
@@ -38,8 +36,6 @@ export function checkFanMode(value?: string): void {
 
 /** @docinline */
 export type Distribution = 'normal'|'uniform';
-SerializableEnumRegistry.register(
-    'distribution', {'normal': 'normal', 'uniform': 'uniform'});
 export const VALID_DISTRIBUTION_VALUES = ['normal', 'uniform', undefined, null];
 export function checkDistribution(value?: string): void {
   if (value == null) {
