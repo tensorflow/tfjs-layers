@@ -12,9 +12,9 @@
  * Normalization layers.
  */
 
+// tslint:disable:max-line-length
 import {movingAverage, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
-// tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, Layer, LayerConfig} from '../engine/topology';
