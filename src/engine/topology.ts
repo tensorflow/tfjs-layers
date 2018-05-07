@@ -317,7 +317,6 @@ export interface LayerConfig {
 // If necessary, add `output` arguments to the CallHook function.
 // This is currently used for testing only, but may be used for debugger-related
 // purposes in the future.
-// tslint:disable-next-line:no-any
 export type CallHook = (inputs: Tensor|Tensor[], kwargs: Kwargs) => void;
 
 let _nextLayerID = 0;

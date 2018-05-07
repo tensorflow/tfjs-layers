@@ -1130,12 +1130,10 @@ describeMathCPUAndGPU('Model.fit with training-sensitive layers', () => {
     // Hook the dropout layer to observe the training arg values during the
     // fit(), evaluate() and predict() calls.
     const dropoutLayerTrainingFlags: boolean[] = [];
-    // tslint:disable:no-any
     const recordDropoutTrainingArgHook =
         (inputs: Tensor|Tensor[], kwargs: Kwargs) => {
           dropoutLayerTrainingFlags.push(kwargs.training as boolean);
         };
-    // tslint:enable:no-any
     layer2.setCallHook(recordDropoutTrainingArgHook);
 
     const output =
