@@ -22,7 +22,7 @@ import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../uti
 
 import {Dense, Reshape} from './core';
 import {SimpleRNN} from './recurrent';
-import {BidirectionalMergeMode, TimeDistributed} from './wrappers';
+import {BidirectionalMergeMode, checkBidirectionalMergeMode, TimeDistributed, VALID_BIDIRECTIONAL_MERGE_MODES} from './wrappers';
 
 // tslint:enable:max-line-length
 
@@ -166,6 +166,30 @@ describeMathCPU('Bidirectional Layer: Symbolic', () => {
     expect(outputs[0].shape).toEqual([10, 8, 3]);
     expect(outputs[1].shape).toEqual([10, 3]);
     expect(outputs[2].shape).toEqual([10, 3]);
+  });
+});
+
+describe('checkBidirectionalMergeMode', () => {
+  it('Valid values', () => {
+    const extendedValues =
+        VALID_BIDIRECTIONAL_MERGE_MODES.concat([undefined, null]);
+    for (const validValue of extendedValues) {
+      // Using implicit "expect().toNotThrow()" for valid values
+      checkBidirectionalMergeMode(validValue);
+    }
+  });
+  it('Invalid values', () => {
+    // Test invalid values are rejected, and reported in the error.
+    expect(() => checkBidirectionalMergeMode('foo')).toThrowError(/foo/);
+    try {
+      checkBidirectionalMergeMode('bad');
+    } catch (e) {
+      expect(e).toMatch('BidirectionalMergeMode');
+      // Test that the error message contains the list of valid values.
+      for (const validValue of VALID_BIDIRECTIONAL_MERGE_MODES) {
+        expect(e).toMatch(validValue);
+      }
+    }
   });
 });
 

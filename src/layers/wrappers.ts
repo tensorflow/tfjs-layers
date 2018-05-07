@@ -236,14 +236,10 @@ export class TimeDistributed extends Wrapper {
 serialization.SerializationMap.register(TimeDistributed);
 
 export type BidirectionalMergeMode = 'sum'|'mul'|'concat'|'ave';
-export const VALID_BIDIRECTIONAL_MERGE_MODES =
-    ['sum', 'mul', 'concat', 'ave', undefined, null];
+export const VALID_BIDIRECTIONAL_MERGE_MODES = ['sum', 'mul', 'concat', 'ave'];
 export function checkBidirectionalMergeMode(value?: string): void {
-  if (VALID_BIDIRECTIONAL_MERGE_MODES.indexOf(value) < 0) {
-    throw new ValueError(
-        `${value} is not a valid BidrectionalMergeMode.  Valid values are ${
-            VALID_BIDIRECTIONAL_MERGE_MODES}`);
-  }
+  generic_utils.checkStringTypeUnionValue(
+      VALID_BIDIRECTIONAL_MERGE_MODES, 'BidirectionalMergeMode', value);
 }
 
 export interface BidirectionalLayerConfig extends WrapperLayerConfig {

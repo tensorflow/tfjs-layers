@@ -11,8 +11,7 @@
 /**
  * Common functions for TensorFlow.js Layers.
  */
-import {ValueError} from './errors';
-
+import {checkStringTypeUnionValue} from './utils/generic_utils';
 // A map from the requested scoped name of a Tensor to the number of Tensors
 // wanting that name so far.  This allows enforcing name uniqueness by appending
 // an incrementing index, e.g. scope/name, scope/name_1, scope/name_2, etc.
@@ -22,36 +21,23 @@ const nameMap: Map<string, number> = new Map<string, number>();
 //   constants.ts.
 /** @docinline */
 export type DataFormat = 'channelsFirst'|'channelsLast';
-export const VALID_DATA_FORMAT_VALUES =
-    ['channelsFirst', 'channelsLast', undefined, null];
+export const VALID_DATA_FORMAT_VALUES = ['channelsFirst', 'channelsLast'];
 export function checkDataFormat(value?: string): void {
-  if (VALID_DATA_FORMAT_VALUES.indexOf(value) < 0) {
-    throw new ValueError(
-        `${value} is not a valid DataFormat.  Valid values are ${
-            VALID_DATA_FORMAT_VALUES}`);
-  }
+  checkStringTypeUnionValue(VALID_DATA_FORMAT_VALUES, 'DataFormat', value);
 }
 
 /** @docinline */
 export type PaddingMode = 'valid'|'same'|'causal';
-export const VALID_PADDING_MODE_VALUES =
-    ['valid', 'same', 'causal', undefined, null];
+export const VALID_PADDING_MODE_VALUES = ['valid', 'same', 'causal'];
 export function checkPaddingMode(value?: string): void {
-  if (VALID_PADDING_MODE_VALUES.indexOf(value) < 0) {
-    throw new ValueError(
-        `${value} is not a valid PaddingMode.  Valid values are ${
-            VALID_PADDING_MODE_VALUES}`);
-  }
+  checkStringTypeUnionValue(VALID_PADDING_MODE_VALUES, 'PaddingMode', value);
 }
 
 /** @docinline */
 export type PoolMode = 'max'|'avg';
-export const VALID_POOL_MODE_VALUES = ['max', 'avg', undefined, null];
+export const VALID_POOL_MODE_VALUES = ['max', 'avg'];
 export function checkPoolMode(value?: string): void {
-  if (VALID_POOL_MODE_VALUES.indexOf(value) < 0) {
-    throw new ValueError(`${value} is not a valid PoolMode.  Valid values are ${
-        VALID_POOL_MODE_VALUES}`);
-  }
+  checkStringTypeUnionValue(VALID_POOL_MODE_VALUES, 'PoolMode', value);
 }
 
 const _nameScopeStack: string[] = [];
