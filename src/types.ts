@@ -299,8 +299,8 @@ export interface JsonArray extends Array<JsonValue> {}
 /**
  * Type representing a loosely-typed bundle of key-word arguments.
  *
- * This is a looser type name JsonDict/serialization.ConfigDict as it
- * can contain arbitray objects as it values.  It is most appropriate
+ * This is a looser type than JsonDict/serialization.ConfigDict as it
+ * can contain arbitray objects as its values.  It is most appropriate
  * for functions that pass through key word arguments to other functions
  * without knowledge of the structure.  If the function can place type
  * restrictions on the keyword arguments, it should via the Config
