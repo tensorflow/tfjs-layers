@@ -87,7 +87,8 @@ export class SymbolicTensor {
   }
 }
 
-function checkShapesMatch(x: Tensor, y: Tensor): void {
+function checkShapesMatch(
+    x: Tensor|SymbolicTensor, y: Tensor|SymbolicTensor): void {
   if (x.shape.toString() !== y.shape.toString()) {
     throw new Error(
         'Shape mismatch: ' + JSON.stringify(x.shape) + ' vs. ' +

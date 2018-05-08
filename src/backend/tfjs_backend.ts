@@ -151,8 +151,8 @@ export function dtype(x: Tensor|SymbolicTensor): DType {
  * @param axis One or more axis indices to normalize. If an array is passed in,
  *   all values must be non-null/defined.
  */
-export function normalizeAxis(x: Tensor, axis: number|number[]): number|
-    number[] {
+export function normalizeAxis(
+    x: Tensor|SymbolicTensor, axis: number|number[]): number|number[] {
   if (axis == null) {
     return axis;
   }
