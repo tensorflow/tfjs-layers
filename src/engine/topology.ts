@@ -357,6 +357,7 @@ export abstract class Layer extends serialization.Serializable {
   protected _trainableWeights: LayerVariable[];
   private _nonTrainableWeights: LayerVariable[];
   private _losses: RegularizerFn[];
+  // TODO(cais): _updates is currently unused.
   private _updates: Tensor[];
   private _built: boolean;
   private _callHook: CallHook = null;
