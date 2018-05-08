@@ -13,7 +13,7 @@
  *
  * Original source: keras/constraints.py
  */
-import {Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -22,10 +22,11 @@ import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
-import {Shape} from '../types';
-import {ConfigDict, LayerVariable} from '../types';
+import {Kwargs, Shape} from '../types';
+import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneShape} from '../utils/generic_utils';
+
 // tslint:enable:max-line-length
 
 export interface EmbeddingLayerConfig extends LayerConfig {
@@ -173,8 +174,7 @@ export class Embedding extends Layer {
     return [inputShape[0], ...inLens, this.outputDim];
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     this.invokeCallHook(inputs, kwargs);
     // Embedding layer accepts only a single input.
     let input = generic_utils.getExactlyOneTensor(inputs);
@@ -186,7 +186,7 @@ export class Embedding extends Layer {
         output, getExactlyOneShape(this.computeOutputShape(input.shape)));
   }
 
-  getConfig(): ConfigDict {
+  getConfig(): serialization.ConfigDict {
     const config = {
       inputDim: this.inputDim,
       outputDim: this.outputDim,
@@ -203,4 +203,4 @@ export class Embedding extends Layer {
   }
 }
 
-generic_utils.ClassNameMap.register(Embedding);
+serialization.SerializationMap.register(Embedding);

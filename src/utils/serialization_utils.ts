@@ -14,8 +14,9 @@
 // serialized Python Config format.
 
 // tslint:disable:max-line-length
-import {ValueError} from '../errors';
-import {ConfigDict, ConfigDictValue, JsonValue} from '../types';
+import {serialization} from '@tensorflow/tfjs-core';
+
+import {JsonValue} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 // tslint:enable
 
@@ -42,7 +43,7 @@ function isArrayItemInputOrOutputName<T>(
  * @returns Result of the conversion.
  */
 export function convertPythonicToTs(
-    pythonicConfig: JsonValue, key?: string): ConfigDictValue {
+    pythonicConfig: JsonValue, key?: string): serialization.ConfigDictValue {
   if (pythonicConfig === null) {
     return null;
   } else if (typeof pythonicConfig === 'string') {
@@ -64,7 +65,7 @@ export function convertPythonicToTs(
     }
     return tsArray;
   } else {
-    const tsDict: ConfigDict = {};
+    const tsDict: serialization.ConfigDict = {};
     for (const pythonicKey of Object.keys(pythonicConfig)) {
       const pythonicValue = pythonicConfig[pythonicKey];
       if (pythonicKey === 'name' && typeof pythonicValue === 'string') {
@@ -74,19 +75,7 @@ export function convertPythonicToTs(
         tsDict[pythonicKey] = pythonicValue;
       } else {
         const tsKey = generic_utils.toCamelCase(pythonicKey);
-        if (generic_utils.SerializableEnumRegistry.contains(pythonicKey) &&
-            (typeof pythonicValue === 'string' || pythonicValue == null)) {
-          const enumValue = generic_utils.SerializableEnumRegistry.lookup(
-              pythonicKey, pythonicValue as string);
-          if (enumValue != null) {
-            tsDict[tsKey] = enumValue;
-          } else {
-            throw new ValueError(
-                `Unkown value ${pythonicValue} for ${pythonicKey} Enum`);
-          }
-        } else {
-          tsDict[tsKey] = convertPythonicToTs(pythonicValue, tsKey);
-        }
+        tsDict[tsKey] = convertPythonicToTs(pythonicValue, tsKey);
       }
     }
     return tsDict;
@@ -100,7 +89,7 @@ export function convertPythonicToTs(
  * @returns Result of the conversion.
  */
 export function convertTsToPythonic(
-    tsConfig: ConfigDictValue, key?: string): JsonValue {
+    tsConfig: serialization.ConfigDictValue, key?: string): JsonValue {
   if (tsConfig === null || tsConfig === undefined) {
     return null;
   } else if (typeof tsConfig === 'string') {
@@ -121,7 +110,7 @@ export function convertTsToPythonic(
     }
     return pyArray;
   } else {
-    const pyDict: ConfigDict = {};
+    const pyDict: serialization.ConfigDict = {};
     for (const tsKey of Object.keys(tsConfig)) {
       const tsValue = tsConfig[tsKey];
       const pyKey = generic_utils.toSnakeCase(tsKey);
@@ -132,16 +121,7 @@ export function convertTsToPythonic(
         // snake-case conversion.
         pyDict[pyKey] = tsValue;
       } else {
-        if (generic_utils.SerializableEnumRegistry.contains(pyKey) &&
-            (typeof tsValue === 'string' || tsValue == null)) {
-          const enumString =
-              generic_utils.SerializableEnumRegistry.reverseLookup(
-                  pyKey, tsValue);
-          pyDict[pyKey] = enumString;
-
-        } else {
-          pyDict[pyKey] = convertTsToPythonic(tsValue, tsKey);
-        }
+        pyDict[pyKey] = convertTsToPythonic(tsValue, tsKey);
       }
     }
     return pyDict;

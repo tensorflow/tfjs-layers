@@ -13,13 +13,13 @@
  */
 
 // tslint:disable:max-line-length
-import {Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {Serializable, Shape, TensorInterface} from '../types';
-import {ConfigDict, Constructor, LayerVariable, RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
+import {Kwargs, Shape, TensorInterface} from '../types';
+import {LayerVariable, RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 
 import {RNN} from './recurrent';
@@ -113,8 +113,8 @@ export abstract class Wrapper extends Layer {
     this.layer.setWeights(weights);
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       'layer': {
         'className': this.layer.getClassName(),
         'config': this.layer.getConfig(),
@@ -125,10 +125,11 @@ export abstract class Wrapper extends Layer {
     return config;
   }
 
-  static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict,
-      customObjects = {} as ConfigDict): T {
-    const layerConfig = config['layer'] as ConfigDict;
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict,
+      customObjects = {} as serialization.ConfigDict): T {
+    const layerConfig = config['layer'] as serialization.ConfigDict;
     const layer = deserialize(layerConfig, customObjects) as Layer;
     delete config['layer'];
     const newConfig = {layer};
@@ -213,8 +214,7 @@ export class TimeDistributed extends Wrapper {
     return [childOutputShape[0], timesteps].concat(childOutputShape.slice(1));
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Add 'training' and 'useLearningPhase' to kwargs.
     inputs = generic_utils.getExactlyOneTensor(inputs);
     // Porting Note: In tfjs-layers, `inputs` are always concrete tensor values.
@@ -233,20 +233,14 @@ export class TimeDistributed extends Wrapper {
     return y;
   }
 }
-generic_utils.ClassNameMap.register(TimeDistributed);
+serialization.SerializationMap.register(TimeDistributed);
 
-export enum BidirectionalMergeMode {
-  SUM,
-  MUL,
-  CONCAT,
-  AVE,
+export type BidirectionalMergeMode = 'sum'|'mul'|'concat'|'ave';
+export const VALID_BIDIRECTIONAL_MERGE_MODES = ['sum', 'mul', 'concat', 'ave'];
+export function checkBidirectionalMergeMode(value?: string): void {
+  generic_utils.checkStringTypeUnionValue(
+      VALID_BIDIRECTIONAL_MERGE_MODES, 'BidirectionalMergeMode', value);
 }
-generic_utils.SerializableEnumRegistry.register('merge_mode', {
-  'sum': BidirectionalMergeMode.SUM,
-  'mul': BidirectionalMergeMode.MUL,
-  'concat': BidirectionalMergeMode.CONCAT,
-  'ave': BidirectionalMergeMode.AVE,
-});
 
 export interface BidirectionalLayerConfig extends WrapperLayerConfig {
   /**
@@ -284,6 +278,7 @@ export class Bidirectional extends Wrapper {
         RNN;
     this.forwardLayer.name = 'forward_' + this.forwardLayer.name;
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
+    checkBidirectionalMergeMode(config.mergeMode);
     this.mergeMode = config.mergeMode;
     if (config.weights) {
       throw new NotImplementedError(
@@ -344,7 +339,7 @@ export class Bidirectional extends Wrapper {
       outputShape = layerShapes[0];
     }
     outputShape = outputShape as Shape;
-    if (this.mergeMode === BidirectionalMergeMode.CONCAT) {
+    if (this.mergeMode === 'concat') {
       outputShape[outputShape.length - 1] *= 2;
       outputShapes = [outputShape];
     } else if (this.mergeMode == null) {
@@ -364,8 +359,7 @@ export class Bidirectional extends Wrapper {
 
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
-      // tslint:disable-next-line:no-any
-      kwargs?: any): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
+      kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
     let initialState: Tensor[]|SymbolicTensor[] = null;
     if (kwargs != null) {
       initialState = kwargs['initialState'];
@@ -385,8 +379,7 @@ export class Bidirectional extends Wrapper {
     }
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     if (kwargs['mask'] != null) {
       throw new NotImplementedError(
           'The support for masking is not implemented for ' +
@@ -417,14 +410,14 @@ export class Bidirectional extends Wrapper {
     }
 
     let output: Tensor|Tensor[];
-    if (this.mergeMode === BidirectionalMergeMode.CONCAT) {
+    if (this.mergeMode === 'concat') {
       output = K.concatenate([y as Tensor, yRev as Tensor]);
-    } else if (this.mergeMode === BidirectionalMergeMode.SUM) {
+    } else if (this.mergeMode === 'sum') {
       output = K.add(y as Tensor, yRev as Tensor);
-    } else if (this.mergeMode === BidirectionalMergeMode.AVE) {
+    } else if (this.mergeMode === 'ave') {
       output = K.scalarTimesArray(
           K.getScalar(0.5), K.add(y as Tensor, yRev as Tensor));
-    } else if (this.mergeMode === BidirectionalMergeMode.MUL) {
+    } else if (this.mergeMode === 'mul') {
       output = K.multiply(y as Tensor, yRev as Tensor);
     } else if (this.mergeMode == null) {
       output = [y as Tensor, yRev as Tensor];
@@ -470,4 +463,4 @@ export class Bidirectional extends Wrapper {
   // TODO(cais): Implement constraints().
   // TODO(cais): Implement getConfig().
 }
-generic_utils.ClassNameMap.register(Bidirectional);
+serialization.SerializationMap.register(Bidirectional);

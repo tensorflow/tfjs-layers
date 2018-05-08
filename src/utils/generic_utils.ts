@@ -11,10 +11,10 @@
 /* Original source: utils/generic_utils.py */
 
 // tslint:disable:max-line-length
-import {Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {AssertionError, AttributeError, IndexError, ValueError} from '../errors';
-import {ConfigDict, ConfigDictValue, Constructor, DType, FromConfigMethod, Serializable, Shape} from '../types';
+import {DType, Shape} from '../types';
 
 
 
@@ -107,75 +107,6 @@ export function count<T>(array: T[], refernce: T) {
     }
   }
   return counter;
-}
-
-export class ClassNameMap {
-  private static instance: ClassNameMap;
-  pythonClassNameMap: {
-    [className: string]:
-        [Constructor<Serializable>, FromConfigMethod<Serializable>]
-  };
-
-  private constructor() {
-    this.pythonClassNameMap = {};
-  }
-
-  static getMap() {
-    if (ClassNameMap.instance == null) {
-      ClassNameMap.instance = new ClassNameMap();
-    }
-    return ClassNameMap.instance;
-  }
-
-  static register<T extends Serializable>(cls: Constructor<T>) {
-    this.getMap().pythonClassNameMap[cls.className] = [cls, cls.fromConfig];
-  }
-}
-
-export class SerializableEnumRegistry {
-  private static instance: SerializableEnumRegistry;
-  // tslint:disable-next-line:no-any
-  enumRegistry: {[fieldName: string]: any};
-
-  private constructor() {
-    this.enumRegistry = {};
-  }
-
-  static getMap() {
-    if (SerializableEnumRegistry.instance == null) {
-      SerializableEnumRegistry.instance = new SerializableEnumRegistry();
-    }
-    return SerializableEnumRegistry.instance;
-  }
-
-  // tslint:disable-next-line:no-any
-  static register(fieldName: string, enumCls: any) {
-    if (SerializableEnumRegistry.contains(fieldName)) {
-      throw new ValueError(
-          `Attempting to register a repeated enum: ${fieldName}`);
-    }
-    this.getMap().enumRegistry[fieldName] = enumCls;
-  }
-
-  static contains(fieldName: string): boolean {
-    return fieldName in this.getMap().enumRegistry;
-  }
-
-  // tslint:disable-next-line:no-any
-  static lookup(fieldName: string, value: string): any {
-    return this.getMap().enumRegistry[fieldName][value];
-  }
-
-  // tslint:disable-next-line:no-any
-  static reverseLookup(fieldName: string, value: any): string {
-    const enumMap = this.getMap().enumRegistry[fieldName];
-    for (const candidateString in enumMap) {
-      if (enumMap[candidateString] === value) {
-        return candidateString;
-      }
-    }
-    throw new ValueError(`Could not find serialization string for ${value}`);
-  }
 }
 
 /**
@@ -281,7 +212,8 @@ export function toCamelCase(identifier: string): string {
 // tslint:disable-next-line:no-any
 let _GLOBAL_CUSTOM_OBJECTS = {} as {[objName: string]: any};
 
-export function serializeKerasObject(instance: Serializable): ConfigDictValue {
+export function serializeKerasObject(instance: serialization.Serializable):
+    serialization.ConfigDictValue {
   if (instance === null || instance === undefined) {
     return null;
   }
@@ -298,7 +230,7 @@ export function serializeKerasObject(instance: Serializable): ConfigDictValue {
  */
 // tslint:disable:no-any
 export function deserializeKerasObject(
-    identifier: string|ConfigDict,
+    identifier: string|serialization.ConfigDict,
     moduleObjects = {} as {[objName: string]: any},
     customObjects = {} as {[objName: string]: any},
     printableModuleName = 'object'): any {
@@ -353,7 +285,7 @@ export function deserializeKerasObject(
         customObjectsCombined[key] = customObjects[key];
       }
       // Add the customObjects to config
-      const nestedConfig = config.config as ConfigDict;
+      const nestedConfig = config.config as serialization.ConfigDict;
       nestedConfig.customObjects = customObjectsCombined;
 
       const backupCustomObjects = {..._GLOBAL_CUSTOM_OBJECTS};
@@ -512,4 +444,22 @@ export function isObjectEmpty(obj: {}): boolean {
     }
   }
   return true;
+}
+
+/**
+ * Helper function used to build type union/enum run-time checkers.
+ * @param values The list of allowed values.
+ * @param label A string name for the type
+ * @param value The value to test.
+ * @throws ValueError: If the value is not in values nor `undefined`/`null`.
+ */
+export function checkStringTypeUnionValue(
+    values: string[], label: string, value: string): void {
+  if (value == null) {
+    return;
+  }
+  if (values.indexOf(value) < 0) {
+    throw new ValueError(`${value} is not a valid ${label}.  Valid values are ${
+        values} or null/undefined.`);
+  }
 }

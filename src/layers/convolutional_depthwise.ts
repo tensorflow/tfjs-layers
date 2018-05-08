@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -21,9 +21,8 @@ import {Constraint, ConstraintIdentifier, getConstraint} from '../constraints';
 import {ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier} from '../regularizers';
-import {LayerVariable, Shape} from '../types';
+import {Kwargs, LayerVariable, Shape} from '../types';
 import {convOutputLength} from '../utils/conv_utils';
-import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/generic_utils';
 
 import {BaseConvLayerConfig, Conv2D, ConvLayerConfig} from './convolutional';
@@ -123,8 +122,7 @@ export class DepthwiseConv2D extends Conv2D {
     this.built = true;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = getExactlyOneTensor(inputs);
     let outputs = K.depthwiseConv2d(
         inputs, this.depthwiseKernel.read(), this.strides as [number, number],
@@ -160,4 +158,4 @@ export class DepthwiseConv2D extends Conv2D {
     }
   }
 }
-generic_utils.ClassNameMap.register(DepthwiseConv2D);
+serialization.SerializationMap.register(DepthwiseConv2D);

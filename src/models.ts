@@ -11,7 +11,7 @@
 /* Original source keras/models.py */
 
 // tslint:disable:max-line-length
-import {doc, io, Scalar, Tensor} from '@tensorflow/tfjs-core';
+import {doc, io, Scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {History} from './callbacks';
@@ -19,8 +19,8 @@ import {getSourceInputs, Input, Layer, Node} from './engine/topology';
 import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig, ModelPredictConfig} from './engine/training';
 import {NotImplementedError, RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
-import {NamedTensorMap, Serializable, Shape} from './types';
-import {ConfigDict, ConfigDictArray, Constructor, JsonDict, SymbolicTensor} from './types';
+import {Kwargs, NamedTensorMap, Shape} from './types';
+import {JsonDict, SymbolicTensor} from './types';
 import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 // tslint:enable:max-line-length
@@ -36,7 +36,7 @@ import {convertPythonicToTs} from './utils/serialization_utils';
  */
 export async function modelFromJSON(
     modelAndWeightsConfig: ModelAndWeightsConfig,
-    customObjects?: ConfigDict): Promise<Model> {
+    customObjects?: serialization.ConfigDict): Promise<Model> {
   let modelTopology = modelAndWeightsConfig.modelTopology;
   if (modelTopology['model_config'] != null) {
     // If the model-topology JSON contains a 'model_config' field, then it is
@@ -46,7 +46,8 @@ export async function modelFromJSON(
     // 'model_config' field currently.
     modelTopology = modelTopology['model_config'] as JsonDict;
   }
-  const tsConfig = convertPythonicToTs(modelTopology) as ConfigDict;
+  const tsConfig =
+      convertPythonicToTs(modelTopology) as serialization.ConfigDict;
   const model = deserialize(tsConfig, customObjects) as Model;
 
   if (modelAndWeightsConfig.weightsManifest != null) {
@@ -137,7 +138,8 @@ export async function loadModelInternal(pathOrIOHandler: string|
  * Load a model and optionally its weights, using an IOHandler object.
  */
 export async function loadModelFromIOHandler(
-    handler: io.IOHandler, customObjects?: ConfigDict): Promise<Model> {
+    handler: io.IOHandler,
+    customObjects?: serialization.ConfigDict): Promise<Model> {
   if (handler.load == null) {
     throw new ValueError(
         'Cannot proceed with model loading because the IOHandler provided ' +
@@ -146,7 +148,8 @@ export async function loadModelFromIOHandler(
   const artifacts = await handler.load();
   const model = deserialize(
                     convertPythonicToTs(
-                        artifacts.modelTopology as ConfigDict) as ConfigDict,
+                        artifacts.modelTopology as serialization.ConfigDict) as
+                        serialization.ConfigDict,
                     customObjects) as Model;
 
   // If weightData is present, load the weights into the model.
@@ -233,6 +236,24 @@ export interface SequentialConfig {
  *
  * `sequential` is a factory function that creates an instance of
  * `Sequential`.
+ *
+ * ```js
+ *  // Define a model for linear regression.
+ *  const model = tf.sequential();
+ *  model.add(tf.layers.dense({units: 1, inputShape: [1]}));
+ *
+ *  // Prepare the model for training: Specify the loss and the optimizer.
+ *  model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+ *
+ *  // Generate some synthetic data for training.
+ *  const xs = tf.tensor2d([1, 2, 3, 4], [4, 1]);
+ *  const ys = tf.tensor2d([1, 3, 5, 7], [4, 1]);
+ *
+ *  // Train the model using the data then do inference on a data point the
+ *  // model hasn't seen:
+ *  await model.fit(xs, ys);
+ *  model.predict(tf.tensor2d([5], [1, 1])).print();
+ * ```
  */
 @doc({heading: 'Models', subheading: 'Classes'})
 export class Sequential extends Model {
@@ -261,6 +282,14 @@ export class Sequential extends Model {
   /**
    * Adds a layer instance on top of the layer stack.
    *
+   * ```js
+   *  const model = tf.sequential();
+   *  model.add(tf.layers.dense({units: 8, inputShape: [1]}));
+   *  model.add(tf.layers.dense({units: 4, activation: 'relu6'}));
+   *  model.add(tf.layers.dense({units: 1, activation: 'relu6'}));
+   *  // Note that the untrained model is random at this point.
+   *  model.predict(tf.randomNormal([10, 1])).print();
+   * ```
    * @param layer Layer instance.
    *
    * @exception ValueError In case the `layer` argument does not know its input
@@ -371,8 +400,7 @@ export class Sequential extends Model {
     }
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     if (this.model == null) {
       this.build();
     }
@@ -555,7 +583,7 @@ export class Sequential extends Model {
    *   batchSize: 4,
    *   epochs: 3
    * });
-   * console.log(history.history.loss);
+   * console.log(history.history.loss[0]);
    * ```
    *
    * @param x `Tensor` of training data, or an array of `Tensor`s if the model
@@ -586,8 +614,9 @@ export class Sequential extends Model {
   }
 
   /* See parent class for JsDoc */
-  static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
     const model = new cls({});
     if (!(model instanceof Sequential)) {
       throw new ValueError(
@@ -600,8 +629,8 @@ export class Sequential extends Model {
     if (!(config[0].className != null) || config[0]['className'] === 'Merge') {
       throw new ValueError('Legacy serialization format not supported yet.');
     }
-    for (const conf of config as ConfigDictArray) {
-      const layer = deserialize(conf as ConfigDict) as Layer;
+    for (const conf of config as serialization.ConfigDictArray) {
+      const layer = deserialize(conf as serialization.ConfigDict) as Layer;
       model.add(layer);
     }
     return model;
@@ -685,7 +714,7 @@ export class Sequential extends Model {
     // NOTE(cais): We override the return type of getConfig() to `any` here,
     //   because the `Sequential` class is a special case among `Container`
     //   subtypes in that its getConfig() method returns an Array (not a dict).
-    const config: ConfigDict[] = [];
+    const config: serialization.ConfigDict[] = [];
     for (const layer of this.layers) {
       config.push({
         className: layer.getClassName(),
@@ -695,4 +724,4 @@ export class Sequential extends Model {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(Sequential);
+serialization.SerializationMap.register(Sequential);

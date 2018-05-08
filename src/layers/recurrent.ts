@@ -12,7 +12,7 @@
  * TensorFlow.js Layers: Recurrent Neural Network Layers.
  */
 
-import {doc, Tensor, util} from '@tensorflow/tfjs-core';
+import {doc, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import {ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
@@ -23,8 +23,8 @@ import {Layer, LayerConfig} from '../engine/topology';
 import {AttributeError, NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
-import {DType, Serializable, Shape, SymbolicTensor} from '../types';
-import {ConfigDict, Constructor, LayerVariable} from '../types';
+import {DType, Kwargs, Shape, SymbolicTensor} from '../types';
+import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
 
@@ -453,8 +453,7 @@ export class RNN extends Layer {
 
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
-      // tslint:disable-next-line:no-any
-      kwargs?: any): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
+      kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
     // TODO(cais): Figure out whether initialState is in kwargs or inputs.
     let initialState: Tensor[]|SymbolicTensor[] =
         kwargs == null ? null : kwargs['initialState'];
@@ -512,7 +511,7 @@ export class RNN extends Layer {
   }
 
   // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // Input shape: `[samples, time (padded with zeros), input_dim]`.
     // Note that the .build() method of subclasses **must** define
     // this.inputSpec and this.stateSpec owith complete input shapes.
@@ -548,8 +547,7 @@ export class RNN extends Layer {
           'Ignoring unroll = true for RNN layer, due to imperative backend.');
     }
 
-    // tslint:disable-next-line:no-any
-    const cellCallKwargs: {[key: string]: any} = {training};
+    const cellCallKwargs: Kwargs = {training};
 
     // TODO(cais): Add support for constants.
     const step = (inputs: Tensor, states: Tensor[]) => {
@@ -621,8 +619,8 @@ export class RNN extends Layer {
     return this.cell.nonTrainableWeights;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       returnSequences: this.returnSequences,
       returnState: this.returnState,
       goBackwards: this.goBackwards,
@@ -642,7 +640,7 @@ export class RNN extends Layer {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(RNN);
+serialization.SerializationMap.register(RNN);
 
 /**
  * An RNNCell layer.
@@ -873,8 +871,7 @@ export class SimpleRNNCell extends RNNCell {
   //   Similarly, PyKeras' equivalent of this method returns two values:
   //    `output` and `[output]`. Here the two are combined into one length-2
   //    `Tensor[]`, consisting of `output` repeated.
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = inputs as Tensor[];
     if (inputs.length !== 2) {
       throw new ValueError(
@@ -904,8 +901,8 @@ export class SimpleRNNCell extends RNNCell {
     return [output, output];
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -927,7 +924,7 @@ export class SimpleRNNCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(SimpleRNNCell);
+serialization.SerializationMap.register(SimpleRNNCell);
 
 export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   /**
@@ -1039,8 +1036,7 @@ export class SimpleRNN extends RNN {
     // TODO(cais): Add activityRegularizer.
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Add dropoutMask and recurrentDropoutMask.
     const mask = kwargs == null ? null : kwargs['mask'];
     const training = kwargs == null ? null : kwargs['training'];
@@ -1107,8 +1103,8 @@ export class SimpleRNN extends RNN {
     return (this.cell as SimpleRNNCell).recurrentDropout;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -1130,7 +1126,7 @@ export class SimpleRNN extends RNN {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(SimpleRNN);
+serialization.SerializationMap.register(SimpleRNN);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
@@ -1297,8 +1293,7 @@ export class GRUCell extends RNNCell {
     this.built = true;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Implement dropout.
     if (this.dropout !== 0 || this.recurrentDropout !== 0) {
       throw new NotImplementedError(
@@ -1394,8 +1389,8 @@ export class GRUCell extends RNNCell {
     return [h, h];
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -1418,7 +1413,7 @@ export class GRUCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(GRUCell);
+serialization.SerializationMap.register(GRUCell);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we inherit
 //   from that interface instead of repeating the fields here.
@@ -1470,8 +1465,7 @@ export class GRU extends RNN {
     // TODO(cais): Add activityRegularizer.
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Add dropoutMask and recurrentDropoutMask.
     const mask = kwargs == null ? null : kwargs['mask'];
     const training = kwargs == null ? null : kwargs['training'];
@@ -1540,8 +1534,8 @@ export class GRU extends RNN {
     return (this.cell as GRUCell).implementation;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -1564,15 +1558,16 @@ export class GRU extends RNN {
     return config;
   }
 
-  static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
     if (config['implmentation'] === 0) {
       config['implementation'] = 1;
     }
     return new cls(config);
   }
 }
-generic_utils.ClassNameMap.register(GRU);
+serialization.SerializationMap.register(GRU);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
@@ -1769,8 +1764,7 @@ export class LSTMCell extends RNNCell {
     this.built = true;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Implement dropout.
     if (this.dropout !== 0 || this.recurrentDropout !== 0) {
       throw new NotImplementedError(
@@ -1873,8 +1867,8 @@ export class LSTMCell extends RNNCell {
     return [h, h, c];
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -1898,7 +1892,7 @@ export class LSTMCell extends RNNCell {
     return config;
   }
 }
-generic_utils.ClassNameMap.register(LSTMCell);
+serialization.SerializationMap.register(LSTMCell);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we inherit
 //   from that interface instead of repeating the fields here.
@@ -1957,8 +1951,7 @@ export class LSTM extends RNN {
     // TODO(cais): Add activityRegularizer.
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     // TODO(cais): Add dropoutMask and recurrentDropoutMask.
     const mask = kwargs == null ? null : kwargs['mask'];
     const training = kwargs == null ? null : kwargs['training'];
@@ -2031,8 +2024,8 @@ export class LSTM extends RNN {
     return (this.cell as LSTMCell).implementation;
   }
 
-  getConfig(): ConfigDict {
-    const config: ConfigDict = {
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,
@@ -2056,15 +2049,16 @@ export class LSTM extends RNN {
     return config;
   }
 
-  static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict): T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
     if (config['implmentation'] === 0) {
       config['implementation'] = 1;
     }
     return new cls(config);
   }
 }
-generic_utils.ClassNameMap.register(LSTM);
+serialization.SerializationMap.register(LSTM);
 
 export interface StackedRNNCellsConfig extends LayerConfig {
   /**
@@ -2103,8 +2097,7 @@ export class StackedRNNCells extends RNNCell {
     return stateSize;
   }
 
-  // tslint:disable-next-line:no-any
-  call(inputs: Tensor|Tensor[], kwargs: any): Tensor|Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = inputs as Tensor[];
     let states = inputs.slice(1);
 
@@ -2164,25 +2157,26 @@ export class StackedRNNCells extends RNNCell {
     this.built = true;
   }
 
-  getConfig(): ConfigDict {
-    const cellConfigs: ConfigDict[] = [];
+  getConfig(): serialization.ConfigDict {
+    const cellConfigs: serialization.ConfigDict[] = [];
     for (const cell of this.cells) {
       cellConfigs.push({
         'className': this.getClassName(),
         'config': cell.getConfig(),
       });
     }
-    const config: ConfigDict = {'cells': cellConfigs};
+    const config: serialization.ConfigDict = {'cells': cellConfigs};
     const baseConfig = super.getConfig();
     Object.assign(config, baseConfig);
     return config;
   }
 
-  static fromConfig<T extends Serializable>(
-      cls: Constructor<T>, config: ConfigDict,
-      customObjects = {} as ConfigDict): T {
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict,
+      customObjects = {} as serialization.ConfigDict): T {
     const cells: RNNCell[] = [];
-    for (const cellConfig of (config['cells'] as ConfigDict[])) {
+    for (const cellConfig of (config['cells'] as serialization.ConfigDict[])) {
       cells.push(deserialize(cellConfig, customObjects) as RNNCell);
     }
     return new cls({cells});
@@ -2247,4 +2241,4 @@ export class StackedRNNCells extends RNNCell {
 
   // TODO(cais): Maybe implemnt `losses` and `getLossesFor`.
 }
-generic_utils.ClassNameMap.register(StackedRNNCells);
+serialization.SerializationMap.register(StackedRNNCells);
