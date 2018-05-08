@@ -12,9 +12,9 @@
  * TensorFlow.js Layers: Recurrent Neural Network Layers.
  */
 
+// tslint:disable:max-line-length
 import {add, doc, neg, serialization, sum, Tensor, util} from '@tensorflow/tfjs-core';
 
-// tslint:disable:max-line-length
 import {ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
