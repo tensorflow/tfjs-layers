@@ -27,123 +27,21 @@ import * as K from './tfjs_backend';
 
 const CT = ConcreteTensor;
 
-describe('Memory leak check.  Functions with exactly 0 Tensors output:', () => {
-  // Reusable arguments
-  const x1D = tensor1d([4, 3, 2, 1]);
-  // Functions that should produce no new Tensors.
-  // tslint:disable-next-line:no-any
-  const zeroOutMap: { [key: string]: () => any } = {};
-  zeroOutMap['countParms'] = () => K.countParams(x1D);
-  zeroOutMap['ndim'] = () => K.ndim(x1D);
-  zeroOutMap['normalizeAxis'] = () => K.normalizeAxis(x1D, 0);
-  zeroOutMap['shape'] = () => K.shape(x1D);
 
-  for (const functionName of Object.keys(zeroOutMap)) {
-    const myFunc = zeroOutMap[functionName];
-    it(`${functionName} does not leak memory`, () => {
-      // The first call to myFunc may creat and keep any internal singleton
-      // tensors.  Subsequent calls should always create exactly the expected
-      // count of new tensors.
-      myFunc();
-      const numTensorsBefore = memory().numTensors;
-      myFunc();
-      const numTensorsAfter = memory().numTensors;
-      expect(numTensorsAfter).toEqual(numTensorsBefore);
-    });
-  }
-});
+describeMathCPUAndGPU('Memory leak check.', () => {
+  it('Functions which output no new Tensors do not leak memory', () => {
+    // Reusable arguments
+    const x1D = tensor1d([4, 3, 2, 1]);
+    // Functions that should produce no new Tensors.
+    // tslint:disable-next-line:no-any
+    const zeroOutMap: { [key: string]: () => any } = {};
+    zeroOutMap['countParms'] = () => K.countParams(x1D);
+    zeroOutMap['ndim'] = () => K.ndim(x1D);
+    zeroOutMap['normalizeAxis'] = () => K.normalizeAxis(x1D, 0);
+    zeroOutMap['shape'] = () => K.shape(x1D);
 
-
-describe('Memory leak check.  Functions with exactly 1 Tensor output:', () => {
-  // Reusable arguments
-  const x1D = tensor1d([4, 3, 2, 1]);
-  const x2D = tensor2d([[4, 3], [2, 1]]);
-  const x3D = tensor3d([[[0]]]);
-  const x4D = tensor4d([[[[0]]]]);
-  const xScalar = scalar(10);
-  const xScalarAs1D = tensor1d([1978]);
-  // Functions that should produce one new Tensor.
-  // tslint:disable-next-line:no-any
-  const oneOutMap: { [key: string]: () => any } = {};
-  oneOutMap['abs'] = () => K.abs(x1D);
-  oneOutMap['add'] = () => K.add(x1D, x1D);
-  oneOutMap['argmax'] = () => K.argmax(x1D);
-  oneOutMap['batchFlatten'] = () => K.batchFlatten(x2D);
-  oneOutMap['biasAdd'] = () => K.biasAdd(x1D, x1D);
-  oneOutMap['cast'] = () => K.cast(x1D, 'float32');
-  oneOutMap['categoricalCrossEntropy'] =
-    () => K.categoricalCrossentropy(x1D, x1D);
-  oneOutMap['clip'] = () => K.clip(x1D, 1, 2);
-  oneOutMap['cos'] = () => K.cos(x1D);
-  oneOutMap['concatenate'] = () => K.concatenate([x1D, x1D]);
-  oneOutMap['concatAlongFirstAxis'] = () => K.concatAlongFirstAxis(x1D, x1D);
-  oneOutMap['conv1d'] = () => K.conv1d(x3D, x3D);
-  oneOutMap['conv1dWithBias'] = () => K.conv1dWithBias(x3D, x3D, x1D);
-  oneOutMap['conv2d'] = () => K.conv2d(x4D, x4D);
-  oneOutMap['conv2dWithBias'] = () => K.conv2dWithBias(x4D, x4D, x1D);
-  oneOutMap['depthwiseConv2d'] = () => K.depthwiseConv2d(x4D, x4D);
-  oneOutMap['divide'] = () => K.divide(x1D, x1D);
-  oneOutMap['dot'] = () => K.dot(x2D, x2D);
-  oneOutMap['dropout'] = () => K.dropout(x1D, xScalar);
-  oneOutMap['elu'] = () => K.elu(x1D);
-  oneOutMap['equal'] = () => K.equal(x1D, x1D);
-  oneOutMap['exp'] = () => K.exp(x1D);
-  oneOutMap['expandDims'] = () => K.expandDims(x1D);
-  oneOutMap['eye'] = () => K.eye(2);
-  oneOutMap['flatten'] = () => K.flatten(x1D);
-  oneOutMap['gather'] = () => K.gather(x1D, [0]);
-  oneOutMap['greater'] = () => K.greater(x1D, x1D);
-  oneOutMap['greaterEqual'] = () => K.greaterEqual(x1D, x1D);
-  oneOutMap['identity'] = () => K.identity(x1D);
-  oneOutMap['l2normalize'] = () => K.l2Normalize(x1D);
-  oneOutMap['log'] = () => K.log(x1D);
-  oneOutMap['max'] = () => K.max(x1D);
-  oneOutMap['maximum'] = () => K.maximum(x1D, x1D);
-  oneOutMap['mean'] = () => K.mean(x1D);
-  oneOutMap['min'] = () => K.min(x1D);
-  oneOutMap['minimum'] = () => K.minimum(x1D, x1D);
-  oneOutMap['multiply'] = () => K.multiply(x1D, x1D);
-  oneOutMap['neg'] = () => K.neg(x1D);
-  oneOutMap['ones'] = () => K.ones([2, 2]);
-  oneOutMap['oneHot'] = () => K.oneHot(x1D, 10);
-  oneOutMap['pool2d'] = () => K.pool2d(x3D, [1, 1]);
-  oneOutMap['pow'] = () => K.pow(x1D, 2);
-  oneOutMap['randomNormal'] = () => K.randomNormal([2,2]);
-  oneOutMap['randomUniform'] = () => K.randomUniform([2,2], -10, 10);
-  oneOutMap['relu'] = () => K.relu(x1D);
-  oneOutMap['repeat'] = () => K.repeat(x2D, 2);
-  oneOutMap['reshape'] = () => K.reshape(x1D, [1,4]);
-  oneOutMap['reverse'] = () => K.reverse(x1D, 0);
-  oneOutMap['scalarPlusArray'] = () => K.scalarPlusArray(xScalar, x1D);
-  oneOutMap['scalarTimesArray'] = () => K.scalarTimesArray(xScalar, x1D);
-  oneOutMap['selu'] = () => K.selu(x1D);
-  oneOutMap['sign'] = () => K.sign(x1D);
-  oneOutMap['sigmoid'] = () => K.sigmoid(x1D);
-  oneOutMap['sigmoidCrossEntropyWithLogits'] =
-    () => K.sigmoidCrossEntropyWithLogits(x1D, x1D);
-  oneOutMap['sin'] = () => K.sin(x1D);
-  oneOutMap['sliceAlongAxis'] = () => K.sliceAlongAxis(x4D, 0, 1, 1);
-  oneOutMap['sliceAlongFirstAxis'] = () => K.sliceAlongFirstAxis(x4D, 0, 1);
-  oneOutMap['sliceAlongLastAxis'] = () => K.sliceAlongFirstAxis(x4D, 0, 1);
-  oneOutMap['softmax'] = () => K.softmax(x1D);
-  oneOutMap['softplus'] = () => K.softplus(x1D);
-  oneOutMap['softsign'] = () => K.softsign(x1D);
-  oneOutMap['spatial2dPadding'] = () => K.spatial2dPadding(x4D);
-  oneOutMap['square'] = () => K.square(x2D);
-  oneOutMap['sqrt'] = () => K.sqrt(x1D);
-  oneOutMap['squeeze'] = () => K.squeeze(xScalarAs1D, 0);
-  oneOutMap['subtract'] = () => K.subtract(x1D, x1D);
-  oneOutMap['sum'] = () => K.sum(x1D);
-  oneOutMap['tanh'] = () => K.tanh(x1D);
-  oneOutMap['truncatedNormal'] = () => K.truncatedNormal([2,2]);
-  oneOutMap['temporalPadding'] = () => K.temporalPadding(x3D);
-  oneOutMap['tile'] = () => K.tile(xScalarAs1D, [2]);
-  oneOutMap['transpose'] = () => K.transpose(x2D);
-  oneOutMap['zeros'] = () => K.zeros([2, 2]);
-
-  for (const functionName of Object.keys(oneOutMap)) {
-    const myFunc = oneOutMap[functionName];
-    it(`${functionName} does not leak memory`, () => {
+    for (const functionName of Object.keys(zeroOutMap)) {
+      const myFunc = zeroOutMap[functionName];
       // The first call to myFunc may create and keep any internal singleton
       // tensors.  Subsequent calls should always create exactly the expected
       // count of new tensors.
@@ -151,9 +49,118 @@ describe('Memory leak check.  Functions with exactly 1 Tensor output:', () => {
       const numTensorsBefore = memory().numTensors;
       myFunc();
       const numTensorsAfter = memory().numTensors;
+      expect(numTensorsAfter).toEqual(numTensorsBefore);
+    }
+  });
+
+  it('Functions which output exactly 1 new Tensor do not leak memory', () => {
+    // Reusable arguments
+    const x1D = tensor1d([4, 3, 2, 1]);
+    const x2D = tensor2d([[4, 3], [2, 1]]);
+    const x3D = tensor3d([[[0]]]);
+    const x4D = tensor4d([[[[0]]]]);
+    const xScalar = scalar(10);
+    const xScalarAs1D = tensor1d([1978]);
+    // Functions that should produce one new Tensor.
+    // tslint:disable-next-line:no-any
+    const oneOutMap: { [key: string]: () => any } = {};
+    oneOutMap['abs'] = () => K.abs(x1D);
+    oneOutMap['add'] = () => K.add(x1D, x1D);
+    oneOutMap['argmax'] = () => K.argmax(x1D);
+    oneOutMap['batchFlatten'] = () => K.batchFlatten(x2D);
+    oneOutMap['biasAdd'] = () => K.biasAdd(x1D, x1D);
+    oneOutMap['cast'] = () => K.cast(x1D, 'float32');
+    oneOutMap['categoricalCrossEntropy'] =
+      () => K.categoricalCrossentropy(x1D, x1D);
+    oneOutMap['clip'] = () => K.clip(x1D, 1, 2);
+    oneOutMap['cos'] = () => K.cos(x1D);
+    oneOutMap['concatenate'] = () => K.concatenate([x1D, x1D]);
+    oneOutMap['concatAlongFirstAxis'] = () => K.concatAlongFirstAxis(x1D, x1D);
+    oneOutMap['conv1d'] = () => K.conv1d(x3D, x3D);
+    oneOutMap['conv1dWithBias'] = () => K.conv1dWithBias(x3D, x3D, x1D);
+    oneOutMap['conv2d'] = () => K.conv2d(x4D, x4D);
+    oneOutMap['conv2dWithBias'] = () => K.conv2dWithBias(x4D, x4D, x1D);
+    oneOutMap['depthwiseConv2d'] = () => K.depthwiseConv2d(x4D, x4D);
+    oneOutMap['divide'] = () => K.divide(x1D, x1D);
+    oneOutMap['dot'] = () => K.dot(x2D, x2D);
+    oneOutMap['dropout'] = () => K.dropout(x1D, xScalar);
+    oneOutMap['elu'] = () => K.elu(x1D);
+    oneOutMap['equal'] = () => K.equal(x1D, x1D);
+    oneOutMap['exp'] = () => K.exp(x1D);
+    oneOutMap['expandDims'] = () => K.expandDims(x1D);
+    oneOutMap['eye'] = () => K.eye(2);
+    oneOutMap['flatten'] = () => K.flatten(x1D);
+    oneOutMap['gather'] = () => K.gather(x1D, [0]);
+    oneOutMap['greater'] = () => K.greater(x1D, x1D);
+    oneOutMap['greaterEqual'] = () => K.greaterEqual(x1D, x1D);
+    oneOutMap['identity'] = () => K.identity(x1D);
+    oneOutMap['l2normalize'] = () => K.l2Normalize(x1D);
+    oneOutMap['log'] = () => K.log(x1D);
+    oneOutMap['max'] = () => K.max(x1D);
+    oneOutMap['maximum'] = () => K.maximum(x1D, x1D);
+    oneOutMap['mean'] = () => K.mean(x1D);
+    oneOutMap['min'] = () => K.min(x1D);
+    oneOutMap['minimum'] = () => K.minimum(x1D, x1D);
+    oneOutMap['multiply'] = () => K.multiply(x1D, x1D);
+    oneOutMap['neg'] = () => K.neg(x1D);
+    oneOutMap['ones'] = () => K.ones([2, 2]);
+    oneOutMap['oneHot'] = () => K.oneHot(x1D, 10);
+    oneOutMap['pool2d'] = () => K.pool2d(x3D, [1, 1]);
+    oneOutMap['pow'] = () => K.pow(x1D, 2);
+    oneOutMap['randomNormal'] = () => K.randomNormal([2, 2]);
+    oneOutMap['randomUniform'] = () => K.randomUniform([2, 2], -10, 10);
+    oneOutMap['relu'] = () => K.relu(x1D);
+    oneOutMap['repeat'] = () => K.repeat(x2D, 2);
+    oneOutMap['reshape'] = () => K.reshape(x1D, [1, 4]);
+    oneOutMap['reverse'] = () => K.reverse(x1D, 0);
+    oneOutMap['scalarPlusArray'] = () => K.scalarPlusArray(xScalar, x1D);
+    oneOutMap['scalarTimesArray'] = () => K.scalarTimesArray(xScalar, x1D);
+    oneOutMap['selu'] = () => K.selu(x1D);
+    oneOutMap['sign'] = () => K.sign(x1D);
+    oneOutMap['sigmoid'] = () => K.sigmoid(x1D);
+    oneOutMap['sigmoidCrossEntropyWithLogits'] =
+      () => K.sigmoidCrossEntropyWithLogits(x1D, x1D);
+    oneOutMap['sin'] = () => K.sin(x1D);
+    oneOutMap['sliceAlongAxis'] = () => K.sliceAlongAxis(x4D, 0, 1, 1);
+    oneOutMap['sliceAlongFirstAxis'] = () => K.sliceAlongFirstAxis(x4D, 0, 1);
+    oneOutMap['sliceAlongLastAxis'] = () => K.sliceAlongFirstAxis(x4D, 0, 1);
+    oneOutMap['softmax'] = () => K.softmax(x1D);
+    oneOutMap['softplus'] = () => K.softplus(x1D);
+    oneOutMap['softsign'] = () => K.softsign(x1D);
+    oneOutMap['spatial2dPadding'] = () => K.spatial2dPadding(x4D);
+    oneOutMap['square'] = () => K.square(x2D);
+    oneOutMap['sqrt'] = () => K.sqrt(x1D);
+    oneOutMap['squeeze'] = () => K.squeeze(xScalarAs1D, 0);
+    oneOutMap['subtract'] = () => K.subtract(x1D, x1D);
+    oneOutMap['sum'] = () => K.sum(x1D);
+    oneOutMap['tanh'] = () => K.tanh(x1D);
+    oneOutMap['truncatedNormal'] = () => K.truncatedNormal([2, 2]);
+    oneOutMap['temporalPadding'] = () => K.temporalPadding(x3D);
+    oneOutMap['tile'] = () => K.tile(xScalarAs1D, [2]);
+    oneOutMap['transpose'] = () => K.transpose(x2D);
+    oneOutMap['zeros'] = () => K.zeros([2, 2]);
+
+    for (const functionName of Object.keys(oneOutMap)) {
+      const myFunc = oneOutMap[functionName];
+      // The first call to myFunc may create and keep any internal singleton
+      // tensors.  Subsequent calls should always create exactly the expected
+      // count of new tensors.
+      myFunc();
+      const numTensorsBefore = memory().numTensors;
+      myFunc();
+      const numTensorsAfter = memory().numTensors;
+      // Normally we would put each `functionName` within a separate `it` block.
+      // That way, if a test fails it could output the name of the function
+      // which failed.  Unfortunately, the `it` testing semantics are tied
+      // closely to memory management, making it difficult to structure this
+      // test in that way.  Thus, we log here which `functionName` fails, if
+      // there is a leak.
+      if (numTensorsAfter !== (numTensorsBefore + 1)) {
+        console.warn(`Memory leak in ${functionName}`);
+      }
       expect(numTensorsAfter).toEqual(numTensorsBefore + 1);
-    });
-  }
+    }
+  });
 });
 
 describe('TensorMath', () => {
@@ -1688,6 +1695,7 @@ describeMathCPUAndGPU('Mean', () => {
         tensor2d([[0.25]], [1, 1]));
   });
 });
+
 
 describeMathCPUAndGPU('Argmax', () => {
   it('2D, default axis', () => {
