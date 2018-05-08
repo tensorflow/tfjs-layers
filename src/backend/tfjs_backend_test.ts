@@ -27,6 +27,105 @@ import * as K from './tfjs_backend';
 
 const CT = ConcreteTensor;
 
+describe('Memory leak check.  Functions with 0 tensors output:', () => {
+  // Reusable arguments
+  const x1D = tensor1d([4, 3, 2, 1]);
+  // Functions that should produce no new Tensors.
+  // tslint:disable-next-line:no-any
+  const zeroOutMap: { [key: string]: () => any } = {};
+  zeroOutMap['countParms'] = () => K.countParams(x1D);
+  zeroOutMap['ndim'] = () => K.ndim(x1D);
+  zeroOutMap['normalizeAxis'] = () => K.normalizeAxis(x1D, 0);
+  zeroOutMap['shape'] = () => K.shape(x1D);
+
+  for (const functionName of Object.keys(zeroOutMap)) {
+    const myFunc = zeroOutMap[functionName];
+    it(`${functionName} does not leak memory`, () => {
+      // The first call to myFunc creates and keeps any internal singleton
+      // tensors.  Subsequent calls should always create exactly the expected
+      // count of new tensors.
+      myFunc();
+      const numTensorsBefore = memory().numTensors;
+      myFunc();
+      const numTensorsAfter = memory().numTensors;
+      expect(numTensorsAfter).toEqual(numTensorsBefore);
+    });
+  }
+});
+
+
+describe('Memory leak check.  Functions with 1 tensor output:', () => {
+  // Reusable arguments
+  const x1D = tensor1d([4, 3, 2, 1]);
+  const x2D = tensor2d([[4, 3], [2, 1]]);
+  const x3D = tensor3d([[[0]]]);
+  const x4D = tensor4d([[[[0]]]]);
+  const xScalarAs1D = tensor1d([1978]);
+  // Functions that should produce one new Tensor.
+  // tslint:disable-next-line:no-any
+  const oneOutMap: { [key: string]: () => any } = {};
+  oneOutMap['batchFlatten'] = () => K.batchFlatten(x2D);
+  oneOutMap['cast'] = () => K.cast(x1D, 'float32');
+  oneOutMap['concatenate'] = () => K.concatenate([x1D, x1D]);
+  oneOutMap['concatAlongFirstAxis'] =
+     () => K.concatAlongFirstAxis(x1D, x1D);
+  oneOutMap['expandDims'] = () => K.expandDims(x1D);
+  oneOutMap['flatten'] = () => K.flatten(x1D);
+  oneOutMap['repeat'] = () => K.repeat(x2D, 2);
+  oneOutMap['reshape'] = () => K.reshape(x1D, [1,4]);
+  oneOutMap['reverse'] = () => K.reverse(x1D, 0);
+  oneOutMap['sliceAlongAxis'] = () => K.sliceAlongAxis(x4D, 0, 1, 1);
+  oneOutMap['sliceAlongFirstAxis'] = () => K.sliceAlongFirstAxis(x4D, 0, 1);
+  oneOutMap['sliceAlongLastAxis'] = () => K.sliceAlongFirstAxis(x4D, 0, 1);
+  oneOutMap['spatial2dPadding'] =
+    () => K.spatial2dPadding(x4D);
+  oneOutMap['squeeze'] = () => K.squeeze(xScalarAs1D, 0);
+  oneOutMap['temporalPadding'] = () => K.temporalPadding(x3D);
+  oneOutMap['transpose'] = () => K.transpose(x2D);
+
+  for (const functionName of Object.keys(oneOutMap)) {
+    const myFunc = oneOutMap[functionName];
+    it(`${functionName} does not leak memory`, () => {
+      // The first call to myFunc creates and keeps any internal singleton
+      // tensors.  Subsequent calls should always create exactly the expected
+      // count of new tensors.
+      myFunc();
+      const numTensorsBefore = memory().numTensors;
+      myFunc();
+      const numTensorsAfter = memory().numTensors;
+      expect(numTensorsAfter).toEqual(numTensorsBefore + 1);
+    });
+  }
+});
+
+
+describe('Memory leak check.  Functions with 3 tensors output:', () => {
+  // Reusable arguments
+  const x2D = tensor2d([[1, 2, 3, 4], [2, 4, 6, 8], [12, 11, 10, 9]], [3, 4]);
+  const gamma = tensor1d([1, 1, 1, 1]);
+  const beta = tensor1d([0, 0, 0, 0]);
+  // Functions that should produce three new Tensors.
+  // tslint:disable-next-line:no-any
+  const threeOutMap: { [key: string]: () => any } = {};
+  threeOutMap['normalizeBatchInTraining'] =
+    () => K.normalizeBatchInTraining(x2D, gamma, beta, [0]);
+
+  for (const functionName of Object.keys(threeOutMap)) {
+    const myFunc = threeOutMap[functionName];
+    it(`${functionName} does not leak memory`, () => {
+      // The first call to myFunc creates and keeps any internal singleton
+      // tensors.  Subsequent calls should always create exactly the expected
+      // count of new tensors.
+      myFunc();
+      const numTensorsBefore = memory().numTensors;
+      myFunc();
+      const numTensorsAfter = memory().numTensors;
+      expect(numTensorsAfter).toEqual(numTensorsBefore + 3);
+    });
+  }
+});
+
+
 describe('TensorMath', () => {
   it('Setting and getting backend', () => {
     // Default deeplearn.js backend is WebGL (GPU).
@@ -68,6 +167,7 @@ describe('shape', () => {
     expect(K.shape(x)).toEqual([4, 3, 2, 1]);
     expect(K.shape(new CT(x))).toEqual([4, 3, 2, 1]);
   });
+
 });
 
 describe('intShape', () => {

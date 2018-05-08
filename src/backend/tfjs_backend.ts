@@ -335,13 +335,15 @@ export function spatial2dPadding(
  * @throws ValueError: If input tensor is not 2D.
  */
 export function repeat(x: Tensor, n: number): Tensor {
-  if (x.shape.length !== 2) {
-    throw new ValueError(
-        `repeat() expects a rank-2 tensor, but received a ` +
-        `rank-${x.shape.length} tensor.`);
-  }
-  const y = expandDims(x, 1);
-  return tile(y, [1, n, 1]);
+  return tidy(() => {
+           if (x.shape.length !== 2) {
+             throw new ValueError(
+                 `repeat() expects a rank-2 tensor, but received a ` +
+                 `rank-${x.shape.length} tensor.`);
+           }
+           const y = expandDims(x, 1);
+           return tile(y, [1, n, 1]);
+         }) as Tensor;
 }
 
 /**
