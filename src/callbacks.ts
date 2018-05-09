@@ -10,10 +10,10 @@
 
 /* Original source: keras/callbacks.py */
 
-import { div, keep, mul, Scalar, Tensor, tidy } from '@tensorflow/tfjs-core';
+import {div, keep, mul, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
-import { Model } from './engine/training';
+import {Model} from './engine/training';
 import * as generic_utils from './utils/generic_utils';
 
 /**
@@ -22,7 +22,7 @@ import * as generic_utils from './utils/generic_utils';
  * Used internally.
  */
 export type UnresolvedLogs = {
-  [key: string]: number | Scalar;
+  [key: string]: number|Scalar;
 };
 
 
@@ -36,7 +36,7 @@ export type Logs = {
 };
 
 export type Params = {
-  [key: string]: number | string | boolean | number[] | string[] | boolean[];
+  [key: string]: number|string|boolean|number[]|string[]|boolean[];
 };
 
 /**
@@ -59,7 +59,7 @@ export type Params = {
  */
 export abstract class Callback {
   // TODO(michaelterry): This type is a best guess.
-  validationData: Tensor | Tensor[] = null;
+  validationData: Tensor|Tensor[] = null;
   /** Instance of `keras.models.Model`. Reference of the model being trained. */
   model: Model = null;
   /**
@@ -75,17 +75,17 @@ export abstract class Callback {
     this.model = model;
   }
 
-  async onEpochBegin(epoch: number, logs?: UnresolvedLogs) { }
+  async onEpochBegin(epoch: number, logs?: UnresolvedLogs) {}
 
-  async onEpochEnd(epoch: number, logs?: UnresolvedLogs) { }
+  async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {}
 
-  async onBatchBegin(batch: number, logs?: UnresolvedLogs) { }
+  async onBatchBegin(batch: number, logs?: UnresolvedLogs) {}
 
-  async onBatchEnd(batch: number, logs?: UnresolvedLogs) { }
+  async onBatchEnd(batch: number, logs?: UnresolvedLogs) {}
 
-  async onTrainBegin(logs?: UnresolvedLogs) { }
+  async onTrainBegin(logs?: UnresolvedLogs) {}
 
-  async onTrainEnd(logs?: UnresolvedLogs) { }
+  async onTrainEnd(logs?: UnresolvedLogs) {}
 }
 
 /**
@@ -253,10 +253,9 @@ export class BaseLogger extends Callback {
         }
         // TODO(cais): Do not leak tidy from TensorFlow.js Core.
         tidy(() => {
-          this.totals[key] =
-            K.scalarPlusArray(
-              this.totals[key] as Scalar,
-              mul(value, K.getScalar(batchSize))) as Scalar;
+          this.totals[key] = K.scalarPlusArray(
+                                 this.totals[key] as Scalar,
+                                 mul(value, K.getScalar(batchSize))) as Scalar;
           keep(this.totals[key] as Scalar);
         });
       }
@@ -274,9 +273,9 @@ export class BaseLogger extends Callback {
         } else {
           tidy(() => {
             logs[key] =
-              K.scalarTimesArray(
-                div(K.getScalar(1), K.getScalar(this.seen)) as Scalar,
-                this.totals[key] as Scalar) as Scalar;
+                K.scalarTimesArray(
+                    div(K.getScalar(1), K.getScalar(this.seen)) as Scalar,
+                    this.totals[key] as Scalar) as Scalar;
             keep(logs[key] as Scalar);
           });
         }
@@ -294,7 +293,7 @@ export async function resolveScalarsInLogs(logs: UnresolvedLogs) {
   if (logs == null) {
     return;
   }
-  const promises: Array<Promise<Float32Array | Int32Array | Uint8Array>> = [];
+  const promises: Array<Promise<Float32Array|Int32Array|Uint8Array>> = [];
   const keys: string[] = [];
   for (const key in logs) {
     const value = logs[key];
@@ -335,7 +334,7 @@ export function disposeTensorsInLogs(logs: UnresolvedLogs) {
  */
 export class History extends Callback {
   epoch: number[];
-  history: { [key: string]: Array<number | Tensor> };
+  history: {[key: string]: Array<number|Tensor>};
 
   async onTrainBegin(logs?: UnresolvedLogs) {
     this.epoch = [];
@@ -359,7 +358,7 @@ export class History extends Callback {
    * Await the values of all losses and metrics.
    */
   async syncData() {
-    const promises: Array<Promise<Float32Array | Int32Array | Uint8Array>> = [];
+    const promises: Array<Promise<Float32Array|Int32Array|Uint8Array>> = [];
     const keys: string[] = [];
     const indices: number[] = [];
     for (const key in this.history) {
@@ -457,9 +456,9 @@ export class CustomCallback extends Callback {
 /**
  * Standardize callbacks or configurations of them to an Array of callbacks.
  */
-export function standardizeCallbacks(callbacks: Callback | Callback[] |
-  CustomCallbackConfig |
-  CustomCallbackConfig[]): Callback[] {
+export function standardizeCallbacks(callbacks: Callback|Callback[]|
+                                     CustomCallbackConfig|
+                                     CustomCallbackConfig[]): Callback[] {
   if (callbacks == null) {
     return null;
   }
@@ -471,7 +470,7 @@ export function standardizeCallbacks(callbacks: Callback | Callback[] |
   }
   // Convert custom callback configs to custom callback objects.
   const callbackConfigs =
-    generic_utils.toList(callbacks) as CustomCallbackConfig[];
+      generic_utils.toList(callbacks) as CustomCallbackConfig[];
   return callbackConfigs.map(
-    callbackConfig => new CustomCallback(callbackConfig));
+      callbackConfig => new CustomCallback(callbackConfig));
 }

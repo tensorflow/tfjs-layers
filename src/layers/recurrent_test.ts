@@ -13,16 +13,16 @@
  */
 
 // tslint:disable:max-line-length
-import { neg, ones, Scalar, scalar, Tensor, tensor2d, tensor3d, train, transpose, zeros } from '@tensorflow/tfjs-core';
+import {neg, ones, Scalar, scalar, Tensor, tensor2d, tensor3d, train, transpose, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
 import * as metrics from '../metrics';
-import { ModelAndWeightsConfig, modelFromJSON } from '../models';
-import { DType, Kwargs } from '../types';
-import { describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose } from '../utils/test_utils';
+import {ModelAndWeightsConfig, modelFromJSON} from '../models';
+import {DType, Kwargs} from '../types';
+import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
-import { RNN, RNNCell } from './recurrent';
+import {RNN, RNNCell} from './recurrent';
 // tslint:enable:max-line-length
 
 /**
@@ -36,12 +36,12 @@ import { RNN, RNNCell } from './recurrent';
  */
 class RNNCellForTest extends RNNCell {
   static className = 'RNNCellForTest';
-  constructor(stateSizes: number | number[]) {
+  constructor(stateSizes: number|number[]) {
     super({});
     this.stateSize = stateSizes;
   }
 
-  call(inputs: Tensor | Tensor[], kwargs: Kwargs): Tensor | Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = inputs as Tensor[];
     const dataInputs = inputs[0];
     const states = inputs.slice(1);
@@ -61,7 +61,7 @@ describeMathCPU('RNN-Layer', () => {
 
   it('constructor: only cell', () => {
     const cell = new RNNCellForTest(5);
-    const rnn = tfl.layers.rnn({ cell }) as RNN;
+    const rnn = tfl.layers.rnn({cell}) as RNN;
     expect(rnn.returnSequences).toEqual(false);
     expect(rnn.returnState).toEqual(false);
     expect(rnn.goBackwards).toEqual(false);
@@ -83,7 +83,7 @@ describeMathCPU('RNN-Layer', () => {
   it('computeOutputShape: 1 state, returnSequences=false, returnState=false',
     () => {
       const cell = new RNNCellForTest(5);
-      const rnn = tfl.layers.rnn({ cell });
+      const rnn = tfl.layers.rnn({cell});
       const inputShape = [4, 3, 2];
       expect(rnn.computeOutputShape(inputShape)).toEqual([4, 5]);
     });
@@ -91,7 +91,7 @@ describeMathCPU('RNN-Layer', () => {
   it('computeOutputShape: 1 state, returnSequences=true, returnState=false',
     () => {
       const cell = new RNNCellForTest([5, 6]);
-      const rnn = tfl.layers.rnn({ cell, returnSequences: true });
+      const rnn = tfl.layers.rnn({cell, returnSequences: true});
       const inputShape = [4, 3, 2];
       expect(rnn.computeOutputShape(inputShape)).toEqual([4, 3, 5]);
     });
@@ -100,7 +100,7 @@ describeMathCPU('RNN-Layer', () => {
     () => {
       const cell = new RNNCellForTest(6);
       const rnn =
-        tfl.layers.rnn({ cell, returnSequences: true, returnState: true });
+        tfl.layers.rnn({cell, returnSequences: true, returnState: true});
       const inputShape = [4, 3, 2];
       expect(rnn.computeOutputShape(inputShape)).toEqual([[4, 3, 6], [4, 6]]);
     });
@@ -109,7 +109,7 @@ describeMathCPU('RNN-Layer', () => {
     () => {
       const cell = new RNNCellForTest([5, 6]);
       const rnn =
-        tfl.layers.rnn({ cell, returnSequences: true, returnState: true });
+        tfl.layers.rnn({cell, returnSequences: true, returnState: true});
       const inputShape = [4, 3, 2];
       expect(rnn.computeOutputShape(inputShape)).toEqual([
         [4, 3, 5], [4, 5], [4, 6]
@@ -119,7 +119,7 @@ describeMathCPU('RNN-Layer', () => {
   it('apply: Symbolic: 1 state, returnSequences=false, returnState=false',
     () => {
       const cell = new RNNCellForTest(6);
-      const rnn = tfl.layers.rnn({ cell });
+      const rnn = tfl.layers.rnn({cell});
       const input =
         new tfl.SymbolicTensor(DType.float32, [16, 10, 8], null, [], null);
       const output = rnn.apply(input) as tfl.SymbolicTensor;
@@ -129,7 +129,7 @@ describeMathCPU('RNN-Layer', () => {
   it('apply: Symbolic: 1 state, returnSequences=true, returnState=false',
     () => {
       const cell = new RNNCellForTest(6);
-      const rnn = tfl.layers.rnn({ cell, returnSequences: true });
+      const rnn = tfl.layers.rnn({cell, returnSequences: true});
       const input =
         new tfl.SymbolicTensor(DType.float32, [16, 10, 8], null, [], null);
       const output = rnn.apply(input) as tfl.SymbolicTensor;
@@ -139,7 +139,7 @@ describeMathCPU('RNN-Layer', () => {
   it('apply: Symbolic: 1 state, returnSequences=true, returnState=true', () => {
     const cell = new RNNCellForTest(6);
     const rnn =
-      tfl.layers.rnn({ cell, returnSequences: true, returnState: true });
+      tfl.layers.rnn({cell, returnSequences: true, returnState: true});
     const input =
       new tfl.SymbolicTensor(DType.float32, [16, 10, 8], null, [], null);
     const output = rnn.apply(input) as tfl.SymbolicTensor[];
@@ -152,7 +152,7 @@ describeMathCPU('RNN-Layer', () => {
     () => {
       const cell = new RNNCellForTest(6);
       const rnn =
-        tfl.layers.rnn({ cell, returnSequences: false, returnState: true });
+        tfl.layers.rnn({cell, returnSequences: false, returnState: true});
       const input =
         new tfl.SymbolicTensor(DType.float32, [16, 10, 8], null, [], null);
       const output = rnn.apply(input) as tfl.SymbolicTensor[];
@@ -165,7 +165,7 @@ describeMathCPU('RNN-Layer', () => {
     () => {
       const cell = new RNNCellForTest([5, 6]);
       const rnn =
-        tfl.layers.rnn({ cell, returnSequences: true, returnState: true });
+        tfl.layers.rnn({cell, returnSequences: true, returnState: true});
       const input =
         new tfl.SymbolicTensor(DType.float32, [16, 10, 8], null, [], null);
       const output = rnn.apply(input) as tfl.SymbolicTensor[];
@@ -180,7 +180,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
   it('getInitialState: 1 state', () => {
     const cell = new RNNCellForTest(5);
     const inputs = zeros([4, 3, 2]);
-    const rnn = tfl.layers.rnn({ cell }) as RNN;
+    const rnn = tfl.layers.rnn({cell}) as RNN;
     const initialStates = rnn.getInitialState(inputs);
     expect(initialStates.length).toEqual(1);
     expectTensorsClose(initialStates[0], zeros([4, 5]));
@@ -189,7 +189,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
   it('getInitialState: 2 states', () => {
     const cell = new RNNCellForTest([5, 6]);
     const inputs = zeros([4, 3, 2]);
-    const rnn = tfl.layers.rnn({ cell }) as RNN;
+    const rnn = tfl.layers.rnn({cell}) as RNN;
     const initialStates = rnn.getInitialState(inputs);
     expect(initialStates.length).toEqual(2);
     expectTensorsClose(initialStates[0], zeros([4, 5]));
@@ -198,7 +198,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
 
   it('call: 1 state: returnSequences=false, returnState=false', () => {
     const cell = new RNNCellForTest(4);
-    const rnn = tfl.layers.rnn({ cell });
+    const rnn = tfl.layers.rnn({cell});
     const inputs = tensor3d(
       [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     const outputs = rnn.apply(inputs) as Tensor;
@@ -208,7 +208,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
 
   it('apply: 1 state: returnSequences=true, returnState=false', () => {
     const cell = new RNNCellForTest(3);
-    const rnn = tfl.layers.rnn({ cell, returnSequences: true });
+    const rnn = tfl.layers.rnn({cell, returnSequences: true});
     const inputs = tensor3d(
       [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     const outputs = rnn.apply(inputs) as Tensor;
@@ -231,7 +231,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
   it('apply: 1 state: returnSequences=true, returnState=true', () => {
     const cell = new RNNCellForTest(3);
     const rnn =
-      tfl.layers.rnn({ cell, returnSequences: true, returnState: true });
+      tfl.layers.rnn({cell, returnSequences: true, returnState: true});
     const inputs = tensor3d(
       [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     const outputs = rnn.apply(inputs) as Tensor[];
@@ -258,7 +258,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
   it('apply: 2 states: returnSequences=true, returnState=true', () => {
     const cell = new RNNCellForTest([3, 4]);
     const rnn =
-      tfl.layers.rnn({ cell, returnSequences: true, returnState: true });
+      tfl.layers.rnn({cell, returnSequences: true, returnState: true});
     const inputs = tensor3d(
       [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     const outputs = rnn.apply(inputs) as Tensor[];
@@ -289,7 +289,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
 
   it('call: with 1 initialState', () => {
     const cell = new RNNCellForTest(4);
-    const rnn = tfl.layers.rnn({ cell });
+    const rnn = tfl.layers.rnn({cell});
     const inputs = tensor3d(
       [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     const outputs =
@@ -300,7 +300,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
 
   it('call: with 2 initialStates', () => {
     const cell = new RNNCellForTest([4, 5]);
-    const rnn = tfl.layers.rnn({ cell, returnState: true });
+    const rnn = tfl.layers.rnn({cell, returnState: true});
     const inputs = tensor3d(
       [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     const outputs = rnn.apply(inputs, {
@@ -318,7 +318,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
 
   it('call with incorrect number of initialStates leads to ValueError', () => {
     const cell = new RNNCellForTest([4, 5]);
-    const rnn = tfl.layers.rnn({ cell, returnState: true });
+    const rnn = tfl.layers.rnn({cell, returnState: true});
     const inputs = tensor3d(
       [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     expect(() => rnn.apply(inputs, {
@@ -331,7 +331,7 @@ describeMathCPU('SimpleRNN Symbolic', () => {
   it('returnSequences=false, returnState=false', () => {
     const input =
       new tfl.SymbolicTensor(DType.float32, [9, 10, 8], null, [], null);
-    const simpleRNN = tfl.layers.simpleRNN({ units: 5 });
+    const simpleRNN = tfl.layers.simpleRNN({units: 5});
     const output = simpleRNN.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 5]);
   });
@@ -339,7 +339,7 @@ describeMathCPU('SimpleRNN Symbolic', () => {
   it('returnSequences=false, returnState=true', () => {
     const input =
       new tfl.SymbolicTensor(DType.float32, [9, 10, 8], null, [], null);
-    const simpleRNN = tfl.layers.simpleRNN({ units: 5, returnState: true });
+    const simpleRNN = tfl.layers.simpleRNN({units: 5, returnState: true});
     const output = simpleRNN.apply(input) as tfl.SymbolicTensor[];
     expect(output.length).toEqual(2);
     expect(output[0].shape).toEqual([9, 5]);
@@ -349,7 +349,7 @@ describeMathCPU('SimpleRNN Symbolic', () => {
   it('returnSequences=true, returnState=false', () => {
     const input =
       new tfl.SymbolicTensor(DType.float32, [9, 10, 8], null, [], null);
-    const simpleRNN = tfl.layers.simpleRNN({ units: 5, returnSequences: true });
+    const simpleRNN = tfl.layers.simpleRNN({units: 5, returnSequences: true});
     const output = simpleRNN.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 10, 5]);
   });
@@ -523,7 +523,7 @@ describeMathCPU('GRU Symbolic', () => {
   it('returnSequences=false, returnState=false', () => {
     const input =
       new tfl.SymbolicTensor(DType.float32, [9, 10, 8], null, [], null);
-    const gru = tfl.layers.gru({ units: 5 });
+    const gru = tfl.layers.gru({units: 5});
     const output = gru.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 5]);
   });
@@ -531,7 +531,7 @@ describeMathCPU('GRU Symbolic', () => {
   it('returnSequences=false, returnState=true', () => {
     const input =
       new tfl.SymbolicTensor(DType.float32, [9, 10, 8], null, [], null);
-    const gru = tfl.layers.gru({ units: 5, returnState: true });
+    const gru = tfl.layers.gru({units: 5, returnState: true});
     const output = gru.apply(input) as tfl.SymbolicTensor[];
     expect(output.length).toEqual(2);
     expect(output[0].shape).toEqual([9, 5]);
@@ -541,7 +541,7 @@ describeMathCPU('GRU Symbolic', () => {
   it('returnSequences=true, returnState=false', () => {
     const input =
       new tfl.SymbolicTensor(DType.float32, [9, 10, 8], null, [], null);
-    const gru = tfl.layers.gru({ units: 5, returnSequences: true });
+    const gru = tfl.layers.gru({units: 5, returnSequences: true});
     const output = gru.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 10, 5]);
   });
@@ -564,7 +564,7 @@ describeMathCPU('GRU Symbolic', () => {
     () => {
       const input =
         new tfl.SymbolicTensor(DType.float32, [2, 3, 4], null, [], null);
-      const gru = tfl.layers.gru({ units: 5, returnState: true });
+      const gru = tfl.layers.gru({units: 5, returnState: true});
       gru.apply(input);
       expect(gru.trainable).toEqual(true);
       // Trainable weights: kernel, recurrent kernel and bias.
@@ -712,7 +712,7 @@ describeMathCPUAndGPU('GRU Tensor', () => {
       useBias: false
     });
     const dense =
-      tfl.layers.dense({ units: 1, kernelInitializer: 'ones', useBias: false });
+      tfl.layers.dense({units: 1, kernelInitializer: 'ones', useBias: false});
 
     const sgd = train.sgd(1);
     const x = ones([batchSize, sequenceLength, inputSize]);
@@ -739,7 +739,7 @@ describeMathCPU('LSTM Symbolic', () => {
   it('returnSequences=false, returnState=false', () => {
     const input =
       new tfl.SymbolicTensor(DType.float32, [9, 10, 8], null, [], null);
-    const lstm = tfl.layers.lstm({ units: 5 });
+    const lstm = tfl.layers.lstm({units: 5});
     const output = lstm.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 5]);
   });
@@ -747,7 +747,7 @@ describeMathCPU('LSTM Symbolic', () => {
   it('returnSequences=false, returnState=true', () => {
     const input =
       new tfl.SymbolicTensor(DType.float32, [9, 10, 8], null, [], null);
-    const lstm = tfl.layers.lstm({ units: 5, returnState: true });
+    const lstm = tfl.layers.lstm({units: 5, returnState: true});
     const output = lstm.apply(input) as tfl.SymbolicTensor[];
     expect(output.length).toEqual(3);
     expect(output[0].shape).toEqual([9, 5]);
@@ -758,7 +758,7 @@ describeMathCPU('LSTM Symbolic', () => {
   it('returnSequences=true, returnState=false', () => {
     const input =
       new tfl.SymbolicTensor(DType.float32, [9, 10, 8], null, [], null);
-    const lstm = tfl.layers.lstm({ units: 5, returnSequences: true });
+    const lstm = tfl.layers.lstm({units: 5, returnSequences: true});
     const output = lstm.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 10, 5]);
   });
@@ -782,7 +782,7 @@ describeMathCPU('LSTM Symbolic', () => {
     () => {
       const input =
         new tfl.SymbolicTensor(DType.float32, [2, 3, 4], null, [], null);
-      const lstm = tfl.layers.lstm({ units: 5, returnState: true });
+      const lstm = tfl.layers.lstm({units: 5, returnState: true});
       lstm.apply(input);
       expect(lstm.trainable).toEqual(true);
       // Trainable weights: kernel, recurrent kernel and bias.
@@ -1208,8 +1208,8 @@ describeMathCPU('StackedRNNCells Symbolic', () => {
   it('RNN with cell array creates StackedRNNCell', () => {
     const stackedRNN = tfl.layers.rnn({
       cell: [
-        tfl.layers.gruCell({ units: 3, recurrentInitializer: 'glorotNormal' }),
-        tfl.layers.gruCell({ units: 2, recurrentInitializer: 'glorotNormal' }),
+        tfl.layers.gruCell({units: 3, recurrentInitializer: 'glorotNormal' }),
+        tfl.layers.gruCell({units: 2, recurrentInitializer: 'glorotNormal' }),
       ],
     });
     const input =
