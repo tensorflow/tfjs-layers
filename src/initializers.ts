@@ -371,7 +371,7 @@ export class VarianceScaling extends Initializer {
       const stddev = Math.sqrt(scale);
       if (dtype === DType.bool) {
         throw new NotImplementedError(
-            `truncatedNormal does not support dType bool.`);
+            `${this.getClassName()} does not support dType bool.`);
       }
       return truncatedNormal(shape, 0, stddev, dtype, this.seed);
     } else {
