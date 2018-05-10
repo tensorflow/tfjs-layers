@@ -1,5 +1,5 @@
 {
-  "name": "tfjs-layers-js2python-test",
+  "name": "tfjs-layers-tfjs2keras-test",
   "version": "0.0.1",
   "description": "Testing sending models from tfjs-layers to Keras",
   "private": false,

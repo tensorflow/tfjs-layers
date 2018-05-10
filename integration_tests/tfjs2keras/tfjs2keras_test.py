@@ -30,7 +30,7 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
     print('Preparing TensorFlow.js...')
     cls._tmp_dir = tempfile.mkdtemp()
     cwd = os.path.dirname(os.path.realpath(__file__))
-    os.chdir(os.path.join(cwd, '../..'))
+    os.chdir(os.path.join(cwd, '..', '..'))
     _call_command(['yarn'])
     _call_command(['yarn', 'build'])
     _call_command(['yarn', 'link'])
