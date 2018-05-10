@@ -567,7 +567,7 @@ export class Orthogonal extends Initializer {
     }
 
     // TODO(cais): Add seed support.
-    const normalizedShape = shape[0] >= shape[1] ? [shape[1], shape[0]] : shape;
+    const normalizedShape = shape[0] > shape[1] ? [shape[1], shape[0]] : shape;
     const a = K.randomNormal(normalizedShape, 0, 1, DType.float32) as Tensor2D;
     let q = linalg.gramSchmidt(a) as Tensor2D;
     if (shape[0] > shape[1]) {
