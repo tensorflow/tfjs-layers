@@ -18,6 +18,13 @@ import {deserializeKerasObject} from './utils/generic_utils';
 
 export type ActivationFn = (tensor: Tensor, axis?: number) => Tensor;
 
+/**
+ * Base class for Activations.
+ *
+ * Special note: due to cross-language compatibility reasons, the
+ * static readonly className field in this family of classes must be set to
+ * the initialLowerCamelCase name of the activation.
+ */
 export abstract class Activation extends serialization.Serializable {
   abstract apply(tensor: Tensor, axis?: number): Tensor;
   getConfig(): serialization.ConfigDict {
