@@ -32,12 +32,16 @@ export type ActivationIdentifier = 'elu'|'hardSigmoid'|'linear'|'relu'|'relu6'|
 /**
  * Exponential linear unit (ELU).
  * Reference: https://arxiv.org/abs/1511.07289
- * @param x: Input.
- * @param alpha: Scaling factor the negative section.
- * @return Output of the ELU activation.
  */
 export class Elu extends Activation {
   static readonly className = 'elu';
+  /**
+   * Calculate the activation function.
+   *
+   * @param x: Input.
+   * @param alpha: Scaling factor the negative section.
+   * @return Output of the ELU activation.
+   */
   apply(x: Tensor, alpha = 1): Tensor {
     return K.elu(x, alpha);
   }
@@ -50,9 +54,6 @@ serialization.SerializationMap.register(Elu);
  * Notes:
  *   - To be used together with the initialization "lecunNormal".
  *   - To be used together with the dropout variant "AlphaDropout".
- *
- * @param x: Input
- * @returns Tensor with the same shape and dtype as `x`.
  */
 export class Selu extends Activation {
   static readonly className = 'selu';
@@ -62,7 +63,9 @@ export class Selu extends Activation {
 }
 serialization.SerializationMap.register(Selu);
 
-// Rectified linear unit
+/**
+ *  Rectified linear unit
+ */
 export class Relu extends Activation {
   static readonly className = 'relu';
   apply(x: Tensor): Tensor {
@@ -140,8 +143,6 @@ serialization.SerializationMap.register(Softsign);
 
 /**
  * Hyperbolic tangent function.
- * @param x Input.
- * @returns Output of the hyperbolic tangent function.
  */
 export class Tanh extends Activation {
   static readonly className = 'tanh';
@@ -152,19 +153,22 @@ export class Tanh extends Activation {
 serialization.SerializationMap.register(Tanh);
 
 /**
- * Softmax activation function.
- *
- * @param x Tensor.
- * @param axis Integer, axis along which the softmax normalization is applied.
- * Invalid if < 2, as softmax across 1 (the batch dimension) is assumed to be
- * an error.
- *
- * @returns a Tensor of the same shape as x
- *
- * @throws ValueError: In case `dim(x) < 2`.
+ * Softmax activation function
  */
 export class Softmax extends Activation {
   static readonly className = 'softmax';
+  /**
+   * Calculate the activation function.
+   *
+   * @param x Tensor.
+   * @param axis Integer, axis along which the softmax normalization is applied.
+   * Invalid if < 2, as softmax across 1 (the batch dimension) is assumed to be
+   * an error.
+   *
+   * @returns a Tensor of the same shape as x
+   *
+   * @throws ValueError: In case `dim(x) < 2`.
+   */
   apply(x: Tensor, axis: number = (-1)): Tensor {
     return tfc.softmax(x, axis);
   }
