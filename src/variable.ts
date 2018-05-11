@@ -11,7 +11,7 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor} from '@tensorflow/tfjs-core';
 
-import {eye, randomNormal} from './backend/tfjs_backend';
+import {randomNormal} from './backend/tfjs_backend';
 import {getScopedTensorName, getUniqueTensorName} from './common';
 import {Constraint} from './constraints';
 import {NotImplementedError} from './errors';
@@ -190,7 +190,7 @@ export function onesLike(
  */
 export function eyeVariable(
     size: number, dtype?: DType, name?: string): LayerVariable {
-  return new LayerVariable(eye(size, dtype), dtype, name);
+  return new LayerVariable(tfc.eye(size), dtype, name);
 }
 /**
  * Get a Variable with uniform distribution of values.

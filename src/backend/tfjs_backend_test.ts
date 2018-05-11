@@ -851,23 +851,6 @@ describeMathCPUAndGPU('Identity', () => {
   });
 });
 
-describeMathCPUAndGPU('eye (I-matrix builder)', () => {
-  it('Zero sized 2D matrix', () => {
-    const I = K.eye(0);
-    expect(I.shape).toEqual([0, 0]);
-  });
-  it('1 sized 2D matrix', () => {
-    const I = K.eye(1);
-    expect(I.shape).toEqual([1, 1]);
-    expect(I.dataSync()).toEqual(new Float32Array([1]));
-  });
-  it('2 sized 2D matrix', () => {
-    const I = K.eye(2);
-    expect(I.shape).toEqual([2, 2]);
-    expect(I.dataSync()).toEqual(new Float32Array([1, 0, 0, 1]));
-  });
-});
-
 describeMathCPUAndGPU('scalarTimesArray', () => {
   it('Scalar x Scalar', () => {
     expectTensorsClose(K.scalarTimesArray(scalar(-2), scalar(-3)), scalar(6));
