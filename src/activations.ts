@@ -15,9 +15,6 @@ import {scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
 import * as K from './backend/tfjs_backend';
 import {deserializeKerasObject} from './utils/generic_utils';
 
-
-export type ActivationFn = (tensor: Tensor, axis?: number) => Tensor;
-
 /**
  * Base class for Activations.
  *
