@@ -22,7 +22,7 @@ import {Regularizer} from '../regularizers';
 import {DType, JsonDict, Kwargs, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
-import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
+import {batchGetValue, batchSetValue, LayerVariable} from '../variable';
 import {version as layersVersion} from '../version';
 // tslint:enable:max-line-length
 

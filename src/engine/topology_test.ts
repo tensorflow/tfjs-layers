@@ -16,7 +16,7 @@ import * as tfl from '../index';
 import * as initializers from '../initializers';
 import {DType, NamedTensorMap, Shape} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
-import {LayerVariable, onesVariable, zerosVariable} from '../variables';
+import {LayerVariable, onesVariable, zerosVariable} from '../variable';
 
 import {execute, FeedDict} from './executor';
 import {Container, ContainerConfig, getSourceInputs, Input, InputLayer, InputSpec, Layer, LayerConfig, loadWeightsFromJson, loadWeightsFromNamedTensorMap, Node} from './topology';

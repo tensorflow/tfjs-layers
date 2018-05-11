@@ -23,7 +23,7 @@ import * as optimizers from '../optimizers';
 import {LossOrMetricFn, Shape} from '../types';
 import {count, singletonOrArray, unique} from '../utils/generic_utils';
 import {range} from '../utils/math_utils';
-import {LayerVariable} from '../variables';
+import {LayerVariable} from '../variable';
 
 import {execute, FeedDict} from './executor';
 import {Container, ContainerConfig} from './topology';

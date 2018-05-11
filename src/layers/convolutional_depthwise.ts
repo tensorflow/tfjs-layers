@@ -24,7 +24,7 @@ import {getRegularizer, Regularizer, RegularizerIdentifier} from '../regularizer
 import {Kwargs, Shape} from '../types';
 import {convOutputLength} from '../utils/conv_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/generic_utils';
-import {LayerVariable} from '../variables';
+import {LayerVariable} from '../variable';
 
 import {BaseConvLayerConfig, Conv2D, ConvLayerConfig} from './convolutional';
 
