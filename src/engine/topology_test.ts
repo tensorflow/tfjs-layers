@@ -16,7 +16,7 @@ import * as tfl from '../index';
 import * as initializers from '../initializers';
 import {DType, NamedTensorMap, Shape} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
-import {LayerVariable} from '../variables';
+import {LayerVariable, onesVariable, zerosVariable} from '../variables';
 
 import {execute, FeedDict} from './executor';
 import {Container, ContainerConfig, getSourceInputs, Input, InputLayer, InputSpec, Layer, LayerConfig, loadWeightsFromJson, loadWeightsFromNamedTensorMap, Node} from './topology';
@@ -335,8 +335,8 @@ describeMathCPU('Layer', () => {
   });
 
   // Weights used for subsequent tests
-  const trainableWeights = [K.zerosVariable([1])];
-  const nonTrainableWeights = [K.onesVariable([1])];
+  const trainableWeights = [zerosVariable([1])];
+  const nonTrainableWeights = [onesVariable([1])];
   it('can set trainableWeights.', () => {
     const layer = new LayerForTest({});
     layer.trainableWeights = trainableWeights;

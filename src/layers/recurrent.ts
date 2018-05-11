@@ -26,7 +26,7 @@ import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer
 import {DType, Kwargs, Shape, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
-import {LayerVariable} from '../variables';
+import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 
 import {deserialize} from './serialization';
 
@@ -2209,7 +2209,7 @@ export class StackedRNNCells extends RNNCell {
     for (const cell of this.cells) {
       weights.push(...cell.weights);
     }
-    return K.batchGetValue(weights);
+    return batchGetValue(weights);
   }
 
   /**
@@ -2227,7 +2227,7 @@ export class StackedRNNCells extends RNNCell {
         tuples.push([cell.weights[i], inputWeights[i]]);
       }
     }
-    K.batchSetValue(tuples);
+    batchSetValue(tuples);
   }
 
   // TODO(cais): Maybe implemnt `losses` and `getLossesFor`.

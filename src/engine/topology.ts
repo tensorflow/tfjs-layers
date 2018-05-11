@@ -22,7 +22,7 @@ import {Regularizer} from '../regularizers';
 import {DType, JsonDict, Kwargs, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
-import {LayerVariable} from '../variables';
+import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 import {version as layersVersion} from '../version';
 // tslint:enable:max-line-length
 
@@ -987,8 +987,7 @@ export abstract class Layer extends serialization.Serializable {
    * @returns Weight values as an `Array` of `Tensor`s.
    */
   getWeights(trainableOnly = false): Tensor[] {
-    return K.batchGetValue(
-        trainableOnly ? this.trainableWeights : this.weights);
+    return batchGetValue(trainableOnly ? this.trainableWeights : this.weights);
   }
 
   /**
@@ -1018,7 +1017,7 @@ export abstract class Layer extends serialization.Serializable {
       return;
     }
     const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
-    const paramValues = K.batchGetValue(params);
+    const paramValues = batchGetValue(params);
     for (let i = 0; i < paramValues.length; ++i) {
       const pv = paramValues[i];
       const p = params[i];
@@ -1030,7 +1029,7 @@ export abstract class Layer extends serialization.Serializable {
       }
       weightValueTuples.push([p, w]);
     }
-    K.batchSetValue(weightValueTuples);
+    batchSetValue(weightValueTuples);
   }
 
   /**
@@ -2781,7 +2780,7 @@ export function loadWeightsFromNamedTensorMap(
         `${unsetNames}`);
   }
 
-  K.batchSetValue(weightValueTuples);
+  batchSetValue(weightValueTuples);
 }
 
 
@@ -2870,5 +2869,5 @@ export function loadWeightsFromJson(
       }
     }
   }
-  K.batchSetValue(weightValueTuples);
+  batchSetValue(weightValueTuples);
 }
