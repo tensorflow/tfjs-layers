@@ -19,9 +19,10 @@ import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../
 import {Initializer} from '../initializers';
 import {deserialize as deserializeLayer} from '../layers/serialization';
 import {Regularizer} from '../regularizers';
-import {DType, JsonDict, Kwargs, LayerVariable, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor} from '../types';
+import {DType, JsonDict, Kwargs, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
+import {LayerVariable} from '../variables';
 import {version as layersVersion} from '../version';
 // tslint:enable:max-line-length
 

@@ -10,11 +10,13 @@
 
 // tslint:disable:max-line-length
 import {ones, scalar, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
 import * as initializers from '../initializers';
-import {DType, LayerVariable, NamedTensorMap, Shape} from '../types';
+import {DType, NamedTensorMap, Shape} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
+import {LayerVariable} from '../variables';
 
 import {execute, FeedDict} from './executor';
 import {Container, ContainerConfig, getSourceInputs, Input, InputLayer, InputSpec, Layer, LayerConfig, loadWeightsFromJson, loadWeightsFromNamedTensorMap, Node} from './topology';

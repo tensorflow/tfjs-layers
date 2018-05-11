@@ -19,10 +19,10 @@ import {dispose, onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, ten
 import {checkDataFormat, checkPaddingMode, checkPoolMode, DataFormat, nameScope as commonNameScope, PaddingMode, PoolMode} from '../common';
 import {Constraint} from '../constraints';
 import {NotImplementedError, ValueError} from '../errors';
-import {DType, LayerVariable, RnnStepFunction, Shape, SymbolicTensor} from '../types';
+import {DType, RnnStepFunction, Shape, SymbolicTensor} from '../types';
 import {pyNormalizeArrayIndex} from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
-
+import {LayerVariable} from '../variables';
 import {epsilon as common_epsilon} from './common';
 import {imageDataFormat} from './common';
 

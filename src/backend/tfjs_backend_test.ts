@@ -17,7 +17,8 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {Scalar, scalar, slice, Tensor, memory, tensor1d, tensor2d, tensor3d, tensor4d, Tensor4D, zeros} from '@tensorflow/tfjs-core';
 
 import {DataFormat, PaddingMode, PoolMode} from '../common';
-import {DType, LayerVariable, SymbolicTensor} from '../types';
+import {DType, SymbolicTensor} from '../types';
+import {LayerVariable} from '../variables';
 import {unique} from '../utils/generic_utils';
 import {range} from '../utils/math_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';

@@ -24,9 +24,9 @@ import {AttributeError, NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {DType, Kwargs, Shape, SymbolicTensor} from '../types';
-import {LayerVariable} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
+import {LayerVariable} from '../variables';
 
 import {deserialize} from './serialization';
 
