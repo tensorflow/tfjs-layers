@@ -40,7 +40,5 @@ This is an integration test that checks the models exported by tfjs-layers
 can be loaded correctly by Keras in Python. To run this test, do:
 
 ```sh
-cd integration_tests/tfjs2keras
-pip install -r requirements.txt
-python tfjs2keras_test.py
+yarn test-integ
 ```
