@@ -13,44 +13,21 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
-import {ValueError} from './errors';
+import {deserializeKerasObject} from './utils/generic_utils';
+
 
 export type ActivationFn = (tensor: Tensor, axis?: number) => Tensor;
-/** @docinline */
-export type ActivationIdentifier = 'elu'|'hardsigmoid'|'linear'|'relu'|'relu6'|
-    'selu'|'sigmoid'|'softmax'|'softplus'|'softsign'|'tanh'|string;
 
-// TODO(cais): Consider switching arg type from string to Enum.
-export function getActivation(activationType: ActivationIdentifier):
-    ActivationFn {
-  if (activationType == null) {
-    return linear;
-  } else if (activationType.toLowerCase() === 'elu') {
-    return elu;
-  } else if (activationType.toLowerCase() === 'hardsigmoid') {
-    return hardSigmoid;
-  } else if (activationType.toLowerCase() === 'linear') {
-    return linear;
-  } else if (activationType.toLowerCase() === 'relu') {
-    return relu;
-  } else if (activationType.toLowerCase() === 'relu6') {
-    return relu6;
-  } else if (activationType.toLowerCase() === 'selu') {
-    return selu;
-  } else if (activationType.toLowerCase() === 'sigmoid') {
-    return sigmoid;
-  } else if (activationType.toLowerCase() === 'softmax') {
-    return softmax;
-  } else if (activationType.toLowerCase() === 'softplus') {
-    return softplus;
-  } else if (activationType.toLowerCase() === 'softsign') {
-    return softsign;
-  } else if (activationType.toLowerCase() === 'tanh') {
-    return tanh;
-  } else {
-    throw new ValueError(`Unsupported activation function ${activationType}`);
+export abstract class Activation extends serialization.Serializable {
+  abstract apply(tensor: Tensor, axis?: number): Tensor;
+  getConfig(): serialization.ConfigDict {
+    return {};
   }
 }
+
+/** @docinline */
+export type ActivationIdentifier = 'elu'|'hardSigmoid'|'linear'|'relu'|'relu6'|
+    'selu'|'sigmoid'|'softmax'|'softplus'|'softsign'|'tanh'|string;
 
 /**
  * Exponential linear unit (ELU).
@@ -59,10 +36,13 @@ export function getActivation(activationType: ActivationIdentifier):
  * @param alpha: Scaling factor the negative section.
  * @return Output of the ELU activation.
  */
-export function elu(x: Tensor, alpha = 1): Tensor {
-  return K.elu(x, alpha);
+export class Elu extends Activation {
+  static readonly className = 'elu';
+  apply(x: Tensor, alpha = 1): Tensor {
+    return K.elu(x, alpha);
+  }
 }
-
+serialization.SerializationMap.register(Elu);
 
 /**
  * Scaled Exponential Linear Unit. (Klambauer et al., 2017).
@@ -74,15 +54,22 @@ export function elu(x: Tensor, alpha = 1): Tensor {
  * @param x: Input
  * @returns Tensor with the same shape and dtype as `x`.
  */
-export function selu(x: Tensor): Tensor {
-  return tfc.selu(x);
+export class Selu extends Activation {
+  static readonly className = 'selu';
+  apply(x: Tensor): Tensor {
+    return tfc.selu(x);
+  }
 }
-
+serialization.SerializationMap.register(Selu);
 
 // Rectified linear unit
-export function relu(x: Tensor): Tensor {
-  return tfc.relu(x);
+export class Relu extends Activation {
+  static readonly className = 'relu';
+  apply(x: Tensor): Tensor {
+    return tfc.relu(x);
+  }
 }
+serialization.SerializationMap.register(Relu);
 
 /**
  * Rectified linear unit activation maxing out at 6.0.
@@ -90,51 +77,79 @@ export function relu(x: Tensor): Tensor {
 // TODO(bileschi): A new constant 6 here is being created at each invocation.
 // A better pattern would be to reuse a single constant 6, created after the
 // backend math has been instantiated.
-export function relu6(x: Tensor): Tensor {
-  return tfc.minimum(scalar(6.0), tfc.relu(x));
+export class Relu6 extends Activation {
+  static readonly className = 'relu6';
+  apply(x: Tensor): Tensor {
+    return tfc.minimum(scalar(6.0), tfc.relu(x));
+  }
 }
+serialization.SerializationMap.register(Relu6);
 
 //* Linear activation (no-op) */
-export function linear(x: Tensor): Tensor {
-  return x;
+export class Linear extends Activation {
+  static readonly className = 'linear';
+  apply(x: Tensor): Tensor {
+    return x;
+  }
 }
+serialization.SerializationMap.register(Linear);
 
 /**
  * Sigmoid activation function.
  */
-export function sigmoid(x: Tensor): Tensor {
-  return tfc.sigmoid(x);
+export class Sigmoid extends Activation {
+  static readonly className = 'sigmoid';
+  apply(x: Tensor): Tensor {
+    return tfc.sigmoid(x);
+  }
 }
+serialization.SerializationMap.register(Sigmoid);
 
 /**
  * Segment-wise linear approximation of sigmoid.
  */
-export function hardSigmoid(x: Tensor): Tensor {
-  return K.hardSigmoid(x);
+export class HardSigmoid extends Activation {
+  static readonly className = 'hardSigmoid';
+  apply(x: Tensor): Tensor {
+    return K.hardSigmoid(x);
+  }
 }
+serialization.SerializationMap.register(HardSigmoid);
 
 /**
  * Softplus activation function.
  */
-export function softplus(x: Tensor): Tensor {
-  return K.softplus(x);
+export class Softplus extends Activation {
+  static readonly className = 'softplus';
+  apply(x: Tensor): Tensor {
+    return K.softplus(x);
+  }
 }
+serialization.SerializationMap.register(Softplus);
 
 /**
  * Softsign activation function.
  */
-export function softsign(x: Tensor): Tensor {
-  return K.softsign(x);
+export class Softsign extends Activation {
+  static readonly className = 'softsign';
+  apply(x: Tensor): Tensor {
+    return K.softsign(x);
+  }
 }
+serialization.SerializationMap.register(Softsign);
 
 /**
  * Hyperbolic tangent function.
  * @param x Input.
  * @returns Output of the hyperbolic tangent function.
  */
-export function tanh(x: Tensor): Tensor {
-  return tfc.tanh(x);
+export class Tanh extends Activation {
+  static readonly className = 'tanh';
+  apply(x: Tensor): Tensor {
+    return tfc.tanh(x);
+  }
 }
+serialization.SerializationMap.register(Tanh);
 
 /**
  * Softmax activation function.
@@ -148,11 +163,38 @@ export function tanh(x: Tensor): Tensor {
  *
  * @throws ValueError: In case `dim(x) < 2`.
  */
-export function softmax(x: Tensor, axis: number = (-1)): Tensor {
-  return tfc.softmax(x, axis);
+export class Softmax extends Activation {
+  static readonly className = 'softmax';
+  apply(x: Tensor, axis: number = (-1)): Tensor {
+    return tfc.softmax(x, axis);
+  }
+}
+serialization.SerializationMap.register(Softmax);
+
+export function serializeActivation(activation: Activation): string {
+  return activation.getClassName();
 }
 
-export function serializeActivation(activation: ActivationFn):
-    serialization.ConfigDictValue {
-  return activation.name;
+export function deserializeActiviation(
+    config: serialization.ConfigDict,
+    customObjects: serialization.ConfigDict = {}): Activation {
+  return deserializeKerasObject(
+      config, serialization.SerializationMap.getMap().classNameMap,
+      customObjects, 'activation');
+}
+
+export function getActivation(identifier: ActivationIdentifier|
+                              serialization.ConfigDict|Activation): Activation {
+  if (identifier == null) {
+    const config = {className: 'linear', config: {}};
+    return deserializeActiviation(config);
+  }
+  if (typeof identifier === 'string') {
+    const config = {className: identifier, config: {}};
+    return deserializeActiviation(config);
+  } else if (identifier instanceof Activation) {
+    return identifier;
+  } else {
+    return deserializeActiviation(identifier);
+  }
 }

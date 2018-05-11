@@ -15,7 +15,7 @@
 // tslint:disable:max-line-length
 import {add, doc, mul, neg, serialization, sum, Tensor, util, zeros} from '@tensorflow/tfjs-core';
 
-import {ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
+import {Activation, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec} from '../engine/topology';
@@ -781,7 +781,7 @@ export interface SimpleRNNCellLayerConfig extends LayerConfig {
 export class SimpleRNNCell extends RNNCell {
   static className = 'SimpleRNNCell';
   readonly units: number;
-  readonly activation: ActivationFn;
+  readonly activation: Activation;
   readonly useBias: boolean;
 
   readonly kernelInitializer: Initializer;
@@ -894,7 +894,7 @@ export class SimpleRNNCell extends RNNCell {
     }
     let output = add(h, K.dot(prevOutput, this.recurrentKernel.read()));
     if (this.activation != null) {
-      output = this.activation(output);
+      output = this.activation.apply(output);
     }
 
     // TODO(cais): Properly set learning phase on output tensor?
@@ -1051,7 +1051,7 @@ export class SimpleRNN extends RNN {
     return (this.cell as SimpleRNNCell).units;
   }
 
-  get activation(): ActivationFn {
+  get activation(): Activation {
     return (this.cell as SimpleRNNCell).activation;
   }
 
@@ -1199,8 +1199,8 @@ export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
 export class GRUCell extends RNNCell {
   static className = 'GRUCell';
   readonly units: number;
-  readonly activation: ActivationFn;
-  readonly recurrentActivation: ActivationFn;
+  readonly activation: Activation;
+  readonly recurrentActivation: Activation;
   readonly useBias: boolean;
 
   readonly kernelInitializer: Initializer;
@@ -1348,9 +1348,12 @@ export class GRUCell extends RNNCell {
       const hTMinus1Z = hTMinus1;
       const hTMinus1R = hTMinus1;
       const hTMinus1H = hTMinus1;
-      z = this.recurrentActivation(add(xZ, K.dot(hTMinus1Z, recurrentKernelZ)));
-      r = this.recurrentActivation(add(xR, K.dot(hTMinus1R, recurrentKernelR)));
-      hh = this.activation(add(xH, K.dot(mul(r, hTMinus1H), recurrentKernelH)));
+      z = this.recurrentActivation.apply(
+          add(xZ, K.dot(hTMinus1Z, recurrentKernelZ)));
+      r = this.recurrentActivation.apply(
+          add(xR, K.dot(hTMinus1R, recurrentKernelR)));
+      hh = this.activation.apply(
+          add(xH, K.dot(mul(r, hTMinus1H), recurrentKernelH)));
     } else {
       // TODO(cais): Add input dropout.
       let matrixX = K.dot(inputs, this.kernel.read());
@@ -1368,15 +1371,15 @@ export class GRUCell extends RNNCell {
       const recurrentR =
           K.sliceAlongLastAxis(matrixInner, this.units, this.units);
 
-      z = this.recurrentActivation(add(xZ, recurrentZ));
-      r = this.recurrentActivation(add(xR, recurrentR));
+      z = this.recurrentActivation.apply(add(xZ, recurrentZ));
+      r = this.recurrentActivation.apply(add(xR, recurrentR));
 
       const xH = K.sliceAlongLastAxis(matrixX, 2 * this.units, this.units);
       const recurrentH = K.dot(
           mul(r, hTMinus1),
           K.sliceAlongLastAxis(
               this.recurrentKernel.read(), 2 * this.units, this.units));
-      hh = this.activation(add(xH, recurrentH));
+      hh = this.activation.apply(add(xH, recurrentH));
     }
 
     const h = add(
@@ -1474,7 +1477,7 @@ export class GRU extends RNN {
     return (this.cell as GRUCell).units;
   }
 
-  get activation(): ActivationFn {
+  get activation(): Activation {
     return (this.cell as GRUCell).activation;
   }
 
@@ -1645,8 +1648,8 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
 export class LSTMCell extends RNNCell {
   static className = 'LSTMCell';
   readonly units: number;
-  readonly activation: ActivationFn;
-  readonly recurrentActivation: ActivationFn;
+  readonly activation: Activation;
+  readonly recurrentActivation: Activation;
   readonly useBias: boolean;
 
   readonly kernelInitializer: Initializer;
@@ -1827,12 +1830,17 @@ export class LSTMCell extends RNNCell {
       const hTMinus1F = hTMinus1;
       const hTMinus1C = hTMinus1;
       const hTMinus1O = hTMinus1;
-      i = this.recurrentActivation(add(xI, K.dot(hTMinus1I, recurrentKernelI)));
-      f = this.recurrentActivation(add(xF, K.dot(hTMinus1F, recurrentKernelF)));
-      c = add(
-          mul(f, cTMinus1),
-          mul(i, this.activation(add(xC, K.dot(hTMinus1C, recurrentKernelC)))));
-      o = this.recurrentActivation(add(xO, K.dot(hTMinus1O, recurrentKernelO)));
+      i = this.recurrentActivation.apply(
+          add(xI, K.dot(hTMinus1I, recurrentKernelI)));
+      f = this.recurrentActivation.apply(
+          add(xF, K.dot(hTMinus1F, recurrentKernelF)));
+      c =
+          add(mul(f, cTMinus1),
+              mul(i,
+                  this.activation.apply(
+                      add(xC, K.dot(hTMinus1C, recurrentKernelC)))));
+      o = this.recurrentActivation.apply(
+          add(xO, K.dot(hTMinus1O, recurrentKernelO)));
     } else {
       // TODO(cais): Add input dropout.
       let z = K.dot(inputs, this.kernel.read());
@@ -1847,13 +1855,13 @@ export class LSTMCell extends RNNCell {
       const z2 = K.sliceAlongLastAxis(z, this.units * 2, this.units);
       const z3 = K.sliceAlongLastAxis(z, this.units * 3, this.units);
 
-      i = this.recurrentActivation(z0);
-      f = this.recurrentActivation(z1);
-      c = add(mul(f, cTMinus1), mul(i, this.activation(z2)));
-      o = this.recurrentActivation(z3);
+      i = this.recurrentActivation.apply(z0);
+      f = this.recurrentActivation.apply(z1);
+      c = add(mul(f, cTMinus1), mul(i, this.activation.apply(z2)));
+      o = this.recurrentActivation.apply(z3);
     }
 
-    const h = mul(o, this.activation(c));
+    const h = mul(o, this.activation.apply(c));
     // TODO(cais): Add use_learning_phase flag properly.
     return [h, h, c];
   }
@@ -1955,7 +1963,7 @@ export class LSTM extends RNN {
     return (this.cell as LSTMCell).units;
   }
 
-  get activation(): ActivationFn {
+  get activation(): Activation {
     return (this.cell as LSTMCell).activation;
   }
 
