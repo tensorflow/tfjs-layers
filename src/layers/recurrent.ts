@@ -26,7 +26,7 @@ import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer
 import {DType, Kwargs, Shape, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
-import {batchGetValue, batchSetValue, LayerVariable} from '../variable';
+import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 
 import {deserialize} from './serialization';
 

@@ -20,7 +20,7 @@ import {nameScope} from './backend/tfjs_backend';
 import * as tfl from './index';
 import {DType} from './types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
-import * as V from './variable';
+import * as V from './variables';
 // tslint:enable:max-line-length
 
 

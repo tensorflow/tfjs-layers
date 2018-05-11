@@ -27,7 +27,7 @@ import {Kwargs, Shape} from '../types';
 import {DType} from '../types';
 import {convOutputLength, deconvLength, normalizeArray} from '../utils/conv_utils';
 import * as generic_utils from '../utils/generic_utils';
-import {LayerVariable} from '../variable';
+import {LayerVariable} from '../variables';
 // tslint:enable:max-line-length
 
 /**

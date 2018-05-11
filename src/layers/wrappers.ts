@@ -21,7 +21,7 @@ import {NotImplementedError, ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
 import {RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
-import {LayerVariable} from '../variable';
+import {LayerVariable} from '../variables';
 
 import {RNN} from './recurrent';
 import {deserialize} from './serialization';

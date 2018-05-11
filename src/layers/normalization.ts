@@ -24,7 +24,7 @@ import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer
 import {Kwargs, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {arrayProd, range} from '../utils/math_utils';
-import {LayerVariable} from '../variable';
+import {LayerVariable} from '../variables';
 
 // tslint:enable:max-line-length
 

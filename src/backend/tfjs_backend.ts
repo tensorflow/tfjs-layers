@@ -21,7 +21,7 @@ import {NotImplementedError, ValueError} from '../errors';
 import {DType, RnnStepFunction, Shape, SymbolicTensor} from '../types';
 import {pyNormalizeArrayIndex} from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
-import {LayerVariable} from '../variable';
+import {LayerVariable} from '../variables';
 import {epsilon as common_epsilon} from './common';
 import {imageDataFormat} from './common';
 

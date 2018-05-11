@@ -18,7 +18,7 @@ import {Scalar, scalar, slice, Tensor, memory, tensor1d, tensor2d, tensor3d, ten
 
 import {DataFormat, PaddingMode, PoolMode} from '../common';
 import {DType, SymbolicTensor} from '../types';
-import {LayerVariable} from '../variable';
+import {LayerVariable} from '../variables';
 import {unique} from '../utils/generic_utils';
 import {range} from '../utils/math_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
