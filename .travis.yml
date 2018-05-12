@@ -9,10 +9,10 @@ matrix:
 
     - language: node_js
       node_js: "8"
-      addons:
-        apt:
-          packages:
-            - "python"
-            - "python-pip"
+      # addons:
+      #   apt:
+      #     packages:
+      #       - "python"
+      #       - "python-pip"
       script:
         - yarn test-integ
