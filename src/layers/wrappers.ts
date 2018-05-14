@@ -23,7 +23,7 @@ import {RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {LayerVariable} from '../variables';
 
-import {RNN} from './recurrent';
+import {rnn, RNN} from './recurrent';
 import {deserialize} from './serialization';
 
 // tslint:enable:max-line-length
@@ -227,7 +227,7 @@ export class TimeDistributed extends Wrapper {
       return [output, []];
     };
     const rnnOutputs =
-        K.rnn(step, inputs, [], false, null, null, false, inputs.shape[1]);
+        rnn(step, inputs, [], false, null, null, false, inputs.shape[1]);
     const y = rnnOutputs[1];
     // TODO(cais): Add activity regularization.
     // TODO(cais): Add useLearningPhase.

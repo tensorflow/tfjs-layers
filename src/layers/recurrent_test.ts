@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {neg, ones, Scalar, scalar, Tensor, tensor2d, tensor3d, train, transpose, zeros} from '@tensorflow/tfjs-core';
+import {neg, ones, Scalar, scalar, Tensor, tensor2d, tensor3d, tensor4d, train, transpose, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
@@ -23,8 +23,160 @@ import {Kwargs} from '../types';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {RNN, RNNCell} from './recurrent';
+import {rnn, RNN, RNNCell} from './recurrent';
 // tslint:enable:max-line-length
+
+/**
+ * A simplistic RNN step function for testing.
+ * This step function simply
+ * - calculates a reduced mean over all input elements, for each sample.
+ * - adds that mean to the state tensor(s),
+ * - take the negative of the 1st current state tensor and use it as the
+ *   output.
+ * @param inputs
+ * @param states
+ */
+function rnnStepForTest(inputs: Tensor, states: Tensor[]): [Tensor, Tensor[]] {
+  const mean = K.mean(inputs) as Scalar;
+  const newStates = states.map(state => K.scalarPlusArray(mean, state));
+  const output = neg(newStates[0]);
+  return [output, newStates];
+}
+
+describeMathCPUAndGPU('rnn', () => {
+  it('Simple step function: 3D inputs, 1 state', () => {
+    const inputs = tensor3d(
+      [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
+    const initialStates = [zeros([2, 4])];
+    const rnnOutputs = rnn(rnnStepForTest, inputs, initialStates);
+    const lastOutput = rnnOutputs[0];
+    const outputs = rnnOutputs[1];
+    const newStates = rnnOutputs[2];
+    expectTensorsClose(
+      lastOutput,
+      tensor2d(
+        [
+          [-57.75, -57.75, -57.75, -57.75],
+          [-57.75, -57.75, -57.75, -57.75]
+        ],
+        [2, 4]));
+    expectTensorsClose(
+      outputs,
+      tensor3d(
+        [
+          [
+            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+            [-57.75, -57.75, -57.75, -57.75]
+          ],
+          [
+            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+            [-57.75, -57.75, -57.75, -57.75]
+          ]
+        ],
+        [2, 3, 4]));
+    expect(newStates.length).toEqual(1);
+    expectTensorsClose(
+      newStates[0],
+      tensor2d(
+        [[57.75, 57.75, 57.75, 57.75], [57.75, 57.75, 57.75, 57.75]],
+        [2, 4]));
+  });
+
+  it('Simple step function: 3D inputs, 2 states', () => {
+    const inputs = tensor3d(
+      [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
+    // The two state tensors have different shapes.
+    const initialStates = [zeros([2, 4]), ones([2, 3])];
+    const rnnOutputs = rnn(rnnStepForTest, inputs, initialStates);
+    const lastOutput = rnnOutputs[0];
+    const outputs = rnnOutputs[1];
+    const newStates = rnnOutputs[2];
+    expectTensorsClose(
+      lastOutput,
+      tensor2d(
+        [
+          [-57.75, -57.75, -57.75, -57.75],
+          [-57.75, -57.75, -57.75, -57.75]
+        ],
+        [2, 4]));
+    expectTensorsClose(
+      outputs,
+      tensor3d(
+        [
+          [
+            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+            [-57.75, -57.75, -57.75, -57.75]
+          ],
+          [
+            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+            [-57.75, -57.75, -57.75, -57.75]
+          ]
+        ],
+        [2, 3, 4]));
+    expect(newStates.length).toEqual(2);
+    expectTensorsClose(
+      newStates[0],
+      tensor2d(
+        [[57.75, 57.75, 57.75, 57.75], [57.75, 57.75, 57.75, 57.75]],
+        [2, 4]));
+    expectTensorsClose(
+      newStates[1],
+      tensor2d([[58.75, 58.75, 58.75], [58.75, 58.75, 58.75]], [2, 3]));
+  });
+
+  it('Simple step function: 4D inputs, 2 states', () => {
+    const inputs = tensor4d(
+      [
+        [[[1], [2]], [[3], [4]], [[5], [6]]],
+        [[[10], [20]], [[30], [40]], [[50], [60]]]
+      ],
+      [2, 3, 2, 1]);
+    // The two state tensors have different shapes.
+    const initialStates = [zeros([2, 4]), ones([2, 3])];
+    const rnnOutputs = rnn(rnnStepForTest, inputs, initialStates);
+    const lastOutput = rnnOutputs[0];
+    const outputs = rnnOutputs[1];
+    const newStates = rnnOutputs[2];
+    expectTensorsClose(
+      lastOutput,
+      tensor2d(
+        [
+          [-57.75, -57.75, -57.75, -57.75],
+          [-57.75, -57.75, -57.75, -57.75]
+        ],
+        [2, 4]));
+    expectTensorsClose(
+      outputs,
+      tensor3d(
+        [
+          [
+            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+            [-57.75, -57.75, -57.75, -57.75]
+          ],
+          [
+            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+            [-57.75, -57.75, -57.75, -57.75]
+          ]
+        ],
+        [2, 3, 4]));
+    expect(newStates.length).toEqual(2);
+    expectTensorsClose(
+      newStates[0],
+      tensor2d(
+        [[57.75, 57.75, 57.75, 57.75], [57.75, 57.75, 57.75, 57.75]],
+        [2, 4]));
+    expectTensorsClose(
+      newStates[1],
+      tensor2d([[58.75, 58.75, 58.75], [58.75, 58.75, 58.75]], [2, 3]));
+  });
+
+  it('Using inputs <3D leads to ValueError', () => {
+    const inputs = tensor2d([[1, 2], [3, 4]], [2, 2]);
+    const initialStates = [zeros([4]), ones([3])];
+    expect(() => rnn(rnnStepForTest, inputs, initialStates)).toThrowError();
+  });
+});
+
 
 /**
  * A simplistic RNNCell for testing.
