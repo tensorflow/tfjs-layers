@@ -130,7 +130,6 @@ describeMathGPU('Save-load round trips', () => {
                 // Check the equality of the two models' weights.
                 const weights1 = model1.getWeights();
                 const weights2 = model2.getWeights();
-                // because the second layer has `useBias: false`.
                 expect(weights2.length).toEqual(weights1.length);
                 for (let i = 0; i < weights1.length; ++i) {
                   expectTensorsClose(weights1[i], weights2[i]);
@@ -170,7 +169,6 @@ describeMathGPU('Save-load round trips', () => {
                 // Check the equality of the two models' weights.
                 const weights1 = model1.getWeights();
                 const weights2 = model2.getWeights();
-                // because the second layer has `useBias: false`.
                 expect(weights2.length).toEqual(weights1.length);
                 for (let i = 0; i < weights1.length; ++i) {
                   expectTensorsClose(weights1[i], weights2[i]);

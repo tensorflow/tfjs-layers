@@ -115,9 +115,14 @@ export interface ModelAndWeightsConfig {
  * ```js
  * const model = tf.sequential(
  *     {layers: [tf.layers.dense({units: 1, inputShape: [3]})]});
+ * console.log('Prediction from original model:');
+ * model.predict(tf.ones([1, 3])).print();
+ *
  * const saveResults = await model.save('localstorage://my-model-1');
  *
  * const loadedModel = await tf.loadModel('localstorage://my-model-1');
+ * console.log('Prediction from loaded model:');
+ * loadedModel.predict(tf.ones([1, 3])).print();
  * ```
  *
  * Example 2. Saving `model`'s topology and weights to browser
@@ -127,9 +132,14 @@ export interface ModelAndWeightsConfig {
  * ```js
  * const model = tf.sequential(
  *     {layers: [tf.layers.dense({units: 1, inputShape: [3]})]});
+ * console.log('Prediction from original model:');
+ * model.predict(tf.ones([1, 3])).print();
+ *
  * const saveResults = await model.save('indexeddb://my-model-1');
  *
- * const loadedModel = await tf.loadMOdel('indexeddb://my-model-1');
+ * const loadedModel = await tf.loadModel('indexeddb://my-model-1');
+ * console.log('Prediction from loaded model:');
+ * loadedModel.predict(tf.ones([1, 3])).print();
  * ```
  *
  * Example 3. Load a model from user-selected files from HTML
@@ -184,7 +194,7 @@ export async function loadModelInternal(pathOrIOHandler: string|
       return loadModelFromPath(pathOrIOHandler);
     } else if (handlers.length > 1) {
       throw new ValueError(
-          `Found more then one (${handlers.length}) load handlers for ` +
+          `Found more than one (${handlers.length}) load handlers for ` +
           `URL '${pathOrIOHandler}'`);
     }
     pathOrIOHandler = handlers[0];

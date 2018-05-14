@@ -1689,9 +1689,14 @@ export class Model extends Container {
    * ```js
    * const model = tf.sequential(
    *     {layers: [tf.layers.dense({units: 1, inputShape: [3]})]});
+   * console.log('Prediction from original model:');
+   * model.predict(tf.ones([1, 3])).print();
+   *
    * const saveResults = await model.save('localstorage://my-model-1');
    *
    * const loadedModel = await tf.loadModel('localstorage://my-model-1');
+   * console.log('Prediction from loaded model:');
+   * loadedModel.predict(tf.ones([1, 3])).print();
    * ```
    *
    * Example 2. Saving `model`'s topology and weights to browser
@@ -1701,9 +1706,14 @@ export class Model extends Container {
    * ```js
    * const model = tf.sequential(
    *     {layers: [tf.layers.dense({units: 1, inputShape: [3]})]});
+   * console.log('Prediction from original model:');
+   * model.predict(tf.ones([1, 3])).print();
+   *
    * const saveResults = await model.save('indexeddb://my-model-1');
    *
-   * const loadedModel = await tf.loadMOdel('indexeddb://my-model-1');
+   * const loadedModel = await tf.loadModel('indexeddb://my-model-1');
+   * console.log('Prediction from loaded model:');
+   * loadedModel.predict(tf.ones([1, 3])).print();
    * ```
    *
    * Example 3. Saving `model`'s topology and weights as two files
@@ -1742,7 +1752,7 @@ export class Model extends Container {
             `Cannot find any save handlers for URL '${handlerOrURL}'`);
       } else if (handlers.length > 1) {
         throw new ValueError(
-            `Found more then one (${handlers.length}) save handlers for ` +
+            `Found more than one (${handlers.length}) save handlers for ` +
             `URL '${handlerOrURL}'`);
       }
       handlerOrURL = handlers[0];
@@ -1757,7 +1767,8 @@ export class Model extends Container {
         await io.encodeWeights(this.getNamedWeights(config));
 
     const returnString = false;
-    const modelConfig = this.toJSON(null, returnString);
+    const unusedArg: {} = null;
+    const modelConfig = this.toJSON(unusedArg, returnString);
 
     return handlerOrURL.save({
       modelTopology: modelConfig,
