@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {add, doc, mul, neg, serialization, sum, Tensor, util, zeros} from '@tensorflow/tfjs-core';
+import {add, DataType, doc, mul, neg, serialization, sum, Tensor, util, zeros} from '@tensorflow/tfjs-core';
 
 import {Activation, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/tfjs_backend';
@@ -23,7 +23,7 @@ import {Layer, LayerConfig} from '../engine/topology';
 import {AttributeError, NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
-import {DType, Kwargs, Shape, SymbolicTensor} from '../types';
+import {Kwargs, Shape, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
 import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
@@ -1122,6 +1122,7 @@ export class SimpleRNN extends RNN {
       recurrentDropout: this.recurrentDropout,
     };
     const baseConfig = super.getConfig();
+    delete baseConfig['cell'];
     Object.assign(config, baseConfig);
     return config;
   }
@@ -1553,6 +1554,7 @@ export class GRU extends RNN {
       implementation: this.implementation,
     };
     const baseConfig = super.getConfig();
+    delete baseConfig['cell'];
     Object.assign(config, baseConfig);
     return config;
   }
@@ -1740,7 +1742,7 @@ export class LSTMCell extends RNNCell {
         biasInitializer = new (class CustomInit extends Initializer {
           static className = 'CustomInit';
 
-          apply(shape: Shape, dtype?: DType): Tensor {
+          apply(shape: Shape, dtype?: DataType): Tensor {
             // TODO(cais): More informative variable names?
             const bI = capturedBiasInit.apply([capturedUnits]);
             const bF = (new Ones()).apply([capturedUnits]);
@@ -2044,6 +2046,7 @@ export class LSTM extends RNN {
       implementation: this.implementation,
     };
     const baseConfig = super.getConfig();
+    delete baseConfig['cell'];
     Object.assign(config, baseConfig);
     return config;
   }
