@@ -13,11 +13,8 @@
 // tslint:disable:max-line-length
 import {DataType, serialization, Tensor} from '@tensorflow/tfjs-core';
 
-import {AssertionError, IndexError, ValueError} from '../errors';
+import {AssertionError, ValueError} from '../errors';
 import {Shape} from '../types';
-
-
-
 // tslint:enable
 
 /**
@@ -38,36 +35,6 @@ export function pyListRepeat(value: any, numValues: number): any[] {
     newArray.fill(value);
     return newArray;
   }
-}
-
-/**
- * Python allows indexing into a list from the end using negative values. This
- * utility functions translates an index into a list into a non-negative index,
- * allowing for negative indices, just like Python.
- *
- * @param x An array.
- * @param index The index to normalize.
- * @return A non-negative index, within range.
- * @exception IndexError if index is not within [-x.length, x.length)
- * @exception ValueError if x or index is null or undefined
- */
-export function pyNormalizeArrayIndex<T>(x: T[], index: number): number {
-  if (x == null || index == null) {
-    throw new ValueError(
-        `Must provide a valid array and index for ` +
-        `pyNormalizeArrayIndex(). Got array ${x} and index ${index}.`);
-  }
-  const errMsg = `Index ${index} out of range for array of length ${x.length}`;
-  if (index < 0) {
-    if (index < -x.length) {
-      throw new IndexError(errMsg);
-    }
-    return x.length + index;
-  }
-  if (index >= x.length) {
-    throw new IndexError(errMsg);
-  }
-  return index;
 }
 
 export function assert(val: boolean, message?: string): void {
