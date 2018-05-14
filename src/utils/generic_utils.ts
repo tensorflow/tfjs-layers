@@ -41,26 +41,6 @@ export function pyListRepeat(value: any, numValues: number): any[] {
 }
 
 /**
- * Equivalent to Python's getattr() built-in function.
- * @param obj
- * @param attrName The name of the attribute to retrieve.
- * @param defaultValue Default value to use if attrName doesn't exist in the
- *   object.
- */
-// tslint:disable-next-line:no-any
-export function pyGetAttr<T>(obj: any, attrName: string, defaultValue?: T): T {
-  if (attrName in obj) {
-    return obj[attrName];
-  }
-  if (defaultValue === undefined) {
-    throw new AttributeError(
-        'pyGetAttr: Attempting to get attribute ' + attrName +
-        'with no default value defined');
-  }
-  return defaultValue;
-}
-
-/**
  * Python allows indexing into a list from the end using negative values. This
  * utility functions translates an index into a list into a non-negative index,
  * allowing for negative indices, just like Python.
