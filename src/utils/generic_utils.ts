@@ -13,7 +13,7 @@
 // tslint:disable:max-line-length
 import {DataType, serialization, Tensor} from '@tensorflow/tfjs-core';
 
-import {AssertionError, AttributeError, IndexError, ValueError} from '../errors';
+import {AssertionError, IndexError, ValueError} from '../errors';
 import {Shape} from '../types';
 
 

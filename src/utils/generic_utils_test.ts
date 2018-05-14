@@ -39,243 +39,242 @@ describe('pyListRepeat() ', () => {
     const expectedValue = [1, 2, 1, 2];
     expect(utils.pyListRepeat(value, numValues)).toEqual(expectedValue);
   });
+});
 
-  describe('pyNormalizeArrayIndex', () => {
-    const x = [2, 2, 2];
+describe('pyNormalizeArrayIndex', () => {
+  const x = [2, 2, 2];
 
-    for (const index of [0, 1, 2]) {
-      it('returns index if index >= 0 and index < x.length', () => {
-        expect(pyNormalizeArrayIndex(x, index)).toEqual(index);
-      });
-    }
-
-    for (const [index, expected] of [[-1, 2], [-2, 1], [-3, 0]]) {
-      it('returns index if index < 0 and abs(index) <= x.length', () => {
-        expect(pyNormalizeArrayIndex(x, index)).toEqual(expected);
-      });
-    }
-
-    it('throws an exception if the array is null', () => {
-      expect(() => pyNormalizeArrayIndex(null, 0))
-          .toThrowError(/Must provide a valid array/);
+  for (const index of [0, 1, 2]) {
+    it('returns index if index >= 0 and index < x.length', () => {
+      expect(pyNormalizeArrayIndex(x, index)).toEqual(index);
     });
+  }
 
-    it('throws an exception if the index is null', () => {
-      expect(() => pyNormalizeArrayIndex(x, null))
-          .toThrowError(/Must provide a valid array/);
+  for (const [index, expected] of [[-1, 2], [-2, 1], [-3, 0]]) {
+    it('returns index if index < 0 and abs(index) <= x.length', () => {
+      expect(pyNormalizeArrayIndex(x, index)).toEqual(expected);
     });
+  }
 
-    for (const index of [3, -4]) {
-      it('throws an exception if the index is out of range', () => {
-        expect(() => pyNormalizeArrayIndex(x, index))
-            .toThrowError(/Index.*out of range/);
-      });
-    }
+  it('throws an exception if the array is null', () => {
+    expect(() => pyNormalizeArrayIndex(null, 0))
+        .toThrowError(/Must provide a valid array/);
   });
 
-  describe('assert', () => {
-    for (const x of [false, null, undefined]) {
-      it('throws error for false conditions', () => {
-        expect(() => utils.assert(x)).toThrowError();
-      });
-    }
-
-    it('doesn\'t throw error for true conditions', () => {
-      expect(() => utils.assert(true)).not.toThrowError();
-    });
+  it('throws an exception if the index is null', () => {
+    expect(() => pyNormalizeArrayIndex(x, null))
+        .toThrowError(/Must provide a valid array/);
   });
 
-  describe('count', () => {
-    it('string array, non-empty', () => {
-      const array: string[] = ['foo', 'bar', 'foo'];
-      expect(utils.count(array, 'foo')).toEqual(2);
-      expect(utils.count(array, 'bar')).toEqual(1);
-      expect(utils.count(array, 'baz')).toEqual(0);
-      expect(utils.count(array, '')).toEqual(0);
+  for (const index of [3, -4]) {
+    it('throws an exception if the index is out of range', () => {
+      expect(() => pyNormalizeArrayIndex(x, index))
+          .toThrowError(/Index.*out of range/);
     });
-    it('number array, non-empty', () => {
-      const array: number[] = [-1, 1, 3, 3, 7, -1, 1.337, -1];
-      expect(utils.count(array, 1)).toEqual(1);
-      expect(utils.count(array, 3)).toEqual(2);
-      expect(utils.count(array, 1.337)).toEqual(1);
-      expect(utils.count(array, -1)).toEqual(3);
-      expect(utils.count(array, 0)).toEqual(0);
+  }
+});
+
+describe('assert', () => {
+  for (const x of [false, null, undefined]) {
+    it('throws error for false conditions', () => {
+      expect(() => utils.assert(x)).toThrowError();
     });
-    it('string array, empty', () => {
-      const array: string[] = [];
-      expect(utils.count(array, 'foo')).toEqual(0);
-      expect(utils.count(array, 'bar')).toEqual(0);
-      expect(utils.count(array, 'baz')).toEqual(0);
-      expect(utils.count(array, '')).toEqual(0);
+  }
+
+  it('doesn\'t throw error for true conditions', () => {
+    expect(() => utils.assert(true)).not.toThrowError();
+  });
+});
+
+describe('count', () => {
+  it('string array, non-empty', () => {
+    const array: string[] = ['foo', 'bar', 'foo'];
+    expect(utils.count(array, 'foo')).toEqual(2);
+    expect(utils.count(array, 'bar')).toEqual(1);
+    expect(utils.count(array, 'baz')).toEqual(0);
+    expect(utils.count(array, '')).toEqual(0);
+  });
+  it('number array, non-empty', () => {
+    const array: number[] = [-1, 1, 3, 3, 7, -1, 1.337, -1];
+    expect(utils.count(array, 1)).toEqual(1);
+    expect(utils.count(array, 3)).toEqual(2);
+    expect(utils.count(array, 1.337)).toEqual(1);
+    expect(utils.count(array, -1)).toEqual(3);
+    expect(utils.count(array, 0)).toEqual(0);
+  });
+  it('string array, empty', () => {
+    const array: string[] = [];
+    expect(utils.count(array, 'foo')).toEqual(0);
+    expect(utils.count(array, 'bar')).toEqual(0);
+    expect(utils.count(array, 'baz')).toEqual(0);
+    expect(utils.count(array, '')).toEqual(0);
+  });
+});
+
+describe('Compare functions', () => {
+  const inputs =
+      [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]];
+
+  for (const input of inputs) {
+    it('cmp sorts numbers in ascending order', () => {
+      const expected = [1, 2, 3];
+      expect(input.slice().sort(utils.numberCompare)).toEqual(expected);
     });
+  }
+
+  for (const input of inputs) {
+    it('reverseCmp sorts numbers in ascending order', () => {
+      const expected = [3, 2, 1];
+      expect(input.slice().sort(utils.reverseNumberCompare)).toEqual(expected);
+    });
+  }
+});
+
+describe('toList', () => {
+  it('creates array from non-array.', () => {
+    const value = 1;
+    expect(utils.toList(value)).toEqual([value]);
   });
 
-  describe('Compare functions', () => {
-    const inputs =
-        [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]];
+  it('returns array if passed an array.', () => {
+    const value = [1];
+    expect(utils.toList(value)).toEqual(value);
+  });
+});
 
-    for (const input of inputs) {
-      it('cmp sorts numbers in ascending order', () => {
-        const expected = [1, 2, 3];
-        expect(input.slice().sort(utils.numberCompare)).toEqual(expected);
-      });
-    }
+describe('isArrayOfShapes', () => {
+  it('returns false for a single non-empty shape', () => {
+    expect(utils.isArrayOfShapes([1, 2, 3])).toEqual(false);
+  });
+  it('returns false for a single empty shape', () => {
+    expect(utils.isArrayOfShapes([])).toEqual(false);
+  });
+  it('returns true for an array of shapes', () => {
+    expect(utils.isArrayOfShapes([[1], [2, 3]])).toEqual(true);
+  });
+  it('returns true for an array of shapes that includes empty shapes', () => {
+    expect(utils.isArrayOfShapes([[], [2, 3]])).toEqual(true);
+    expect(utils.isArrayOfShapes([[]])).toEqual(true);
+    expect(utils.isArrayOfShapes([[], []])).toEqual(true);
+  });
+});
 
-    for (const input of inputs) {
-      it('reverseCmp sorts numbers in ascending order', () => {
-        const expected = [3, 2, 1];
-        expect(input.slice().sort(utils.reverseNumberCompare))
-            .toEqual(expected);
-      });
-    }
+describe('normalizeShapeList', () => {
+  it('returns an empty list if an empty list is passed in.', () => {
+    expect(utils.normalizeShapeList([])).toEqual([]);
   });
 
-  describe('toList', () => {
-    it('creates array from non-array.', () => {
-      const value = 1;
-      expect(utils.toList(value)).toEqual([value]);
-    });
-
-    it('returns array if passed an array.', () => {
-      const value = [1];
-      expect(utils.toList(value)).toEqual(value);
-    });
+  it('returns a list of shapes if a single shape is passed in.', () => {
+    expect(utils.normalizeShapeList([1])).toEqual([[1]]);
   });
 
-  describe('isArrayOfShapes', () => {
-    it('returns false for a single non-empty shape', () => {
-      expect(utils.isArrayOfShapes([1, 2, 3])).toEqual(false);
-    });
-    it('returns false for a single empty shape', () => {
-      expect(utils.isArrayOfShapes([])).toEqual(false);
-    });
-    it('returns true for an array of shapes', () => {
-      expect(utils.isArrayOfShapes([[1], [2, 3]])).toEqual(true);
-    });
-    it('returns true for an array of shapes that includes empty shapes', () => {
-      expect(utils.isArrayOfShapes([[], [2, 3]])).toEqual(true);
-      expect(utils.isArrayOfShapes([[]])).toEqual(true);
-      expect(utils.isArrayOfShapes([[], []])).toEqual(true);
-    });
+  it('returns a list of shapes if an empty shape is passed in.', () => {
+    expect(utils.normalizeShapeList([[]])).toEqual([[]]);
   });
 
-  describe('normalizeShapeList', () => {
-    it('returns an empty list if an empty list is passed in.', () => {
-      expect(utils.normalizeShapeList([])).toEqual([]);
-    });
-
-    it('returns a list of shapes if a single shape is passed in.', () => {
-      expect(utils.normalizeShapeList([1])).toEqual([[1]]);
-    });
-
-    it('returns a list of shapes if an empty shape is passed in.', () => {
-      expect(utils.normalizeShapeList([[]])).toEqual([[]]);
-    });
-
-    it('returns a list of shapes if a list of shapes is passed in.', () => {
-      expect(utils.normalizeShapeList([[1]])).toEqual([[1]]);
-    });
+  it('returns a list of shapes if a list of shapes is passed in.', () => {
+    expect(utils.normalizeShapeList([[1]])).toEqual([[1]]);
   });
+});
 
-  describe('toSnakeCase', () => {
-    for (const [inputString, expectedOutput] of [
-             ['', ''], ['A', 'a'], ['AA', 'aa'], ['AAA', 'aaa'],
-             ['AAa', 'a_aa'], ['AA0', 'a_a0'], ['aB', 'a_b'], ['aBC', 'a_bc'],
-             ['aBc', 'a_bc'], ['_', 'private_'], ['a', 'a'],
-             ['_a', 'private_a']]) {
-      it('creates expected output', () => {
-        expect(utils.toSnakeCase(inputString)).toEqual(expectedOutput);
-      });
-    }
-  });
+describe('toSnakeCase', () => {
+  for (const [inputString, expectedOutput] of [
+           ['', ''], ['A', 'a'], ['AA', 'aa'], ['AAA', 'aaa'], ['AAa', 'a_aa'],
+           ['AA0', 'a_a0'], ['aB', 'a_b'], ['aBC', 'a_bc'], ['aBc', 'a_bc'],
+           ['_', 'private_'], ['a', 'a'], ['_a', 'private_a']]) {
+    it('creates expected output', () => {
+      expect(utils.toSnakeCase(inputString)).toEqual(expectedOutput);
+    });
+  }
+});
 
-  describe('toCamelCase', () => {
-    for (const [inputString, expectedOutput] of [
-             ['', ''], ['A', 'A'], ['aa', 'aa'], ['a_a', 'aA'],
-             ['a_aa', 'aAa']]) {
-      it('creates expected output', () => {
-        expect(utils.toCamelCase(inputString)).toEqual(expectedOutput);
-      });
-    }
-  });
+describe('toCamelCase', () => {
+  for (const [inputString, expectedOutput] of [
+           ['', ''], ['A', 'A'], ['aa', 'aa'], ['a_a', 'aA'],
+           ['a_aa', 'aAa']]) {
+    it('creates expected output', () => {
+      expect(utils.toCamelCase(inputString)).toEqual(expectedOutput);
+    });
+  }
+});
 
-  describe('getExactlyOneShape', () => {
-    it('single instance', () => {
-      expect(utils.getExactlyOneShape([1, 2, 3])).toEqual([1, 2, 3]);
-      expect(utils.getExactlyOneShape([null, 8])).toEqual([null, 8]);
-      expect(utils.getExactlyOneShape([])).toEqual([]);
-    });
-    it('Array of length 1', () => {
-      expect(utils.getExactlyOneShape([[1, 2]])).toEqual([1, 2]);
-      expect(utils.getExactlyOneShape([[]])).toEqual([]);
-    });
-    it('Array of length 2: ValueError', () => {
-      expect(() => utils.getExactlyOneShape([
-        [1], [2]
-      ])).toThrowError(/Expected exactly 1 Shape; got 2/);
-    });
+describe('getExactlyOneShape', () => {
+  it('single instance', () => {
+    expect(utils.getExactlyOneShape([1, 2, 3])).toEqual([1, 2, 3]);
+    expect(utils.getExactlyOneShape([null, 8])).toEqual([null, 8]);
+    expect(utils.getExactlyOneShape([])).toEqual([]);
   });
+  it('Array of length 1', () => {
+    expect(utils.getExactlyOneShape([[1, 2]])).toEqual([1, 2]);
+    expect(utils.getExactlyOneShape([[]])).toEqual([]);
+  });
+  it('Array of length 2: ValueError', () => {
+    expect(() => utils.getExactlyOneShape([
+      [1], [2]
+    ])).toThrowError(/Expected exactly 1 Shape; got 2/);
+  });
+});
 
-  describe('stringsEqual', () => {
-    it('null and undefined', () => {
-      expect(utils.stringsEqual(null, null)).toEqual(true);
-      expect(utils.stringsEqual(undefined, undefined)).toEqual(true);
-      expect(utils.stringsEqual(undefined, null)).toEqual(false);
-      expect(utils.stringsEqual(undefined, [])).toEqual(false);
-      expect(utils.stringsEqual(null, [])).toEqual(false);
-      expect(utils.stringsEqual(null, ['a'])).toEqual(false);
-    });
-    it('Empty arrays', () => {
-      expect(utils.stringsEqual([], [])).toEqual(true);
-      expect(utils.stringsEqual([], ['a'])).toEqual(false);
-    });
-    it('Non-empty arrays', () => {
-      expect(utils.stringsEqual(['a', 'b', 'c', null], [
-        'a', 'b', 'c', null
-      ])).toEqual(true);
-      expect(utils.stringsEqual(['a', 'b', 'c', ''], [
-        'a', 'b', 'c', ''
-      ])).toEqual(true);
-      expect(utils.stringsEqual(['a', 'b', 'c', null], [
-        'a', 'b', 'c', undefined
-      ])).toEqual(false);
-      expect(utils.stringsEqual(['a', 'b', 'c', ''], [
-        'a', 'c', 'b', ''
-      ])).toEqual(false);
-    });
+describe('stringsEqual', () => {
+  it('null and undefined', () => {
+    expect(utils.stringsEqual(null, null)).toEqual(true);
+    expect(utils.stringsEqual(undefined, undefined)).toEqual(true);
+    expect(utils.stringsEqual(undefined, null)).toEqual(false);
+    expect(utils.stringsEqual(undefined, [])).toEqual(false);
+    expect(utils.stringsEqual(null, [])).toEqual(false);
+    expect(utils.stringsEqual(null, ['a'])).toEqual(false);
   });
+  it('Empty arrays', () => {
+    expect(utils.stringsEqual([], [])).toEqual(true);
+    expect(utils.stringsEqual([], ['a'])).toEqual(false);
+  });
+  it('Non-empty arrays', () => {
+    expect(utils.stringsEqual(['a', 'b', 'c', null], [
+      'a', 'b', 'c', null
+    ])).toEqual(true);
+    expect(utils.stringsEqual(['a', 'b', 'c', ''], [
+      'a', 'b', 'c', ''
+    ])).toEqual(true);
+    expect(utils.stringsEqual(['a', 'b', 'c', null], [
+      'a', 'b', 'c', undefined
+    ])).toEqual(false);
+    expect(utils.stringsEqual(['a', 'b', 'c', ''], [
+      'a', 'c', 'b', ''
+    ])).toEqual(false);
+  });
+});
 
-  describe('unique', () => {
-    it('null or undefined', () => {
-      expect(utils.unique(null)).toEqual(null);
-      expect(utils.unique(undefined)).toEqual(undefined);
-    });
-    it('empty array', () => {
-      expect(utils.unique([])).toEqual([]);
-    });
-    it('Non-empty array: string', () => {
-      expect(utils.unique(['foo', 'bar', 'foo'])).toEqual(['foo', 'bar']);
-      expect(utils.unique(['foo', 'bar', ''])).toEqual(['foo', 'bar', '']);
-      expect(utils.unique(['foo', 'bar', null, ''])).toEqual([
-        'foo', 'bar', null, ''
-      ]);
-    });
-    it('Non-empty array: number', () => {
-      expect(utils.unique([1, 2, -1, 2])).toEqual([1, 2, -1]);
-      expect(utils.unique([2, 3, 2, null])).toEqual([2, 3, null]);
-    });
+describe('unique', () => {
+  it('null or undefined', () => {
+    expect(utils.unique(null)).toEqual(null);
+    expect(utils.unique(undefined)).toEqual(undefined);
   });
+  it('empty array', () => {
+    expect(utils.unique([])).toEqual([]);
+  });
+  it('Non-empty array: string', () => {
+    expect(utils.unique(['foo', 'bar', 'foo'])).toEqual(['foo', 'bar']);
+    expect(utils.unique(['foo', 'bar', ''])).toEqual(['foo', 'bar', '']);
+    expect(utils.unique(['foo', 'bar', null, ''])).toEqual([
+      'foo', 'bar', null, ''
+    ]);
+  });
+  it('Non-empty array: number', () => {
+    expect(utils.unique([1, 2, -1, 2])).toEqual([1, 2, -1]);
+    expect(utils.unique([2, 3, 2, null])).toEqual([2, 3, null]);
+  });
+});
 
-  describe('isObjectEmpty', () => {
-    it('null or undefined', () => {
-      expect(() => utils.isObjectEmpty(null)).toThrowError();
-      expect(() => utils.isObjectEmpty(undefined)).toThrowError();
-    });
-    it('empty object', () => {
-      expect(utils.isObjectEmpty({})).toEqual(true);
-    });
-    it('Non-empty object', () => {
-      expect(utils.isObjectEmpty({'a': 12})).toEqual(false);
-      expect(utils.isObjectEmpty({'a': 12, 'b': 34})).toEqual(false);
-    });
+describe('isObjectEmpty', () => {
+  it('null or undefined', () => {
+    expect(() => utils.isObjectEmpty(null)).toThrowError();
+    expect(() => utils.isObjectEmpty(undefined)).toThrowError();
   });
+  it('empty object', () => {
+    expect(utils.isObjectEmpty({})).toEqual(true);
+  });
+  it('Non-empty object', () => {
+    expect(utils.isObjectEmpty({'a': 12})).toEqual(false);
+    expect(utils.isObjectEmpty({'a': 12, 'b': 34})).toEqual(false);
+  });
+});
