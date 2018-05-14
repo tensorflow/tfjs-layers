@@ -1,4 +1,4 @@
-Please remember to tag your pull request:
+Please remember to apply all applicable tags to your pull request:
 ----
 Our release notes are automatically generated from the commit messages.  Please structure your commit message using these tags to simplify the release notes processs.
 
