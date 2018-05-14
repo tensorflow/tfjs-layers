@@ -183,7 +183,7 @@ export function serializeActivation(activation: Activation): string {
   return activation.getClassName();
 }
 
-export function deserializeActiviation(
+export function deserializeActivation(
     config: serialization.ConfigDict,
     customObjects: serialization.ConfigDict = {}): Activation {
   return deserializeKerasObject(
@@ -195,14 +195,14 @@ export function getActivation(identifier: ActivationIdentifier|
                               serialization.ConfigDict|Activation): Activation {
   if (identifier == null) {
     const config = {className: 'linear', config: {}};
-    return deserializeActiviation(config);
+    return deserializeActivation(config);
   }
   if (typeof identifier === 'string') {
     const config = {className: identifier, config: {}};
-    return deserializeActiviation(config);
+    return deserializeActivation(config);
   } else if (identifier instanceof Activation) {
     return identifier;
   } else {
-    return deserializeActiviation(identifier);
+    return deserializeActivation(identifier);
   }
 }
