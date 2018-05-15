@@ -10,7 +10,7 @@
 
 // Layer activation functions
 import * as tfc from '@tensorflow/tfjs-core';
-import {scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
+import {scalar, serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {deserializeKerasObject} from './utils/generic_utils';
@@ -47,7 +47,9 @@ export class Elu extends Activation {
    * @return Output of the ELU activation.
    */
   apply(x: Tensor, alpha = 1): Tensor {
-    return K.elu(x, alpha);
+    return tidy(() => {
+      return K.elu(x, alpha);
+    });
   }
 }
 serialization.SerializationMap.register(Elu);
@@ -62,7 +64,9 @@ serialization.SerializationMap.register(Elu);
 export class Selu extends Activation {
   static readonly className = 'selu';
   apply(x: Tensor): Tensor {
-    return tfc.selu(x);
+    return tidy(() => {
+      return tfc.selu(x);
+    });
   }
 }
 serialization.SerializationMap.register(Selu);
@@ -73,7 +77,9 @@ serialization.SerializationMap.register(Selu);
 export class Relu extends Activation {
   static readonly className = 'relu';
   apply(x: Tensor): Tensor {
-    return tfc.relu(x);
+    return tidy(() => {
+      return tfc.relu(x);
+    });
   }
 }
 serialization.SerializationMap.register(Relu);
@@ -87,7 +93,9 @@ serialization.SerializationMap.register(Relu);
 export class Relu6 extends Activation {
   static readonly className = 'relu6';
   apply(x: Tensor): Tensor {
-    return tfc.minimum(scalar(6.0), tfc.relu(x));
+    return tidy(() => {
+      return tfc.minimum(scalar(6.0), tfc.relu(x));
+    });
   }
 }
 serialization.SerializationMap.register(Relu6);
@@ -96,7 +104,9 @@ serialization.SerializationMap.register(Relu6);
 export class Linear extends Activation {
   static readonly className = 'linear';
   apply(x: Tensor): Tensor {
-    return x;
+    return tidy(() => {
+      return x;
+    });
   }
 }
 serialization.SerializationMap.register(Linear);
@@ -107,7 +117,9 @@ serialization.SerializationMap.register(Linear);
 export class Sigmoid extends Activation {
   static readonly className = 'sigmoid';
   apply(x: Tensor): Tensor {
-    return tfc.sigmoid(x);
+    return tidy(() => {
+      return tfc.sigmoid(x);
+    });
   }
 }
 serialization.SerializationMap.register(Sigmoid);
@@ -118,7 +130,9 @@ serialization.SerializationMap.register(Sigmoid);
 export class HardSigmoid extends Activation {
   static readonly className = 'hardSigmoid';
   apply(x: Tensor): Tensor {
-    return K.hardSigmoid(x);
+    return tidy(() => {
+      return K.hardSigmoid(x);
+    });
   }
 }
 serialization.SerializationMap.register(HardSigmoid);
@@ -129,7 +143,9 @@ serialization.SerializationMap.register(HardSigmoid);
 export class Softplus extends Activation {
   static readonly className = 'softplus';
   apply(x: Tensor): Tensor {
-    return K.softplus(x);
+    return tidy(() => {
+      return K.softplus(x);
+    });
   }
 }
 serialization.SerializationMap.register(Softplus);
@@ -140,7 +156,9 @@ serialization.SerializationMap.register(Softplus);
 export class Softsign extends Activation {
   static readonly className = 'softsign';
   apply(x: Tensor): Tensor {
-    return K.softsign(x);
+    return tidy(() => {
+      return K.softsign(x);
+    });
   }
 }
 serialization.SerializationMap.register(Softsign);
@@ -151,7 +169,9 @@ serialization.SerializationMap.register(Softsign);
 export class Tanh extends Activation {
   static readonly className = 'tanh';
   apply(x: Tensor): Tensor {
-    return tfc.tanh(x);
+    return tidy(() => {
+      return tfc.tanh(x);
+    });
   }
 }
 serialization.SerializationMap.register(Tanh);
@@ -174,7 +194,9 @@ export class Softmax extends Activation {
    * @throws ValueError: In case `dim(x) < 2`.
    */
   apply(x: Tensor, axis: number = (-1)): Tensor {
-    return tfc.softmax(x, axis);
+    return tidy(() => {
+      return tfc.softmax(x, axis);
+    });
   }
 }
 serialization.SerializationMap.register(Softmax);

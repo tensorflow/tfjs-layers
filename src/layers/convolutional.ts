@@ -14,7 +14,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {operation, serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, tidy} from '@tensorflow/tfjs-core';
+import {serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, tidy} from '@tensorflow/tfjs-core';
 
 import {Activation, getActivation, serializeActivation} from '../activations';
 import {imageDataFormat} from '../backend/common';
@@ -381,7 +381,6 @@ export abstract class Conv extends Layer {
     this.activityRegularizer = getRegularizer(config.activityRegularizer);
   }
 
-  @operation
   build(inputShape: Shape|Shape[]): void {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
     const channelAxis =
@@ -408,32 +407,32 @@ export abstract class Conv extends Layer {
     this.built = true;
   }
 
-  @operation
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    inputs = generic_utils.getExactlyOneTensor(inputs);
-    let outputs: Tensor;
-    const biasValue = this.bias == null ? null : this.bias.read();
+    return tidy(() => {
+      inputs = generic_utils.getExactlyOneTensor(inputs);
+      let outputs: Tensor;
+      const biasValue = this.bias == null ? null : this.bias.read();
 
-    if (this.rank === 1) {
-      outputs = conv1dWithBias(
-          inputs, this.kernel.read(), biasValue, this.strides[0], this.padding,
-          this.dataFormat, this.dilationRate as number);
-    } else if (this.rank === 2) {
-      // TODO(cais): Move up to constructor.
-      outputs = conv2dWithBias(
-          inputs, this.kernel.read(), biasValue, this.strides, this.padding,
-          this.dataFormat, this.dilationRate as [number, number]);
-    } else if (this.rank === 3) {
-      throw new NotImplementedError('3D convolution is not implemented yet.');
-    }
+      if (this.rank === 1) {
+        outputs = conv1dWithBias(
+            inputs, this.kernel.read(), biasValue, this.strides[0],
+            this.padding, this.dataFormat, this.dilationRate as number);
+      } else if (this.rank === 2) {
+        // TODO(cais): Move up to constructor.
+        outputs = conv2dWithBias(
+            inputs, this.kernel.read(), biasValue, this.strides, this.padding,
+            this.dataFormat, this.dilationRate as [number, number]);
+      } else if (this.rank === 3) {
+        throw new NotImplementedError('3D convolution is not implemented yet.');
+      }
 
-    if (this.activation != null) {
-      outputs = this.activation.apply(outputs);
-    }
-    return outputs;
+      if (this.activation != null) {
+        outputs = this.activation.apply(outputs);
+      }
+      return outputs;
+    });
   }
 
-  @operation
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
     const newSpace: number[] = [];
@@ -459,7 +458,6 @@ export abstract class Conv extends Layer {
     return outputShape;
   }
 
-  @operation
   getConfig(): serialization.ConfigDict {
     const config: serialization.ConfigDict = {
       rank: this.rank,
@@ -508,7 +506,6 @@ export class Conv2D extends Conv {
     super(2, config);
   }
 
-  @operation
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
@@ -564,7 +561,6 @@ export class Conv2DTranspose extends Conv2D {
     }
   }
 
-  @operation
   build(inputShape: Shape|Shape[]): void {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
 
@@ -599,7 +595,6 @@ export class Conv2DTranspose extends Conv2D {
     this.built = true;
   }
 
-  @operation
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tfc.tidy(() => {
       let input = generic_utils.getExactlyOneTensor(inputs);
@@ -660,7 +655,6 @@ export class Conv2DTranspose extends Conv2D {
     });
   }
 
-  @operation
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
     const outputShape = inputShape.slice();
@@ -691,7 +685,6 @@ export class Conv2DTranspose extends Conv2D {
     return outputShape;
   }
 
-  @operation
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['dilationRate'];
@@ -798,7 +791,6 @@ export class SeparableConv extends Conv {
     this.pointwiseConstraint = getConstraint(config.pointwiseConstraint);
   }
 
-  @operation
   build(inputShape: Shape|Shape[]): void {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
     if (inputShape.length < this.rank + 2) {
@@ -846,40 +838,40 @@ export class SeparableConv extends Conv {
     this.built = true;
   }
 
-  @operation
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    inputs = generic_utils.getExactlyOneTensor(inputs);
+    return tidy(() => {
+      inputs = generic_utils.getExactlyOneTensor(inputs);
 
-    let output: Tensor;
-    if (this.rank === 1) {
-      throw new NotImplementedError(
-          '1D separable convolution is not implemented yet.');
-    } else if (this.rank === 2) {
-      if (this.dataFormat === 'channelsFirst') {
-        inputs = tfc.transpose(inputs, [0, 2, 3, 1]);  // NCHW -> NHWC.
+      let output: Tensor;
+      if (this.rank === 1) {
+        throw new NotImplementedError(
+            '1D separable convolution is not implemented yet.');
+      } else if (this.rank === 2) {
+        if (this.dataFormat === 'channelsFirst') {
+          inputs = tfc.transpose(inputs, [0, 2, 3, 1]);  // NCHW -> NHWC.
+        }
+
+        output = tfc.separableConv2d(
+            inputs as Tensor4D, this.depthwiseKernel.read() as Tensor4D,
+            this.pointwiseKernel.read() as Tensor4D,
+            this.strides as [number, number], this.padding as 'same' | 'valid',
+            this.dilationRate as [number, number], 'NHWC');
       }
 
-      output = tfc.separableConv2d(
-          inputs as Tensor4D, this.depthwiseKernel.read() as Tensor4D,
-          this.pointwiseKernel.read() as Tensor4D,
-          this.strides as [number, number], this.padding as 'same' | 'valid',
-          this.dilationRate as [number, number], 'NHWC');
-    }
+      if (this.useBias) {
+        output = K.biasAdd(output, this.bias.read(), this.dataFormat);
+      }
+      if (this.activation != null) {
+        output = this.activation.apply(output);
+      }
 
-    if (this.useBias) {
-      output = K.biasAdd(output, this.bias.read(), this.dataFormat);
-    }
-    if (this.activation != null) {
-      output = this.activation.apply(output);
-    }
-
-    if (this.dataFormat === 'channelsFirst') {
-      output = tfc.transpose(output, [0, 3, 1, 2]);  // NHWC -> NCHW.
-    }
-    return output;
+      if (this.dataFormat === 'channelsFirst') {
+        output = tfc.transpose(output, [0, 3, 1, 2]);  // NHWC -> NCHW.
+      }
+      return output;
+    });
   }
 
-  @operation
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
@@ -962,7 +954,6 @@ export class Conv1D extends Conv {
     this.inputSpec = [{ndim: 3}];
   }
 
-  @operation
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
@@ -1054,7 +1045,6 @@ export class Cropping2D extends Layer {
     this.inputSpec = [{ndim: 4}];
   }
 
-  @operation
   computeOutputShape(inputShape: Shape): Shape {
     if (this.dataFormat === 'channelsFirst')
       return [
@@ -1070,28 +1060,28 @@ export class Cropping2D extends Layer {
       ];
   }
 
-  @operation
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    inputs = generic_utils.getExactlyOneTensor(inputs);
+    return tidy(() => {
+      inputs = generic_utils.getExactlyOneTensor(inputs);
 
-    if (this.dataFormat === 'channelsLast') {
-      const hSliced = K.sliceAlongAxis(
-          inputs, this.cropping[0][0],
-          inputs.shape[1] - this.cropping[0][0] - this.cropping[0][1], 2);
-      return K.sliceAlongAxis(
-          hSliced, this.cropping[1][0],
-          inputs.shape[2] - this.cropping[1][1] - this.cropping[1][0], 3);
-    } else {
-      const hSliced = K.sliceAlongAxis(
-          inputs, this.cropping[0][0],
-          inputs.shape[2] - this.cropping[0][0] - this.cropping[0][1], 3);
-      return K.sliceAlongAxis(
-          hSliced, this.cropping[1][0],
-          inputs.shape[3] - this.cropping[1][1] - this.cropping[1][0], 4);
-    }
+      if (this.dataFormat === 'channelsLast') {
+        const hSliced = K.sliceAlongAxis(
+            inputs, this.cropping[0][0],
+            inputs.shape[1] - this.cropping[0][0] - this.cropping[0][1], 2);
+        return K.sliceAlongAxis(
+            hSliced, this.cropping[1][0],
+            inputs.shape[2] - this.cropping[1][1] - this.cropping[1][0], 3);
+      } else {
+        const hSliced = K.sliceAlongAxis(
+            inputs, this.cropping[0][0],
+            inputs.shape[2] - this.cropping[0][0] - this.cropping[0][1], 3);
+        return K.sliceAlongAxis(
+            hSliced, this.cropping[1][0],
+            inputs.shape[3] - this.cropping[1][1] - this.cropping[1][0], 4);
+      }
+    });
   }
 
-  @operation
   getConfig(): serialization.ConfigDict {
     const config = {cropping: this.cropping, dataFormat: this.dataFormat};
     const baseConfig = super.getConfig();
