@@ -125,9 +125,11 @@ export function conv1dWithBias(
 export function conv1d(
     x: Tensor, kernel: Tensor, strides = 1, padding = 'valid',
     dataFormat?: DataFormat, dilationRate = 1): Tensor {
-  checkDataFormat(dataFormat);
-  return conv1dWithBias(
-      x, kernel, null, strides, padding, dataFormat, dilationRate);
+  return tidy(() => {
+    checkDataFormat(dataFormat);
+    return conv1dWithBias(
+        x, kernel, null, strides, padding, dataFormat, dilationRate);
+  });
 }
 
 /**
@@ -143,9 +145,11 @@ export function conv1d(
 export function conv2d(
     x: Tensor, kernel: Tensor, strides = [1, 1], padding = 'valid',
     dataFormat?: DataFormat, dilationRate?: [number, number]): Tensor {
-  checkDataFormat(dataFormat);
-  return conv2dWithBias(
-      x, kernel, null, strides, padding, dataFormat, dilationRate);
+  return tidy(() => {
+    checkDataFormat(dataFormat);
+    return conv2dWithBias(
+        x, kernel, null, strides, padding, dataFormat, dilationRate);
+  });
 }
 
 /**
