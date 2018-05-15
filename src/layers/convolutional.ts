@@ -14,7 +14,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '@tensorflow/tfjs-core';
+import {operation, serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, tidy} from '@tensorflow/tfjs-core';
 
 import {Activation, getActivation, serializeActivation} from '../activations';
 import {imageDataFormat} from '../backend/common';
@@ -39,12 +39,14 @@ import {LayerVariable} from '../variables';
 export function preprocessConv2DInput(
     x: Tensor, dataFormat: DataFormat): Tensor {
   // TODO(cais): Cast type to float32 if not.
-  checkDataFormat(dataFormat);
-  if (dataFormat === 'channelsFirst') {
-    return tfc.transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
-  } else {
-    return x;
-  }
+  return tidy(() => {
+    checkDataFormat(dataFormat);
+    if (dataFormat === 'channelsFirst') {
+      return tfc.transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
+    } else {
+      return x;
+    }
+  });
 }
 
 /**
@@ -66,45 +68,46 @@ export function preprocessConv2DInput(
 export function conv1dWithBias(
     x: Tensor, kernel: Tensor, bias: Tensor, strides = 1, padding = 'valid',
     dataFormat?: DataFormat, dilationRate = 1): Tensor {
-  if (dataFormat == null) {
-    dataFormat = imageDataFormat();
-  }
-  checkDataFormat(dataFormat);
+  return tidy(() => {
+    if (dataFormat == null) {
+      dataFormat = imageDataFormat();
+    }
+    checkDataFormat(dataFormat);
 
-  // Check the ranks of x, kernel and bias.
-  if (x.shape.length !== 3) {
-    throw new ValueError(
-        `The input of a conv1dWithBias operation should be 3, but is ` +
-        `${x.shape.length} instead.`);
-  }
-  if (kernel.shape.length !== 3) {
-    throw new ValueError(
-        `The kernel for a conv1dWithBias operation should be 3, but is ` +
-        `${kernel.shape.length} instead`);
-  }
-  if (bias != null && bias.shape.length !== 1) {
-    throw new ValueError(
-        `The bias for a conv1dWithBias operation should be 1, but is ` +
-        `${kernel.shape.length} instead`);
-  }
+    // Check the ranks of x, kernel and bias.
+    if (x.shape.length !== 3) {
+      throw new ValueError(
+          `The input of a conv1dWithBias operation should be 3, but is ` +
+          `${x.shape.length} instead.`);
+    }
+    if (kernel.shape.length !== 3) {
+      throw new ValueError(
+          `The kernel for a conv1dWithBias operation should be 3, but is ` +
+          `${kernel.shape.length} instead`);
+    }
+    if (bias != null && bias.shape.length !== 1) {
+      throw new ValueError(
+          `The bias for a conv1dWithBias operation should be 1, but is ` +
+          `${kernel.shape.length} instead`);
+    }
 
-  // TODO(cais): Support CAUSAL padding mode.
-
-  if (dataFormat === 'channelsFirst') {
-    x = tfc.transpose(x, [0, 2, 1]);  // NCW -> NWC.
-  }
-  if (padding === 'causal') {
-    throw new NotImplementedError(
-        'The support for CAUSAL padding mode in conv1dWithBias is not ' +
-        'implemented yet.');
-  }
-  let y: Tensor = tfc.conv1d(
-      x as Tensor2D | Tensor3D, kernel as Tensor3D, strides,
-      padding === 'same' ? 'same' : 'valid', 'NWC', dilationRate);
-  if (bias != null) {
-    y = K.biasAdd(y, bias);
-  }
-  return y;
+    // TODO(cais): Support CAUSAL padding mode.
+    if (dataFormat === 'channelsFirst') {
+      x = tfc.transpose(x, [0, 2, 1]);  // NCW -> NWC.
+    }
+    if (padding === 'causal') {
+      throw new NotImplementedError(
+          'The support for CAUSAL padding mode in conv1dWithBias is not ' +
+          'implemented yet.');
+    }
+    let y: Tensor = tfc.conv1d(
+        x as Tensor2D | Tensor3D, kernel as Tensor3D, strides,
+        padding === 'same' ? 'same' : 'valid', 'NWC', dilationRate);
+    if (bias != null) {
+      y = K.biasAdd(y, bias);
+    }
+    return y;
+  });
 }
 
 /**
@@ -154,36 +157,39 @@ export function conv2dWithBias(
     x: Tensor, kernel: Tensor, bias: Tensor, strides = [1, 1],
     padding = 'valid', dataFormat?: DataFormat,
     dilationRate?: [number, number]): Tensor {
-  if (dataFormat == null) {
-    dataFormat = imageDataFormat();
-  }
-  checkDataFormat(dataFormat);
-  if (K.ndim(x) !== 3 && K.ndim(x) !== 4) {
-    throw new ValueError(
-        `conv2dWithBias expects input to be of rank 3 or 4, but received ` +
-        `${K.ndim(x)}.`);
-  }
-  if (K.ndim(kernel) !== 3 && K.ndim(kernel) !== 4) {
-    throw new ValueError(
-        `conv2dWithBias expects kernel to be of rank 3 or 4, but received ` +
-        `${K.ndim(x)}.`);
-  }
-  let y = preprocessConv2DInput(x, dataFormat);
-  if (padding === 'causal') {
-    throw new NotImplementedError(
-        'The support for CAUSAL padding mode in conv1dWithBias is not ' +
-        'implemented yet.');
-  }
-  y = tfc.conv2d(
-      y as Tensor3D | Tensor4D, kernel as Tensor4D, strides as [number, number],
-      padding === 'same' ? 'same' : 'valid', 'NHWC', dilationRate);
-  if (bias != null) {
-    y = K.biasAdd(y, bias as Tensor1D);
-  }
-  if (dataFormat === 'channelsFirst') {
-    y = tfc.transpose(y, [0, 3, 1, 2]);
-  }
-  return y;
+  return tidy(() => {
+    if (dataFormat == null) {
+      dataFormat = imageDataFormat();
+    }
+    checkDataFormat(dataFormat);
+    if (K.ndim(x) !== 3 && K.ndim(x) !== 4) {
+      throw new ValueError(
+          `conv2dWithBias expects input to be of rank 3 or 4, but received ` +
+          `${K.ndim(x)}.`);
+    }
+    if (K.ndim(kernel) !== 3 && K.ndim(kernel) !== 4) {
+      throw new ValueError(
+          `conv2dWithBias expects kernel to be of rank 3 or 4, but received ` +
+          `${K.ndim(x)}.`);
+    }
+    let y = preprocessConv2DInput(x, dataFormat);
+    if (padding === 'causal') {
+      throw new NotImplementedError(
+          'The support for CAUSAL padding mode in conv1dWithBias is not ' +
+          'implemented yet.');
+    }
+    y = tfc.conv2d(
+        y as Tensor3D | Tensor4D, kernel as Tensor4D,
+        strides as [number, number], padding === 'same' ? 'same' : 'valid',
+        'NHWC', dilationRate);
+    if (bias != null) {
+      y = K.biasAdd(y, bias as Tensor1D);
+    }
+    if (dataFormat === 'channelsFirst') {
+      y = tfc.transpose(y, [0, 3, 1, 2]);
+    }
+    return y;
+  });
 }
 
 
@@ -371,6 +377,7 @@ export abstract class Conv extends Layer {
     this.activityRegularizer = getRegularizer(config.activityRegularizer);
   }
 
+  @operation
   build(inputShape: Shape|Shape[]): void {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
     const channelAxis =
@@ -397,6 +404,7 @@ export abstract class Conv extends Layer {
     this.built = true;
   }
 
+  @operation
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = generic_utils.getExactlyOneTensor(inputs);
     let outputs: Tensor;
@@ -421,6 +429,7 @@ export abstract class Conv extends Layer {
     return outputs;
   }
 
+  @operation
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
     const newSpace: number[] = [];
@@ -446,6 +455,7 @@ export abstract class Conv extends Layer {
     return outputShape;
   }
 
+  @operation
   getConfig(): serialization.ConfigDict {
     const config: serialization.ConfigDict = {
       rank: this.rank,
@@ -494,6 +504,7 @@ export class Conv2D extends Conv {
     super(2, config);
   }
 
+  @operation
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
@@ -549,6 +560,7 @@ export class Conv2DTranspose extends Conv2D {
     }
   }
 
+  @operation
   build(inputShape: Shape|Shape[]): void {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
 
@@ -583,6 +595,7 @@ export class Conv2DTranspose extends Conv2D {
     this.built = true;
   }
 
+  @operation
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tfc.tidy(() => {
       let input = generic_utils.getExactlyOneTensor(inputs);
@@ -643,6 +656,7 @@ export class Conv2DTranspose extends Conv2D {
     });
   }
 
+  @operation
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
     const outputShape = inputShape.slice();
@@ -673,6 +687,7 @@ export class Conv2DTranspose extends Conv2D {
     return outputShape;
   }
 
+  @operation
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['dilationRate'];
@@ -779,6 +794,7 @@ export class SeparableConv extends Conv {
     this.pointwiseConstraint = getConstraint(config.pointwiseConstraint);
   }
 
+  @operation
   build(inputShape: Shape|Shape[]): void {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
     if (inputShape.length < this.rank + 2) {
@@ -826,6 +842,7 @@ export class SeparableConv extends Conv {
     this.built = true;
   }
 
+  @operation
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = generic_utils.getExactlyOneTensor(inputs);
 
@@ -858,6 +875,7 @@ export class SeparableConv extends Conv {
     return output;
   }
 
+  @operation
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
@@ -940,6 +958,7 @@ export class Conv1D extends Conv {
     this.inputSpec = [{ndim: 3}];
   }
 
+  @operation
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
@@ -1031,6 +1050,7 @@ export class Cropping2D extends Layer {
     this.inputSpec = [{ndim: 4}];
   }
 
+  @operation
   computeOutputShape(inputShape: Shape): Shape {
     if (this.dataFormat === 'channelsFirst')
       return [
@@ -1046,6 +1066,7 @@ export class Cropping2D extends Layer {
       ];
   }
 
+  @operation
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     inputs = generic_utils.getExactlyOneTensor(inputs);
 
@@ -1066,6 +1087,7 @@ export class Cropping2D extends Layer {
     }
   }
 
+  @operation
   getConfig(): serialization.ConfigDict {
     const config = {cropping: this.cropping, dataFormat: this.dataFormat};
     const baseConfig = super.getConfig();
