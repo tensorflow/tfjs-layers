@@ -20,7 +20,9 @@ set -e
 rimraf dist/
 yarn
 tsc --sourceMap false
-browserify --standalone tf src/index.ts -p [tsify] > dist/tf-layers.js
-uglifyjs dist/tf-layers.js -c -m -o dist/tf-layers.min.js
+rollup -c
+
+#browserify --standalone tf src/index.ts -p [tsify] > dist/tf-layers.js
+#uglifyjs dist/tf-layers.js -c -m -o dist/tf-layers.min.js
 echo "Stored standalone library at dist/tf-layers(.min).js"
 npm pack
