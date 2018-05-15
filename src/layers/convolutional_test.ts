@@ -13,7 +13,8 @@
  */
 
 // tslint:disable:max-line-length
-import {ones, scalar, Tensor, tensor1d, tensor3d, Tensor4D, tensor4d, transpose, util} from '@tensorflow/tfjs-core';
+import * as tfc from '@tensorflow/tfjs-core';
+import {scalar, Tensor, tensor1d, tensor3d, Tensor4D, tensor4d, util} from '@tensorflow/tfjs-core';
 
 import {DataFormat, PaddingMode} from '../common';
 import * as tfl from '../index';
@@ -47,7 +48,7 @@ describeMathCPUAndGPU('conv1dWithBias', () => {
         it(testTitle, () => {
           let x: Tensor = tensor3d(xLength4Data, [1, 4, 1]);
           if (dataFormat === 'channelsFirst') {
-            x = transpose(x, [0, 2, 1]);  // NWC -> NCW.
+            x = tfc.transpose(x, [0, 2, 1]);  // NWC -> NCW.
           }
 
           let kernelData: number[] = [];
@@ -56,8 +57,8 @@ describeMathCPUAndGPU('conv1dWithBias', () => {
             kernelData = kernelData.concat(kernelLength2Data);
             biasData = biasData.concat([biasScalarData + i]);
           }
-          const kernel =
-              transpose(tensor3d(kernelData, [1, outChannels, 2]), [2, 0, 1]);
+          const kernel = tfc.transpose(
+              tensor3d(kernelData, [1, outChannels, 2]), [2, 0, 1]);
           const bias = tensor1d(biasData);
 
           const y =
@@ -107,7 +108,7 @@ describeMathCPUAndGPU('conv1d', () => {
       kernelData = kernelData.concat(kernelLength2Data);
     }
     const kernel =
-        transpose(tensor3d(kernelData, [1, outChannels, 2]), [2, 0, 1]);
+        tfc.transpose(tensor3d(kernelData, [1, outChannels, 2]), [2, 0, 1]);
     const y = conv1d(x, kernel, stride, paddingMode, dataFormat);
     expectTensorsClose(y, tensor3d([-10, -10, -40, -40], [1, 2, 2]));
   });
@@ -133,7 +134,7 @@ describeMathCPUAndGPU('conv2d', () => {
         it(testTitle, () => {
           let x: Tensor = tensor4d(x4by4Data, [1, 1, 4, 4]);
           if (dataFormat !== 'channelsFirst') {
-            x = transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
+            x = tfc.transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
           }
           const kernel = tensor4d(kernel2by2Data, [2, 2, 1, 1]);
           const y = conv2d(x, kernel, [stride, stride], 'valid', dataFormat);
@@ -147,7 +148,7 @@ describeMathCPUAndGPU('conv2d', () => {
             yExpected = tensor4d([[[[-30, -30], [30, 30]]]], [1, 1, 2, 2]);
           }
           if (dataFormat !== 'channelsFirst') {
-            yExpected = transpose(yExpected, [0, 2, 3, 1]);
+            yExpected = tfc.transpose(yExpected, [0, 2, 3, 1]);
           }
           expectTensorsClose(y, yExpected);
         });
@@ -179,7 +180,7 @@ describeMathCPUAndGPU('conv2dWithBias', () => {
           it(testTitle, () => {
             let x: Tensor = tensor4d(x4by4Data, [1, 1, 4, 4]);
             if (dataFormat !== 'channelsFirst') {
-              x = transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
+              x = tfc.transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
             }
 
             let kernelData: number[] = [];
@@ -188,7 +189,7 @@ describeMathCPUAndGPU('conv2dWithBias', () => {
               kernelData = kernelData.concat(kernel2by2Data);
               biasData = biasData.concat(biasScalarData);
             }
-            const kernel = transpose(
+            const kernel = tfc.transpose(
                 tensor4d(kernelData, [outChannels, 2, 2, 1]), [1, 2, 3, 0]);
             const bias = tensor1d(biasData);
 
@@ -214,7 +215,7 @@ describeMathCPUAndGPU('conv2dWithBias', () => {
             }
             let yExpected: Tensor = tensor4d(yExpectedData, yExpectedShape);
             if (dataFormat !== 'channelsFirst') {
-              yExpected = transpose(yExpected, [0, 2, 3, 1]);
+              yExpected = tfc.transpose(yExpected, [0, 2, 3, 1]);
             }
             expectTensorsClose(y, yExpected);
           });
@@ -346,7 +347,7 @@ describeMathCPUAndGPU('Conv2D Layer: Tensor', () => {
 
   it('CHANNEL_LAST', () => {
     // Convert input to CHANNEL_LAST.
-    const x = transpose(tensor4d(x4by4Data, [1, 1, 4, 4]), [0, 2, 3, 1]);
+    const x = tfc.transpose(tensor4d(x4by4Data, [1, 1, 4, 4]), [0, 2, 3, 1]);
     const conv2dLayer = tfl.layers.conv2d({
       filters: 1,
       kernelSize: [2, 2],
@@ -524,12 +525,12 @@ describeMathCPUAndGPU('Conv2DTranspose: Tensor', () => {
           biasInitializer: 'ones'
         });
 
-        const x = ones([2, 3, 4, 2]);
+        const x = tfc.ones([2, 3, 4, 2]);
         const y = layer.apply(x) as Tensor;
         if (dataFormat === 'channelsLast') {
-          expectTensorsClose(y, ones([2, 6, 8, 8]).mul(scalar(3)));
+          expectTensorsClose(y, tfc.ones([2, 6, 8, 8]).mul(scalar(3)));
         } else {
-          expectTensorsClose(y, ones([2, 8, 8, 4]).mul(scalar(4)));
+          expectTensorsClose(y, tfc.ones([2, 8, 8, 4]).mul(scalar(4)));
         }
       });
     }
@@ -789,7 +790,8 @@ describeMathGPU('SeparableConv2D Layer: Tensor', () => {
             it(testTitle, () => {
               let x = tensor4d(x5by5Data, [1, 5, 5, 1]);
               if (dataFormat === 'channelsFirst') {
-                x = transpose(x, [0, 3, 1, 2]) as Tensor4D;  // NHWC -> NCHW.
+                x = tfc.transpose(x, [0, 3, 1, 2]) as
+                    Tensor4D;  // NHWC -> NCHW.
               }
 
               const conv2dLayer = tfl.layers.separableConv2d({
@@ -828,7 +830,7 @@ describeMathGPU('SeparableConv2D Layer: Tensor', () => {
                   tensor4d(yExpectedData, [1, 3, 3, 1]) :
                   tensor4d(yExpectedData, [1, 4, 4, 1]);
               if (dataFormat === 'channelsFirst') {
-                yExpected = transpose(yExpected, [0, 3, 1, 2]) as
+                yExpected = tfc.transpose(yExpected, [0, 3, 1, 2]) as
                     Tensor4D;  // NHWC -> NCHW.
               }
               expectTensorsClose(y, yExpected);

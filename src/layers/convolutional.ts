@@ -13,7 +13,8 @@
  */
 
 // tslint:disable:max-line-length
-import {conv1d as conv1dCore, conv2d as conv2dCore, conv2dTranspose, separableConv2d, serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, tidy, transpose} from '@tensorflow/tfjs-core';
+import * as tfc from '@tensorflow/tfjs-core';
+import {serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D} from '@tensorflow/tfjs-core';
 
 import {Activation, getActivation, serializeActivation} from '../activations';
 import {imageDataFormat} from '../backend/common';
@@ -40,7 +41,7 @@ export function preprocessConv2DInput(
   // TODO(cais): Cast type to float32 if not.
   checkDataFormat(dataFormat);
   if (dataFormat === 'channelsFirst') {
-    return transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
+    return tfc.transpose(x, [0, 2, 3, 1]);  // NCHW -> NHWC.
   } else {
     return x;
   }
@@ -90,14 +91,14 @@ export function conv1dWithBias(
   // TODO(cais): Support CAUSAL padding mode.
 
   if (dataFormat === 'channelsFirst') {
-    x = transpose(x, [0, 2, 1]);  // NCW -> NWC.
+    x = tfc.transpose(x, [0, 2, 1]);  // NCW -> NWC.
   }
   if (padding === 'causal') {
     throw new NotImplementedError(
         'The support for CAUSAL padding mode in conv1dWithBias is not ' +
         'implemented yet.');
   }
-  let y: Tensor = conv1dCore(
+  let y: Tensor = tfc.conv1d(
       x as Tensor2D | Tensor3D, kernel as Tensor3D, strides,
       padding === 'same' ? 'same' : 'valid', 'NWC', dilationRate);
   if (bias != null) {
@@ -173,14 +174,14 @@ export function conv2dWithBias(
         'The support for CAUSAL padding mode in conv1dWithBias is not ' +
         'implemented yet.');
   }
-  y = conv2dCore(
+  y = tfc.conv2d(
       y as Tensor3D | Tensor4D, kernel as Tensor4D, strides as [number, number],
       padding === 'same' ? 'same' : 'valid', 'NHWC', dilationRate);
   if (bias != null) {
     y = K.biasAdd(y, bias as Tensor1D);
   }
   if (dataFormat === 'channelsFirst') {
-    y = transpose(y, [0, 3, 1, 2]);
+    y = tfc.transpose(y, [0, 3, 1, 2]);
   }
   return y;
 }
@@ -583,7 +584,7 @@ export class Conv2DTranspose extends Conv2D {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    return tidy(() => {
+    return tfc.tidy(() => {
       let input = generic_utils.getExactlyOneTensor(inputs);
       if (input.shape.length !== 4) {
         throw new ValueError(
@@ -622,13 +623,13 @@ export class Conv2DTranspose extends Conv2D {
           [batchSize, outHeight, outWidth, this.filters];
 
       if (this.dataFormat !== 'channelsLast') {
-        input = transpose(input, [0, 2, 3, 1]);
+        input = tfc.transpose(input, [0, 2, 3, 1]);
       }
-      let outputs = conv2dTranspose(
+      let outputs = tfc.conv2dTranspose(
           input as Tensor4D, this.kernel.read() as Tensor4D, outputShape,
           this.strides as [number, number], this.padding as 'same' | 'valid');
       if (this.dataFormat !== 'channelsLast') {
-        outputs = transpose(outputs, [0, 3, 1, 2]) as Tensor4D;
+        outputs = tfc.transpose(outputs, [0, 3, 1, 2]) as Tensor4D;
       }
 
       if (this.bias != null) {
@@ -834,10 +835,10 @@ export class SeparableConv extends Conv {
           '1D separable convolution is not implemented yet.');
     } else if (this.rank === 2) {
       if (this.dataFormat === 'channelsFirst') {
-        inputs = transpose(inputs, [0, 2, 3, 1]);  // NCHW -> NHWC.
+        inputs = tfc.transpose(inputs, [0, 2, 3, 1]);  // NCHW -> NHWC.
       }
 
-      output = separableConv2d(
+      output = tfc.separableConv2d(
           inputs as Tensor4D, this.depthwiseKernel.read() as Tensor4D,
           this.pointwiseKernel.read() as Tensor4D,
           this.strides as [number, number], this.padding as 'same' | 'valid',
@@ -852,7 +853,7 @@ export class SeparableConv extends Conv {
     }
 
     if (this.dataFormat === 'channelsFirst') {
-      output = transpose(output, [0, 3, 1, 2]);  // NHWC -> NCHW.
+      output = tfc.transpose(output, [0, 3, 1, 2]);  // NHWC -> NCHW.
     }
     return output;
   }

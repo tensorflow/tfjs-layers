@@ -13,7 +13,8 @@
  */
 
 // tslint:disable:max-line-length
-import {add, DataType, doc, mul, neg, reverse, serialization, sum, Tensor, transpose, util, zeros} from '@tensorflow/tfjs-core';
+import * as tfc from '@tensorflow/tfjs-core';
+import {DataType, doc, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
 import {Activation, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/tfjs_backend';
@@ -78,7 +79,7 @@ export function rnn(
   // Transpose to time-major, i.e., from [batch, time, ...] to [time, batch,
   // ...].
   const axes = [1, 0].concat(math_utils.range(2, ndim));
-  inputs = transpose(inputs, axes);
+  inputs = tfc.transpose(inputs, axes);
 
   if (mask != null) {
     throw new NotImplementedError(
@@ -100,7 +101,7 @@ export function rnn(
   }
 
   if (goBackwards) {
-    inputs = reverse(inputs, 0);
+    inputs = tfc.reverse(inputs, 0);
   }
 
   // Porting Note: PyKeras with TensorFlow backend uses a symbolic loop
@@ -136,7 +137,7 @@ export function rnn(
 
   return [
     lastOutput,
-    transpose(
+    tfc.transpose(
         outputs, [1, 0].concat(math_utils.range(2, outputs.shape.length))),
     states
   ];
@@ -464,15 +465,17 @@ export class RNN extends Layer {
     // Initialize state if null.
     if (this.states == null) {
       if (Array.isArray(this.cell.stateSize)) {
-        this.states = this.cell.stateSize.map(dim => zeros([batchSize, dim]));
+        this.states =
+            this.cell.stateSize.map(dim => tfc.zeros([batchSize, dim]));
       } else {
-        this.states = [zeros([batchSize, this.cell.stateSize])];
+        this.states = [tfc.zeros([batchSize, this.cell.stateSize])];
       }
     } else if (states == null) {
       if (Array.isArray(this.cell.stateSize)) {
-        this.states = this.cell.stateSize.map(dim => zeros([batchSize, dim]));
+        this.states =
+            this.cell.stateSize.map(dim => tfc.zeros([batchSize, dim]));
       } else {
-        this.states[0] = zeros([batchSize, this.cell.stateSize]);
+        this.states[0] = tfc.zeros([batchSize, this.cell.stateSize]);
       }
     } else {
       if (!Array.isArray(states)) {
@@ -699,9 +702,9 @@ export class RNN extends Layer {
   getInitialState(inputs: Tensor): Tensor[] {
     // Build an all-zero tensor of shape [samples, outputDim].
     // [Samples, timeSteps, inputDim].
-    let initialState = zeros(inputs.shape);
+    let initialState = tfc.zeros(inputs.shape);
     // [Samples].
-    initialState = sum(initialState, [1, 2]);
+    initialState = tfc.sum(initialState, [1, 2]);
     initialState = K.expandDims(initialState);  // [Samples, 1].
 
     if (Array.isArray(this.cell.stateSize)) {
@@ -1003,7 +1006,7 @@ export class SimpleRNNCell extends RNNCell {
     if (this.bias != null) {
       h = K.biasAdd(h, this.bias.read());
     }
-    let output = add(h, K.dot(prevOutput, this.recurrentKernel.read()));
+    let output = tfc.add(h, K.dot(prevOutput, this.recurrentKernel.read()));
     if (this.activation != null) {
       output = this.activation.apply(output);
     }
@@ -1461,11 +1464,11 @@ export class GRUCell extends RNNCell {
       const hTMinus1R = hTMinus1;
       const hTMinus1H = hTMinus1;
       z = this.recurrentActivation.apply(
-          add(xZ, K.dot(hTMinus1Z, recurrentKernelZ)));
+          tfc.add(xZ, K.dot(hTMinus1Z, recurrentKernelZ)));
       r = this.recurrentActivation.apply(
-          add(xR, K.dot(hTMinus1R, recurrentKernelR)));
+          tfc.add(xR, K.dot(hTMinus1R, recurrentKernelR)));
       hh = this.activation.apply(
-          add(xH, K.dot(mul(r, hTMinus1H), recurrentKernelH)));
+          tfc.add(xH, K.dot(tfc.mul(r, hTMinus1H), recurrentKernelH)));
     } else {
       // TODO(cais): Add input dropout.
       let matrixX = K.dot(inputs, this.kernel.read());
@@ -1483,19 +1486,20 @@ export class GRUCell extends RNNCell {
       const recurrentR =
           K.sliceAlongLastAxis(matrixInner, this.units, this.units);
 
-      z = this.recurrentActivation.apply(add(xZ, recurrentZ));
-      r = this.recurrentActivation.apply(add(xR, recurrentR));
+      z = this.recurrentActivation.apply(tfc.add(xZ, recurrentZ));
+      r = this.recurrentActivation.apply(tfc.add(xR, recurrentR));
 
       const xH = K.sliceAlongLastAxis(matrixX, 2 * this.units, this.units);
       const recurrentH = K.dot(
-          mul(r, hTMinus1),
+          tfc.mul(r, hTMinus1),
           K.sliceAlongLastAxis(
               this.recurrentKernel.read(), 2 * this.units, this.units));
-      hh = this.activation.apply(add(xH, recurrentH));
+      hh = this.activation.apply(tfc.add(xH, recurrentH));
     }
 
-    const h = add(
-        mul(z, hTMinus1), mul(K.scalarPlusArray(K.getScalar(1), neg(z)), hh));
+    const h = tfc.add(
+        tfc.mul(z, hTMinus1),
+        tfc.mul(K.scalarPlusArray(K.getScalar(1), tfc.neg(z)), hh));
     // TODO(cais): Add use_learning_phase flag properly.
     return [h, h];
   }
@@ -1944,21 +1948,22 @@ export class LSTMCell extends RNNCell {
       const hTMinus1C = hTMinus1;
       const hTMinus1O = hTMinus1;
       i = this.recurrentActivation.apply(
-          add(xI, K.dot(hTMinus1I, recurrentKernelI)));
+          tfc.add(xI, K.dot(hTMinus1I, recurrentKernelI)));
       f = this.recurrentActivation.apply(
-          add(xF, K.dot(hTMinus1F, recurrentKernelF)));
-      c =
-          add(mul(f, cTMinus1),
-              mul(i,
-                  this.activation.apply(
-                      add(xC, K.dot(hTMinus1C, recurrentKernelC)))));
+          tfc.add(xF, K.dot(hTMinus1F, recurrentKernelF)));
+      c = tfc.add(
+          tfc.mul(f, cTMinus1),
+          tfc.mul(
+              i,
+              this.activation.apply(
+                  tfc.add(xC, K.dot(hTMinus1C, recurrentKernelC)))));
       o = this.recurrentActivation.apply(
-          add(xO, K.dot(hTMinus1O, recurrentKernelO)));
+          tfc.add(xO, K.dot(hTMinus1O, recurrentKernelO)));
     } else {
       // TODO(cais): Add input dropout.
       let z = K.dot(inputs, this.kernel.read());
       // TODO(cais): Add recurrent dropout.
-      z = add(z, K.dot(hTMinus1, this.recurrentKernel.read()));
+      z = tfc.add(z, K.dot(hTMinus1, this.recurrentKernel.read()));
       if (this.useBias) {
         z = K.biasAdd(z, this.bias.read());
       }
@@ -1970,11 +1975,11 @@ export class LSTMCell extends RNNCell {
 
       i = this.recurrentActivation.apply(z0);
       f = this.recurrentActivation.apply(z1);
-      c = add(mul(f, cTMinus1), mul(i, this.activation.apply(z2)));
+      c = tfc.add(tfc.mul(f, cTMinus1), tfc.mul(i, this.activation.apply(z2)));
       o = this.recurrentActivation.apply(z3);
     }
 
-    const h = mul(o, this.activation.apply(c));
+    const h = tfc.mul(o, this.activation.apply(c));
     // TODO(cais): Add use_learning_phase flag properly.
     return [h, h, c];
   }

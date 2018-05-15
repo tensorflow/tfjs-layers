@@ -16,7 +16,8 @@
 //   but we decided to put them in a separate file (padding.ts) for clarity.
 
 // tslint:disable:max-line-length
-import {pad, serialization, Tensor} from '@tensorflow/tfjs-core';
+import * as tfc from '@tensorflow/tfjs-core';
+import {serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {imageDataFormat} from '../backend/common';
 import * as K from '../backend/tfjs_backend';
@@ -53,7 +54,7 @@ export function temporalPadding(x: Tensor, padding?: [number, number]): Tensor {
   }
 
   const pattern: Array<[number, number]> = [[0, 0], padding, [0, 0]];
-  return pad(x, pattern);
+  return tfc.pad(x, pattern);
 }
 
 /**
@@ -101,7 +102,7 @@ export function spatial2dPadding(
     pattern = [[0, 0], padding[0], padding[1], [0, 0]];
   }
 
-  return pad(x, pattern);
+  return tfc.pad(x, pattern);
 }
 
 export interface ZeroPadding2DLayerConfig extends LayerConfig {
