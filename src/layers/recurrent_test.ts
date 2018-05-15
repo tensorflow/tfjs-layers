@@ -1056,7 +1056,8 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
                 K.concatAlongFirstAxis(outputAtT0, outputAtT1), [1, 0, 2]);
           } else {
             expectedOutput = K.scalarTimesArray(
-                scalar(goldenOutputElementValueAtT1), tfc.ones([batchSize, units]));
+                scalar(goldenOutputElementValueAtT1),
+                tfc.ones([batchSize, units]));
           }
           if (returnState) {
             output = output as Tensor[];
