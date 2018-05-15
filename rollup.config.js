@@ -21,7 +21,7 @@ export default {
   output: {
     extend: true,
     banner: `// @tensorflow/tfjs-layers Copyright ${(new Date).getFullYear()} Google`,
-    file: "dist/bundle.js",
+    file: "dist/tf-layers.js",
     format: "umd",
     name: "tf",
     globals: {'crypto': 'crypto', '@tensorflow/tfjs-core': 'tf'}
