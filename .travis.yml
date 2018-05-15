@@ -6,6 +6,7 @@ matrix:
         - "8"
         - "10"
       script:
+        - yarn
         - yarn build
         - yarn lint
         - yarn test-travis
