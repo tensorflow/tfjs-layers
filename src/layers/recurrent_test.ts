@@ -38,7 +38,7 @@ import {rnn, RNN, RNNCell} from './recurrent';
  * @param states
  */
 function rnnStepForTest(inputs: Tensor, states: Tensor[]): [Tensor, Tensor[]] {
-  const mean = K.mean(inputs) as Scalar;
+  const mean = tfc.mean(inputs) as Scalar;
   const newStates = states.map(state => K.scalarPlusArray(mean, state));
   const output = tfc.neg(newStates[0]);
   return [output, newStates];
@@ -199,7 +199,7 @@ class RNNCellForTest extends RNNCell {
     inputs = inputs as Tensor[];
     const dataInputs = inputs[0];
     const states = inputs.slice(1);
-    const mean = K.mean(dataInputs) as Scalar;
+    const mean = tfc.mean(dataInputs) as Scalar;
     const newStates = states.map(state => K.scalarPlusArray(mean, state));
     const output = tfc.neg(newStates[0]);
     return [output].concat(newStates);
@@ -664,7 +664,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
     const y = tfc.zeros([batchSize, 1]);
     dense.apply(simpleRNN.apply(x));
     const lossFn = () => {
-      return K.mean(metrics.mse(y, dense.apply(simpleRNN.apply(x)) as Tensor))
+      return tfc.mean(metrics.mse(y, dense.apply(simpleRNN.apply(x)) as Tensor))
           .asScalar();
     };
     for (let i = 0; i < 2; ++i) {
@@ -892,7 +892,7 @@ describeMathCPUAndGPU('GRU Tensor', () => {
     const y = tfc.ones([batchSize, 1]);
     dense.apply(gru.apply(x));
     const lossFn = () => {
-      return K.mean(metrics.mse(y, dense.apply(gru.apply(x)) as Tensor))
+      return tfc.mean(metrics.mse(y, dense.apply(gru.apply(x)) as Tensor))
           .asScalar();
     };
     for (let i = 0; i < 2; ++i) {
@@ -1132,7 +1132,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
       const y = tfc.ones([batchSize, 1]);
       dense.apply(lstm.apply(x));
       const lossFn = () => {
-        return K.mean(metrics.mse(y, dense.apply(lstm.apply(x)) as Tensor))
+        return tfc.mean(metrics.mse(y, dense.apply(lstm.apply(x)) as Tensor))
             .asScalar();
       };
       for (let i = 0; i < 2; ++i) {
