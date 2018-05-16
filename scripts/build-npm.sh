@@ -19,7 +19,7 @@ set -e
 
 rimraf dist/
 yarn
-tsc --sourceMap false
+yarn build
 rollup -c
 uglifyjs dist/tf-layers.js -c -m -o dist/tf-layers.min.js
 echo "Stored standalone library at dist/tf-layers(.min).js"
