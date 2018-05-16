@@ -94,8 +94,8 @@ export function describeMathGPU(testName: string, tests: () => void) {
 /**
  * Check that a function only generates the expected number of new Tensors.
  *
- * The function is called twice, once to prime any regular constants and once
- * to ensure that additional copies aren't created/tensors aren't leaked.
+ * The test  function is called twice, once to prime any regular constants and
+ * once to ensure that additional copies aren't created/tensors aren't leaked.
  *
  * @param testFunc A fully curried (zero arg) version of the function to test.
  * @param numNewTensors The expected number of new Tensors that should exist.

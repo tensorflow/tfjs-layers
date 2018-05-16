@@ -104,8 +104,8 @@ describeMathCPU('Constant initializer', () => {
   it('Does not leak', () => {
     const initializerConfig:
         serialization.ConfigDict = {className: 'Constant', config: {value: 5}};
-    const init = getInitializer(initializerConfig);
-    expectNoLeakedTensors(() => init.apply([3]), 1);
+    expectNoLeakedTensors(
+        () => getInitializer(initializerConfig).apply([3]), 1);
   });
 });
 
@@ -166,8 +166,7 @@ describeMathCPU('RandomUniform initializer', () => {
     expectTensorsValuesInRange(weights, 17, 47);
   });
   it('Does not leak', () => {
-    const init = getInitializer('RandomUniform');
-    expectNoLeakedTensors(() => init.apply([3]), 1);
+    expectNoLeakedTensors(() => getInitializer('RandomUniform').apply([3]), 1);
   });
 });
 
@@ -201,8 +200,7 @@ describeMathCPU('RandomNormal initializer', () => {
     // TODO(bileschi): Add test to assert the values match expectations.
   });
   it('Does not leak', () => {
-    const init = getInitializer('RandomNormal');
-    expectNoLeakedTensors(() => init.apply([3]), 1);
+    expectNoLeakedTensors(() => getInitializer('RandomNormal').apply([3]), 1);
   });
 });
 
@@ -226,8 +224,7 @@ describeMathCPU('HeNormal initializer', () => {
     expectTensorsValuesInRange(weights, -2 * stddev, 2 * stddev);
   });
   it('Does not leak', () => {
-    const init = getInitializer('HeNormal');
-    expectNoLeakedTensors(() => init.apply([3]), 1);
+    expectNoLeakedTensors(() => getInitializer('HeNormal').apply([3]), 1);
   });
 });
 
@@ -251,8 +248,7 @@ describeMathCPU('LecunNormal initializer', () => {
     expectTensorsValuesInRange(weights, -2 * stddev, 2 * stddev);
   });
   it('Does not leak', () => {
-    const init = getInitializer('LeCunNormal');
-    expectNoLeakedTensors(() => init.apply([3]), 1);
+    expectNoLeakedTensors(() => getInitializer('LeCunNormal').apply([3]), 1);
   });
 });
 
@@ -286,8 +282,8 @@ describeMathCPU('TruncatedNormal initializer', () => {
     expectTensorsValuesInRange(weights, 0.0, 2.0);
   });
   it('Does not leak', () => {
-    const init = getInitializer('TruncatedNormal');
-    expectNoLeakedTensors(() => init.apply([3]), 1);
+    expectNoLeakedTensors(
+        () => getInitializer('TruncatedNormal').apply([3]), 1);
   });
 });
 
@@ -341,8 +337,7 @@ describeMathCPU('Glorot uniform initializer', () => {
     });
   });
   it('Does not leak', () => {
-    const init = getInitializer('GlorotUniform');
-    expectNoLeakedTensors(() => init.apply([3]), 1);
+    expectNoLeakedTensors(() => getInitializer('GlorotUniform').apply([3]), 1);
   });
 });
 
@@ -400,8 +395,7 @@ describeMathCPU('Glorot normal initializer', () => {
     });
   });
   it('Does not leak', () => {
-    const init = getInitializer('GlorotNormal');
-    expectNoLeakedTensors(() => init.apply([3]), 1);
+    expectNoLeakedTensors(() => getInitializer('GlorotNormal').apply([3]), 1);
   });
 });
 
