@@ -1304,7 +1304,7 @@ describeMathCPUAndGPU('softsign', () => {
       tensor2d(xData.map(x => x / (Math.abs(x) + 1)), [2, 2]));
   });
   it ('Does not leak', () => {
-    const input = tensor2d([-1, 0, 1, -1]);
+    const input = tensor2d([-1, 0, 1, -1], [2, 2]);
     expectNoLeakedTensors(() => K.softsign(input), 1);
   });
 });
