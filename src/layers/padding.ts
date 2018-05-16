@@ -245,10 +245,9 @@ export class ZeroPadding2D extends Layer {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    return tidy(() => {
-      return spatial2dPadding(
-          getExactlyOneTensor(inputs), this.padding, this.dataFormat);
-    });
+    return tidy(
+        () => spatial2dPadding(
+            getExactlyOneTensor(inputs), this.padding, this.dataFormat));
   }
 
   getConfig(): serialization.ConfigDict {

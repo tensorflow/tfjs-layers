@@ -22,9 +22,7 @@ import {deserializeKerasObject, serializeKerasObject} from './utils/generic_util
  * Helper function used by many of the Constraints to find the L2Norms.
  */
 function calcL2Norms(w: Tensor, axis: number): Tensor {
-  return tidy(() => {
-    return tfc.sqrt(tfc.sum(K.square(w), axis, true));
-  });
+  return tidy(() => tfc.sqrt(tfc.sum(K.square(w), axis, true)));
 }
 
 /**
@@ -133,12 +131,11 @@ export class UnitNorm extends Constraint {
   }
 
   apply(w: Tensor): Tensor {
-    return tidy(() => {
-      return tfc.div(
-          w,
-          K.scalarPlusArray(
-              K.getScalar(K.epsilon()), calcL2Norms(w, this.axis)));
-    });
+    return tidy(
+        () => tfc.div(
+            w,
+            K.scalarPlusArray(
+                K.getScalar(K.epsilon()), calcL2Norms(w, this.axis))));
   }
 
   getConfig(): serialization.ConfigDict {
@@ -154,9 +151,7 @@ export class NonNeg extends Constraint {
   static readonly className = 'NonNeg';
 
   apply(w: Tensor): Tensor {
-    return tidy(() => {
-      return tfc.relu(w);
-    });
+    return tidy(() => tfc.relu(w));
   }
 }
 serialization.SerializationMap.register(NonNeg);

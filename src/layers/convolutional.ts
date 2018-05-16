@@ -73,7 +73,6 @@ export function conv1dWithBias(
       dataFormat = imageDataFormat();
     }
     checkDataFormat(dataFormat);
-
     // Check the ranks of x, kernel and bias.
     if (x.shape.length !== 3) {
       throw new ValueError(
@@ -90,7 +89,6 @@ export function conv1dWithBias(
           `The bias for a conv1dWithBias operation should be 1, but is ` +
           `${kernel.shape.length} instead`);
     }
-
     // TODO(cais): Support CAUSAL padding mode.
     if (dataFormat === 'channelsFirst') {
       x = tfc.transpose(x, [0, 2, 1]);  // NCW -> NWC.
@@ -628,9 +626,10 @@ export class Conv2DTranspose extends Conv2D {
       const outHeight = deconvLength(height, strideH, kernelH, this.padding);
       const outWidth = deconvLength(width, strideW, kernelW, this.padding);
 
-      // Porting Note: We don't branch based on `this.dataFormat` here, because
-      //   the tjfs-core function `conv2dTranspose` called below always assumes
-      //   channelsLast.
+      // Porting Note: We don't branch based on `this.dataFormat` here,
+      // because
+      //   the tjfs-core function `conv2dTranspose` called below always
+      //   assumes channelsLast.
       const outputShape: [number, number, number, number] =
           [batchSize, outHeight, outWidth, this.filters];
 
@@ -698,9 +697,8 @@ export interface SeparableConvLayerConfig extends ConvLayerConfig {
   /**
    * The number of depthwise convolution output channels for each input
    * channel.
-   * The total number of depthwise convolution output channels will be equal to
-   * `filtersIn * depthMultiplier`.
-   * Default: 1.
+   * The total number of depthwise convolution output channels will be equal
+   * to `filtersIn * depthMultiplier`. Default: 1.
    */
   depthMultiplier?: number;
 

@@ -63,9 +63,7 @@ export class Zeros extends Initializer {
   static className = 'Zeros';
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    return tidy(() => {
-      return zeros(shape, dtype);
-    });
+    return tidy(() => zeros(shape, dtype));
   }
 }
 serialization.SerializationMap.register(Zeros);
@@ -77,9 +75,7 @@ export class Ones extends Initializer {
   static className = 'Ones';
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    return tidy(() => {
-      return ones(shape, dtype);
-    });
+    return tidy(() => ones(shape, dtype));
   }
 }
 serialization.SerializationMap.register(Ones);
@@ -101,9 +97,8 @@ export class Constant extends Initializer {
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    return tidy(() => {
-      return K.scalarTimesArray(scalar(this.value), ones(shape, dtype));
-    });
+    return tidy(
+        () => K.scalarTimesArray(scalar(this.value), ones(shape, dtype)));
   }
 
   getConfig(): serialization.ConfigDict {
@@ -146,9 +141,7 @@ export class RandomUniform extends Initializer {
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    return tidy(() => {
-      return randomUniform(shape, this.minval, this.maxval, dtype);
-    });
+    return tidy(() => randomUniform(shape, this.minval, this.maxval, dtype));
   }
 
   getConfig(): serialization.ConfigDict {

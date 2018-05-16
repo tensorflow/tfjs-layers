@@ -74,10 +74,9 @@ export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @return Accuracy Tensor.
  */
 export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tidy(() => {
-    return K.cast(
-        tfc.equal(tfc.argMax(yTrue, -1), tfc.argMax(yPred, -1)), 'float32');
-  });
+  return tidy(
+      () => K.cast(
+          tfc.equal(tfc.argMax(yTrue, -1), tfc.argMax(yPred, -1)), 'float32'));
 }
 
 /**
@@ -96,9 +95,7 @@ export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @return Accuracy Tensor.
  */
 export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tidy(() => {
-    return tfc.mean(K.binaryCrossentropy(yTrue, yPred), -1);
-  });
+  return tidy(() => tfc.mean(K.binaryCrossentropy(yTrue, yPred), -1));
 }
 
 export function sparseCategoricalAccuracy(

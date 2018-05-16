@@ -33,9 +33,7 @@ import {LossOrMetricFn} from './types';
  * @return Mean squared error Tensor.
  */
 export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tidy(() => {
-    return tfc.mean(K.square(tfc.sub(yPred, yTrue)), -1);
-  });
+  return tidy(() => tfc.mean(K.square(tfc.sub(yPred, yTrue)), -1));
 }
 
 /**
@@ -57,9 +55,7 @@ export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
  * @return Mean absolute error Tensor.
  */
 export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tidy(() => {
-    return tfc.mean(tfc.abs(tfc.sub(yPred, yTrue)), -1);
-  });
+  return tidy(() => tfc.mean(tfc.abs(tfc.sub(yPred, yTrue)), -1));
 }
 
 /**
@@ -156,22 +152,16 @@ export function logcosh(yTrue: Tensor, yPred: Tensor): Tensor {
 }
 
 export function categoricalCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tidy(() => {
-    return K.categoricalCrossentropy(yTrue, yPred);
-  });
+  return tidy(() => K.categoricalCrossentropy(yTrue, yPred));
 }
 
 export function sparseCategoricalCrossentropy(
     yTrue: Tensor, yPred: Tensor): Tensor {
-  return tidy(() => {
-    return K.sparseCategoricalCrossentropy(yTrue, yPred);
-  });
+  return tidy(() => K.sparseCategoricalCrossentropy(yTrue, yPred));
 }
 
 export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tidy(() => {
-    return tfc.mean(K.binaryCrossentropy(yTrue, yPred), -1);
-  });
+  return tidy(() => tfc.mean(K.binaryCrossentropy(yTrue, yPred), -1));
 }
 
 export function kullbackLeiblerDivergence(
