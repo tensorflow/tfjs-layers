@@ -13,6 +13,7 @@
  *
  * Original source: keras/constraints.py
  */
+import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
@@ -183,7 +184,7 @@ export class Embedding extends Layer {
         input = K.cast(input, 'int32');
       }
       const output = K.gather(this.embeddings.read(), input.as1D());
-      return K.reshape(
+      return tfc.reshape(
           output, getExactlyOneShape(this.computeOutputShape(input.shape)));
     });
   }

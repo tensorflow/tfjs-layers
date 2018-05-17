@@ -156,10 +156,10 @@ export abstract class Merge extends Layer {
               const xShape = K.shape(x);
               const batchSize = xShape[0];
               const newShape = xShape.slice(1).concat([batchSize]);
-              let xTransposed = K.reshape(
+              let xTransposed = tfc.reshape(
                   x, [batchSize].concat(mathUtils.arrayProd(xShape.slice(1))));
               xTransposed = tfc.transpose(xTransposed, [1, 0]);
-              xTransposed = K.reshape(xTransposed, newShape);
+              xTransposed = tfc.reshape(xTransposed, newShape);
               reshapedInputs.push(xTransposed);
               transposed = true;
             } else if (xNDim > 1) {
@@ -182,8 +182,8 @@ export abstract class Merge extends Layer {
               const batchSize = yShape[yNDim - 1];
               const newShape =
                   [batchSize].concat(yShape.slice(0, yShape.length - 1));
-              y = K.reshape(
-                  tfc.transpose(K.reshape(y, [-1, batchSize]), [1, 0]),
+              y = tfc.reshape(
+                  tfc.transpose(tfc.reshape(y, [-1, batchSize]), [1, 0]),
                   newShape);
             } else if (yNDim > 1) {
               const dims = [yNDim - 1].concat(mathUtils.range(0, yNDim - 1));

@@ -12,6 +12,7 @@
  * TensorFlow.js Layers: Basic Layers.
  */
 
+import * as tfc from '@tensorflow/tfjs-core';
 import {Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
@@ -589,7 +590,7 @@ export class Reshape extends Layer {
       const inputShape = K.shape(input);
       const outputShape = inputShape.slice(0, 1).concat(
           this.fixUnknownDimension(inputShape.slice(1), this.targetShape));
-      return K.reshape(input, outputShape);
+      return tfc.reshape(input, outputShape);
     });
   }
 }
