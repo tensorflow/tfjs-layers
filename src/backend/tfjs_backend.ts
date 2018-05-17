@@ -160,7 +160,7 @@ export function cast(x: Tensor, dtype: 'float32'|'int32'|'bool'): Tensor {
  */
 export function reshape(x: Tensor, shape: Shape): Tensor {
   // TODO(cais): Should this call TensorMath.reshape instead for backprop?
-  return x.reshape(shape);
+  return tfc.reshape(x, shape);
 }
 
 /**
