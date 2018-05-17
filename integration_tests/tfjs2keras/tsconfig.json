@@ -1,4 +1,7 @@
 {
   "extends": "../../tsconfig-es5.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
   "include": ["./"]
 }
