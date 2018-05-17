@@ -20,7 +20,7 @@ import {SymbolicTensor} from '../types';
 import {LayerVariable} from '../variables';
 import {unique} from '../utils/generic_utils';
 import {range} from '../utils/math_utils';
-import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
+import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose, expectNoLeakedTensors} from '../utils/test_utils';
 
 import * as K from './tfjs_backend';
 
@@ -207,48 +207,6 @@ describeMathCPUAndGPU('cast', () => {
     expect(y.dtype).toEqual('int32');
     expect(y.shape).toEqual([3, 2]);
     expect(Array.from(y.dataSync())).toEqual([0, 1, 0, 1, 1, 0]);
-  });
-});
-
-describeMathCPUAndGPU('Reshape', () => {
-  it('1D', () => {
-    const x = zeros([12]);
-    expect(K.reshape(x, [12]).shape).toEqual([12]);
-    expect(K.reshape(x, [3, 4]).shape).toEqual([3, 4]);
-    expect(K.reshape(x, [2, 2, 3]).shape).toEqual([2, 2, 3]);
-    expect(K.reshape(x, [1, 2, 2, 3]).shape).toEqual([1, 2, 2, 3]);
-    expect(() => {
-      K.reshape(x, [2, 2, 2, 3]);
-    }).toThrowError();
-  });
-
-  it('Scalar', () => {
-    const s = zeros([]);
-    expect(K.reshape(s, []).shape).toEqual([]);
-    expect(K.reshape(s, [1]).shape).toEqual([1]);
-    expect(() => {
-      K.reshape(s, [2]);
-    }).toThrowError();
-  });
-
-  it('2D to 1D', () => {
-    const x = tensor2d([[10, 20, 30], [40, 50, 60]], [2, 3]);
-    const reshaped = K.reshape(x, [6]);
-    expect(reshaped.shape).toEqual([6]);
-    expect(reshaped.dataSync()).toEqual(new Float32Array([
-      10, 20, 30, 40, 50, 60
-    ]));
-  });
-
-  it('3D to 2D', () => {
-    const x = tensor3d(
-      [[[10, 20, 30], [40, 50, 60]], [[-10, -20, -30], [-40, -50, -60]]],
-      [2, 2, 3]);
-    const reshaped = K.reshape(x, [2, 6]);
-    expect(reshaped.shape).toEqual([2, 6]);
-    expect(reshaped.dataSync()).toEqual(new Float32Array([
-      10, 20, 30, 40, 50, 60, -10, -20, -30, -40, -50, -60
-    ]));
   });
 });
 
@@ -1296,21 +1254,16 @@ describeMathCPUAndGPU('elu', () => {
   });
 });
 
-describeMathCPUAndGPU('softplus', () => {
-  it('softplus', () => {
-    const xData = [-1, 0, 1, -1];
-    expectTensorsClose(
-      K.softplus(tensor2d(xData, [2, 2])),
-      tensor2d(xData.map(x => Math.log(Math.exp(x) + 1)), [2, 2]));
-  });
-});
-
 describeMathCPUAndGPU('softsign', () => {
   it('softsign', () => {
     const xData = [-1, 0, 1, -1];
     expectTensorsClose(
       K.softsign(tensor2d(xData, [2, 2])),
       tensor2d(xData.map(x => x / (Math.abs(x) + 1)), [2, 2]));
+  });
+  it ('Does not leak', () => {
+    const input = tensor2d([-1, 0, 1, -1], [2, 2]);
+    expectNoLeakedTensors(() => K.softsign(input), 1);
   });
 });
 

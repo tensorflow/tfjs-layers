@@ -9,7 +9,7 @@
  */
 
 // tslint:disable:max-line-length
-import {DataType, doc, eye, linalg, ones, randomUniform, scalar, Scalar, serialization, Tensor, Tensor2D, truncatedNormal, zeros} from '@tensorflow/tfjs-core';
+import {DataType, doc, eye, linalg, ones, randomUniform, scalar, Scalar, serialization, Tensor, Tensor2D, tidy, truncatedNormal, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
@@ -97,7 +97,8 @@ export class Constant extends Initializer {
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    return K.scalarTimesArray(scalar(this.value), ones(shape, dtype));
+    return tidy(
+        () => K.scalarTimesArray(scalar(this.value), ones(shape, dtype)));
   }
 
   getConfig(): serialization.ConfigDict {
@@ -256,14 +257,17 @@ export class Identity extends Initializer {
     super();
     this.gain = config.gain != null ? scalar(config.gain) : K.getScalar(1.0);
   }
+
   apply(shape: Shape, dtype?: DataType): Tensor {
-    if (shape.length !== 2 || shape[0] !== shape[1]) {
-      throw new ValueError(
-          'Identity matrix initializer can only be used for' +
-          ' 2D square matrices.');
-    } else {
-      return K.scalarTimesArray(this.gain, eye(shape[0]));
-    }
+    return tidy(() => {
+      if (shape.length !== 2 || shape[0] !== shape[1]) {
+        throw new ValueError(
+            'Identity matrix initializer can only be used for' +
+            ' 2D square matrices.');
+      } else {
+        return K.scalarTimesArray(this.gain, eye(shape[0]));
+      }
+    });
   }
 
   getConfig(): serialization.ConfigDict {
@@ -560,24 +564,28 @@ export class Orthogonal extends Initializer {
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    if (shape.length !== 2) {
-      throw new NotImplementedError(
-          'The Orthogonal Initializer does not support non-2D shapes yet.');
-    }
-    if (shape[0] * shape[1] > 2000) {
-      console.warn(
-          `Orthgonal initializer is being called on a matrix with more than ` +
-          `2000 (${shape[0] * shape[1]}) elements: Slowness may result.`);
-    }
+    return tidy(() => {
+      if (shape.length !== 2) {
+        throw new NotImplementedError(
+            'The Orthogonal Initializer does not support non-2D shapes yet.');
+      }
+      if (shape[0] * shape[1] > 2000) {
+        console.warn(
+            `Orthgonal initializer is being called on a matrix with more ` +
+            ` than 2000 (${shape[0] * shape[1]}) elements: ` +
+            `Slowness may result.`);
+      }
 
-    // TODO(cais): Add seed support.
-    const normalizedShape = shape[0] > shape[1] ? [shape[1], shape[0]] : shape;
-    const a = K.randomNormal(normalizedShape, 0, 1, 'float32') as Tensor2D;
-    let q = linalg.gramSchmidt(a) as Tensor2D;
-    if (shape[0] > shape[1]) {
-      q = q.transpose();
-    }
-    return K.scalarTimesArray(K.getScalar(this.gain), q);
+      // TODO(cais): Add seed support.
+      const normalizedShape =
+          shape[0] > shape[1] ? [shape[1], shape[0]] : shape;
+      const a = K.randomNormal(normalizedShape, 0, 1, 'float32') as Tensor2D;
+      let q = linalg.gramSchmidt(a) as Tensor2D;
+      if (shape[0] > shape[1]) {
+        q = q.transpose();
+      }
+      return K.scalarTimesArray(K.getScalar(this.gain), q);
+    });
   }
 
   getConfig(): serialization.ConfigDict {

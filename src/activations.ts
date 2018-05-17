@@ -10,7 +10,7 @@
 
 // Layer activation functions
 import * as tfc from '@tensorflow/tfjs-core';
-import {scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
+import {scalar, serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {deserializeKerasObject} from './utils/generic_utils';
@@ -87,7 +87,7 @@ serialization.SerializationMap.register(Relu);
 export class Relu6 extends Activation {
   static readonly className = 'relu6';
   apply(x: Tensor): Tensor {
-    return tfc.minimum(scalar(6.0), tfc.relu(x));
+    return tidy(() => tfc.minimum(scalar(6.0), tfc.relu(x)));
   }
 }
 serialization.SerializationMap.register(Relu6);
@@ -129,7 +129,7 @@ serialization.SerializationMap.register(HardSigmoid);
 export class Softplus extends Activation {
   static readonly className = 'softplus';
   apply(x: Tensor): Tensor {
-    return K.softplus(x);
+    return tfc.softplus(x);
   }
 }
 serialization.SerializationMap.register(Softplus);
