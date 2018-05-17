@@ -13,8 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import * as tfc from '@tensorflow/tfjs-core';
-import {serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+import {movingAverage, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
@@ -224,15 +223,13 @@ export class BatchNormalization extends Layer {
       const normalizeInference: () => Tensor = () => {
         if (needsBroadcasting) {
           const broadcastMovingMean =
-              tfc.reshape(this.movingMean.read(), broadcastShape);
+              this.movingMean.read().reshape(broadcastShape);
           const broadcastMovingVariance =
-              tfc.reshape(this.movingVariance.read(), broadcastShape);
-          const broadcastBeta = this.center ?
-              tfc.reshape(this.beta.read(), broadcastShape) :
-              null;
-          const broadcastGamma = this.scale ?
-              tfc.reshape(this.gamma.read(), broadcastShape) :
-              null;
+              this.movingVariance.read().reshape(broadcastShape);
+          const broadcastBeta =
+              this.center ? this.beta.read().reshape(broadcastShape) : null;
+          const broadcastGamma =
+              this.scale ? this.gamma.read().reshape(broadcastShape) : null;
           return K.batchNormalization(
               input, broadcastMovingMean, broadcastMovingVariance,
               broadcastBeta, broadcastGamma, this.epsilon);
@@ -266,10 +263,10 @@ export class BatchNormalization extends Layer {
       //   immediately.
       const updateMovingMeanAndVariance = () => {
         this.stepCount++;
-        const newMovingMean = tfc.movingAverage(
+        const newMovingMean = movingAverage(
             this.movingMean.read(), mean, this.momentum, this.stepCount);
         this.movingMean.write(newMovingMean);
-        const newMovingVariance = tfc.movingAverage(
+        const newMovingVariance = movingAverage(
             this.movingVariance.read(), varianceDebiased, this.momentum,
             this.stepCount);
         this.movingVariance.write(newMovingVariance);
