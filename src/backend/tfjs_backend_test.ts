@@ -14,7 +14,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {DataType, Scalar, scalar, Tensor, memory, tensor1d, tensor2d, tensor3d, tensor4d, zeros} from '@tensorflow/tfjs-core';
+import {DataType, Scalar, scalar, memory, tensor1d, tensor2d, tensor3d, tensor4d, zeros} from '@tensorflow/tfjs-core';
 
 import {SymbolicTensor} from '../types';
 import {LayerVariable} from '../variables';

@@ -204,24 +204,6 @@ describeMathCPUAndGPU('sparseCategoricalCrossentropy ', () => {
   });
 });
 
-describeMathCPUAndGPU('binaryCrossentropy', () => {
-  function _binaryCrossentropy(target: Tensor, output: Tensor): Tensor {
-    const targetComplement = K.scalarPlusArray(scalar(1), tfc.neg(target));
-    const outputComplement = K.scalarPlusArray(scalar(1), tfc.neg(output));
-    return tfc.neg(tfc.add(
-        tfc.mul(target, tfc.log(output)),
-        tfc.mul(targetComplement, tfc.log(outputComplement))));
-  }
-
-  it('from sigmoid', () => {
-    const x = tensor2d([[0.3, 0.7], [0.4, 0.6]], [2, 2]);
-    const target = tensor2d([[0.25, 0.75], [0.1, 0.9]], [2, 2]);
-    const expected = _binaryCrossentropy(target, x);
-    const result = losses.binaryCrossentropy(target, x);
-    expectTensorsClose(result, expected);
-  });
-});
-
 describeMathCPUAndGPU('sigmoidCrossEntropyWithLogits', () => {
   it('outputs sigmoid cross-entropy', () => {
     const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
@@ -259,16 +241,22 @@ describeMathCPUAndGPU('sparseCategoricalCrossentropy', () => {
 });
 
 describeMathCPUAndGPU('binaryCrossentropy', () => {
-  it('2D', () => {
-    const yTrue = tensor2d([[1, 0], [1, 0]], [2, 2]);
-    const yPred = tensor2d([[1, 2], [20, 10]], [2, 2]);
-    const crossEntropy = losses.binaryCrossentropy(yTrue, yPred).dataSync();
-    const expectedVal = tensor1d([
-      (crossEntropy[0] + crossEntropy[1]) / 2,
-      (crossEntropy[2] + crossEntropy[3]) / 2
-    ]);
-    const result = losses.binaryCrossentropy(yTrue, yPred);
-    expectTensorsClose(result, expectedVal);
+  function _binaryCrossentropy(target: Tensor, output: Tensor): Tensor {
+    const targetComplement = K.scalarPlusArray(scalar(1), tfc.neg(target));
+    const outputComplement = K.scalarPlusArray(scalar(1), tfc.neg(output));
+    return tfc.mean(
+        tfc.neg(tfc.add(
+            tfc.mul(target, tfc.log(output)),
+            tfc.mul(targetComplement, tfc.log(outputComplement)))),
+        -1);
+  }
+
+  it('from sigmoid', () => {
+    const x = tensor2d([[0.3, 0.7], [0.4, 0.6]], [2, 2]);
+    const target = tensor2d([[0.25, 0.75], [0.1, 0.9]], [2, 2]);
+    const expected = _binaryCrossentropy(target, x);
+    const result = losses.binaryCrossentropy(target, x);
+    expectTensorsClose(result, expected);
   });
 });
 
