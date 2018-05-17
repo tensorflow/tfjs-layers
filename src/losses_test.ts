@@ -326,3 +326,31 @@ describe('losses get', () => {
     expect(losses.get(customLoss)).toEqual(customLoss);
   });
 });
+
+describeMathCPUAndGPU('l2Normalize', () => {
+  it('normalizes with no axis defined.', () => {
+    const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
+    const norm = Math.sqrt(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4);
+    const expected =
+        tensor2d([[1 / norm, 2 / norm], [3 / norm, 4 / norm]], [2, 2]);
+    const result = losses.l2Normalize(x);
+    expectTensorsClose(result, expected);
+  });
+
+  it('normalizes along axis = -1.', () => {
+    const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
+    const firstNorm = Math.sqrt(1 * 1 + 2 * 2);
+    const secondNorm = Math.sqrt(3 * 3 + 4 * 4);
+    const expected = tensor2d(
+        [[1 / firstNorm, 2 / firstNorm], [3 / secondNorm, 4 / secondNorm]],
+        [2, 2]);
+    const result = losses.l2Normalize(x, -1);
+    expectTensorsClose(result, expected);
+  });
+
+  it('normalizes with zeros.', () => {
+    const x = tfc.zeros([2, 2]);
+    const result = losses.l2Normalize(x);
+    expectTensorsClose(result, x);
+  });
+});

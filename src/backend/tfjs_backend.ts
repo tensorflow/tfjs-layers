@@ -997,20 +997,6 @@ export function dropout(
 }
 
 /**
- * Normalizes a tensor wrt the L2 norm alongside the specified axis.
- * @param x
- * @param axis Axis along which to perform normalization.
- */
-export function l2Normalize(x: Tensor, axis?: number): Tensor {
-  return tidy(() => {
-    const squareSum = tfc.sum(square(x), axis, true);
-    const epsilonTensor = scalarTimesArray(scalar(epsilon()), tfc.onesLike(x));
-    const norm = tfc.sqrt(tfc.maximum(squareSum, epsilonTensor));
-    return tfc.div(x, norm);
-  });
-}
-
-/**
  * Replacement for Keras's "with name_scope" construct.
  *
  * @param name The name to use for this name scope.

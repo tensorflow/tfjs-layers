@@ -10,13 +10,27 @@
 
 /* Original Source: losses.py */
 import * as tfc from '@tensorflow/tfjs-core';
-import {Tensor, Tensor1D, tidy} from '@tensorflow/tfjs-core';
+import {scalar, Tensor, Tensor1D, tidy} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {ValueError} from './errors';
 import {LossOrMetricFn} from './types';
 
 
+/**
+ * Normalizes a tensor wrt the L2 norm alongside the specified axis.
+ * @param x
+ * @param axis Axis along which to perform normalization.
+ */
+export function l2Normalize(x: Tensor, axis?: number): Tensor {
+  return tidy(() => {
+    const squareSum = tfc.sum(K.square(x), axis, true);
+    const epsilonTensor =
+        K.scalarTimesArray(scalar(K.epsilon()), tfc.onesLike(x));
+    const norm = tfc.sqrt(tfc.maximum(squareSum, epsilonTensor));
+    return tfc.div(x, norm);
+  });
+}
 
 /**
  * Loss or metric function: Mean squared error.
@@ -281,8 +295,8 @@ export function poisson(yTrue: Tensor, yPred: Tensor): Tensor {
  */
 export function cosineProximity(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
-    const trueNormalized = K.l2Normalize(yTrue, -1);
-    const predNormalized = K.l2Normalize(yPred, -1);
+    const trueNormalized = l2Normalize(yTrue, -1);
+    const predNormalized = l2Normalize(yPred, -1);
     const trueXPred = tfc.mul(trueNormalized, predNormalized);
     return tfc.neg(tfc.sum(trueXPred, -1));
   });
