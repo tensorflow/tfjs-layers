@@ -492,7 +492,7 @@ serialization.SerializationMap.register(RepeatVector);
  * ```js
  * const input = tf.input({shape: [4, 3]});
  * const reshapeLayer = tf.layers.reshape({targetShape: [2, 6]});
- * // Inspect the inferred output shape of the flatten layer, which
+ * // Inspect the inferred output shape of the Reshape layer, which
  * // equals `[null, 2, 6]`. (The 1st dimension is the undermined batch size.)
  * console.log(JSON.stringify(reshapeLayer.apply(input).shape));
  * ```
