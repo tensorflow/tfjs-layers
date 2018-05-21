@@ -27,6 +27,9 @@ describe('SymbolicTensor Test', () => {
     expect(st1.dtype).toEqual('float32');
     expect(st1.shape).toEqual([4, 6]);
     expect(st1.rank).toEqual(2);
+
+    const scalar = new SymbolicTensor('float32', [], null, [], {});
+    expect(scalar.rank).toEqual(0);
   });
 
   it('Correct names and ids', () => {
