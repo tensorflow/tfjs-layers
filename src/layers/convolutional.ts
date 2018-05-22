@@ -1099,13 +1099,13 @@ export interface UpSampling2DLayerConfig extends LayerConfig {
    * Format of the data, which determines the ordering of the dimensions in
    * the inputs.
    *
-   * `channels_last` corresponds to inputs with shape
+   * `"channelsLast"` corresponds to inputs with shape
    *   `(batch, ..., channels)`
    *
-   *  `channels_first` corresponds to inputs with shape `(batch, channels,
+   *  `"channelsFirst"` corresponds to inputs with shape `(batch, channels,
    * ...)`.
    *
-   * Defaults to `channels_last`.
+   * Defaults to `"channelsLast"`.
    */
   dataFormat?: DataFormat;
 }
@@ -1119,17 +1119,17 @@ export interface UpSampling2DLayerConfig extends LayerConfig {
  *
  * Input shape:
  *    4D tensor with shape:
- *     - If `data_format` is `"channels_last"`:
+ *     - If `data_format` is `"channelsLast"`:
  *         `(batch, rows, cols, channels)`
- *     - If `data_format` is `"channels_first"`:
+ *     - If `data_format` is `"channelsFirst"`:
  *        `(batch, channels, rows, cols)`
  *
  * Output shape:
  *     4D tensor with shape:
- *     - If `data_format` is `"channels_last"`:
- *        `(batch, upsampled_rows, upsampled_cols, channels)`
- *     - If `data_format` is `"channels_first"`:
- *         `(batch, channels, upsampled_rows, upsampled_cols)`
+ *     - If `data_format` is `"channelsLast"`:
+ *        `(batch, upsampledRows, upsampledCols, channels)`
+ *     - If `data_format` is `"channelsFirst"`:
+ *         `(batch, channels, upsampledRows, upsampledCols)`
  *
  */
 export class UpSampling2D extends Layer {
