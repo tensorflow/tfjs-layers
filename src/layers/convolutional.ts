@@ -502,6 +502,7 @@ export class Conv2D extends Conv {
   static className = 'Conv2D';
   constructor(config: ConvLayerConfig) {
     super(2, config);
+    this.verifyConfig(config);
   }
 
   getConfig(): serialization.ConfigDict {
@@ -509,7 +510,13 @@ export class Conv2D extends Conv {
     delete config['rank'];
     return config;
   }
+
+  verifyConfig(config: ConvLayerConfig) {
+    const key = 'kernelSize';
+    generic_utils.assert(key in config, `required key ${key} not in config`);
+  }
 }
+
 serialization.SerializationMap.register(Conv2D);
 
 /**
