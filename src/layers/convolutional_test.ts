@@ -899,7 +899,27 @@ describe('Cropping2D Layer', () => {
 describe('UpSampling2D Layer', () => {
   it('check with channels last', () => {
     const layer = tfl.layers.upSampling2d(
-      { size: [2, 2], dataFormat: 'channelsLast' });
+      {size: [2, 2]});
+    const x = tensor4d(
+      [
+        [[[1], [2]], [[3], [4]]],
+      ],
+      [1, 2, 2, 1]);
+
+    const y = tensor4d(
+      [
+        [[[1], [1], [2], [2]], [[1], [1], [2], [2]],
+        [[3], [3], [4], [4]], [[3], [3], [4], [4]]],
+      ],
+      [1, 4, 4, 1]);
+
+    expectTensorsClose(layer.apply(x, null) as Tensor, y);
+  });
+  
+  
+  it('check with channels last', () => {
+    const layer = tfl.layers.upSampling2d(
+      {size: [2, 2], dataFormat: 'channelsLast'});
     const x = tensor4d(
       [
         [[[1], [2]], [[3], [4]]],
@@ -919,7 +939,7 @@ describe('UpSampling2D Layer', () => {
 
   it('check with channels first', () => {
     const layer = tfl.layers.upSampling2d(
-      { size: [2, 2], dataFormat: 'channelsFirst' });
+      {size: [2, 2], dataFormat: 'channelsFirst'});
     const x = tensor4d(
       [
         [[[1, 2], [3, 4]]],
