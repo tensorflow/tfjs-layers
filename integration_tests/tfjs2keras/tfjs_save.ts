@@ -108,7 +108,7 @@ function exportOneDimensionalModel(exportPath: string): void {
   fs.writeFileSync(exportPath, model.toJSON());
 }
 
-// Functioal model with two Merge layers.
+// Functional model with two Merge layers.
 function exportFunctionalMergeModel(exportPath: string): void {
   const input1 = tfl.input({shape: [2, 5]});
   const input2 = tfl.input({shape: [4, 5]});
