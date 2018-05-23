@@ -261,8 +261,7 @@ describeMathGPU('Save-load round trips', () => {
           tfl.loadModel(url)
               .then(modelPrime => {
                 // Call predict() on the loaded model and assert the
-                // result
-                // equals the original predict() result.
+                // result equals the original predict() result.
                 const yPrime = modelPrime.predict(x) as Tensor;
                 expectTensorsClose(y, yPrime);
 
