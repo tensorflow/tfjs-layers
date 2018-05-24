@@ -514,6 +514,15 @@ export class Conv2D extends Conv {
   verifyConfig(config: ConvLayerConfig) {
     const key = 'kernelSize';
     generic_utils.assert(key in config, `required key ${key} not in config`);
+    // config.kernelSize must be a number or array of numbers.
+    if (!((typeof config.kernelSize === 'number') ||
+          ((Array.isArray(config.kernelSize)) &&
+           (config.kernelSize as number[]).length > 0 &&
+           typeof (config.kernelSize as number[])[0] === 'number'))) {
+      throw new ValueError(
+          `conv2d expects config.kernelSize to be number or number[], but ` +
+          `received ${JSON.stringify(config.kernelSize)}.`);
+    }
   }
 }
 
