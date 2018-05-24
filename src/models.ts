@@ -32,11 +32,13 @@ import {convertPythonicToTs} from './utils/serialization_utils';
  *  @param custom_objects Optional dictionary mapping names
  *       (strings) to custom classes or functions to be
  *       considered during deserialization.
+ *  @params requestOptions Optional init options for the model loading request.
  * @returns A TensorFlow.js Layers `Model` instance (uncompiled).
  */
 export async function modelFromJSON(
     modelAndWeightsConfig: ModelAndWeightsConfig,
-    customObjects?: serialization.ConfigDict): Promise<Model> {
+    customObjects?: serialization.ConfigDict,
+    requestOptions?: RequestInit): Promise<Model> {
   let modelTopology = modelAndWeightsConfig.modelTopology;
   if (modelTopology['model_config'] != null) {
     // If the model-topology JSON contains a 'model_config' field, then it is
@@ -58,7 +60,8 @@ export async function modelFromJSON(
         await io.loadWeights(
             modelAndWeightsConfig.weightsManifest,
             modelAndWeightsConfig.pathPrefix,
-            model.weights.map(weight => weight.originalName)) as NamedTensorMap;
+            model.weights.map(weight => weight.originalName),
+            requestOptions) as NamedTensorMap;
 
     // Map the weights to the unique tensor names generated during model loading
     const uniqueWeightValues: NamedTensorMap = {};
@@ -163,7 +166,7 @@ export interface ModelAndWeightsConfig {
  *     tf.loadModel('https://storage.googleapis.com/tfjs-models/tfjs/iris_v1/model.json')
  * ```
  *
- * @param pathOrIOHandler Can be either of the two formats
+ * @param pathRequestOrIOHandler Can be any of the three formats
  *   1. A string path to the `ModelAndWeightsConfig` JSON describing
  *      the model in the canonical TensorFlow.js format. This path will be
  *      interpreted as a relative HTTP path, to which `fetch` will be used to
@@ -180,26 +183,30 @@ export interface ModelAndWeightsConfig {
  * paths described by the `paths` fields in weights manifest.
  *   2. An `tf.io.IOHandler` object that loads model artifacts with its `load`
  *      method.
+ *   3. A Request object containing the string path to the model JSON along with
+ *      any options for the request.
  *
  * @returns A `Promise` of `Model`, with the topology and weights loaded.
  */
 // tslint:enable:max-line-length
-export async function loadModelInternal(pathOrIOHandler: string|
+export async function loadModelInternal(pathRequestOrIOHandler: string|Request|
                                         io.IOHandler): Promise<Model> {
-  if (typeof pathOrIOHandler === 'string') {
-    const handlers = io.getLoadHandlers(pathOrIOHandler);
+  if (typeof pathRequestOrIOHandler === 'string') {
+    const handlers = io.getLoadHandlers(pathRequestOrIOHandler);
     if (handlers.length === 0) {
       // For backward compatibility: if no load handler can be found,
       // assume it is a relative http path.
-      return loadModelFromPath(pathOrIOHandler);
+      return loadModelFromPath(pathRequestOrIOHandler);
     } else if (handlers.length > 1) {
       throw new ValueError(
           `Found more than one (${handlers.length}) load handlers for ` +
-          `URL '${pathOrIOHandler}'`);
+          `URL '${pathRequestOrIOHandler}'`);
     }
-    pathOrIOHandler = handlers[0];
+    pathRequestOrIOHandler = handlers[0];
+  } else if (pathRequestOrIOHandler instanceof Request) {
+    return loadModelFromPath(pathRequestOrIOHandler);
   }
-  return loadModelFromIOHandler(pathOrIOHandler as io.IOHandler);
+  return loadModelFromIOHandler(pathRequestOrIOHandler as io.IOHandler);
 }
 
 /**
@@ -243,8 +250,9 @@ export async function loadModelFromIOHandler(
  * Load a model, including its topology and optionally weights.  See the
  * Tutorial named "How to import a Keras Model" for usage examples.
  *
- * @param modelConfigPath A path to the `ModelAndWeightsConfig` JSON describing
- * the model in the canonical TensorFlow.js format.
+ * @param modelConfigPathOrRequest A path to the `ModelAndWeightsConfig` JSON
+ * describing the model in the canonical TensorFlow.js format, or a Request
+ * object containing that path as the URL.
  *
  *   The content of the JSON file is assumed to be a JSON object with the
  *   following fields and values:
@@ -265,10 +273,14 @@ export async function loadModelFromIOHandler(
  */
 // tslint:enable:max-line-length
 // TODO(cais): Add link to the core's documentation of `WeightManifestConfig`.
-export async function loadModelFromPath(modelConfigPath: string):
-    Promise<Model> {
-  // TODO(soergel): accept a Request object too, not just a url string.
-  const modelConfigRequest = await fetch(modelConfigPath);
+export async function loadModelFromPath(
+    modelConfigPathOrRequest: string|Request): Promise<Model> {
+  const isStringUrl = typeof modelConfigPathOrRequest === 'string';
+  const modelConfigPath = isStringUrl ? modelConfigPathOrRequest as string
+      : (modelConfigPathOrRequest as Request).url;
+  const requestOptions = isStringUrl ? null
+      : modelConfigPathOrRequest as RequestInit;
+  const modelConfigRequest = await fetch(modelConfigPathOrRequest);
   const modelConfig = await modelConfigRequest.json() as ModelAndWeightsConfig;
   if (modelConfig['modelTopology'] == null) {
     throw new ValueError(
@@ -285,7 +297,7 @@ export async function loadModelFromPath(modelConfigPath: string):
   modelConfig.pathPrefix =
       modelConfigPath.substring(0, modelConfigPath.lastIndexOf('/'));
 
-  return modelFromJSON(modelConfig);
+  return modelFromJSON(modelConfig, {}, requestOptions);
 }
 
 /**
