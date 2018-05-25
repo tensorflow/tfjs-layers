@@ -271,8 +271,7 @@ export class Bidirectional extends Wrapper {
 
   constructor(config: BidirectionalLayerConfig) {
     super(config);
-    // this.forwardLayer = Object.assign({}, config.layer);
-    const layerConfig = config.layer.getConfig();
+
     // Note: When creating `this.forwardLayer`, the original Layer object
     //   (`config.layer`) ought to be cloned. This is why we call `getConfig()`
     //   followed by `deserialize()`. Without this cloning, the layer names
@@ -281,11 +280,11 @@ export class Bidirectional extends Wrapper {
     //   In Python Keras, this is done using `copy.copy` (shallow copy), which
     //   does not have a simple equivalent in JavaScript. JavaScript's
     //   `Object.assign()` does not copy methods.
+    const layerConfig = config.layer.getConfig();
     this.forwardLayer =
         deserialize(
             {className: config.layer.getClassName(), config: layerConfig}) as
         RNN;
-    // TODO(cais): Perform shallow copy if necessary.
     layerConfig['goBackwards'] =
         layerConfig['goBackwards'] === true ? false : true;
     this.backwardLayer =
