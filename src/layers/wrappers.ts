@@ -276,7 +276,7 @@ export class Bidirectional extends Wrapper {
     //   (`config.layer`) ought to be cloned. This is why we call `getConfig()`
     //   followed by `deserialize()`. Without this cloning, the layer names
     //   saved during serialization will incorrectly contain the 'forward_'
-    //   perfix.
+    //   prefix.
     //   In Python Keras, this is done using `copy.copy` (shallow copy), which
     //   does not have a simple equivalent in JavaScript. JavaScript's
     //   `Object.assign()` does not copy methods.
