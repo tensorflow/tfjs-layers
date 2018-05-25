@@ -10,7 +10,7 @@
 
 /* Original source: keras/callbacks.py */
 
-import {div, keep, mul, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
+import {div, keep, memory, mul, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {Model} from './engine/training';
@@ -156,6 +156,8 @@ export class CallbackList {
     if (logs == null) {
       logs = {};
     }
+    console.log(
+        `CallbackList.onEpochEnd: # of callbacks = ${this.callbacks.length}`);
     for (const callback of this.callbacks) {
       await callback.onEpochEnd(epoch, logs);
     }
@@ -184,6 +186,8 @@ export class CallbackList {
     if (logs == null) {
       logs = {};
     }
+    console.log(
+        `onBatchEnd: # of callbacks: ${this.callbacks.length}`);  // DEBUG
     for (const callback of this.callbacks) {
       await callback.onBatchEnd(batch, logs);
     }
@@ -235,6 +239,7 @@ export class BaseLogger extends Callback {
   }
 
   async onBatchEnd(batch: number, logs?: UnresolvedLogs) {
+    console.log(`  onBatchEnd: 1: ${memory().numTensors}`);  // DEBUG
     if (logs == null) {
       logs = {};
     }
@@ -253,13 +258,19 @@ export class BaseLogger extends Callback {
         }
         // TODO(cais): Do not leak tidy from TensorFlow.js Core.
         tidy(() => {
+          console.log(
+              `  onBatchEnd: 10: key=${key}, ${memory().numTensors}`);  // DEBUG
+          console.log(`  batchSize = ${batchSize}`);                    // DEBUG
           this.totals[key] = K.scalarPlusArray(
                                  this.totals[key] as Scalar,
                                  mul(value, K.getScalar(batchSize))) as Scalar;
+          console.log(
+              `  onBatchEnd: 11: key=${key}, ${memory().numTensors}`);  // DEBUG
           keep(this.totals[key] as Scalar);
         });
       }
     }
+    console.log(`  onBatchEnd: 100: ${memory().numTensors}`);  // DEBUG
   }
 
   async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {
@@ -272,10 +283,12 @@ export class BaseLogger extends Callback {
           logs[key] = this.totals[key] as number / this.seen;
         } else {
           tidy(() => {
+            console.log(`onEpochEnd: this.seen = ${this.seen}`);  // DEBUG
             logs[key] =
                 K.scalarTimesArray(
                     div(K.getScalar(1), K.getScalar(this.seen)) as Scalar,
                     this.totals[key] as Scalar) as Scalar;
+            (this.totals[key] as Tensor).dispose();
             keep(logs[key] as Scalar);
           });
         }
@@ -319,9 +332,13 @@ export function disposeTensorsInLogs(logs: UnresolvedLogs) {
   if (logs == null) {
     return;
   }
+  console.log(
+      `disposeTensorsInLogs: number of keys: ${Object.keys(logs).length}`);
+  // DEBUG
   for (const key in logs) {
     const value = logs[key];
     if (typeof value !== 'number') {
+      console.log(`disposeTensorsInLogs: disposing key ${key}`);
       value.dispose();
     }
   }
@@ -362,6 +379,7 @@ export class History extends Callback {
     const keys: string[] = [];
     const indices: number[] = [];
     for (const key in this.history) {
+      // console.log(`this.history key: ${key}`);  // DEBUG
       const valueArray = this.history[key];
       for (let i = 0; i < valueArray.length; ++i) {
         if (typeof valueArray[i] !== 'number') {
@@ -374,7 +392,11 @@ export class History extends Callback {
     }
     const values = await Promise.all(promises);
     for (let n = 0; n < values.length; ++n) {
+      console.log(`Before calling dispose: ${memory().numTensors}`);
+      // DEBUG
       (this.history[keys[n]][indices[n]] as Tensor).dispose();
+      console.log(`After calling dispose: ${memory().numTensors}`);
+      // DEBUG
       this.history[keys[n]][indices[n]] = values[n][0];
     }
   }
