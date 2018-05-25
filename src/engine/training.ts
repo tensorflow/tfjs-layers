@@ -1478,6 +1478,11 @@ export class Model extends Container {
     let valX: Tensor|Tensor[];
     let valY: Tensor|Tensor[];
     let valIns: Tensor[];
+    // A flag to keep track of whether `valIns`, `inputs` and `targets` need to
+    // be memory-disposed prior to returning from this method. This is the case
+    // if `config.validationSplit` is set to a number between 0 and 1, in which
+    // case the input `x` and `y` tensors will be sliced, leading to allocation
+    // of new tensor memory.
     let needValidationDisposal = false;
     if (config.validationData != null && config.validationData.length > 0) {
       doValidation = true;

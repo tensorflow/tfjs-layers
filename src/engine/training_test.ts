@@ -1147,7 +1147,7 @@ describeMathCPUAndGPU('Model.fit with training-sensitive layers', () => {
   });
 });
 
-describeMathCPUAndGPU('Model.fit-memory', () => {
+describeMathCPUAndGPU('Model.fit: No memory leak', () => {
   const inputSize = 4;   // Input vector size for model with one input.
   const numSamples = 5;  // Number of samples in a batch.
 
