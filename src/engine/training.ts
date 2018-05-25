@@ -1169,7 +1169,6 @@ export class Model extends Container {
       valIns?: Tensor[], shuffle?: boolean|string, callbackMetrics?: string[],
       initialEpoch = 0, stepsPerEpoch?: number,
       validationSteps?: number): Promise<History> {
-    console.log(`fitLoop() 1: ${tfc.memory().numTensors}`);  // DEBUG
     if (batchSize == null) {
       batchSize = 32;
     }
@@ -1212,7 +1211,6 @@ export class Model extends Container {
       callbacks = [new BaseLogger() as Callback].concat(callbacks);
     }
     callbacks = callbacks.concat([this.history]);
-    console.log(`callbacks.length = ${callbacks.length}`);  // DEBUG
 
     if (verbose > 0) {
       throw new NotImplementedError('Verbose mode is not implemented yet.');
@@ -1235,10 +1233,7 @@ export class Model extends Container {
 
     // TODO(cais): Pre-convert feeds for performance as in PyKeras.
 
-    console.log(`fitLoop() 10: ${tfc.memory().numTensors}`);  // DEBUG
     for (let epoch = initialEpoch; epoch < epochs; ++epoch) {
-      console.log(
-          `fitLoop() 20: epoch=${epoch}, ${tfc.memory().numTensors}`);  // DEBUG
       await callbackList.onEpochBegin(epoch);
       const epochLogs: UnresolvedLogs = {};
       if (stepsPerEpoch != null) {
@@ -1255,21 +1250,13 @@ export class Model extends Container {
         // cost of repeated creation of Array1Ds later on.
         const epochIndexArray1D = tensor1d(indexArray);
 
-        console.log(`fitLoop() 24: epoch=${epoch}, ${
-            tfc.memory().numTensors}`);  // DEBUG
         const batches = makeBatches(numTrainSamples, batchSize);
-        console.log(`fitLoop() 25: epoch=${epoch}, ${
-            tfc.memory().numTensors}`);  // DEBUG
         for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
           // TODO(cais): tfc.tidy() should not be leaked from the backend.
           //   Wrap it with a backend function called mathScope.
           const batchLogs: UnresolvedLogs = {};
-          console.log(`fitLoop() 26: epoch=${epoch}, batch=${batchIndex}, ${
-              tfc.memory().numTensors}`);  // DEBUG
           await callbackList.onBatchBegin(batchIndex, batchLogs);
-          console.log(`fitLoop() 27: epoch=${epoch}, batch=${batchIndex}, ${
-              tfc.memory().numTensors}`);                 // DEBUG
-          console.log(`  doValidation=${doValidation}`);  // DEBUG
+
           tfc.tidy(() => {
             const batchStart = batches[batchIndex][0];
             const batchEnd = batches[batchIndex][1];
@@ -1287,7 +1274,6 @@ export class Model extends Container {
               const label = outLabels[i];
               const out = outs[i];
               batchLogs[label] = out;
-              console.log(`Calling keep on label: ${label}`);  // DEBUG
               tfc.keep(out);
               // TODO(cais): Use scope() to avoid ownership.
             }
@@ -1310,41 +1296,21 @@ export class Model extends Container {
             }
           });
 
-          console.log(`fitLoop() 29: epoch=${epoch}, batch=${batchIndex}, ${
-              tfc.memory().numTensors}`);  // DEBUG
-
           await callbackList.onBatchEnd(batchIndex, batchLogs);
-          console.log(`fitLoop() 29.3: epoch=${epoch}, batch=${batchIndex}, ${
-              tfc.memory().numTensors}`);  // DEBUG
           disposeTensorsInLogs(batchLogs);
-          console.log(`fitLoop() 29.5: epoch=${epoch}, batch=${batchIndex}, ${
-              tfc.memory().numTensors}`);  // DEBUG
           // TODO(cais): return outs as list of Tensor.
         }
 
-        console.log(`fitLoop() 30: epoch=${epoch}, ${
-            tfc.memory().numTensors}`);  // DEBUG
         epochIndexArray1D.dispose();
-        console.log(`fitLoop() 31: epoch=${epoch}, ${
-            tfc.memory().numTensors}`);  // DEBUG
       }
       // TODO(cais): Run validation at the end of the epoch.
-      console.log(
-          `fitLoop() 40: epoch=${epoch}, ${tfc.memory().numTensors}`);  // DEBUG
       await callbackList.onEpochEnd(epoch, epochLogs);
-      console.log(
-          `fitLoop() 41: epoch=${epoch}, ${tfc.memory().numTensors}`);  // DEBUG
       // TODO(cais): Logic for early stopping using
       //   callback_model.stop_training as in PyKeras.
     }
-    console.log(`fitLoop() 50: ${tfc.memory().numTensors}`);  // DEBUG
     await callbackList.onTrainEnd();
-    console.log(`fitLoop() 51: ${tfc.memory().numTensors}`);  // DEBUG
 
-    console.log('Calling this.syncData()');                    // DEBUG
-    console.log(`fitLoop() 100: ${tfc.memory().numTensors}`);  // DEBUG
     await this.history.syncData();
-    console.log(`fitLoop() 101: ${tfc.memory().numTensors}`);  // DEBUG
     return this.history;
   }
 
@@ -1497,7 +1463,6 @@ export class Model extends Container {
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
       config: ModelFitConfig = {}): Promise<History> {
-    console.log(`fit() 1: ${tfc.memory().numTensors}`);  // DEBUG
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // Validate user data.
@@ -1546,13 +1511,11 @@ export class Model extends Container {
       const splitAt =
           Math.floor(inputs[0].shape[0] * (1 - config.validationSplit));
       const originalBatchSize = inputs[0].shape[0];
-      console.log(`fit() 2.1: ${tfc.memory().numTensors}`);  // DEBUG
       valX = sliceArrays(inputs, splitAt, originalBatchSize) as Tensor[];
       inputs = sliceArrays(inputs, 0, splitAt) as Tensor[];
       valY = sliceArrays(targets, splitAt, originalBatchSize) as Tensor[];
       targets = sliceArrays(targets, 0, splitAt) as Tensor[];
       needValidationDisposal = true;
-      console.log(`fit() 2.9: ${tfc.memory().numTensors}`);  // DEBUG
       // TODO(cais): Once sampleWeights becomes available, slice it to get
       //   valSampleWeights.
       valIns = valX.concat(valY);
@@ -1566,7 +1529,6 @@ export class Model extends Container {
     const ins = inputs.concat(targets);
 
     this.checkTrainableWeightsConsistency();
-    console.log(`fit() 3: ${tfc.memory().numTensors}`);  // DEBUG
 
     // TODO(cais): Handle use_learning_phase and learning_phase?
 
@@ -1665,9 +1627,7 @@ export class Model extends Container {
     let valFunction: (data: Tensor[]) => Scalar[];
     let callbackMetrics: string[];
     if (doValidation) {
-      console.log(`fit() 5: ${tfc.memory().numTensors}`);  // DEBUG
       this.makeTestFunction();
-      console.log(`fit() 6: ${tfc.memory().numTensors}`);  // DEBUG
       valFunction = this.testFunction;
       callbackMetrics =
           outLabels.slice().concat(outLabels.map(n => 'val_' + n));
@@ -1677,9 +1637,7 @@ export class Model extends Container {
       callbackMetrics = outLabels.slice();
     }
 
-    console.log(`fit() 10: ${tfc.memory().numTensors}`);  // DEBUG
     const callbacks = standardizeCallbacks(config.callbacks);
-    console.log(`fit() 20: ${tfc.memory().numTensors}`);  // DEBUG
     const out = await this.fitLoop(
         trainFunction, ins, outLabels, batchSize, config.epochs, config.verbose,
         callbacks, valFunction, valIns, config.shuffle, callbackMetrics, null,
