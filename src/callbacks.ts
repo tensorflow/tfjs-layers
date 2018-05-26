@@ -251,7 +251,6 @@ export class BaseLogger extends Callback {
         if (!this.totals.hasOwnProperty(key)) {
           this.totals[key] = K.getScalar(0);
         }
-        // TODO(cais): Do not leak tidy from TensorFlow.js Core.
         tidy(() => {
           this.totals[key] = K.scalarPlusArray(
                                  this.totals[key] as Scalar,
