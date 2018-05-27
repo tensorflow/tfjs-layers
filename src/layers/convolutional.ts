@@ -1090,20 +1090,21 @@ export class Cropping2D extends Layer {
 serialization.SerializationMap.register(Cropping2D);
 
 export interface UpSampling2DLayerConfig extends LayerConfig {
-
   /**
    * The upsampling factors for rows and columns.
+   *
+   * Defaults to `[2, 2]`.
    */
-  size: [number, number];
+  size?: number[];
   /**
    * Format of the data, which determines the ordering of the dimensions in
    * the inputs.
    *
    * `"channelsLast"` corresponds to inputs with shape
-   *   `(batch, ..., channels)`
+   *   `[batch, ..., channels]`
    *
-   *  `"channelsFirst"` corresponds to inputs with shape `(batch, channels,
-   * ...)`.
+   *  `"channelsFirst"` corresponds to inputs with shape `[batch, channels,
+   * ...]`.
    *
    * Defaults to `"channelsLast"`.
    */
@@ -1119,29 +1120,31 @@ export interface UpSampling2DLayerConfig extends LayerConfig {
  *
  * Input shape:
  *    4D tensor with shape:
- *     - If `data_format` is `"channelsLast"`:
- *         `(batch, rows, cols, channels)`
- *     - If `data_format` is `"channelsFirst"`:
- *        `(batch, channels, rows, cols)`
+ *     - If `dataFormat` is `"channelsLast"`:
+ *         `[batch, rows, cols, channels]`
+ *     - If `dataFormat` is `"channelsFirst"`:
+ *        `[batch, channels, rows, cols]`
  *
  * Output shape:
  *     4D tensor with shape:
- *     - If `data_format` is `"channelsLast"`:
- *        `(batch, upsampledRows, upsampledCols, channels)`
- *     - If `data_format` is `"channelsFirst"`:
- *         `(batch, channels, upsampledRows, upsampledCols)`
+ *     - If `dataFormat` is `"channelsLast"`:
+ *        `[batch, upsampledRows, upsampledCols, channels]`
+ *     - If `dataFormat` is `"channelsFirst"`:
+ *         `[batch, channels, upsampledRows, upsampledCols]`
  *
  */
 export class UpSampling2D extends Layer {
   static className = 'UpSampling2D';
-  protected readonly size: [number, number];
+  protected readonly DEFAULT_SIZE = [2, 2];
+  protected readonly size: number[];
   protected readonly dataFormat: DataFormat;
 
   constructor(config: UpSampling2DLayerConfig) {
     super(config);
-    this.size = config.size;
+    this.inputSpec = [{ndim: 4}];
+    this.size = config.size === undefined ? this.DEFAULT_SIZE : config.size;
     this.dataFormat =
-      config.dataFormat === undefined ? 'channelsLast' : config.dataFormat;
+        config.dataFormat === undefined ? 'channelsLast' : config.dataFormat;
   }
 
   computeOutputShape(inputShape: Shape): Shape {
@@ -1156,7 +1159,7 @@ export class UpSampling2D extends Layer {
     }
   }
 
-  call(inputs: Tensor | Tensor[], kwargs: Kwargs): Tensor | Tensor[] {
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tfc.tidy(() => {
       let input = generic_utils.getExactlyOneTensor(inputs) as Tensor4D;
       const inputShape = input.shape;
@@ -1166,7 +1169,6 @@ export class UpSampling2D extends Layer {
         const height = this.size[0] * inputShape[2];
         const width = this.size[1] * inputShape[3];
         const resized = input.resizeNearestNeighbor([height, width]);
-
         return tfc.transpose(resized, [0, 3, 1, 2]);
       } else {
         const height = this.size[0] * inputShape[1];
@@ -1177,7 +1179,7 @@ export class UpSampling2D extends Layer {
   }
 
   getConfig(): serialization.ConfigDict {
-    const config = { size: this.size, dataFormat: this.dataFormat };
+    const config = {size: this.size, dataFormat: this.dataFormat};
     const baseConfig = super.getConfig();
     Object.assign(config, baseConfig);
     return config;
