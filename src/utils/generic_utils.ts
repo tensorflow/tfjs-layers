@@ -410,3 +410,28 @@ export function checkStringTypeUnionValue(
         values} or null/undefined.`);
   }
 }
+
+/**
+ * Helper function for verifying the types of inputs.
+ *
+ * Ensures that the elements of `maybeArray` are all of type `expectedType`.
+ * Also verifies that the length of `maybeArray` is within bounds.
+ *
+ * @param maybeArray Object to test.
+ * @param expectedType The string expected type of all of the elements in the
+ * Array.
+ * @param minLength Return false if maybeArray.length is less than this.
+ * @param maxLength Return false if maybeArray.length is greater than this.
+ * @returns true if `maybeArray` is an `Array<expectedType>` with length at
+ * least `minLength`.
+ */
+// tslint:disable:no-any
+export function checkArrayTypeAndLength(
+    maybeArray: any, expectedType: string, minLength = 0,
+    maxLength = Infinity): boolean {
+  return (
+      (Array.isArray(maybeArray)) && maybeArray.length >= minLength &&
+      maybeArray.length <= maxLength &&
+      maybeArray.every((x) => typeof x === expectedType));
+}
+// tslint:enable:no-any

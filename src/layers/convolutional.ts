@@ -303,41 +303,35 @@ export interface ConvLayerConfig extends BaseConvLayerConfig {
 }
 
 /**
- * Abstract nD convolution layer.
+ * Abstract convolution layer.
  */
-export abstract class Conv extends Layer {
+export abstract class BaseConv extends Layer {
   protected readonly rank: number;
-  protected readonly filters: number;
   protected readonly kernelSize: number[];
   protected readonly strides: number[];
   protected readonly padding: PaddingMode;
   protected readonly dataFormat: DataFormat;
-  protected readonly dilationRate: number|[number]|[number, number];
   protected readonly activation: Activation;
   protected readonly useBias: boolean;
-  protected readonly kernelInitializer?: Initializer;
+
   protected readonly biasInitializer?: Initializer;
-  protected readonly kernelConstraint?: Constraint;
   protected readonly biasConstraint?: Constraint;
-  protected readonly kernelRegularizer?: Regularizer;
   protected readonly biasRegularizer?: Regularizer;
 
-  protected kernel: LayerVariable = null;
   protected bias: LayerVariable = null;
 
   readonly DEFAULT_KERNEL_INITIALIZER: InitializerIdentifier = 'glorotNormal';
   readonly DEFAULT_BIAS_INITIALIZER: InitializerIdentifier = 'zeros';
 
-  constructor(rank: number, config: ConvLayerConfig) {
-    super(config);
+  constructor(rank: number, config: BaseConvLayerConfig) {
+    super(config as LayerConfig);
+    this.verifyConfig(config);
     this.rank = rank;
     if (this.rank !== 1 && this.rank !== 2) {
       throw new NotImplementedError(
           `Convolution layer for rank other than 1 or 2 (${this.rank}) is ` +
           `not implemented yet.`);
     }
-
-    this.filters = config.filters;
     this.kernelSize = normalizeArray(config.kernelSize, rank, 'kernelSize');
     this.strides = normalizeArray(
         config.strides == null ? 1 : config.strides, rank, 'strides');
@@ -346,7 +340,46 @@ export abstract class Conv extends Layer {
     this.dataFormat =
         config.dataFormat == null ? 'channelsLast' : config.dataFormat;
     checkDataFormat(this.dataFormat);
+    this.activation = getActivation(config.activation);
+    this.useBias = config.useBias == null ? true : config.useBias;
+    this.biasInitializer =
+        getInitializer(config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
+    this.biasConstraint = getConstraint(config.biasConstraint);
+    this.biasRegularizer = getRegularizer(config.biasRegularizer);
+  }
 
+  verifyConfig(config: BaseConvLayerConfig) {
+    // Check config.kernelSize type and shape.
+    generic_utils.assert(
+        'kernelSize' in config, `required key 'kernelSize' not in config`);
+    if ((typeof config.kernelSize !== 'number') &&
+        !generic_utils.checkArrayTypeAndLength(
+            config.kernelSize, 'number', 1, 2))
+      throw new ValueError(
+          `BaseConv expects config.kernelSize to be number or number[] with ` +
+          `length 1 or two, but received ${
+              JSON.stringify(config.kernelSize)}.`);
+  }
+}
+
+/**
+ * Abstract nD convolution layer.  Ancestor of convolution layers which apply
+ * across all channels in parallel.
+ */
+export abstract class Conv extends BaseConv {
+  protected readonly filters: number;
+  protected readonly dilationRate: number|[number]|[number, number];
+  protected readonly kernelInitializer?: Initializer;
+  protected readonly kernelConstraint?: Constraint;
+  protected readonly kernelRegularizer?: Regularizer;
+
+  protected kernel: LayerVariable = null;
+
+
+  constructor(rank: number, config: ConvLayerConfig) {
+    super(rank, config as BaseConvLayerConfig);
+    this.verifyConfig(config);
+    this.filters = config.filters;
     this.dilationRate = config.dilationRate == null ? 1 : config.dilationRate;
     if (this.rank === 1 &&
         (Array.isArray(this.dilationRate) &&
@@ -366,16 +399,10 @@ export abstract class Conv extends Layer {
       }
     }
 
-    this.activation = getActivation(config.activation);
-    this.useBias = config.useBias == null ? true : config.useBias;
     this.kernelInitializer = getInitializer(
         config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
-    this.biasInitializer =
-        getInitializer(config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
     this.kernelConstraint = getConstraint(config.kernelConstraint);
-    this.biasConstraint = getConstraint(config.biasConstraint);
     this.kernelRegularizer = getRegularizer(config.kernelRegularizer);
-    this.biasRegularizer = getRegularizer(config.biasRegularizer);
     this.activityRegularizer = getRegularizer(config.activityRegularizer);
   }
 
@@ -479,6 +506,18 @@ export abstract class Conv extends Layer {
     Object.assign(config, baseConfig);
     return config;
   }
+
+  verifyConfig(config: ConvLayerConfig) {
+    // Check config.filters type and shape.
+    generic_utils.assert(
+        'filters' in config, `required key filters not in config`);
+    if (typeof config.filters !== 'number') {
+      console.log('XXX typeof filters is ' + typeof config.filters);
+      //   throw new ValueError(
+      //       `Convolution layer expected config.filters of type 'number' but `
+      //       + `got ${JSON.stringify(config.filters)}`);
+    }
+  }
 }
 
 
@@ -512,17 +551,13 @@ export class Conv2D extends Conv {
   }
 
   verifyConfig(config: ConvLayerConfig) {
-    const key = 'kernelSize';
-    generic_utils.assert(key in config, `required key ${key} not in config`);
     // config.kernelSize must be a number or array of numbers.
-    if (!((typeof config.kernelSize === 'number') ||
-          ((Array.isArray(config.kernelSize)) &&
-           (config.kernelSize as number[]).length > 0 &&
-           typeof (config.kernelSize as number[])[0] === 'number'))) {
+    if ((typeof config.kernelSize !== 'number') &&
+        !generic_utils.checkArrayTypeAndLength(
+            config.kernelSize, 'number', 1, 2))
       throw new ValueError(
-          `conv2d expects config.kernelSize to be number or number[], but ` +
-          `received ${JSON.stringify(config.kernelSize)}.`);
-    }
+          `Conv2D expects config.kernelSize to be number or number[] with ` +
+          `length 1 or 2, but received ${JSON.stringify(config.kernelSize)}.`);
   }
 }
 
@@ -532,14 +567,15 @@ serialization.SerializationMap.register(Conv2D);
  * Transposed convolutional layer (sometimes called Deconvolution).
  *
  * The need for transposed convolutions generally arises
- * from the desire to use a transformation going in the opposite direction of a
- * normal convolution, i.e., from something that has the shape of the output of
- * some convolution to something that has the shape of its input while
- * maintaining a connectivity pattern that is compatible with said convolution.
+ * from the desire to use a transformation going in the opposite direction of
+ * a normal convolution, i.e., from something that has the shape of the output
+ * of some convolution to something that has the shape of its input while
+ * maintaining a connectivity pattern that is compatible with said
+ * convolution.
  *
  * When using this layer as the first layer in a model, provide the
- * configuration `inputShape` (`Array` of integers, does not include the sample
- * axis), e.g., `inputShape: [128, 128, 3]` for 128x128 RGB pictures in
+ * configuration `inputShape` (`Array` of integers, does not include the
+ * sample axis), e.g., `inputShape: [128, 128, 3]` for 128x128 RGB pictures in
  * `dataFormat: 'channelsLast'`.
  *
  * Input shape:
@@ -550,8 +586,8 @@ serialization.SerializationMap.register(Conv2D);
  *
  * Output shape:
  *   4D tensor with shape:
- *   `[batch, filters, newRows, newCols]` if `dataFormat` is `'channelsFirst'`.
- *   or 4D tensor with shape:
+ *   `[batch, filters, newRows, newCols]` if `dataFormat` is
+ * `'channelsFirst'`. or 4D tensor with shape:
  *   `[batch, newRows, newCols, filters]` if `dataFormat` is `'channelsLast'`.
  *
  * References:
@@ -954,8 +990,8 @@ serialization.SerializationMap.register(SeparableConv2D);
  *
  * If `activation` is not `null`, it is applied to the outputs as well.
  *
- * When using this layer as the first layer in a model, provide an `inputShape`
- * argument `Array` or `null`.
+ * When using this layer as the first layer in a model, provide an
+ * `inputShape` argument `Array` or `null`.
  *
  * For example, `inputShape` would be:
  * - `[10, 128]` for sequences of 10 vectors of 128-dimensional vectors
@@ -965,6 +1001,7 @@ export class Conv1D extends Conv {
   static className = 'Conv1D';
   constructor(config: ConvLayerConfig) {
     super(1, config);
+    this.verifyConfig(config);
     this.inputSpec = [{ndim: 3}];
   }
 
@@ -974,12 +1011,22 @@ export class Conv1D extends Conv {
     delete config['dataFormat'];
     return config;
   }
+
+  verifyConfig(config: ConvLayerConfig) {
+    // config.kernelSize must be a number or array of numbers.
+    if ((typeof config.kernelSize !== 'number') &&
+        !generic_utils.checkArrayTypeAndLength(
+            config.kernelSize, 'number', 1, 1))
+      throw new ValueError(
+          `Conv1D expects config.kernelSize to be number or number[] with ` +
+          `length 1, but received ${JSON.stringify(config.kernelSize)}.`);
+  }
 }
 serialization.SerializationMap.register(Conv1D);
 
 export interface Cropping2DLayerConfig extends LayerConfig {
   /**
-   * Dimension of the corpping along the width and the height.
+   * Dimension of the cropping along the width and the height.
    * - If integer: the same symmetric cropping
    *  is applied to width and height.
    * - If list of 2 integers:

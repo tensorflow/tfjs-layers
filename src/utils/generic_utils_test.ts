@@ -244,3 +244,28 @@ describe('isObjectEmpty', () => {
     expect(utils.isObjectEmpty({'a': 12, 'b': 34})).toEqual(false);
   });
 });
+
+describe('checkArrayTypeAndLength', () => {
+  it('checks types', () => {
+    // [1,2,3] is made of all 'number's.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3], 'number')).toEqual(true);
+    // ['hello', 'world'] is made of all 'strings's.
+    expect(utils.checkArrayTypeAndLength(['hello', 'world'], 'string'))
+        .toEqual(true);
+    // [1,2,[3]] is not made of all 'number's.
+    expect(utils.checkArrayTypeAndLength([1, 2, [3]], 'number')).toEqual(false);
+  });
+  it('checks lengths', () => {
+    // [1,2,3] is longer than 1.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3], 'number', 1)).toEqual(true);
+    // [1,2,3] is longer than 1 and shorter than 3.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3], 'number', 1, 3))
+        .toEqual(true);
+    // [1,2,3,4,5] is not longer than 1 and shorter than 3.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3, 4, 5], 'number', 1, 3))
+        .toEqual(false);
+    // [1,2,3,4,5] is not longer than 7 and shorter than 10.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3, 4, 5], 'number', 7, 10))
+        .toEqual(false);
+  });
+});

@@ -298,6 +298,11 @@ describeMathCPU('Conv2D Layers: Symbolic', () => {
       }
     }
   }
+
+  it('bad config throws exception', () => {
+    expect(() => tfl.layers.conv2d({filters: 1, kernelSize: [1, 1, 1]}))
+        .toThrowError(/Conv2D expects config.kernelSize/);
+  });
 });
 
 describeMathCPUAndGPU('Conv2D Layer: Tensor', () => {
@@ -572,6 +577,11 @@ describeMathCPU('Conv1D Layers: Symbolic', () => {
       }
     }
   }
+
+  it('bad config throws exception', () => {
+    expect(() => tfl.layers.conv1d({filters: 1, kernelSize: [1, 1]}))
+        .toThrowError(/Conv1D expects config.kernelSize.*length 1/);
+  });
 });
 
 describeMathCPUAndGPU('Conv1D Layer: Tensor', () => {
