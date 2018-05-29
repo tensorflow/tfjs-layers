@@ -1231,7 +1231,6 @@ export class Model extends Container {
       doValidation,
       metrics: callbackMetrics,
     });
-    // TODO(cais): Take care of the PyKeras logic of stop_training.
     await callbackList.onTrainBegin();
     this.stopTraining = false;
     // TODO(cais): Take care of callbacks.validation_data as in PyKeras.

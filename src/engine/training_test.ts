@@ -1122,12 +1122,13 @@ describeMathCPUAndGPU('Model.fit', () => {
     const sequentialModel = tfl.sequential();
     sequentialModel.add(tfl.layers.dense(
         {units: 1, kernelInitializer: 'ones', inputShape: [inputSize]}));
+    // numSamples is 5.
     inputs = ones([numSamples, inputSize]);
     targets = ones([numSamples, 1]);
     sequentialModel.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
     // Order 10 epochs of training, but the training should stop after only one
     // epochs due to the callback that orders the training to stop after two
-    // batches. The first epoch should have five batchs  due to a batchSize
+    // batches. The first epoch should have five batches  due to a batchSize
     // of 1.
     sequentialModel
         .fit(
