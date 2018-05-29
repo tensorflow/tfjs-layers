@@ -357,14 +357,13 @@ export abstract class BaseConv extends Layer {
             config.kernelSize, 'number', 1, 2))
       throw new ValueError(
           `BaseConv expects config.kernelSize to be number or number[] with ` +
-          `length 1 or two, but received ${
-              JSON.stringify(config.kernelSize)}.`);
+          `length 1 or 2, but received ${JSON.stringify(config.kernelSize)}.`);
   }
 }
 
 /**
- * Abstract nD convolution layer.  Ancestor of convolution layers which apply
- * across all channels in parallel.
+ * Abstract nD convolution layer.  Ancestor of convolution layers which reduce
+ * across channels, i.e., Conv1D and Conv2D, but not DepthwiseConv2D.
  */
 export abstract class Conv extends BaseConv {
   protected readonly filters: number;
@@ -512,10 +511,9 @@ export abstract class Conv extends BaseConv {
     generic_utils.assert(
         'filters' in config, `required key filters not in config`);
     if (typeof config.filters !== 'number') {
-      console.log('XXX typeof filters is ' + typeof config.filters);
-      //   throw new ValueError(
-      //       `Convolution layer expected config.filters of type 'number' but `
-      //       + `got ${JSON.stringify(config.filters)}`);
+      throw new ValueError(
+          `Convolution layer expected config.filters of type 'number' but ` +
+          `got ${JSON.stringify(config.filters)}`);
     }
   }
 }
