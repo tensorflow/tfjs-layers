@@ -296,7 +296,6 @@ describeMathGPU('Save-load round trips', () => {
 
     const x = randomNormal([2, 4, 5]);
     const y = model.predict(x) as Tensor;
-    y.print();
 
     const path = `testModel${new Date().getTime()}_${Math.random()}`;
     const url = `indexeddb://${path}`;
