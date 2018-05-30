@@ -271,4 +271,12 @@ describe('checkArrayTypeAndLength', () => {
     expect(utils.checkArrayTypeAndLength([], 'does_not_matter', 0, 0))
         .toEqual(true);
   });
+  it('rejects negative length limits', () => {
+    expect(() => utils.checkArrayTypeAndLength([1, 2, 3], 'number', -1))
+        .toThrowError();
+  });
+  it('rejects maxLength < minLength', () => {
+    expect(() => utils.checkArrayTypeAndLength([1, 2, 3], 'number', 100, 2))
+        .toThrowError();
+  });
 });

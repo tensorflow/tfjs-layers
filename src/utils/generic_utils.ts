@@ -429,6 +429,8 @@ export function checkStringTypeUnionValue(
 export function checkArrayTypeAndLength(
     x: any, expectedType: string, minLength = 0,
     maxLength = Infinity): boolean {
+  assert(minLength >= 0);
+  assert(maxLength >= minLength);
   return (
       Array.isArray(x) && x.length >= minLength && x.length <= maxLength &&
       x.every(e => typeof e === expectedType));
