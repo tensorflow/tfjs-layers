@@ -299,9 +299,24 @@ describeMathCPU('Conv2D Layers: Symbolic', () => {
     }
   }
 
-  it('bad config throws exception', () => {
+  it('missing config.kernelSize throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect((filters: 1) => tfl.layers.conv2d({filters: 1} as any))
+        .toThrowError(/kernelSize/);
+  });
+  it('bad config.kernelSize throws exception', () => {
     expect(() => tfl.layers.conv2d({filters: 1, kernelSize: [1, 1, 1]}))
-        .toThrowError(/Conv2D expects config.kernelSize/);
+        .toThrowError(/kernelSize/);
+  });
+  it('missing config.filters throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tfl.layers.conv2d({kernelSize: 1} as any))
+        .toThrowError(/filters/);
+  });
+  it('bad config.filters throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tfl.layers.conv2d({kernelSize: 1, filters: 0} as any))
+        .toThrowError(/filters/);
   });
 });
 
@@ -580,7 +595,7 @@ describeMathCPU('Conv1D Layers: Symbolic', () => {
 
   it('bad config throws exception', () => {
     expect(() => tfl.layers.conv1d({filters: 1, kernelSize: [1, 1]}))
-        .toThrowError(/Conv1D expects config.kernelSize.*length 1/);
+        .toThrowError(/kernelSize/);
   });
 });
 
@@ -653,6 +668,26 @@ describeMathCPUAndGPU('Conv1D Layer: Tensor', () => {
       expectTensorsClose(y, yExpected);
     });
   }
+
+  it('missing config.kernelSize throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect((filters: 1) => tfl.layers.conv1d({filters: 1} as any))
+        .toThrowError(/kernelSize/);
+  });
+  it('bad config.kernelSize throws exception', () => {
+    expect(() => tfl.layers.conv1d({filters: 1, kernelSize: [1, 1, 1]}))
+        .toThrowError(/kernelSize/);
+  });
+  it('missing config.filters throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tfl.layers.conv1d({kernelSize: 1} as any))
+        .toThrowError(/filters/);
+  });
+  it('bad config.filters throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tfl.layers.conv1d({kernelSize: 1, filters: 0} as any))
+        .toThrowError(/filters/);
+  });
 });
 
 describeMathCPU('SeparableConv2D Layers: Symbolic', () => {
@@ -850,6 +885,26 @@ describeMathGPU('SeparableConv2D Layer: Tensor', () => {
       }
     }
   }
+  it('missing config.kernelSize throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect((filters: 1) => tfl.layers.separableConv2d({filters: 1} as any))
+        .toThrowError(/kernelSize/);
+  });
+  it('bad config.kernelSize throws exception', () => {
+    expect(
+        () => tfl.layers.separableConv2d({filters: 1, kernelSize: [1, 1, 1]}))
+        .toThrowError(/kernelSize/);
+  });
+  it('missing config.filters throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tfl.layers.separableConv2d({kernelSize: 1} as any))
+        .toThrowError(/filters/);
+  });
+  it('bad config.filters throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tfl.layers.separableConv2d({kernelSize: 1, filters: 0} as any))
+        .toThrowError(/filters/);
+  });
 });
 
 describe('Cropping2D Layer', () => {

@@ -325,7 +325,7 @@ export abstract class BaseConv extends Layer {
 
   constructor(rank: number, config: BaseConvLayerConfig) {
     super(config as LayerConfig);
-    this.verifyConfig(config);
+    BaseConv.verifyConfig(config);
     this.rank = rank;
     if (this.rank !== 1 && this.rank !== 2) {
       throw new NotImplementedError(
@@ -348,7 +348,7 @@ export abstract class BaseConv extends Layer {
     this.biasRegularizer = getRegularizer(config.biasRegularizer);
   }
 
-  verifyConfig(config: BaseConvLayerConfig) {
+  static verifyConfig(config: BaseConvLayerConfig) {
     // Check config.kernelSize type and shape.
     generic_utils.assert(
         'kernelSize' in config, `required key 'kernelSize' not in config`);
@@ -377,7 +377,7 @@ export abstract class Conv extends BaseConv {
 
   constructor(rank: number, config: ConvLayerConfig) {
     super(rank, config as BaseConvLayerConfig);
-    this.verifyConfig(config);
+    Conv.verifyConfig(config);
     this.filters = config.filters;
     this.dilationRate = config.dilationRate == null ? 1 : config.dilationRate;
     if (this.rank === 1 &&
@@ -506,14 +506,13 @@ export abstract class Conv extends BaseConv {
     return config;
   }
 
-  verifyConfig(config: ConvLayerConfig) {
-    // Check config.filters type and shape.
-    generic_utils.assert(
-        'filters' in config, `required key filters not in config`);
-    if (typeof config.filters !== 'number') {
+  static verifyConfig(config: ConvLayerConfig) {
+    // Check config.filters type, shape, and value.
+    if (!('filters' in config) || (typeof config.filters !== 'number') ||
+        (config.filters < 1)) {
       throw new ValueError(
-          `Convolution layer expected config.filters of type 'number' but ` +
-          `got ${JSON.stringify(config.filters)}`);
+          `Convolution layer expected config.filters to be a 'number' > 0 ` +
+          `but got ${JSON.stringify(config.filters)}`);
     }
   }
 }
@@ -539,7 +538,7 @@ export class Conv2D extends Conv {
   static className = 'Conv2D';
   constructor(config: ConvLayerConfig) {
     super(2, config);
-    this.verifyConfig(config);
+    Conv2D.verifyConfig(config);
   }
 
   getConfig(): serialization.ConfigDict {
@@ -548,7 +547,7 @@ export class Conv2D extends Conv {
     return config;
   }
 
-  verifyConfig(config: ConvLayerConfig) {
+  static verifyConfig(config: ConvLayerConfig) {
     // config.kernelSize must be a number or array of numbers.
     if ((typeof config.kernelSize !== 'number') &&
         !generic_utils.checkArrayTypeAndLength(
@@ -558,7 +557,6 @@ export class Conv2D extends Conv {
           `length 1 or 2, but received ${JSON.stringify(config.kernelSize)}.`);
   }
 }
-
 serialization.SerializationMap.register(Conv2D);
 
 /**
@@ -999,7 +997,7 @@ export class Conv1D extends Conv {
   static className = 'Conv1D';
   constructor(config: ConvLayerConfig) {
     super(1, config);
-    this.verifyConfig(config);
+    Conv1D.verifyConfig(config);
     this.inputSpec = [{ndim: 3}];
   }
 
@@ -1010,7 +1008,7 @@ export class Conv1D extends Conv {
     return config;
   }
 
-  verifyConfig(config: ConvLayerConfig) {
+  static verifyConfig(config: ConvLayerConfig) {
     // config.kernelSize must be a number or array of numbers.
     if ((typeof config.kernelSize !== 'number') &&
         !generic_utils.checkArrayTypeAndLength(
