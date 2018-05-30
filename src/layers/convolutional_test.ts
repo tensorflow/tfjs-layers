@@ -304,19 +304,20 @@ describeMathCPU('Conv2D Layers: Symbolic', () => {
     expect((filters: 1) => tfl.layers.conv2d({filters: 1} as any))
         .toThrowError(/kernelSize/);
   });
-  it('bad config.kernelSize throws exception', () => {
+  it('bad config.kernelSize shape throws exception', () => {
     expect(() => tfl.layers.conv2d({filters: 1, kernelSize: [1, 1, 1]}))
-        .toThrowError(/kernelSize/);
+        .toThrowError(
+            /kernelSize to be number or number\[\] with length 1 or 2/);
   });
   it('missing config.filters throws exception', () => {
     // tslint:disable-next-line:no-any
     expect(() => tfl.layers.conv2d({kernelSize: 1} as any))
-        .toThrowError(/filters/);
+        .toThrowError(/filters to be a 'number' > 0/);
   });
-  it('bad config.filters throws exception', () => {
+  it('bad config.filters value throws exception', () => {
     // tslint:disable-next-line:no-any
     expect(() => tfl.layers.conv2d({kernelSize: 1, filters: 0} as any))
-        .toThrowError(/filters/);
+        .toThrowError(/filters to be a 'number' > 0/);
   });
 });
 
@@ -593,9 +594,9 @@ describeMathCPU('Conv1D Layers: Symbolic', () => {
     }
   }
 
-  it('bad config throws exception', () => {
+  it('bad config.kernelSize shape throws exception', () => {
     expect(() => tfl.layers.conv1d({filters: 1, kernelSize: [1, 1]}))
-        .toThrowError(/kernelSize/);
+        .toThrowError(/kernelSize.*1/);
   });
 });
 
@@ -672,21 +673,21 @@ describeMathCPUAndGPU('Conv1D Layer: Tensor', () => {
   it('missing config.kernelSize throws exception', () => {
     // tslint:disable-next-line:no-any
     expect((filters: 1) => tfl.layers.conv1d({filters: 1} as any))
-        .toThrowError(/kernelSize/);
+        .toThrowError(/required key 'kernelSize' not in config/);
   });
   it('bad config.kernelSize throws exception', () => {
     expect(() => tfl.layers.conv1d({filters: 1, kernelSize: [1, 1, 1]}))
-        .toThrowError(/kernelSize/);
+        .toThrowError(/kernelSize to be number or number\[\] with length 1/);
   });
   it('missing config.filters throws exception', () => {
     // tslint:disable-next-line:no-any
     expect(() => tfl.layers.conv1d({kernelSize: 1} as any))
-        .toThrowError(/filters/);
+        .toThrowError(/filters to be a 'number' > 0/);
   });
   it('bad config.filters throws exception', () => {
     // tslint:disable-next-line:no-any
     expect(() => tfl.layers.conv1d({kernelSize: 1, filters: 0} as any))
-        .toThrowError(/filters/);
+        .toThrowError(/filters to be a 'number' > 0/);
   });
 });
 

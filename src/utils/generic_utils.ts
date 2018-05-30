@@ -414,24 +414,23 @@ export function checkStringTypeUnionValue(
 /**
  * Helper function for verifying the types of inputs.
  *
- * Ensures that the elements of `maybeArray` are all of type `expectedType`.
- * Also verifies that the length of `maybeArray` is within bounds.
+ * Ensures that the elements of `x` are all of type `expectedType`.
+ * Also verifies that the length of `x` is within bounds.
  *
- * @param maybeArray Object to test.
+ * @param x Object to test.
  * @param expectedType The string expected type of all of the elements in the
  * Array.
- * @param minLength Return false if maybeArray.length is less than this.
- * @param maxLength Return false if maybeArray.length is greater than this.
- * @returns true if `maybeArray` is an `Array<expectedType>` with length at
- * least `minLength`.
+ * @param minLength Return false if x.length is less than this.
+ * @param maxLength Return false if x.length is greater than this.
+ * @returns true if and only if `x` is an `Array<expectedType>` with
+ * length >= `minLength` and <= `maxLength`.
  */
 // tslint:disable:no-any
 export function checkArrayTypeAndLength(
-    maybeArray: any, expectedType: string, minLength = 0,
+    x: any, expectedType: string, minLength = 0,
     maxLength = Infinity): boolean {
   return (
-      (Array.isArray(maybeArray)) && maybeArray.length >= minLength &&
-      maybeArray.length <= maxLength &&
-      maybeArray.every((x) => typeof x === expectedType));
+      Array.isArray(x) && x.length >= minLength && x.length <= maxLength &&
+      x.every(e => typeof e === expectedType));
 }
 // tslint:enable:no-any

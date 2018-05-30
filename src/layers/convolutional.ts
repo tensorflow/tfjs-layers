@@ -313,7 +313,13 @@ export abstract class BaseConv extends Layer {
   protected readonly dataFormat: DataFormat;
   protected readonly activation: Activation;
   protected readonly useBias: boolean;
+  protected readonly dilationRate: number|[number]|[number, number];
 
+  // Bias-related members are here because all convolution subclasses use the
+  // same configuration parmeters to control bias.  Kernel-related members
+  // are in subclass `Conv` because some subclasses use different parameters to
+  // control kernel properties, for instance, `DepthwiseConv2D` uses
+  // `depthwiseInitializer` instead of `kernelInitializer`.
   protected readonly biasInitializer?: Initializer;
   protected readonly biasConstraint?: Constraint;
   protected readonly biasRegularizer?: Regularizer;
@@ -346,39 +352,7 @@ export abstract class BaseConv extends Layer {
         getInitializer(config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
     this.biasConstraint = getConstraint(config.biasConstraint);
     this.biasRegularizer = getRegularizer(config.biasRegularizer);
-  }
-
-  static verifyConfig(config: BaseConvLayerConfig) {
-    // Check config.kernelSize type and shape.
-    generic_utils.assert(
-        'kernelSize' in config, `required key 'kernelSize' not in config`);
-    if ((typeof config.kernelSize !== 'number') &&
-        !generic_utils.checkArrayTypeAndLength(
-            config.kernelSize, 'number', 1, 2))
-      throw new ValueError(
-          `BaseConv expects config.kernelSize to be number or number[] with ` +
-          `length 1 or 2, but received ${JSON.stringify(config.kernelSize)}.`);
-  }
-}
-
-/**
- * Abstract nD convolution layer.  Ancestor of convolution layers which reduce
- * across channels, i.e., Conv1D and Conv2D, but not DepthwiseConv2D.
- */
-export abstract class Conv extends BaseConv {
-  protected readonly filters: number;
-  protected readonly dilationRate: number|[number]|[number, number];
-  protected readonly kernelInitializer?: Initializer;
-  protected readonly kernelConstraint?: Constraint;
-  protected readonly kernelRegularizer?: Regularizer;
-
-  protected kernel: LayerVariable = null;
-
-
-  constructor(rank: number, config: ConvLayerConfig) {
-    super(rank, config as BaseConvLayerConfig);
-    Conv.verifyConfig(config);
-    this.filters = config.filters;
+    this.activityRegularizer = getRegularizer(config.activityRegularizer);
     this.dilationRate = config.dilationRate == null ? 1 : config.dilationRate;
     if (this.rank === 1 &&
         (Array.isArray(this.dilationRate) &&
@@ -397,12 +371,47 @@ export abstract class Conv extends BaseConv {
             `convolution, but received ${JSON.stringify(this.dilationRate)}`);
       }
     }
+  }
 
+  protected static verifyConfig(config: BaseConvLayerConfig) {
+    // Check config.kernelSize type and shape.
+    generic_utils.assert(
+        'kernelSize' in config, `required key 'kernelSize' not in config`);
+    if (typeof config.kernelSize !== 'number' &&
+        !generic_utils.checkArrayTypeAndLength(
+            config.kernelSize, 'number', 1, 2))
+      throw new ValueError(
+          `BaseConv expects config.kernelSize to be number or number[] with ` +
+          `length 1 or 2, but received ${JSON.stringify(config.kernelSize)}.`);
+  }
+}
+
+/**
+ * Abstract nD convolution layer.  Ancestor of convolution layers which reduce
+ * across channels, i.e., Conv1D and Conv2D, but not DepthwiseConv2D.
+ */
+export abstract class Conv extends BaseConv {
+  protected readonly filters: number;
+
+  protected kernel: LayerVariable = null;
+
+  // Bias-related properties are stored in the superclass `BaseConv` because all
+  // convolution subclasses use the same configuration parameters to control
+  // bias. Kernel-related properties are defined here rather than in the
+  // superclass because some convolution subclasses use different names and
+  // configuration parameters for their internal kernel state.
+  protected readonly kernelInitializer?: Initializer;
+  protected readonly kernelConstraint?: Constraint;
+  protected readonly kernelRegularizer?: Regularizer;
+
+  constructor(rank: number, config: ConvLayerConfig) {
+    super(rank, config as BaseConvLayerConfig);
+    Conv.verifyConfig(config);
+    this.filters = config.filters;
     this.kernelInitializer = getInitializer(
         config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
     this.kernelConstraint = getConstraint(config.kernelConstraint);
     this.kernelRegularizer = getRegularizer(config.kernelRegularizer);
-    this.activityRegularizer = getRegularizer(config.activityRegularizer);
   }
 
   build(inputShape: Shape|Shape[]): void {
@@ -506,10 +515,10 @@ export abstract class Conv extends BaseConv {
     return config;
   }
 
-  static verifyConfig(config: ConvLayerConfig) {
+  protected static verifyConfig(config: ConvLayerConfig) {
     // Check config.filters type, shape, and value.
-    if (!('filters' in config) || (typeof config.filters !== 'number') ||
-        (config.filters < 1)) {
+    if (!('filters' in config) || typeof config.filters !== 'number' ||
+        config.filters < 1) {
       throw new ValueError(
           `Convolution layer expected config.filters to be a 'number' > 0 ` +
           `but got ${JSON.stringify(config.filters)}`);
@@ -547,7 +556,7 @@ export class Conv2D extends Conv {
     return config;
   }
 
-  static verifyConfig(config: ConvLayerConfig) {
+  protected static verifyConfig(config: ConvLayerConfig) {
     // config.kernelSize must be a number or array of numbers.
     if ((typeof config.kernelSize !== 'number') &&
         !generic_utils.checkArrayTypeAndLength(
@@ -1010,7 +1019,7 @@ export class Conv1D extends Conv {
 
   static verifyConfig(config: ConvLayerConfig) {
     // config.kernelSize must be a number or array of numbers.
-    if ((typeof config.kernelSize !== 'number') &&
+    if (typeof config.kernelSize !== 'number' &&
         !generic_utils.checkArrayTypeAndLength(
             config.kernelSize, 'number', 1, 1))
       throw new ValueError(

@@ -256,16 +256,19 @@ describe('checkArrayTypeAndLength', () => {
     expect(utils.checkArrayTypeAndLength([1, 2, [3]], 'number')).toEqual(false);
   });
   it('checks lengths', () => {
-    // [1,2,3] is longer than 1.
+    // length of [1,2,3] is >= 1.
     expect(utils.checkArrayTypeAndLength([1, 2, 3], 'number', 1)).toEqual(true);
-    // [1,2,3] is longer than 1 and shorter than 3.
+    // length of [1,2,3] is >= 1 and <= 3.
     expect(utils.checkArrayTypeAndLength([1, 2, 3], 'number', 1, 3))
         .toEqual(true);
-    // [1,2,3,4,5] is not longer than 1 and shorter than 3.
+    // length of [1,2,3,4,5] is not >= 1 and <= 3.
     expect(utils.checkArrayTypeAndLength([1, 2, 3, 4, 5], 'number', 1, 3))
         .toEqual(false);
-    // [1,2,3,4,5] is not longer than 7 and shorter than 10.
+    // length of [1,2,3,4,5] is not >= 7 and <= 10.
     expect(utils.checkArrayTypeAndLength([1, 2, 3, 4, 5], 'number', 7, 10))
         .toEqual(false);
+    // Length of the empty array is >= 0 and <= 0.
+    expect(utils.checkArrayTypeAndLength([], 'does_not_matter', 0, 0))
+        .toEqual(true);
   });
 });
