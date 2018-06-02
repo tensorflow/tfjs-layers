@@ -187,11 +187,11 @@ export interface ModelAndWeightsConfig {
 export async function loadModelInternal(pathOrIOHandler: string|
                                         io.IOHandler): Promise<Model> {
   if (typeof pathOrIOHandler === 'string') {
-    let handlers = io.getLoadHandlers(pathOrIOHandler);
+    const handlers = io.getLoadHandlers(pathOrIOHandler);
     if (handlers.length === 0) {
       // For backward compatibility: if no load handler can be found,
       // assume it is a relative http path.
-      handlers = [io.browserHTTPRequest(pathOrIOHandler)];
+      handlers.push(io.browserHTTPRequest(pathOrIOHandler));
     } else if (handlers.length > 1) {
       throw new ValueError(
           `Found more than one (${handlers.length}) load handlers for ` +
