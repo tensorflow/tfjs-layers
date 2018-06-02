@@ -148,15 +148,11 @@ describeMathCPU('model_from_json', () => {
         .catch(done.fail);
   });
 
-  it('toJSON return value includes correct versions', done => {
-    modelFromJSON(fakeRoundtripModel)
-        .then(model => {
-          const serializedModel = model.toJSON(null, false) as JsonDict;
-          expect(serializedModel['keras_version'])
-              .toEqual(`tfjs-layers ${layersVersion}`);
-        })
-        .then(done)
-        .catch(done.fail);
+  it('toJSON return value includes correct versions', async () => {
+    const model = await modelFromJSON(fakeRoundtripModel);
+    const serializedModel = model.toJSON(null, false) as JsonDict;
+    expect(serializedModel['keras_version'])
+        .toEqual(`tfjs-layers ${layersVersion}`);
   });
 });
 
