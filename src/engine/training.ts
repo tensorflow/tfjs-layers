@@ -324,7 +324,7 @@ export function sliceArraysByIndices(
       return arrays.map(
           array => (sliceArraysByIndices(array, indices) as Tensor));
     } else {
-      // TODO(cais): indices should be oa pre-constructed Tensor1D to avoid
+      // TODO(cais): indices should be a pre-constructed Tensor1D to avoid
       //   tensor1d() calls.
       return K.gather(
           arrays, indices.dtype === 'int32' ? indices : indices.toInt());

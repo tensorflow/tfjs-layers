@@ -1399,7 +1399,7 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
        const validationSplit = 0.4;
        model.compile(
            {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['mse']});
-       const batchSize = 1;
+       const batchSize = 1;  // Use batchSize ===  1.
        await model.fit(
            inputs, targets, {batchSize, epochs: 1, validationSplit});
        const numTensors0 = memory().numTensors;
