@@ -64,6 +64,9 @@ module.exports = function(config) {
       }
     },
     client: {
+      jasmine: {
+        random: false
+      },
       args: ['--grep', config.grep || '']
     }
   });
