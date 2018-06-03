@@ -255,11 +255,10 @@ export class BaseLogger extends Callback {
           this.totals[key] = K.getScalar(0);
         }
 
-        this.totals[key] = tidy(() => {
-          return K.scalarPlusArray(
-                     (this.totals[key] as Scalar),
-                     mul(value, K.getScalar(batchSize))) as Scalar;
-        });
+        this.totals[key] = tidy(
+            () => K.scalarPlusArray(
+                      (this.totals[key] as Scalar),
+                      mul(value, K.getScalar(batchSize))) as Scalar);
         if (oldTotalsToDispose != null) {
           oldTotalsToDispose.dispose();
         }
