@@ -220,8 +220,7 @@ export async function loadModelFromIOHandler(
   }
   const model =
       deserialize(
-          convertPythonicToTs(modelTopology as serialization.ConfigDict) as
-              serialization.ConfigDict,
+          convertPythonicToTs(modelTopology) as serialization.ConfigDict,
           customObjects) as Model;
 
   // If weightData is present, load the weights into the model.
