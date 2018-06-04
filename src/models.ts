@@ -214,11 +214,15 @@ export async function loadModelFromIOHandler(
         'does not have the `load` method implemented.');
   }
   const artifacts = await handler.load();
-  const model = deserialize(
-                    convertPythonicToTs(
-                        artifacts.modelTopology as serialization.ConfigDict) as
-                        serialization.ConfigDict,
-                    customObjects) as Model;
+  let modelTopology = artifacts.modelTopology as JsonDict;
+  if (modelTopology['model_config'] != null) {
+    modelTopology = modelTopology['model_config'] as JsonDict;
+  }
+  const model =
+      deserialize(
+          convertPythonicToTs(modelTopology as serialization.ConfigDict) as
+              serialization.ConfigDict,
+          customObjects) as Model;
 
   // If weightData is present, load the weights into the model.
   if (artifacts.weightData != null) {
