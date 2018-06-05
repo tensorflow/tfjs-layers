@@ -99,7 +99,7 @@ describeMathCPUAndGPU('Add-Functional', () => {
     expectTensorsClose(output, tensor2d([11, 22, 33, 44], [2, 2]));
   });
 
-  it('Model test', () => {
+  it('predict() with functional model with Add layer works', () => {
     const input = tfl.layers.input({shape: [224, 224, 3]});
     const conv1 =
         tfl.layers.conv2d({filters: 16, kernelSize: [3, 3]}).apply(input) as
