@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {serialization, Tensor, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
+import {ones, serialization, Tensor, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 
 import {Layer} from '../engine/topology';
 import * as tfl from '../index';
@@ -97,6 +97,21 @@ describeMathCPUAndGPU('Add-Functional', () => {
     const input2 = tensor2d([10, 20, 30, 40], [2, 2]);
     const output = tfl.layers.add().apply([input1, input2]) as Tensor;
     expectTensorsClose(output, tensor2d([11, 22, 33, 44], [2, 2]));
+  });
+
+  it('Model test', () => {
+    const input1 = tfl.layers.input({shape: [224, 224, 3]});
+    const x1 =
+        tfl.layers.conv2d({filters: 16, kernelSize: [3, 3]}).apply(input1) as
+        tfl.SymbolicTensor;
+    const x2 =
+        tfl.layers.conv2d({filters: 16, kernelSize: [3, 3]}).apply(input1) as
+        tfl.SymbolicTensor;
+    const added = tfl.layers.add().apply([x1, x2]) as tfl.SymbolicTensor
+    const model = tfl.model({inputs: [input1], outputs: added});
+    const x = ones([1, 224, 224, 3]);
+    const y = model.predict(x) as Tensor;
+    expect(y.shape).toEqual([1, 222, 222, 16]);
   });
 });
 
