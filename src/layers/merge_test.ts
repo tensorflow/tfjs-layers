@@ -100,15 +100,15 @@ describeMathCPUAndGPU('Add-Functional', () => {
   });
 
   it('Model test', () => {
-    const input1 = tfl.layers.input({shape: [224, 224, 3]});
-    const x1 =
-        tfl.layers.conv2d({filters: 16, kernelSize: [3, 3]}).apply(input1) as
+    const input = tfl.layers.input({shape: [224, 224, 3]});
+    const conv1 =
+        tfl.layers.conv2d({filters: 16, kernelSize: [3, 3]}).apply(input) as
         tfl.SymbolicTensor;
-    const x2 =
-        tfl.layers.conv2d({filters: 16, kernelSize: [3, 3]}).apply(input1) as
+    const conv2 =
+        tfl.layers.conv2d({filters: 16, kernelSize: [3, 3]}).apply(input) as
         tfl.SymbolicTensor;
-    const added = tfl.layers.add().apply([x1, x2]) as tfl.SymbolicTensor
-    const model = tfl.model({inputs: [input1], outputs: added});
+    const sum = tfl.layers.add().apply([conv1, conv2]) as tfl.SymbolicTensor
+    const model = tfl.model({inputs: [input], outputs: sum});
     const x = ones([1, 224, 224, 3]);
     const y = model.predict(x) as Tensor;
     expect(y.shape).toEqual([1, 222, 222, 16]);
