@@ -12,8 +12,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {doc, io, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
-
+import {doc, io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
 import * as K from '../backend/tfjs_backend';
 import {BaseLogger, Callback, CallbackList, CustomCallbackConfig, disposeTensorsInLogs, History, standardizeCallbacks, UnresolvedLogs} from '../callbacks';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
@@ -318,17 +317,19 @@ function sliceArrays(
  */
 export function sliceArraysByIndices(
     arrays: Tensor|Tensor[], indices: Tensor1D): Tensor|Tensor[] {
-  if (arrays == null) {
-    return null;
-  } else if (Array.isArray(arrays)) {
-    return arrays.map(
-        array => (sliceArraysByIndices(array, indices) as Tensor));
-  } else {
-    // TODO(cais): indices should be oa pre-constructed Tensor1D to avoid
-    //   tensor1d() calls.
-    return K.gather(
-        arrays, indices.dtype === 'int32' ? indices : indices.toInt());
-  }
+  return tfc.tidy(() => {
+    if (arrays == null) {
+      return null;
+    } else if (Array.isArray(arrays)) {
+      return arrays.map(
+          array => (sliceArraysByIndices(array, indices) as Tensor));
+    } else {
+      // TODO(cais): indices should be a pre-constructed Tensor1D to avoid
+      //   tensor1d() calls.
+      return K.gather(
+          arrays, indices.dtype === 'int32' ? indices : indices.toInt());
+    }
+  });
 }
 
 /**
@@ -455,19 +456,6 @@ function collectMetrics(
 export enum ModelLoggingVerbosity {
   SILENT = 0,
   VERBOSE = 1
-}
-
-
-export interface ModelPredictConfig {
-  /**
-   * Batch size (Integer). If unspecified, it will default to 32.
-   */
-  batchSize?: number;
-
-  /**
-   * Verbosity mode. Defaults to false.
-   */
-  verbose?: boolean;
 }
 
 export interface ModelEvaluateConfig {
@@ -641,6 +629,10 @@ export class Model extends Container {
   private collectedTrainableWeights: LayerVariable[];
   private testFunction: (data: Tensor[]) => Scalar[];
   history: History;
+
+  // A public property that can be set by Callbacks to order early stopping
+  // during `fit()` calls.
+  stopTraining: boolean;
 
   metrics: string[]|{[outputName: string]: string};
   metricsNames: string[];
@@ -1227,8 +1219,8 @@ export class Model extends Container {
       doValidation,
       metrics: callbackMetrics,
     });
-    // TODO(cais): Take care of the PyKeras logic of stop_training.
     await callbackList.onTrainBegin();
+    this.stopTraining = false;
     // TODO(cais): Take care of callbacks.validation_data as in PyKeras.
 
     // TODO(cais): Pre-convert feeds for performance as in PyKeras.
@@ -1252,10 +1244,9 @@ export class Model extends Container {
 
         const batches = makeBatches(numTrainSamples, batchSize);
         for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
-          // TODO(cais): tfc.tidy() should not be leaked from the backend.
-          //   Wrap it with a backend function called mathScope.
           const batchLogs: UnresolvedLogs = {};
           await callbackList.onBatchBegin(batchIndex, batchLogs);
+
           tfc.tidy(() => {
             const batchStart = batches[batchIndex][0];
             const batchEnd = batches[batchIndex][1];
@@ -1277,9 +1268,6 @@ export class Model extends Container {
               // TODO(cais): Use scope() to avoid ownership.
             }
 
-            // TODO(cais): Logic for early stopping using
-            //   callback_model.stop_training as in PyKeras.
-
             if (batchIndex === batches.length - 1) {  // Last batch.
               if (doValidation) {
                 const valOuts = this.testLoop(valF, valIns, batchSize);
@@ -1297,6 +1285,10 @@ export class Model extends Container {
 
           await callbackList.onBatchEnd(batchIndex, batchLogs);
           disposeTensorsInLogs(batchLogs);
+
+          if (this.stopTraining) {
+            break;
+          }
           // TODO(cais): return outs as list of Tensor.
         }
 
@@ -1304,8 +1296,9 @@ export class Model extends Container {
       }
       // TODO(cais): Run validation at the end of the epoch.
       await callbackList.onEpochEnd(epoch, epochLogs);
-      // TODO(cais): Logic for early stopping using
-      //   callback_model.stop_training as in PyKeras.
+      if (this.stopTraining) {
+        break;
+      }
     }
     await callbackList.onTrainEnd();
 
@@ -1477,6 +1470,12 @@ export class Model extends Container {
     let valX: Tensor|Tensor[];
     let valY: Tensor|Tensor[];
     let valIns: Tensor[];
+    // A flag to keep track of whether `valIns`, `inputs` and `targets` need to
+    // be memory-disposed prior to returning from this method. This is the case
+    // if `config.validationSplit` is set to a number between 0 and 1, in which
+    // case the input `x` and `y` tensors will be sliced, leading to allocation
+    // of new tensor memory.
+    let needValidationDisposal = false;
     if (config.validationData != null && config.validationData.length > 0) {
       doValidation = true;
       if (config.validationData.length === 2) {
@@ -1513,9 +1512,11 @@ export class Model extends Container {
       inputs = sliceArrays(inputs, 0, splitAt) as Tensor[];
       valY = sliceArrays(targets, splitAt, originalBatchSize) as Tensor[];
       targets = sliceArrays(targets, 0, splitAt) as Tensor[];
+      needValidationDisposal = true;
       // TODO(cais): Once sampleWeights becomes available, slice it to get
       //   valSampleWeights.
       valIns = valX.concat(valY);
+
       // TODO(cais): Add useLearningPhase data properly.
     } else if (config.validationSteps != null) {
       doValidation = true;
@@ -1634,10 +1635,16 @@ export class Model extends Container {
     }
 
     const callbacks = standardizeCallbacks(config.callbacks);
-    return this.fitLoop(
+    const out = await this.fitLoop(
         trainFunction, ins, outLabels, batchSize, config.epochs, config.verbose,
         callbacks, valFunction, valIns, config.shuffle, callbackMetrics, null,
         null, null);
+    if (needValidationDisposal) {
+      valIns.forEach(tensor => tensor.dispose());
+      inputs.forEach(tensor => tensor.dispose());
+      targets.forEach(tensor => tensor.dispose());
+    }
+    return out;
     // TODO(cais): Add value to outLabels.
     // TODO(cais): Add initialEpoch.
   }
