@@ -9,7 +9,7 @@
  */
 
 // tslint:disable:max-line-length
-import {io, ones, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+import {io, ModelPredictConfig, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 
 import {Model} from './engine/training';
 import * as tfl from './index';
@@ -21,7 +21,134 @@ import {convertPythonicToTs} from './utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 import {version as layersVersion} from './version';
 
+export interface ModelPredictConfig1 extends ModelPredictConfig {}
+
 // tslint:enable:max-line-length
+
+describeMathCPU('Nested model topology', () => {
+  it('Nested Sequential model: Sequential as first layer', done => {
+    const modelLevel1 = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 2, inputShape: [3]})]});
+    const x = ones([1, 3]);
+    const y = modelLevel1.predict(x) as Tensor;
+
+    const modelLevel2 = tfl.sequential();
+    modelLevel2.add(modelLevel1);
+    expectTensorsClose(modelLevel2.predict(x) as Tensor, y);
+
+    const modelLevel3 = tfl.sequential();
+    modelLevel3.add(modelLevel2);
+    expectTensorsClose(modelLevel3.predict(x) as Tensor, y);
+
+    const xs = ones([8, 3]);
+    const ys = zeros([8, 2]);
+    modelLevel3.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    modelLevel3.fit(xs, ys)
+        .then(history => {
+          const newY = modelLevel1.predict(x) as Tensor;
+          expectTensorsClose(modelLevel2.predict(x) as Tensor, newY);
+          expectTensorsClose(modelLevel3.predict(x) as Tensor, newY);
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Nested Sequential model: Sequential as second layer', done => {
+    const innerModel = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 2, inputShape: [4]})]});
+    const x = ones([1, 4]);
+    const y = innerModel.predict(x) as Tensor;
+
+    const x2By2 = ones([1, 2, 2]);
+
+    const outerModel = tfl.sequential(
+        {layers: [tfl.layers.reshape({targetShape: [4], inputShape: [2, 2]})]});
+    outerModel.add(innerModel);
+    expectTensorsClose(outerModel.predict(x2By2) as Tensor, y);
+
+    const xs = ones([8, 2, 2]);
+    const ys = zeros([8, 2]);
+    outerModel.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    outerModel.fit(xs, ys)
+        .then(history => {
+          const newY = innerModel.predict(x) as Tensor;
+          expectTensorsClose(outerModel.predict(x2By2) as Tensor, newY);
+          done();
+        })
+        .catch(err => {
+          console.log(err.message);
+          done.fail(err.stack);
+        });
+  });
+
+  it('Nested Sequential model: Sequential as middle layer', done => {
+    const innerModel = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 4, inputShape: [4]})]});
+    const x = ones([1, 4]);
+    const y = innerModel.predict(x) as Tensor;
+
+    const x2By2 = ones([1, 2, 2]);
+
+    const outerModel = tfl.sequential({
+      layers: [
+        tfl.layers.reshape({targetShape: [4], inputShape: [2, 2]}), innerModel,
+        tfl.layers.reshape({targetShape: [2, 2]})
+      ]
+    });
+    expectTensorsClose(
+        outerModel.predict(x2By2) as Tensor, y.reshape([1, 2, 2]));
+
+    const xs = ones([8, 2, 2]);
+    const ys = zeros([8, 2, 2]);
+    outerModel.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    outerModel.fit(xs, ys)
+        .then(history => {
+          const newY = innerModel.predict(x) as Tensor;
+          expectTensorsClose(
+              outerModel.predict(x2By2) as Tensor, newY.reshape([1, 2, 2]));
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Nested Sequential model: save-load round trip', () => {
+    const innerModel = tfl.sequential({
+      layers: [
+        tfl.layers.dense({
+          units: 4,
+          inputShape: [4],
+          activation: 'relu',
+          kernelInitializer: 'ones',
+          biasInitializer: 'ones'
+        }),
+        tfl.layers.dense({
+          units: 4,
+          activation: 'tanh',
+          kernelInitializer: 'ones',
+          biasInitializer: 'ones'
+        })
+      ]
+    });
+    const outerModel = tfl.sequential({
+      layers: [
+        tfl.layers.reshape({targetShape: [4], inputShape: [2, 2]}), innerModel,
+        tfl.layers.reshape({targetShape: [2, 2]})
+      ]
+    });
+    const x = randomNormal([1, 2, 2]);
+    const y = outerModel.predict(x) as Tensor;
+
+    const unusedArg: {} = null;
+    const returnString = false;
+    const outerModelJSON = outerModel.toJSON(unusedArg, returnString);
+    const reconstructedModel =
+        deserialize(convertPythonicToTs(outerModelJSON) as JsonDict) as
+        tfl.Sequential;
+    expect(reconstructedModel.toJSON(unusedArg, returnString))
+        .toEqual(outerModelJSON);
+    expectTensorsClose(reconstructedModel.predict(x) as Tensor, y);
+  });
+});
 
 describeMathCPU('model_from_json', () => {
   it('reconstitutes pythonic json string', done => {
