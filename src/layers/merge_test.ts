@@ -107,7 +107,7 @@ describeMathCPUAndGPU('Add-Functional', () => {
     const conv2 =
         tfl.layers.conv2d({filters: 4, kernelSize: [3, 3]}).apply(input) as
         tfl.SymbolicTensor;
-    const sum = tfl.layers.add().apply([conv1, conv2]) as tfl.SymbolicTensor
+    const sum = tfl.layers.add().apply([conv1, conv2]) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: [input], outputs: sum});
     const x = ones([1, 24, 24, 3]);
     const y = model.predict(x) as Tensor;
