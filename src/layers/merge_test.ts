@@ -100,18 +100,18 @@ describeMathCPUAndGPU('Add-Functional', () => {
   });
 
   it('predict() with functional model with Add layer works', () => {
-    const input = tfl.layers.input({shape: [224, 224, 3]});
+    const input = tfl.layers.input({shape: [24, 24, 3]});
     const conv1 =
-        tfl.layers.conv2d({filters: 16, kernelSize: [3, 3]}).apply(input) as
+        tfl.layers.conv2d({filters: 4, kernelSize: [3, 3]}).apply(input) as
         tfl.SymbolicTensor;
     const conv2 =
-        tfl.layers.conv2d({filters: 16, kernelSize: [3, 3]}).apply(input) as
+        tfl.layers.conv2d({filters: 4, kernelSize: [3, 3]}).apply(input) as
         tfl.SymbolicTensor;
     const sum = tfl.layers.add().apply([conv1, conv2]) as tfl.SymbolicTensor
     const model = tfl.model({inputs: [input], outputs: sum});
-    const x = ones([1, 224, 224, 3]);
+    const x = ones([1, 24, 24, 3]);
     const y = model.predict(x) as Tensor;
-    expect(y.shape).toEqual([1, 222, 222, 16]);
+    expect(y.shape).toEqual([1, 22, 22, 4]);
   });
 });
 
