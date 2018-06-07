@@ -21,8 +21,6 @@ import {convertPythonicToTs} from './utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 import {version as layersVersion} from './version';
 
-export interface ModelPredictConfig1 extends ModelPredictConfig {}
-
 // tslint:enable:max-line-length
 
 describeMathCPU('Nested model topology', () => {
