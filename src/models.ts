@@ -336,6 +336,24 @@ export class Sequential extends Model {
   add(layer: Layer): void {
     const isLayerModelInstance =
         layer instanceof Sequential || layer instanceof Model;
+    let modelLayer: Model;
+    if (isLayerModelInstance) {
+      modelLayer = layer as Model;
+      if (modelLayer.outputs.length !== 1) {
+        throw new ValueError(
+            'All layers in a Sequential model ' +
+            'should have a single output tensor. ' +
+            'For multi-output layers, ' +
+            'use the functional API.');
+      }
+      if (modelLayer.inputs.length !== 1) {
+        throw new ValueError(
+            'All layers in a Sequential model ' +
+            'should have a single input tensor. ' +
+            'For multi-input layers, ' +
+            'use the functional API.');
+      }
+    }
 
     if (this.outputs.length === 0) {
       // first layer in model: check that it is an input layer
@@ -358,21 +376,6 @@ export class Sequential extends Model {
       }
 
       if (isLayerModelInstance) {
-        const modelLayer = layer as Model;
-        if (modelLayer.outputs.length !== 1) {
-          throw new ValueError(
-              'All layers in a Sequential model ' +
-              'should have a single output tensor. ' +
-              'For multi-output layers, ' +
-              'use the functional API.');
-        }
-        if (modelLayer.inputs.length !== 1) {
-          throw new ValueError(
-              'All layers in a Sequential model ' +
-              'should have a single input tensor. ' +
-              'For multi-input layers, ' +
-              'use the functional API.');
-        }
         this.outputs = modelLayer.outputs;
         this.inputs = modelLayer.inputs;
       } else {

@@ -102,10 +102,7 @@ describeMathCPU('Nested model topology', () => {
           expectTensorsClose(outerModel.predict(x2By2) as Tensor, newY);
           done();
         })
-        .catch(err => {
-          console.log(err.message);
-          done.fail(err.stack);
-        });
+        .catch(err => done.fail(err.stack));
   });
 
   it('Nested Sequential model: Sequential as middle layer', done => {
@@ -165,9 +162,12 @@ describeMathCPU('Nested model topology', () => {
     });
     expect(outerModel.getLayer(null, 0) instanceof tfl.Sequential)
         .toEqual(true);
+    // Expect all-one values based on the kernel and bias initializers specified
+    // above.
     expectTensorsClose(
         outerModel.getLayer(null, 1).getWeights()[0], ones([2, 1]));
     expectTensorsClose(outerModel.getLayer(null, 1).getWeights()[1], ones([1]));
+    // Expect there to be only two layers.
     expect(() => outerModel.getLayer(null, 2)).toThrow();
   });
 
@@ -201,7 +201,7 @@ describeMathCPU('Nested model topology', () => {
     expect(weights[5].shape).toEqual([1]);
   });
 
-  it('getWeights() works for nested sequential model', () => {
+  it('setWeights() works for nested sequential model', () => {
     const innerModel = tfl.sequential({
       layers: [
         tfl.layers.dense({
@@ -312,8 +312,21 @@ describeMathCPU('Nested model topology', () => {
     const innerModel = tfl.model({inputs: [input1, input2], outputs: output});
 
     const outerModel = tfl.sequential();
+
+    // Adding the two-input model as the first layer of the new model should
+    // fail.
     expect(() => outerModel.add(innerModel))
         .toThrowError(/should have a single input tensor/);
+
+    // Adding the two-input model as the second layer of the new model should
+    // fail.
+    const outerModel2 = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 4, inputShape: [8]})]});
+    expect(() => outerModel2.add(innerModel))
+        .toThrowError(/should have a single input tensor/);
+
+    // Creating a sequential model consisting of only the two-input model as
+    // a layer should fail.
     expect(() => tfl.sequential({
       layers: [innerModel]
     })).toThrowError(/should have a single input tensor/);
@@ -327,9 +340,21 @@ describeMathCPU('Nested model topology', () => {
         tfl.SymbolicTensor;
     const innerModel = tfl.model({inputs: input, outputs: [output1, output2]});
 
+    // Adding the two-output model as the first layer of the new model should
+    // fail.
     const outerModel = tfl.sequential();
     expect(() => outerModel.add(innerModel))
         .toThrowError(/should have a single output tensor/);
+
+    // Adding the two-output model as the second layer of the new model should
+    // fail.
+    const outerModel2 = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 4, inputShape: [8]})]});
+    expect(() => outerModel2.add(innerModel))
+        .toThrowError(/should have a single output tensor/);
+
+    // Creating a sequential model consisting of only the two-output model as
+    // a layer should fail.
     expect(() => tfl.sequential({
       layers: [innerModel]
     })).toThrowError(/should have a single output tensor/);
