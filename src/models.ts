@@ -358,8 +358,23 @@ export class Sequential extends Model {
       }
 
       if (isLayerModelInstance) {
-        this.outputs = (layer as Model).outputs;
-        this.inputs = (layer as Model).inputs;
+        const modelLayer = layer as Model;
+        if (modelLayer.outputs.length !== 1) {
+          throw new ValueError(
+              'All layers in a Sequential model ' +
+              'should have a single output tensor. ' +
+              'For multi-output layers, ' +
+              'use the functional API.');
+        }
+        if (modelLayer.inputs.length !== 1) {
+          throw new ValueError(
+              'All layers in a Sequential model ' +
+              'should have a single input tensor. ' +
+              'For multi-input layers, ' +
+              'use the functional API.');
+        }
+        this.outputs = modelLayer.outputs;
+        this.inputs = modelLayer.inputs;
       } else {
         if (layer.inboundNodes.length !== 1) {
           throw new ValueError(
