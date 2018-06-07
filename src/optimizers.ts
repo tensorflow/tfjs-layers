@@ -13,29 +13,34 @@
  */
 
 // tslint:disable:max-line-length
-import {Optimizer, train} from '@tensorflow/tfjs-core';
+import { Optimizer, train } from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 // tslint:enable:max-line-length
 
-import {ValueError} from './errors';
+import { ValueError } from './errors';
 
 // Add (de)serialize()
 
 // Porting note: This diverges from the PyKeras implementation and may need to
 // change based on (de)serialization requirements.
 export function getOptimizer(identifier: string): Optimizer {
-  const optimizerMap: {[optimizerName: string]: () => Optimizer} = {
+  const optimizerMap: { [optimizerName: string]: () => Optimizer } = {
     'Adagrad': () => train.adagrad(.01),
     'Adam': () => train.adam(.001, .9, .999, K.epsilon()),
+    'Adadelta': () => train.adadelta(1.0, 0.95, K.epsilon()),
+    'Adamax': () => train.adamax(0.002, .9, .999, K.epsilon(), 0.0),
+    'Momentum': () => train.momentum(0.01, 0.0, false),
     'RMSProp': () => train.rmsprop(.001, .9, null, K.epsilon()),
     'SGD': () => train.sgd(.01)
   };
   optimizerMap['adagrad'] = optimizerMap['Adagrad'];
   optimizerMap['adam'] = optimizerMap['Adam'];
+  optimizerMap['adadelta'] = optimizerMap['Adadelta'];
+  optimizerMap['adamax'] = optimizerMap['Adamax'];
+  optimizerMap['momentum'] = optimizerMap['Momentum'];
   optimizerMap['rmsprop'] = optimizerMap['RMSProp'];
   optimizerMap['sgd'] = optimizerMap['SGD'];
-
   if (identifier in optimizerMap) {
     return optimizerMap[identifier]();
   }

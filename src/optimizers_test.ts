@@ -13,10 +13,10 @@
  */
 
 // tslint:disable:max-line-length
-import {AdagradOptimizer, AdamOptimizer, RMSPropOptimizer, SGDOptimizer} from '@tensorflow/tfjs-core';
+import { AdagradOptimizer, AdamOptimizer, RMSPropOptimizer, SGDOptimizer, AdadeltaOptimizer, AdamaxOptimizer, MomentumOptimizer } from '@tensorflow/tfjs-core';
 
-import {getOptimizer} from './optimizers';
-import {describeMathCPU} from './utils/test_utils';
+import { getOptimizer } from './optimizers';
+import { describeMathCPU } from './utils/test_utils';
 
 // tslint:enable:max-line-length
 
@@ -58,6 +58,33 @@ describeMathCPU('getOptimizer', () => {
 
   it('throws for non-existent optimizer', () => {
     expect(() => getOptimizer('not an optimizer'))
-        .toThrowError(/Unknown Optimizer/);
+      .toThrowError(/Unknown Optimizer/);
   });
+
+  it(`can instantiate Adadelta`, () => {
+    const optimizer = getOptimizer('Adadelta');
+    expect(optimizer instanceof AdadeltaOptimizer).toBe(true);
+  });
+  it(`can instantiate adadelta`, () => {
+    const optimizer = getOptimizer('adadelta');
+    expect(optimizer instanceof AdadeltaOptimizer).toBe(true);
+  });
+
+  it(`can instantiate Adamax`, () => {
+    const optimizer = getOptimizer('Adamax');
+    expect(optimizer instanceof AdamaxOptimizer).toBe(true);
+  });
+  it(`can instantiate adamax`, () => {
+    const optimizer = getOptimizer('adamax');
+    expect(optimizer instanceof AdamaxOptimizer).toBe(true);
+  });
+  it(`can instantiate Momentum`, () => {
+    const optimizer = getOptimizer('Momentum');
+    expect(optimizer instanceof MomentumOptimizer).toBe(true);
+  });
+  it(`can instantiate momentum`, () => {
+    const optimizer = getOptimizer('momentum');
+    expect(optimizer instanceof MomentumOptimizer).toBe(true);
+  });
+
 });
