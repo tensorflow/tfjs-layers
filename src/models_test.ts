@@ -9,7 +9,7 @@
  */
 
 // tslint:disable:max-line-length
-import {io, ModelPredictConfig, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+import {io, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 
 import {Model} from './engine/training';
 import * as tfl from './index';
