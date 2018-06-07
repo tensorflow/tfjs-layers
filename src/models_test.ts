@@ -53,6 +53,35 @@ describeMathCPU('Nested model topology', () => {
         .catch(err => done.fail(err.stack));
   });
 
+  it('Nested Sequential model: Functional model as first layer', done => {
+    const input = tfl.input({shape: [3]});
+    const output =
+        tfl.layers.dense({units: 2}).apply(input) as tfl.SymbolicTensor;
+    const modelLevel1 = tfl.model({inputs: input, outputs: output});
+    const x = ones([1, 3]);
+    const y = modelLevel1.predict(x) as Tensor;
+
+    const modelLevel2 = tfl.sequential();
+    modelLevel2.add(modelLevel1);
+    expectTensorsClose(modelLevel2.predict(x) as Tensor, y);
+
+    const modelLevel3 = tfl.sequential();
+    modelLevel3.add(modelLevel2);
+    expectTensorsClose(modelLevel3.predict(x) as Tensor, y);
+
+    const xs = ones([8, 3]);
+    const ys = zeros([8, 2]);
+    modelLevel3.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    modelLevel3.fit(xs, ys)
+        .then(history => {
+          const newY = modelLevel1.predict(x) as Tensor;
+          expectTensorsClose(modelLevel2.predict(x) as Tensor, newY);
+          expectTensorsClose(modelLevel3.predict(x) as Tensor, newY);
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
   it('Nested Sequential model: Sequential as second layer', done => {
     const innerModel = tfl.sequential(
         {layers: [tfl.layers.dense({units: 2, inputShape: [4]})]});
@@ -111,7 +140,7 @@ describeMathCPU('Nested model topology', () => {
         .catch(err => done.fail(err.stack));
   });
 
-  it('Nested Sequential model: save-load round trip', () => {
+  it('Sequential as layer: save-load round trip', () => {
     const innerModel = tfl.sequential({
       layers: [
         tfl.layers.dense({
@@ -148,6 +177,44 @@ describeMathCPU('Nested model topology', () => {
         .toEqual(outerModelJSON);
     expectTensorsClose(reconstructedModel.predict(x) as Tensor, y);
   });
+
+  it('Functional model as layer: save-load round trip', () => {
+    const input = tfl.input({shape: [4]});
+    const layer1 = tfl.layers.dense({
+      units: 4,
+      activation: 'relu',
+      kernelInitializer: 'ones',
+      biasInitializer: 'ones'
+    });
+    const layer2 = tfl.layers.dense({
+      units: 4,
+      activation: 'tanh',
+      kernelInitializer: 'ones',
+      biasInitializer: 'ones'
+    });
+    const output = layer2.apply(layer1.apply(input)) as tfl.SymbolicTensor;
+    const innerModel = tfl.model({inputs: input, outputs: output});
+    const outerModel = tfl.sequential({
+      layers: [
+        tfl.layers.reshape({targetShape: [4], inputShape: [2, 2]}), innerModel,
+        tfl.layers.reshape({targetShape: [2, 2]})
+      ]
+    });
+    const x = randomNormal([1, 2, 2]);
+    const y = outerModel.predict(x) as Tensor;
+
+    const unusedArg: {} = null;
+    const returnString = false;
+    const outerModelJSON = outerModel.toJSON(unusedArg, returnString);
+    const reconstructedModel =
+        deserialize(convertPythonicToTs(outerModelJSON) as JsonDict) as
+        tfl.Sequential;
+    expect(reconstructedModel.toJSON(unusedArg, returnString))
+        .toEqual(outerModelJSON);
+    expectTensorsClose(reconstructedModel.predict(x) as Tensor, y);
+  });
+
+  // it('Attempt to nest two-output functional model fails');
 });
 
 describeMathCPU('model_from_json', () => {
