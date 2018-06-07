@@ -41,6 +41,7 @@ export function getOptimizer(identifier: string): Optimizer {
   optimizerMap['momentum'] = optimizerMap['Momentum'];
   optimizerMap['rmsprop'] = optimizerMap['RMSProp'];
   optimizerMap['sgd'] = optimizerMap['SGD'];
+
   if (identifier in optimizerMap) {
     return optimizerMap[identifier]();
   }

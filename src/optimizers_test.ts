@@ -86,5 +86,4 @@ describeMathCPU('getOptimizer', () => {
     const optimizer = getOptimizer('momentum');
     expect(optimizer instanceof MomentumOptimizer).toBe(true);
   });
-
 });
