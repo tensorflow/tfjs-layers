@@ -314,6 +314,16 @@ describe('Pooling Layers 2D: Symbolic', () => {
       }
     });
   }
+
+  it('Incorrect strides array length leads to error', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tfl.layers.maxPooling2d({poolSize: 2, strides: [2]} as any))
+        .toThrowError(/expected to have a length of 2/);
+    expect(
+        // tslint:disable-next-line:no-any
+        () => tfl.layers.maxPooling2d({poolSize: 2, strides: [2, 3, 3]} as any))
+        .toThrowError(/expected to have a length of 2/);
+  });
 });
 
 describeMathCPUAndGPU('Pooling Layers 2D: Tensor', () => {
