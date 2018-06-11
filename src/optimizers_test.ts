@@ -19,8 +19,10 @@ import {getOptimizer} from './optimizers';
 import {describeMathCPU} from './utils/test_utils';
 
 // tslint:enable:max-line-length
+
 describeMathCPU('getOptimizer', () => {
   // TODO(nsthorat): Assert defaults by getting config from the optimizer.
+
   it(`can instantiate SGD`, () => {
     const optimizer = getOptimizer('SGD');
     expect(optimizer instanceof SGDOptimizer).toBe(true);

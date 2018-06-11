@@ -39,6 +39,7 @@ export function getOptimizer(identifier: string): Optimizer {
   optimizerMap['adamax'] = optimizerMap['Adamax'];
   optimizerMap['rmsprop'] = optimizerMap['RMSProp'];
   optimizerMap['sgd'] = optimizerMap['SGD'];
+
   if (identifier in optimizerMap) {
     return optimizerMap[identifier]();
   }
