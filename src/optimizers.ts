@@ -13,19 +13,19 @@
  */
 
 // tslint:disable:max-line-length
-import { Optimizer, train } from '@tensorflow/tfjs-core';
+import {Optimizer, train} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 // tslint:enable:max-line-length
 
-import { ValueError } from './errors';
+import {ValueError} from './errors';
 
 // Add (de)serialize()
 
 // Porting note: This diverges from the PyKeras implementation and may need to
 // change based on (de)serialization requirements.
 export function getOptimizer(identifier: string): Optimizer {
-  const optimizerMap: { [optimizerName: string]: () => Optimizer } = {
+  const optimizerMap: {[optimizerName: string]: () => Optimizer} = {
     'Adagrad': () => train.adagrad(.01),
     'Adadelta': () => train.adadelta(1.0, 0.95, K.epsilon()),
     'Adam': () => train.adam(.001, .9, .999, K.epsilon()),
