@@ -7,6 +7,8 @@
   "types": "dist/index.d.ts",
   "jsnext:main": "dist/tf-layers.esm.js",
   "module": "dist/tf-layers.esm.js",
+  "jsdelivr": "dist/tf-layers.min.js",
+  "unpkg": "dist/tf-layers.min.js",
   "devDependencies": {
     "@tensorflow/tfjs-core": "~0.11.7",
     "@types/jasmine": "~2.5.53",
