@@ -30,7 +30,6 @@ export function getOptimizer(identifier: string): Optimizer {
     'Adadelta': () => train.adadelta(1.0, 0.95, K.epsilon()),
     'Adam': () => train.adam(.001, .9, .999, K.epsilon()),
     'Adamax': () => train.adamax(0.002, .9, .999, K.epsilon(), 0.0),
-    'Momentum': () => train.momentum(0.01, 0.0, false),
     'RMSProp': () => train.rmsprop(.001, .9, null, K.epsilon()),
     'SGD': () => train.sgd(.01)
   };
@@ -38,7 +37,6 @@ export function getOptimizer(identifier: string): Optimizer {
   optimizerMap['adadelta'] = optimizerMap['Adadelta'];
   optimizerMap['adam'] = optimizerMap['Adam'];
   optimizerMap['adamax'] = optimizerMap['Adamax'];
-  optimizerMap['momentum'] = optimizerMap['Momentum'];
   optimizerMap['rmsprop'] = optimizerMap['RMSProp'];
   optimizerMap['sgd'] = optimizerMap['SGD'];
 
