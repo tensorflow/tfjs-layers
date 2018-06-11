@@ -29,26 +29,14 @@ export function getOptimizer(identifier: string): Optimizer {
     'Adagrad': () => train.adagrad(.01),
     'Adadelta': () => train.adadelta(1.0, 0.95, K.epsilon()),
     'Adam': () => train.adam(.001, .9, .999, K.epsilon()),
-<<<<<<< HEAD
-    'Adadelta': () => train.adadelta(1.0, 0.95, K.epsilon()),
     'Adamax': () => train.adamax(0.002, .9, .999, K.epsilon(), 0.0),
-    'Momentum': () => train.momentum(0.01, 0.0, false),
-=======
-    'Adamax': () => train.adamax(0.002, .9, .999, K.epsilon(), 0.0),
->>>>>>> 2da26803d0c62234ff0602353352c2a0bad72ad3
     'RMSProp': () => train.rmsprop(.001, .9, null, K.epsilon()),
     'SGD': () => train.sgd(.01)
   };
   optimizerMap['adagrad'] = optimizerMap['Adagrad'];
   optimizerMap['adadelta'] = optimizerMap['Adadelta'];
   optimizerMap['adam'] = optimizerMap['Adam'];
-<<<<<<< HEAD
-  optimizerMap['adadelta'] = optimizerMap['Adadelta'];
   optimizerMap['adamax'] = optimizerMap['Adamax'];
-  optimizerMap['momentum'] = optimizerMap['Momentum'];
-=======
-  optimizerMap['adamax'] = optimizerMap['Adamax'];
->>>>>>> 2da26803d0c62234ff0602353352c2a0bad72ad3
   optimizerMap['rmsprop'] = optimizerMap['RMSProp'];
   optimizerMap['sgd'] = optimizerMap['SGD'];
   if (identifier in optimizerMap) {
