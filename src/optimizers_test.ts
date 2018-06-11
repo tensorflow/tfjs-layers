@@ -13,7 +13,11 @@
  */
 
 // tslint:disable:max-line-length
+<<<<<<< HEAD
 import { AdagradOptimizer, AdamOptimizer, RMSPropOptimizer, SGDOptimizer, AdadeltaOptimizer, AdamaxOptimizer, MomentumOptimizer } from '@tensorflow/tfjs-core';
+=======
+import {AdagradOptimizer, AdadeltaOptimizer, AdamOptimizer, AdamaxOptimizer, RMSPropOptimizer, SGDOptimizer} from '@tensorflow/tfjs-core';
+>>>>>>> 2da26803d0c62234ff0602353352c2a0bad72ad3
 
 import { getOptimizer } from './optimizers';
 import { describeMathCPU } from './utils/test_utils';
@@ -55,12 +59,28 @@ describeMathCPU('getOptimizer', () => {
     const optimizer = getOptimizer('adagrad');
     expect(optimizer instanceof AdagradOptimizer).toBe(true);
   });
-
+  it(`can instantiate Adadelta`, () => {
+    const optimizer = getOptimizer('Adadelta');
+    expect(optimizer instanceof AdadeltaOptimizer).toBe(true);
+  });
+  it(`can instantiate adadelta`, () => {
+    const optimizer = getOptimizer('adadelta');
+    expect(optimizer instanceof AdadeltaOptimizer).toBe(true);
+  });
+  it(`can instantiate Adamax`, () => {
+    const optimizer = getOptimizer('Adamax');
+    expect(optimizer instanceof AdamaxOptimizer).toBe(true);
+  });
+  it(`can instantiate adamax`, () => {
+    const optimizer = getOptimizer('adamax');
+    expect(optimizer instanceof AdamaxOptimizer).toBe(true);
+  });
   it('throws for non-existent optimizer', () => {
     expect(() => getOptimizer('not an optimizer'))
       .toThrowError(/Unknown Optimizer/);
   });
 
+<<<<<<< HEAD
   it(`can instantiate Adadelta`, () => {
     const optimizer = getOptimizer('Adadelta');
     expect(optimizer instanceof AdadeltaOptimizer).toBe(true);
@@ -87,4 +107,6 @@ describeMathCPU('getOptimizer', () => {
     expect(optimizer instanceof MomentumOptimizer).toBe(true);
   });
 
+=======
+>>>>>>> 2da26803d0c62234ff0602353352c2a0bad72ad3
 });
