@@ -11,7 +11,7 @@
 /* Original source keras/models.py */
 
 // tslint:disable:max-line-length
-import {doc, io, Scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
+import {doc, ENV, io, Scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
 import {History} from './callbacks';
@@ -201,14 +201,19 @@ export async function loadModelInternal(pathOrIOHandler: string|
                                         io.IOHandler): Promise<Model> {
   if (typeof pathOrIOHandler === 'string') {
     const handlers = io.getLoadHandlers(pathOrIOHandler);
-    if (handlers.length === 0) {
+    if (handlers.length === 0 && ENV.get('IS_BROWSER')) {
       // For backward compatibility: if no load handler can be found,
-      // assume it is a relative http path.
+      // assume it is a relative http path. This only applies to the
+      // browser environment.
       handlers.push(io.browserHTTPRequest(pathOrIOHandler));
-    } else if (handlers.length > 1) {
+    }
+    if (handlers.length > 1) {
       throw new ValueError(
           `Found more than one (${handlers.length}) load handlers for ` +
           `URL '${pathOrIOHandler}'`);
+    } else if (handlers.length === 0) {
+      throw new ValueError(
+          `Cannot find any load handlers for path string '${pathOrIOHandler}'`);
     }
     pathOrIOHandler = handlers[0];
   }
