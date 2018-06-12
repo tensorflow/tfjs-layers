@@ -212,8 +212,14 @@ export async function loadModelInternal(pathOrIOHandler: string|
           `Found more than one (${handlers.length}) load handlers for ` +
           `URL '${pathOrIOHandler}'`);
     } else if (handlers.length === 0) {
-      throw new ValueError(
-          `Cannot find any load handlers for path string '${pathOrIOHandler}'`);
+      let errorMsg =
+          `Cannot find any load handlers for path string '${pathOrIOHandler}'.`;
+      if (ENV.get('IS_NODE')) {
+        errorMsg +=
+            ' For Node.js, a URL scheme (e.g., file://, http://, https://)' +
+            'is required.';
+      }
+      throw new ValueError(errorMsg);
     }
     pathOrIOHandler = handlers[0];
   }
@@ -331,8 +337,8 @@ export class Sequential extends Model {
    * ```
    * @param layer Layer instance.
    *
-   * @exception ValueError In case the `layer` argument does not know its input
-   *   shape.
+   * @exception ValueError In case the `layer` argument does not know its
+   * input shape.
    * @exception ValueError In case the `layer` argument has multiple output
    *   tensors, or is already connected somewhere else (forbidden in
    *   `Sequential` models).
