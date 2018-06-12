@@ -203,7 +203,7 @@ export async function loadModelInternal(pathOrIOHandler: string|
     const handlers = io.getLoadHandlers(pathOrIOHandler);
     if (handlers.length === 0 && ENV.get('IS_BROWSER')) {
       // For backward compatibility: if no load handler can be found,
-      // assume it is a relative http path. This only applies to the
+      // assume it is a relative http path. This applies only to the
       // browser environment.
       handlers.push(io.browserHTTPRequest(pathOrIOHandler));
     }
