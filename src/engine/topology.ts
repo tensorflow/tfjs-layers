@@ -660,7 +660,7 @@ export abstract class Layer extends serialization.Serializable {
       }
 
       // Check ndim.
-      const ndim = K.ndim(x);
+      const ndim = x.rank;
       if (spec.ndim != null) {
         if (ndim !== spec.ndim) {
           throw new ValueError(
@@ -976,7 +976,7 @@ export abstract class Layer extends serialization.Serializable {
    *
    * @param inputShape A `Shape` or array of `Shape` (unused).
    */
-  public build(inputShape: Shape|Shape[]): void {
+  build(inputShape: Shape|Shape[]) {
     this.built = true;
   }
 
@@ -2788,7 +2788,6 @@ export function loadWeightsFromNamedTensorMap(
 
   batchSetValue(weightValueTuples);
 }
-
 
 // TODO(cais): Maybe remove the following (b/74015805).
 /**

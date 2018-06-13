@@ -16,7 +16,7 @@ import {doc, io, Scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
 import * as K from './backend/tfjs_backend';
 import {History} from './callbacks';
 import {getSourceInputs, Input, Layer, Node} from './engine/topology';
-import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig, ModelPredictConfig} from './engine/training';
+import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
 import {Kwargs, NamedTensorMap, Shape} from './types';
@@ -101,6 +101,19 @@ export interface ModelAndWeightsConfig {
    * The path may optionally end in a slash ('/').
    */
   pathPrefix?: string;
+}
+
+// TODO(nielsene): Remove after: https://github.com/tensorflow/tfjs/issues/400
+export interface ModelPredictConfig {
+  /**
+   * Optional. Batch size (Integer). If unspecified, it will default to 32.
+   */
+  batchSize?: number;
+
+  /**
+   * Optional. Verbosity mode. Defaults to false.
+   */
+  verbose?: boolean;
 }
 
 // tslint:disable:max-line-length
@@ -191,7 +204,7 @@ export async function loadModelInternal(pathOrIOHandler: string|
     if (handlers.length === 0) {
       // For backward compatibility: if no load handler can be found,
       // assume it is a relative http path.
-      return loadModelFromPath(pathOrIOHandler);
+      handlers.push(io.browserHTTPRequest(pathOrIOHandler));
     } else if (handlers.length > 1) {
       throw new ValueError(
           `Found more than one (${handlers.length}) load handlers for ` +
@@ -214,11 +227,14 @@ export async function loadModelFromIOHandler(
         'does not have the `load` method implemented.');
   }
   const artifacts = await handler.load();
-  const model = deserialize(
-                    convertPythonicToTs(
-                        artifacts.modelTopology as serialization.ConfigDict) as
-                        serialization.ConfigDict,
-                    customObjects) as Model;
+  let modelTopology = artifacts.modelTopology as JsonDict;
+  if (modelTopology['model_config'] != null) {
+    modelTopology = modelTopology['model_config'] as JsonDict;
+  }
+  const model =
+      deserialize(
+          convertPythonicToTs(modelTopology) as serialization.ConfigDict,
+          customObjects) as Model;
 
   // If weightData is present, load the weights into the model.
   if (artifacts.weightData != null) {
@@ -236,56 +252,6 @@ export async function loadModelFromIOHandler(
         skipMismatch, isNamedTensorMap);
   }
   return model;
-}
-
-// tslint:disable:max-line-length
-/**
- * Load a model, including its topology and optionally weights.  See the
- * Tutorial named "How to import a Keras Model" for usage examples.
- *
- * @param modelConfigPath A path to the `ModelAndWeightsConfig` JSON describing
- * the model in the canonical TensorFlow.js format.
- *
- *   The content of the JSON file is assumed to be a JSON object with the
- *   following fields and values:
- *   - 'modelTopology': A JSON object that can be either of:
- *     1. a model architecture JSON consistent with the format of the return
- *      value of `keras.Model.to_json()`
- *     2. a full model JSON in the format of
- *        [`keras.Model.save()`](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model).
- *   - 'weightsManifest': A TensorFlow.js weights manifest.
- *   See the Python converter function
- *   [`save_keras_model()`](https://js.tensorflow.org/tutorials/import-keras.html)
- * for more details.
- *
- *   It is also assumed that model weights can be accessed from relative paths
- *     described by the `paths` fields in weights manifest.
- *
- * @returns A `Promise` of `Model`, with the topology and weights loaded.
- */
-// tslint:enable:max-line-length
-// TODO(cais): Add link to the core's documentation of `WeightManifestConfig`.
-export async function loadModelFromPath(modelConfigPath: string):
-    Promise<Model> {
-  // TODO(soergel): accept a Request object too, not just a url string.
-  const modelConfigRequest = await fetch(modelConfigPath);
-  const modelConfig = await modelConfigRequest.json() as ModelAndWeightsConfig;
-  if (modelConfig['modelTopology'] == null) {
-    throw new ValueError(
-        'Missing field "modelTopology" from model JSON at path' +
-        modelConfigPath);
-  }
-  // TODO(cais): Remove this check as it's okay to load just the topology of a
-  // model.
-  if (modelConfig['weightsManifest'] == null) {
-    throw new ValueError(
-        'Missing field "weightsManifest" from model JSON at path' +
-        modelConfigPath);
-  }
-  modelConfig.pathPrefix =
-      modelConfigPath.substring(0, modelConfigPath.lastIndexOf('/'));
-
-  return modelFromJSON(modelConfig);
 }
 
 /**
@@ -368,6 +334,27 @@ export class Sequential extends Model {
    */
   @doc({heading: 'Models', subheading: 'Classes'})
   add(layer: Layer): void {
+    const isLayerModelInstance =
+        layer instanceof Sequential || layer instanceof Model;
+    let modelLayer: Model;
+    if (isLayerModelInstance) {
+      modelLayer = layer as Model;
+      if (modelLayer.outputs.length !== 1) {
+        throw new ValueError(
+            'All layers in a Sequential model ' +
+            'should have a single output tensor. ' +
+            'For multi-output layers, ' +
+            'use the functional API.');
+      }
+      if (modelLayer.inputs.length !== 1) {
+        throw new ValueError(
+            'All layers in a Sequential model ' +
+            'should have a single input tensor. ' +
+            'For multi-input layers, ' +
+            'use the functional API.');
+      }
+    }
+
     if (this.outputs.length === 0) {
       // first layer in model: check that it is an input layer
       if (layer.inboundNodes.length === 0) {
@@ -388,24 +375,28 @@ export class Sequential extends Model {
         layer.apply(x);
       }
 
-      if (layer.inboundNodes.length !== 1) {
-        throw new ValueError(
-            'A layer added to a Sequential model must not already be ' +
-            `connected somewhere else. Model received layer ${layer.name} ` +
-            `which has ${layer.inboundNodes.length} pre-existing inbound ` +
-            'connections.');
-      }
+      if (isLayerModelInstance) {
+        this.outputs = modelLayer.outputs;
+        this.inputs = modelLayer.inputs;
+      } else {
+        if (layer.inboundNodes.length !== 1) {
+          throw new ValueError(
+              'A layer added to a Sequential model must not already be ' +
+              `connected somewhere else. Model received layer ${layer.name} ` +
+              `which has ${layer.inboundNodes.length} pre-existing inbound ` +
+              'connections.');
+        }
 
-      if (layer.inboundNodes[0].outputTensors.length !== 1) {
-        throw new ValueError(
-            'All layers in a Sequential model ' +
-            'should have a single output tensor. ' +
-            'For multi-output layers, ' +
-            'use the functional API.');
+        if (layer.inboundNodes[0].outputTensors.length !== 1) {
+          throw new ValueError(
+              'All layers in a Sequential model ' +
+              'should have a single output tensor. ' +
+              'For multi-output layers, ' +
+              'use the functional API.');
+        }
+        this.outputs = [layer.inboundNodes[0].outputTensors[0]];
+        this.inputs = getSourceInputs(this.outputs[0]);
       }
-
-      this.outputs = [layer.inboundNodes[0].outputTensors[0]];
-      this.inputs = getSourceInputs(this.outputs[0]);
 
       // We create an input node, which we will keep updated
       // as we add more layers.
@@ -475,7 +466,11 @@ export class Sequential extends Model {
     return this.model.call(inputs, kwargs);
   }
 
-  build(inputShape?: Shape) {
+  build(inputShape?: Shape|Shape[]) {
+    // Call `getExactlyOneShape` without using its return value,
+    // to verify that exactly one input shape is provided.
+    generic_utils.getExactlyOneShape(inputShape);
+
     if (this.inputs.length === 0 || this.outputs.length === 0) {
       throw new TypeError(
           'Sequential model cannot be built: model is empty.' +
@@ -551,8 +546,8 @@ export class Sequential extends Model {
    * result.print();
    * ```
    *
-   * @param x `Tensor` of test data, or an `Array` of `Tensor`s if the model has
-   *   multiple inputs.
+   * @param x `Tensor` of test data, or an `Array` of `Tensor`s if the model
+   * has multiple inputs.
    * @param y `Tensor` of target data, or an `Array` of `Tensor`s if the model
    *   has multiple outputs.
    * @param config A `ModelEvaluateConfig`, containing optional fields.
@@ -710,7 +705,8 @@ export class Sequential extends Model {
   getConfig(): any {
     // NOTE(cais): We override the return type of getConfig() to `any` here,
     //   because the `Sequential` class is a special case among `Container`
-    //   subtypes in that its getConfig() method returns an Array (not a dict).
+    //   subtypes in that its getConfig() method returns an Array (not a
+    //   dict).
     const config: serialization.ConfigDict[] = [];
     for (const layer of this.layers) {
       config.push({

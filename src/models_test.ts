@@ -9,7 +9,7 @@
  */
 
 // tslint:disable:max-line-length
-import {io, ones, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+import {io, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 
 import {Model} from './engine/training';
 import * as tfl from './index';
@@ -22,6 +22,344 @@ import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './util
 import {version as layersVersion} from './version';
 
 // tslint:enable:max-line-length
+
+describeMathCPU('Nested model topology', () => {
+  it('Nested Sequential model: Sequential as first layer', done => {
+    const modelLevel1 = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 2, inputShape: [3]})]});
+    const x = ones([1, 3]);
+    const y = modelLevel1.predict(x) as Tensor;
+
+    const modelLevel2 = tfl.sequential();
+    modelLevel2.add(modelLevel1);
+    expectTensorsClose(modelLevel2.predict(x) as Tensor, y);
+
+    const modelLevel3 = tfl.sequential();
+    modelLevel3.add(modelLevel2);
+    expectTensorsClose(modelLevel3.predict(x) as Tensor, y);
+
+    const xs = ones([8, 3]);
+    const ys = zeros([8, 2]);
+    modelLevel3.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    modelLevel3.fit(xs, ys)
+        .then(history => {
+          const newY = modelLevel1.predict(x) as Tensor;
+          expectTensorsClose(modelLevel2.predict(x) as Tensor, newY);
+          expectTensorsClose(modelLevel3.predict(x) as Tensor, newY);
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Nested Sequential model: Functional model as first layer', done => {
+    const input = tfl.input({shape: [3]});
+    const output =
+        tfl.layers.dense({units: 2}).apply(input) as tfl.SymbolicTensor;
+    const modelLevel1 = tfl.model({inputs: input, outputs: output});
+    const x = ones([1, 3]);
+    const y = modelLevel1.predict(x) as Tensor;
+
+    const modelLevel2 = tfl.sequential();
+    modelLevel2.add(modelLevel1);
+    expectTensorsClose(modelLevel2.predict(x) as Tensor, y);
+
+    const modelLevel3 = tfl.sequential();
+    modelLevel3.add(modelLevel2);
+    expectTensorsClose(modelLevel3.predict(x) as Tensor, y);
+
+    const xs = ones([8, 3]);
+    const ys = zeros([8, 2]);
+    modelLevel3.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    modelLevel3.fit(xs, ys)
+        .then(history => {
+          const newY = modelLevel1.predict(x) as Tensor;
+          expectTensorsClose(modelLevel2.predict(x) as Tensor, newY);
+          expectTensorsClose(modelLevel3.predict(x) as Tensor, newY);
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Nested Sequential model: Sequential as second layer', done => {
+    const innerModel = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 2, inputShape: [4]})]});
+    const x = ones([1, 4]);
+    const y = innerModel.predict(x) as Tensor;
+
+    const x2By2 = ones([1, 2, 2]);
+
+    const outerModel = tfl.sequential(
+        {layers: [tfl.layers.reshape({targetShape: [4], inputShape: [2, 2]})]});
+    outerModel.add(innerModel);
+    expectTensorsClose(outerModel.predict(x2By2) as Tensor, y);
+
+    const xs = ones([8, 2, 2]);
+    const ys = zeros([8, 2]);
+    outerModel.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    outerModel.fit(xs, ys)
+        .then(history => {
+          const newY = innerModel.predict(x) as Tensor;
+          expectTensorsClose(outerModel.predict(x2By2) as Tensor, newY);
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('Nested Sequential model: Sequential as middle layer', done => {
+    const innerModel = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 4, inputShape: [4]})]});
+    const x = ones([1, 4]);
+    const y = innerModel.predict(x) as Tensor;
+
+    const x2By2 = ones([1, 2, 2]);
+
+    const outerModel = tfl.sequential({
+      layers: [
+        tfl.layers.reshape({targetShape: [4], inputShape: [2, 2]}), innerModel,
+        tfl.layers.reshape({targetShape: [2, 2]})
+      ]
+    });
+    expectTensorsClose(
+        outerModel.predict(x2By2) as Tensor, y.reshape([1, 2, 2]));
+
+    const xs = ones([8, 2, 2]);
+    const ys = zeros([8, 2, 2]);
+    outerModel.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    outerModel.fit(xs, ys)
+        .then(history => {
+          const newY = innerModel.predict(x) as Tensor;
+          expectTensorsClose(
+              outerModel.predict(x2By2) as Tensor, newY.reshape([1, 2, 2]));
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  it('getLayer() works for nested sequential model', () => {
+    const innerModel = tfl.sequential({
+      layers: [
+        tfl.layers.dense({
+          units: 4,
+          inputShape: [4],
+          activation: 'relu',
+          kernelInitializer: 'ones',
+          biasInitializer: 'ones'
+        }),
+        tfl.layers.dense({
+          units: 2,
+          activation: 'tanh',
+          kernelInitializer: 'ones',
+          biasInitializer: 'ones'
+        })
+      ]
+    });
+    const outerModel = tfl.sequential({
+      layers: [
+        innerModel,
+        tfl.layers.dense(
+            {units: 1, kernelInitializer: 'ones', biasInitializer: 'ones'})
+      ]
+    });
+    expect(outerModel.getLayer(null, 0) instanceof tfl.Sequential)
+        .toEqual(true);
+    // Expect all-one values based on the kernel and bias initializers specified
+    // above.
+    expectTensorsClose(
+        outerModel.getLayer(null, 1).getWeights()[0], ones([2, 1]));
+    expectTensorsClose(outerModel.getLayer(null, 1).getWeights()[1], ones([1]));
+    // Expect there to be only two layers.
+    expect(() => outerModel.getLayer(null, 2)).toThrow();
+  });
+
+  it('getWeights() works for nested sequential model', () => {
+    const innerModel = tfl.sequential({
+      layers: [
+        tfl.layers.dense({
+          units: 4,
+          inputShape: [4],
+          activation: 'relu',
+          kernelInitializer: 'ones',
+          biasInitializer: 'ones'
+        }),
+        tfl.layers.dense({
+          units: 2,
+          activation: 'tanh',
+          kernelInitializer: 'ones',
+          biasInitializer: 'ones'
+        })
+      ]
+    });
+    const outerModel =
+        tfl.sequential({layers: [innerModel, tfl.layers.dense({units: 1})]});
+    const weights = outerModel.getWeights();
+    expect(weights.length).toEqual(6);
+    expect(weights[0].shape).toEqual([4, 4]);
+    expect(weights[1].shape).toEqual([4]);
+    expect(weights[2].shape).toEqual([4, 2]);
+    expect(weights[3].shape).toEqual([2]);
+    expect(weights[4].shape).toEqual([2, 1]);
+    expect(weights[5].shape).toEqual([1]);
+  });
+
+  it('setWeights() works for nested sequential model', () => {
+    const innerModel = tfl.sequential({
+      layers: [
+        tfl.layers.dense({
+          units: 2,
+          inputShape: [3],
+          activation: 'relu',
+          kernelInitializer: 'zeros',
+          useBias: false
+        }),
+      ]
+    });
+    const outerModel = tfl.sequential({
+      layers: [
+        innerModel,
+        tfl.layers.dense(
+            {units: 1, kernelInitializer: 'zeros', useBias: false})
+      ]
+    });
+
+    // The kernel start off as zeros. Set them all to ones.
+    outerModel.setWeights([ones([3, 2]), ones([2, 1])]);
+    expectTensorsClose(outerModel.getWeights()[0], ones([3, 2]));
+    expectTensorsClose(outerModel.getWeights()[1], ones([2, 1]));
+    expectTensorsClose(
+        outerModel.predict(ones([1, 3])) as Tensor, tensor2d([[6]]));
+  });
+
+  it('Sequential as layer: save-load round trip', () => {
+    const innerModel = tfl.sequential({
+      layers: [
+        tfl.layers.dense({
+          units: 4,
+          inputShape: [4],
+          activation: 'relu',
+          kernelInitializer: 'ones',
+          biasInitializer: 'ones'
+        }),
+        tfl.layers.dense({
+          units: 4,
+          activation: 'tanh',
+          kernelInitializer: 'ones',
+          biasInitializer: 'ones'
+        })
+      ]
+    });
+    const outerModel = tfl.sequential({
+      layers: [
+        tfl.layers.reshape({targetShape: [4], inputShape: [2, 2]}), innerModel,
+        tfl.layers.dense(
+            {units: 1, kernelInitializer: 'ones', biasInitializer: 'ones'})
+      ]
+    });
+    const x = randomNormal([1, 2, 2]);
+    const y = outerModel.predict(x) as Tensor;
+
+    const unusedArg: {} = null;
+    const returnString = false;
+    const outerModelJSON = outerModel.toJSON(unusedArg, returnString);
+    const reconstructedModel =
+        deserialize(convertPythonicToTs(outerModelJSON) as JsonDict) as
+        tfl.Sequential;
+    expect(reconstructedModel.toJSON(unusedArg, returnString))
+        .toEqual(outerModelJSON);
+    expectTensorsClose(reconstructedModel.predict(x) as Tensor, y);
+  });
+
+  it('Functional model as layer: save-load round trip', () => {
+    const input = tfl.input({shape: [4]});
+    const layer1 = tfl.layers.dense({
+      units: 4,
+      activation: 'relu',
+      kernelInitializer: 'ones',
+      biasInitializer: 'ones'
+    });
+    const layer2 = tfl.layers.dense({
+      units: 4,
+      activation: 'tanh',
+      kernelInitializer: 'ones',
+      biasInitializer: 'ones'
+    });
+    const output = layer2.apply(layer1.apply(input)) as tfl.SymbolicTensor;
+    const innerModel = tfl.model({inputs: input, outputs: output});
+    const outerModel = tfl.sequential({
+      layers: [
+        tfl.layers.reshape({targetShape: [4], inputShape: [2, 2]}), innerModel,
+        tfl.layers.reshape({targetShape: [2, 2]})
+      ]
+    });
+    const x = randomNormal([1, 2, 2]);
+    const y = outerModel.predict(x) as Tensor;
+
+    const unusedArg: {} = null;
+    const returnString = false;
+    const outerModelJSON = outerModel.toJSON(unusedArg, returnString);
+    const reconstructedModel =
+        deserialize(convertPythonicToTs(outerModelJSON) as JsonDict) as
+        tfl.Sequential;
+    expect(reconstructedModel.toJSON(unusedArg, returnString))
+        .toEqual(outerModelJSON);
+    expectTensorsClose(reconstructedModel.predict(x) as Tensor, y);
+  });
+
+  it('Attempt to nest two-input functional model fails', () => {
+    const input1 = tfl.input({shape: [4]}) as tfl.SymbolicTensor;
+    const input2 = tfl.input({shape: [5]}) as tfl.SymbolicTensor;
+    const output =
+        tfl.layers.concatenate().apply([input1, input2]) as tfl.SymbolicTensor;
+    const innerModel = tfl.model({inputs: [input1, input2], outputs: output});
+
+    const outerModel = tfl.sequential();
+
+    // Adding the two-input model as the first layer of the new model should
+    // fail.
+    expect(() => outerModel.add(innerModel))
+        .toThrowError(/should have a single input tensor/);
+
+    // Adding the two-input model as the second layer of the new model should
+    // fail.
+    const outerModel2 = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 4, inputShape: [8]})]});
+    expect(() => outerModel2.add(innerModel))
+        .toThrowError(/should have a single input tensor/);
+
+    // Creating a sequential model consisting of only the two-input model as
+    // a layer should fail.
+    expect(() => tfl.sequential({
+      layers: [innerModel]
+    })).toThrowError(/should have a single input tensor/);
+  });
+
+  it('Attempt to nest two-output functional model fails', () => {
+    const input = tfl.input({shape: [12]}) as tfl.SymbolicTensor;
+    const output1 = tfl.layers.reshape({targetShape: [2, 6]}).apply(input) as
+        tfl.SymbolicTensor;
+    const output2 = tfl.layers.reshape({targetShape: [3, 4]}).apply(input) as
+        tfl.SymbolicTensor;
+    const innerModel = tfl.model({inputs: input, outputs: [output1, output2]});
+
+    // Adding the two-output model as the first layer of the new model should
+    // fail.
+    const outerModel = tfl.sequential();
+    expect(() => outerModel.add(innerModel))
+        .toThrowError(/should have a single output tensor/);
+
+    // Adding the two-output model as the second layer of the new model should
+    // fail.
+    const outerModel2 = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 4, inputShape: [8]})]});
+    expect(() => outerModel2.add(innerModel))
+        .toThrowError(/should have a single output tensor/);
+
+    // Creating a sequential model consisting of only the two-output model as
+    // a layer should fail.
+    expect(() => tfl.sequential({
+      layers: [innerModel]
+    })).toThrowError(/should have a single output tensor/);
+  });
+});
 
 describeMathCPU('model_from_json', () => {
   it('reconstitutes pythonic json string', done => {
@@ -148,15 +486,11 @@ describeMathCPU('model_from_json', () => {
         .catch(done.fail);
   });
 
-  it('toJSON return value includes correct versions', done => {
-    modelFromJSON(fakeRoundtripModel)
-        .then(model => {
-          const serializedModel = model.toJSON(null, false) as JsonDict;
-          expect(serializedModel['keras_version'])
-              .toEqual(`tfjs-layers ${layersVersion}`);
-        })
-        .then(done)
-        .catch(done.fail);
+  it('toJSON return value includes correct versions', async () => {
+    const model = await modelFromJSON(fakeRoundtripModel);
+    const serializedModel = model.toJSON(null, false) as JsonDict;
+    expect(serializedModel['keras_version'])
+        .toEqual(`tfjs-layers ${layersVersion}`);
   });
 });
 
@@ -227,6 +561,262 @@ describeMathCPU('loadModel from URL', () => {
     }
   }
 
+  it('load topology and weights from implicit relative http path',
+     async done => {
+       const modelTopology =
+           JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
+       const weightsManifest: io.WeightsManifestConfig = [
+         {
+           'paths': ['weight_0'],
+           'weights': [
+             {'name': `dense_6/kernel`, 'dtype': 'float32', 'shape': [32, 32]}
+           ],
+         },
+         {
+           'paths': ['weight_1'],
+           'weights':
+               [{'name': `dense_6/bias`, 'dtype': 'float32', 'shape': [32]}],
+         }
+       ];
+       spyOn(window, 'fetch').and.callFake((path: string) => {
+         if (path === 'model/model.json') {
+           return new Response(JSON.stringify({
+             modelTopology,
+             weightsManifest,
+           }));
+         } else if (path === 'model/weight_0') {
+           return new Response(
+               ones([32, 32], 'float32').dataSync() as Float32Array);
+         } else if (path === 'model/weight_1') {
+           return new Response(
+               zeros([32], 'float32').dataSync() as Float32Array);
+         } else {
+           throw new Error(`Invalid path: ${path}`);
+         }
+       });
+
+       loadModelInternal('model/model.json')
+           .then(model => {
+             expect(model.layers.length).toEqual(2);
+             expect(model.inputs.length).toEqual(1);
+             expect(model.inputs[0].shape).toEqual([null, 32]);
+             expect(model.outputs.length).toEqual(1);
+             expect(model.outputs[0].shape).toEqual([null, 32]);
+             const weightValues = model.getWeights();
+             expect(weightValues.length).toEqual(2);
+             expectTensorsClose(weightValues[0], ones([32, 32]));
+             expectTensorsClose(weightValues[1], zeros([32]));
+             done();
+           })
+           .catch(err => {
+             done.fail(err.stack);
+           });
+     });
+
+  it('load topology and weights from implicit relative http path: HDF5 format',
+     async done => {
+       const modelTopology =
+           JSON.parse(JSON.stringify(fakeSequentialModelFromHDF5))
+               .modelTopology;
+       const weightsManifest: io.WeightsManifestConfig = [
+         {
+           'paths': ['weight_0'],
+           'weights': [
+             {'name': `dense_1/kernel`, 'dtype': 'float32', 'shape': [10, 2]}
+           ],
+         },
+         {
+           'paths': ['weight_1'],
+           'weights':
+               [{'name': `dense_1/bias`, 'dtype': 'float32', 'shape': [2]}],
+         },
+         {
+           'paths': ['weight_2'],
+           'weights': [
+             {'name': `dense_2/kernel`, 'dtype': 'float32', 'shape': [2, 1]}
+           ],
+         },
+         {
+           'paths': ['weight_3'],
+           'weights':
+               [{'name': `dense_2/bias`, 'dtype': 'float32', 'shape': [1]}],
+         }
+       ];
+       spyOn(window, 'fetch').and.callFake((path: string) => {
+         if (path === 'model/model.json') {
+           return new Response(JSON.stringify({
+             modelTopology,
+             weightsManifest,
+           }));
+         } else if (path === 'model/weight_0') {
+           return new Response(
+               ones([10, 2], 'float32').dataSync() as Float32Array);
+         } else if (path === 'model/weight_1') {
+           return new Response(
+               zeros([2], 'float32').dataSync() as Float32Array);
+         } else if (path === 'model/weight_2') {
+           return new Response(
+               zeros([2, 1], 'float32').dataSync() as Float32Array);
+         } else if (path === 'model/weight_3') {
+           return new Response(ones([1], 'float32').dataSync() as Float32Array);
+         } else {
+           throw new Error(`Invalid path: ${path}`);
+         }
+       });
+
+       loadModelInternal('model/model.json')
+           .then(model => {
+             expect(model.layers.length).toEqual(2);
+             expect(model.inputs.length).toEqual(1);
+             expect(model.inputs[0].shape).toEqual([null, 10]);
+             expect(model.outputs.length).toEqual(1);
+             expect(model.outputs[0].shape).toEqual([null, 1]);
+             const weightValues = model.getWeights();
+             expect(weightValues.length).toEqual(4);
+             expectTensorsClose(weightValues[0], ones([10, 2]));
+             expectTensorsClose(weightValues[1], zeros([2]));
+             expectTensorsClose(weightValues[2], zeros([2, 1]));
+             expectTensorsClose(weightValues[3], ones([1]));
+             done();
+           })
+           .catch(err => {
+             done.fail(err.stack);
+           });
+     });
+
+
+  it('load topology and weights with browserHTTPRequest with requestInit',
+     async done => {
+       const modelTopology =
+           JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
+       const weightsManifest: io.WeightsManifestConfig = [
+         {
+           'paths': ['weight_0'],
+           'weights': [
+             {'name': `dense_6/kernel`, 'dtype': 'float32', 'shape': [32, 32]}
+           ],
+         },
+         {
+           'paths': ['weight_1'],
+           'weights':
+               [{'name': `dense_6/bias`, 'dtype': 'float32', 'shape': [32]}],
+         }
+       ];
+
+       const requestHeaders: Array<{}> = [];
+       const requestCredentials: string[] = [];
+       spyOn(window, 'fetch')
+           .and.callFake((path: string, requestInit?: RequestInit) => {
+             if (requestInit != null) {
+               requestHeaders.push(requestInit.headers);
+               requestCredentials.push(requestInit.credentials);
+             }
+             if (path === 'model/model.json') {
+               return new Response(JSON.stringify({
+                 modelTopology,
+                 weightsManifest,
+               }));
+             } else if (path === 'model/weight_0') {
+               return new Response(
+                   ones([32, 32], 'float32').dataSync() as Float32Array);
+             } else if (path === 'model/weight_1') {
+               return new Response(
+                   zeros([32], 'float32').dataSync() as Float32Array);
+             } else {
+               throw new Error(`Invalid path: ${path}`);
+             }
+           });
+
+       loadModelInternal(io.browserHTTPRequest('model/model.json', {
+         headers: {'header_key_1': 'header_value_1'},
+         credentials: 'include',
+       }))
+           .then(model => {
+             expect(model.layers.length).toEqual(2);
+             expect(model.inputs.length).toEqual(1);
+             expect(model.inputs[0].shape).toEqual([null, 32]);
+             expect(model.outputs.length).toEqual(1);
+             expect(model.outputs[0].shape).toEqual([null, 32]);
+             const weightValues = model.getWeights();
+             expect(weightValues.length).toEqual(2);
+             expectTensorsClose(weightValues[0], ones([32, 32]));
+             expectTensorsClose(weightValues[1], zeros([32]));
+
+             // Verify that the headers and credentials are sent via
+             // `fetch` properly.
+             expect(requestHeaders).toEqual([
+               {'header_key_1': 'header_value_1'},
+               {'header_key_1': 'header_value_1'},
+               {'header_key_1': 'header_value_1'}
+             ]);
+             expect(requestCredentials).toEqual([
+               'include', 'include', 'include'
+             ]);
+
+             done();
+           })
+           .catch(err => {
+             done.fail(err.stack);
+           });
+     });
+
+  const httpProtocols = ['http://', 'https://'];
+  for (const protocol of httpProtocols) {
+    it(`load topology and weights: explicit relative ${protocol} path`,
+       async done => {
+         const modelTopology =
+             JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
+         const weightsManifest: io.WeightsManifestConfig = [
+           {
+             'paths': ['weight_0'],
+             'weights': [{
+               'name': `dense_6/kernel`,
+               'dtype': 'float32',
+               'shape': [32, 32]
+             }],
+           },
+           {
+             'paths': ['weight_1'],
+             'weights':
+                 [{'name': `dense_6/bias`, 'dtype': 'float32', 'shape': [32]}],
+           }
+         ];
+         spyOn(window, 'fetch').and.callFake((path: string) => {
+           if (path === `${protocol}localhost:8888/models/model.json`) {
+             return new Response(JSON.stringify({
+               modelTopology,
+               weightsManifest,
+             }));
+           } else if (path === `${protocol}localhost:8888/models/weight_0`) {
+             return new Response(
+                 ones([32, 32], 'float32').dataSync() as Float32Array);
+           } else if (path === `${protocol}localhost:8888/models/weight_1`) {
+             return new Response(
+                 zeros([32], 'float32').dataSync() as Float32Array);
+           } else {
+             throw new Error(`Invalid path: ${path}`);
+           }
+         });
+
+         loadModelInternal(`${protocol}localhost:8888/models/model.json`)
+             .then(model => {
+               expect(model.layers.length).toEqual(2);
+               expect(model.inputs.length).toEqual(1);
+               expect(model.inputs[0].shape).toEqual([null, 32]);
+               expect(model.outputs.length).toEqual(1);
+               expect(model.outputs[0].shape).toEqual([null, 32]);
+               const weightValues = model.getWeights();
+               expect(weightValues.length).toEqual(2);
+               expectTensorsClose(weightValues[0], ones([32, 32]));
+               expectTensorsClose(weightValues[1], zeros([32]));
+               done();
+             })
+             .catch(err => {
+               done.fail(err.stack);
+             });
+       });
+  }
+
   it('Missing weight in manifest leads to error', done => {
     setupFakeWeightFiles({
       './weight_0': ones([32, 32], 'float32').dataSync() as Float32Array,
@@ -250,8 +840,8 @@ describeMathCPU('loadModel from URL', () => {
         JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
     configJson['config']['layers'][1]['config']['name'] = denseLayerName;
     modelFromJSON({modelTopology: configJson, weightsManifest, pathPrefix: '.'})
-        .then(() => done.fail)
-        .catch(done);
+        .then(() => done.fail())
+        .catch(() => done());
   });
 
   it('Loads weights despite uniqueified tensor names', async done => {
@@ -292,10 +882,10 @@ describeMathCPU('loadModel from URL', () => {
       expectTensorsClose(model1.weights[0].read(), ones([32, 32], 'float32'));
       expectTensorsClose(model1.weights[1].read(), ones([32], 'float32'));
 
-      // On the second load, the variable names will be uniqueified.  This test
-      // succeeds only because we maintain the name mapping, so we can load
-      // weights--keyed by non-unique names in the weight manifest--into
-      // variables with newly uniqueified names.
+      // On the second load, the variable names will be uniqueified. This
+      // test succeeds only because we maintain the name mapping, so we
+      // can load weights--keyed by non-unique names in the weight
+      // manifest--into variables with newly uniqueified names.
       const model2 = await modelFromJSON(
           {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
       // note unique suffix
@@ -384,8 +974,8 @@ describeMathCPU('loadModel from IOHandler', () => {
   ];
   const weightData = new Float32Array([1.1, 2.2, 3.3, 4.4, 5.5]).buffer;
 
-  // A dummy IOHandler that returns hard-coded model artifacts when its `load`
-  // method is called.
+  // A dummy IOHandler that returns hard-coded model artifacts when its
+  // `load` method is called.
   class IOHandlerForTest implements io.IOHandler {
     private readonly includeWeights: boolean;
 
@@ -399,8 +989,8 @@ describeMathCPU('loadModel from IOHandler', () => {
     }
   }
 
-  // A dummy IOHandler that doesn't have the `load` method implemented and is
-  // expected to cause `loadModel` or `loadModelInternal` to fail.
+  // A dummy IOHandler that doesn't have the `load` method implemented and
+  // is expected to cause `loadModel` or `loadModelInternal` to fail.
   class IOHandlerWithoutLoad implements io.IOHandler {
     constructor() {}
   }
@@ -548,9 +1138,8 @@ describeMathCPUAndGPU('Sequential', () => {
     const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     const history = await model.fit(xs, ys, {batchSize, epochs: 2});
-    expectTensorsClose(history.history['loss'][0] as Scalar, scalar(121));
-    expectTensorsClose(
-        history.history['loss'][1] as Scalar, scalar(0.015178224071860313));
+    expect(history.history['loss'][0]).toBe(121);
+    expect(history.history['loss'][1]).toBeCloseTo(0.015178224071860313);
   });
 
   it('Calling evaluate before compile leads to error', () => {
@@ -643,6 +1232,70 @@ const fakeSequentialModel: ModelAndWeightsConfig = {
       'name': 'test'
     },
     'backend': 'tensorflow'
+  }
+};
+
+const fakeSequentialModelFromHDF5: ModelAndWeightsConfig = {
+  modelTopology: {
+    'backend': 'tensorflow',
+    'keras_version': '2.1.4',
+    'model_config': {
+      'class_name': 'Sequential',
+      'config': [
+        {
+          'class_name': 'Dense',
+          'config': {
+            'kernel_initializer': {
+              'class_name': 'VarianceScaling',
+              'config': {
+                'distribution': 'uniform',
+                'scale': 1.0,
+                'seed': null,
+                'mode': 'fan_avg'
+              }
+            },
+            'name': 'dense_1',
+            'kernel_constraint': null,
+            'bias_regularizer': null,
+            'bias_constraint': null,
+            'dtype': 'float32',
+            'activation': 'relu',
+            'trainable': true,
+            'kernel_regularizer': null,
+            'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+            'units': 2,
+            'batch_input_shape': [null, 10],
+            'use_bias': true,
+            'activity_regularizer': null
+          }
+        },
+        {
+          'class_name': 'Dense',
+          'config': {
+            'kernel_initializer': {
+              'class_name': 'VarianceScaling',
+              'config': {
+                'distribution': 'uniform',
+                'scale': 1.0,
+                'seed': null,
+                'mode': 'fan_avg'
+              }
+            },
+            'name': 'dense_2',
+            'kernel_constraint': null,
+            'bias_regularizer': null,
+            'bias_constraint': null,
+            'activation': 'sigmoid',
+            'trainable': true,
+            'kernel_regularizer': null,
+            'bias_initializer': {'class_name': 'Zeros', 'config': {}},
+            'units': 1,
+            'use_bias': true,
+            'activity_regularizer': null
+          }
+        }
+      ]
+    },
   }
 };
 

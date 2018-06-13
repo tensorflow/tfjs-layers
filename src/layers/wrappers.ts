@@ -271,9 +271,20 @@ export class Bidirectional extends Wrapper {
 
   constructor(config: BidirectionalLayerConfig) {
     super(config);
-    this.forwardLayer = config.layer;
-    // TODO(cais): Perform shallow copy if necessary.
+
+    // Note: When creating `this.forwardLayer`, the original Layer object
+    //   (`config.layer`) ought to be cloned. This is why we call `getConfig()`
+    //   followed by `deserialize()`. Without this cloning, the layer names
+    //   saved during serialization will incorrectly contain the 'forward_'
+    //   prefix.
+    //   In Python Keras, this is done using `copy.copy` (shallow copy), which
+    //   does not have a simple equivalent in JavaScript. JavaScript's
+    //   `Object.assign()` does not copy methods.
     const layerConfig = config.layer.getConfig();
+    this.forwardLayer =
+        deserialize(
+            {className: config.layer.getClassName(), config: layerConfig}) as
+        RNN;
     layerConfig['goBackwards'] =
         layerConfig['goBackwards'] === true ? false : true;
     this.backwardLayer =
@@ -467,6 +478,33 @@ export class Bidirectional extends Wrapper {
   }
 
   // TODO(cais): Implement constraints().
-  // TODO(cais): Implement getConfig().
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
+      'mergeMode': this.mergeMode,
+    };
+    // TODO(cais): Add logic for `numConstants` once the property is added.
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
+    const rnnLayer =
+        deserialize(config['layer'] as serialization.ConfigDict) as RNN;
+    delete config['layer'];
+    // TODO(cais): Add logic for `numConstants` once the property is added.
+    if (config['numConstants'] != null) {
+      throw new NotImplementedError(
+          `Deserialization of a Bidirectional layer with numConstants ` +
+          `present is not supported yet.`);
+    }
+    // tslint:disable-next-line:no-any
+    const newConfig: {[key: string]: any} = config;
+    newConfig['layer'] = rnnLayer;
+    return new cls(newConfig);
+  }
 }
 serialization.SerializationMap.register(Bidirectional);

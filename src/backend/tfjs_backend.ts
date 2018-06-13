@@ -108,16 +108,6 @@ export function intShape(x: Tensor|SymbolicTensor): number[] {
 }
 
 /**
- * Get the number of dimensions (axes).
- *
- * @param x The tensor.
- * @return Number of dimensions of `x`.
- */
-export function ndim(x: Tensor|SymbolicTensor): number {
-  return x.shape.length;
-}
-
-/**
  * Returns the dtype of a tensor or variable.
  *
  * @param x The tensor.
@@ -209,9 +199,9 @@ export function flatten(x: Tensor): Tensor {
  * @return The result of the flattening.
  */
 export function batchFlatten(x: Tensor): Tensor {
-  if (ndim(x) <= 1) {
+  if (x.rank <= 1) {
     throw new ValueError(
-        `batchFlatten requires a minimum rank of 2. Got rank: ${ndim(x)}.`);
+        `batchFlatten requires a minimum rank of 2. Got rank: ${x.rank}.`);
   }
   const newShape = [x.shape[0], math_utils.arrayProd(x.shape, 1)];
   return x.reshape(newShape);
@@ -351,106 +341,6 @@ export function sliceAlongAxis(
   });
 }
 
-
-/**
- * Non-broadcasting batch normalization for use in training (not inference).
- *
- * The input is normalized to zero mean and unit variance along the
- * `reductionAxes`, followed by scaling with `gamma` and shifted by `beta`.
- * The result of that is returned as the first element
- * of the returned `Array`. The other two elements are the mean and variance,
- * respectively.
- *
- * @param x Input tensor to be normalized.
- * @param gamma Tensor by which to scale the input.
- * @param beta Tensor by which to center the input.
- * @param reductionAxes Axes over which to normalize.
- * @param epsilon Fuzz factor.
- * @returns An `Array` of three `Tensors`:
- *   [normalized tensor, mean of input, variance of input].
- */
-function regularNormalizeBatchInTraining(
-    x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
-    epsilon = 1e-3): [Tensor, Tensor, Tensor] {
-  return tidy(() => {
-           const meanAndVariance = tfc.moments(x, reductionAxes);
-           const mean = meanAndVariance.mean;
-           const variance = meanAndVariance.variance;
-           const normed =
-               batchNormalization(x, mean, variance, beta, gamma, epsilon);
-           return [normed, mean, variance];
-         }) as [Tensor, Tensor, Tensor];
-}
-
-/**
- * Broadcasting batch normalization for use in training (not inference).
- *
- * The input is normalized to zero mean and unit variance along the
- * `reductionAxes`, followed by scaling with `gamma` and shifted by `beta`.
- * The result of that is returned as the first element
- * of the returned `Array`. The other two elements are the mean and variance,
- * respectively.
- *
- * @param x Input tensor to be normalized.
- * @param gamma Tensor by which to scale the input.
- * @param beta Tensor by which to center the input.
- * @param reductionAxes Axes over which to normalize.
- * @param epsilon Fuzz factor.
- * @returns An `Array` of three `Tensors`:
- *   [normalized tensor, mean of input, variance of input].
- */
-function broadcastNormalizeBatchInTraining(
-    x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
-    epsilon = 1e-3): [Tensor, Tensor, Tensor] {
-  return tidy(() => {
-           const meanAndVariance = tfc.moments(x, reductionAxes);
-           const mean = meanAndVariance.mean;
-           const variance = meanAndVariance.variance;
-           const targetShape: number[] = [];
-           for (const axis of math_utils.range(0, ndim(x))) {
-             if (reductionAxes.indexOf(axis) !== -1) {
-               targetShape.push(1);
-             } else {
-               targetShape.push(x.shape[axis]);
-             }
-           }
-           const broadcastMean = mean.reshape(targetShape);
-           const broadcastVariance = variance.reshape(targetShape);
-           const broadcastGamma =
-               gamma == null ? null : gamma.reshape(targetShape);
-           const broadcastBeta =
-               beta == null ? null : beta.reshape(targetShape);
-           const normed = batchNormalization(
-               x, broadcastMean, broadcastVariance, broadcastBeta,
-               broadcastGamma, epsilon);
-           return [normed, mean, variance];
-         }) as [Tensor, Tensor, Tensor];
-}
-
-/**
- * Batch normalization for use in training (not inference).
- *
- * @param x Input tensor to be normalized.
- * @param gamma Tensor by which to scale the input.
- * @param beta Tensor by which to center the input.
- * @param reductionAxes Axes over which to normalize.
- * @param epsilon Fuzz factor.
- * @returns An `Array` of three `Tensors`:
- *   [normalized tensor, mean of input, variance of input].
- */
-export function normalizeBatchInTraining(
-    x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
-    epsilon = 1e-3): [Tensor, Tensor, Tensor] {
-  if (util.arraysEqual(
-          reductionAxes.slice().sort(), math_utils.range(0, ndim(x) - 1))) {
-    return regularNormalizeBatchInTraining(
-        x, gamma, beta, reductionAxes, epsilon);
-  } else {
-    return broadcastNormalizeBatchInTraining(
-        x, gamma, beta, reductionAxes, epsilon);
-  }
-}
-
 /**
  * Concatenates a list of tensors alongside the specified axis.
  * @param tensors `Array` of tensors to concatenate.
@@ -460,14 +350,14 @@ export function normalizeBatchInTraining(
 export function concatenate(tensors: Tensor[], axis = -1): Tensor {
   let rank: number;
   if (axis < 0) {
-    rank = ndim(tensors[0]);
+    rank = tensors[0].rank;
     if (rank !== 0) {
       axis = rank;
     } else {
       axis = 0;
     }
   }
-  if (axis === ndim(tensors[0])) {
+  if (axis === tensors[0].rank) {
     // Porting Note: This is necessary because tfc.concat() requires axis to be
     //   in the interval [-rank, rank).
     axis = -1;
@@ -511,10 +401,10 @@ export function tile(x: Tensor, n: number|number[]): Tensor {
   if (!Array.isArray(n)) {
     n = [n];
   }
-  if (ndim(x) !== n.length) {
+  if (x.rank !== n.length) {
     throw new ValueError(
         `The length of input n (${n.length}) does not match ` +
-        `the number of dimensions in input x (${ndim(x)})`);
+        `the number of dimensions in input x (${x.rank})`);
   }
   return tfc.tile(x, n);
 }
@@ -597,14 +487,14 @@ export function randomNormal(
  * @return Result of the dot operation.
  */
 export function dot(x: Tensor, y: Tensor): Tensor {
-  if (ndim(y) !== 2) {
+  if (y.rank !== 2) {
     throw new NotImplementedError(
         `dot support for y other than rank 2 is not yet implemented: ` +
         `y shape = ${shape}`);
   } else {
-    if (ndim(x) === 2) {
+    if (x.rank === 2) {
       return tfc.matMul(x as Tensor2D, y as Tensor2D);
-    } else if (ndim(x) === 3) {
+    } else if (x.rank === 3) {
       const xShape0 = x.shape[0];
       const xShape1 = x.shape[1];
       const xShape2 = x.shape[2];
@@ -614,7 +504,7 @@ export function dot(x: Tensor, y: Tensor): Tensor {
       ]);
     } else {
       throw new NotImplementedError(
-          `dot support for x of rank ${ndim(x)} is not yet implemented: ` +
+          `dot support for x of rank ${x.rank} is not yet implemented: ` +
           `x shape = ${shape}`);
     }
   }
@@ -747,7 +637,7 @@ export function qr(x: Tensor2D): [Tensor, Tensor] {
  */
 export function oneHot(indices: Tensor, numClasses: number): Tensor {
   return tidy(() => {
-    if (ndim(indices) !== 1) {
+    if (indices.rank !== 1) {
       throw new Error(
           'Only 1D one-hot tensors are supported in the ' +
           'deeplearn backend, at present.');
@@ -812,50 +702,6 @@ export function pow(x: Tensor, a: Tensor|number): Tensor {
   });
 }
 
-/* Normalization operations. */
-
-/**
- * Applies batch normalization on x given mean, var, beta and gamma.
- *
- * I.e. returns:
- *   `output = (x - mean) / (sqrt(var) + epsilon) * gamma + beta`
- *
- * @param x Input tensor.
- * @param mean Mean of batch.
- * @param variance Variance of batch.
- * @param beta Tensor with which to center the input.
- * @param gamma Tensor by which to scale the input.
- * @param epsilon Fuzz factor.
- * @returns The result of the batch normalization.
- */
-export function batchNormalization(
-    x: Tensor, mean: Tensor, variance: Tensor, beta?: Tensor, gamma?: Tensor,
-    epsilon = 1e-3): Tensor {
-  let out: Tensor;
-  if (ndim(x) === 2) {
-    out = tfc.batchNormalization2d(
-        x as Tensor2D, mean as Tensor2D | Tensor1D,
-        variance as Tensor2D | Tensor1D, epsilon, gamma as Tensor2D | Tensor1D,
-        beta as Tensor2D | Tensor1D);
-  } else if (ndim(x) === 3) {
-    // TODO(cais): Check rank; give proper error message.
-    out = tfc.batchNormalization3d(
-        x as Tensor3D, mean as Tensor3D | Tensor1D,
-        variance as Tensor3D | Tensor1D, epsilon, gamma as Tensor3D | Tensor1D,
-        beta as Tensor3D | Tensor1D);
-  } else if (ndim(x) === 4) {
-    out = tfc.batchNormalization4d(
-        x as Tensor4D, mean as Tensor4D | Tensor1D,
-        variance as Tensor4D | Tensor1D, epsilon, gamma as Tensor4D | Tensor1D,
-        beta as Tensor4D | Tensor1D);
-  } else {
-    throw new NotImplementedError(
-        `batchNormalization is not implememnted for array of rank ${ndim(x)} ` +
-        `yet`);
-  }
-  return out;
-}
-
 /* Neural-network operations. */
 
 /**
@@ -874,15 +720,15 @@ export function biasAdd(
     }
     checkDataFormat(dataFormat);
 
-    if (ndim(bias) !== 1 && ndim(bias) !== ndim(x)) {
+    if (bias.rank !== 1 && bias.rank !== x.rank) {
       throw new ValueError(
-          'Unexpected bias dimensions: ' + ndim(bias) +
-          '; expected it to be 1 or ' + ndim(x));
+          'Unexpected bias dimensions: ' + bias.rank +
+          '; expected it to be 1 or ' + x.rank);
     }
     const biasShape = bias.shape;
 
     let y: Tensor;
-    if (ndim(x) === 5) {
+    if (x.rank === 5) {
       if (dataFormat === 'channelsFirst') {
         if (biasShape.length === 1) {
           y = x.add(bias.reshape([1, biasShape[0], 1, 1, 1]));
@@ -897,7 +743,7 @@ export function biasAdd(
           y = x.add(bias.reshape([1].concat(biasShape)));
         }
       }
-    } else if (ndim(x) === 4) {
+    } else if (x.rank === 4) {
       if (dataFormat === 'channelsFirst') {
         if (biasShape.length === 1) {
           y = x.add(bias.reshape([1, biasShape[0], 1, 1]));
@@ -912,7 +758,7 @@ export function biasAdd(
           y = x.add(bias.reshape([1].concat(biasShape)));
         }
       }
-    } else if (ndim(x) === 3) {
+    } else if (x.rank === 3) {
       if (dataFormat === 'channelsFirst') {
         if (biasShape.length === 1) {
           y = x.add(bias.reshape([1, biasShape[0], 1]));
@@ -926,10 +772,10 @@ export function biasAdd(
           y = x.add(bias.reshape([1].concat(biasShape)));
         }
       }
-    } else if (ndim(x) < 3) {
+    } else if (x.rank < 3) {
       y = x.add(bias);
     } else {
-      throw new ValueError(`Unsupported input rank by biasAdd: ${ndim(x)}`);
+      throw new ValueError(`Unsupported input rank by biasAdd: ${x.rank}`);
     }
     return y;
   });
@@ -997,20 +843,6 @@ export function dropout(
 }
 
 /**
- * Normalizes a tensor wrt the L2 norm alongside the specified axis.
- * @param x
- * @param axis Axis along which to perform normalization.
- */
-export function l2Normalize(x: Tensor, axis?: number): Tensor {
-  return tidy(() => {
-    const squareSum = tfc.sum(square(x), axis, true);
-    const epsilonTensor = scalarTimesArray(scalar(epsilon()), tfc.onesLike(x));
-    const norm = tfc.sqrt(tfc.maximum(squareSum, epsilonTensor));
-    return tfc.div(x, norm);
-  });
-}
-
-/**
  * Replacement for Keras's "with name_scope" construct.
  *
  * @param name The name to use for this name scope.
@@ -1044,107 +876,6 @@ export function getUid(prefix = ''): string {
 }
 
 /**
- * Categorical crossentropy between an output tensor and a target tensor.
- *
- * @param target A tensor of the same shape as `output`.
- * @param output A tensor resulting from a softmax (unless `fromLogits` is
- *  `true`, in which case `output` is expected to be the logits).
- * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
- *   a tensor of logits.
- */
-export function categoricalCrossentropy(
-    target: Tensor, output: Tensor, fromLogits = false): Tensor {
-  return tidy(() => {
-    if (fromLogits) {
-      output = tfc.softmax(output);
-    } else {
-      // scale preds so that the class probabilities of each sample sum to 1.
-      const outputSum = tfc.sum(output, shape(output).length - 1, true);
-      output = tfc.div(output, outputSum);
-    }
-    output = tfc.clipByValue(output, epsilon(), 1 - epsilon());
-    return tfc.neg(tfc.sum(
-        tfc.mul(target.toFloat(), tfc.log(output)), shape(output).length - 1));
-  });
-}
-
-/**
- * Categorical crossentropy with integer targets.
- *
- * @param target An integer tensor.
- * @param output A tensor resulting from a softmax (unless `fromLogits` is
- *  `true`, in which case `output` is expected to be the logits).
- * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
- *   a tensor of logits.
- */
-export function sparseCategoricalCrossentropy(
-    target: Tensor, output: Tensor, fromLogits = false): Tensor {
-  return tidy(() => {
-    const flatTarget = tfc.floor(flatten(target)).toInt() as Tensor1D;
-    const outputShape = shape(output);
-    const oneHotTarget =
-        tfc.oneHot(flatTarget, outputShape[outputShape.length - 1])
-            .reshape(outputShape);
-    return categoricalCrossentropy(oneHotTarget, output, fromLogits);
-  });
-}
-
-/**
- * Binary crossentropy between an output tensor and a target tensor.
- *
- * @param target A tensor with the same shape as `output`.
- * @param output
- * @param fromLogits Whether `output` is expected to be a logits tensor. By
- *   default, we consider that `output` encodes a probability distribution.
- */
-export function binaryCrossentropy(
-    target: Tensor, output: Tensor, fromLogits = false): Tensor {
-  return tidy(() => {
-    let y: Tensor;
-    if (!fromLogits) {
-      y = tfc.clipByValue(output, epsilon(), 1 - epsilon());
-      y = tfc.log(tfc.div(y, tfc.sub(tfc.onesLike(y), y)));
-    } else {
-      y = output;
-    }
-    return sigmoidCrossEntropyWithLogits(target, y);
-  });
-}
-
-/**
- * From TensorFlow's implementation in nn_impl.py:
- *
- * For brevity, let `x = logits`, `z = labels`.  The logistic loss is
- *      z * -log(sigmoid(x)) + (1 - z) * -log(1 - sigmoid(x))
- *    = z * -log(1 / (1 + exp(-x))) + (1 - z) * -log(exp(-x) / (1 + exp(-x)))
- *    = z * log(1 + exp(-x)) + (1 - z) * (-log(exp(-x)) + log(1 + exp(-x)))
- *    = z * log(1 + exp(-x)) + (1 - z) * (x + log(1 + exp(-x))
- *    = (1 - z) * x + log(1 + exp(-x))
- *    = x - x * z + log(1 + exp(-x))
- * For x < 0, to avoid overflow in exp(-x), we reformulate the above
- *      x - x * z + log(1 + exp(-x))
- *    = log(exp(x)) - x * z + log(1 + exp(-x))
- *    = - x * z + log(1 + exp(x))
- * Hence, to ensure stability and avoid overflow, the implementation uses this
- * equivalent formulation
- *    max(x, 0) - x * z + log(1 + exp(-abs(x)))
- *
- * @param target The labels.
- * @param output The logits.
- */
-export function sigmoidCrossEntropyWithLogits(
-    target: Tensor, output: Tensor): Tensor {
-  return tidy(() => {
-    const maxOutput = tfc.maximum(output, tfc.zerosLike(output));
-    const outputXTarget = tfc.mul(output, target);
-    const sigmoidOutput =
-        tfc.log(tfc.add(getScalar(1), tfc.exp(tfc.neg(tfc.abs(output)))));
-    const result = tfc.add(tfc.sub(maxOutput, outputXTarget), sigmoidOutput);
-    return result;
-  });
-}
-
-/**
  * Element-wise, segment-wise linear approximation of sigmoid.
  *
  * Returns `0.` if `x < -2.5`, `1.` if `x > 2.5`.
@@ -1155,9 +886,8 @@ export function sigmoidCrossEntropyWithLogits(
  */
 export function hardSigmoid(x: Tensor): Tensor {
   return tidy(() => {
-    // TODO(cais): Maybe avoid creating scalar constants on each invocation by
-    //   turning them into module-level constants.
-    const y = scalarPlusArray(scalar(0.5), scalarTimesArray(scalar(0.2), x));
+    const y =
+        scalarPlusArray(getScalar(0.5), scalarTimesArray(getScalar(0.2), x));
     return tfc.clipByValue(y, 0, 1);
   });
 }
