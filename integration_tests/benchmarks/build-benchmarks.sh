@@ -55,7 +55,7 @@ yarn build
 echo
 echo "-----------------------------------------------------------"
 echo "Once the HTTP server has started, you can view the demo at:"
-echo "  http://localhost:${DEMO_PORT}/dist"
+echo "  http://localhost:${DEMO_PORT}/"
 echo "-----------------------------------------------------------"
 echo
 
