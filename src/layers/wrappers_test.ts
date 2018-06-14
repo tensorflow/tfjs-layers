@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {serialization, Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
+import {serialization, Tensor, tensor2d, Tensor3D, tensor3d, zeros} from '@tensorflow/tfjs-core';
 
 import {Layer} from '../engine/topology';
 import * as tfl from '../index';
@@ -179,6 +179,12 @@ describeMathCPU('Bidirectional Layer: Symbolic', () => {
     });
     const bidiOut = bidi.apply(concat) as tfl.SymbolicTensor;
     expect(bidiOut.shape).toEqual([null, sequenceLength, 2 * lstmNumUnits]);
+
+    const model = tfl.model({inputs: [input1, input2], outputs: bidiOut});
+    const x1 = zeros([1, sequenceLength, 3]);
+    const x2 = zeros([1, sequenceLength, 4]);
+    const y = model.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, zeros([1, sequenceLength, 2 * lstmNumUnits]));
   });
   it('Serialization round trip', () => {
     const layer = tfl.layers.bidirectional({
