@@ -18,18 +18,18 @@ function getRandomLayerOrModelName(length: number) {
 }
 
 describeMathCPU('Model.summary', () => {
-  // let consoleLogHistory: string[];
+  let consoleLogHistory: string[];
 
-  // beforeEach(() => {
-  //   consoleLogHistory = [];
-  //   spyOn(console, 'log').and.callFake((message?: string) => {
-  //     consoleLogHistory.push(message);
-  //   });
-  // });
+  beforeEach(() => {
+    consoleLogHistory = [];
+    spyOn(console, 'log').and.callFake((message?: string) => {
+      consoleLogHistory.push(message);
+    });
+  });
 
-  // afterEach(() => {
-  //   consoleLogHistory = [];
-  // });
+  afterEach(() => {
+    consoleLogHistory = [];
+  });
 
   it('Sequential model: one layer', () => {
     const layerName = getRandomLayerOrModelName(12);
@@ -47,7 +47,7 @@ describeMathCPU('Model.summary', () => {
       'Total params: 33', 'Trainable params: 33', 'Non-trainable params: 0',
       '_________________________________________________________________'
     ]);
-    // expect(consoleLogHistory).toEqual(lines);
+    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: one layer: custom lineLength', () => {
@@ -66,7 +66,7 @@ describeMathCPU('Model.summary', () => {
       'Total params: 33', 'Trainable params: 33', 'Non-trainable params: 0',
       '______________________________________________________________________'
     ]);
-    // expect(consoleLogHistory).toEqual(lines);
+    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: one layer: custom positions', () => {
@@ -85,6 +85,7 @@ describeMathCPU('Model.summary', () => {
       'Total params: 33', 'Trainable params: 33', 'Non-trainable params: 0',
       '______________________________________________________________________'
     ]);
+    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: one layer: custom printFn', () => {
@@ -94,6 +95,7 @@ describeMathCPU('Model.summary', () => {
           [tfl.layers.dense({units: 3, inputShape: [10], name: layerName})]
     });
 
+    // tslint:disable-next-line:no-any
     function muteLog(message?: any, ...optionalParams: any[]) {}
 
     const lines = model.summary(null, null, muteLog);
@@ -106,18 +108,20 @@ describeMathCPU('Model.summary', () => {
       'Total params: 33', 'Trainable params: 33', 'Non-trainable params: 0',
       '_________________________________________________________________'
     ]);
-    // expect(consoleLogHistory).toEqual([]);
+
+    // console.log should have received no calls.
+    expect(consoleLogHistory).toEqual([]);
   });
 
   it('Sequential model: three layers', () => {
-    const lyrName_1 = getRandomLayerOrModelName(12);
-    const lyrName_2 = getRandomLayerOrModelName(12);
-    const lyrName_3 = getRandomLayerOrModelName(12);
+    const lyrName01 = getRandomLayerOrModelName(12);
+    const lyrName02 = getRandomLayerOrModelName(12);
+    const lyrName03 = getRandomLayerOrModelName(12);
     const model = tfl.sequential({
       layers: [
-        tfl.layers.flatten({inputShape: [2, 5], name: lyrName_1}),
-        tfl.layers.dense({units: 3, name: lyrName_2}),
-        tfl.layers.dense({units: 1, name: lyrName_3}),
+        tfl.layers.flatten({inputShape: [2, 5], name: lyrName01}),
+        tfl.layers.dense({units: 3, name: lyrName02}),
+        tfl.layers.dense({units: 1, name: lyrName03}),
       ]
     });
     const lines = model.summary();
@@ -125,29 +129,29 @@ describeMathCPU('Model.summary', () => {
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
       '=================================================================',
-      `${lyrName_1} (Flatten)       [null,10]                 0         `,
+      `${lyrName01} (Flatten)       [null,10]                 0         `,
       '_________________________________________________________________',
-      `${lyrName_2} (Dense)         [null,3]                  33        `,
+      `${lyrName02} (Dense)         [null,3]                  33        `,
       '_________________________________________________________________',
-      `${lyrName_3} (Dense)         [null,1]                  4         `,
+      `${lyrName03} (Dense)         [null,1]                  4         `,
       '=================================================================',
       'Total params: 37',
       'Trainable params: 37',
       'Non-trainable params: 0',
       '_________________________________________________________________',
     ]);
-    // expect(consoleLogHistory).toEqual(lines);
+    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: with non-trainable layers', () => {
-    const lyrName_1 = getRandomLayerOrModelName(12);
-    const lyrName_2 = getRandomLayerOrModelName(12);
-    const lyrName_3 = getRandomLayerOrModelName(12);
+    const lyrName01 = getRandomLayerOrModelName(12);
+    const lyrName02 = getRandomLayerOrModelName(12);
+    const lyrName03 = getRandomLayerOrModelName(12);
     const model = tfl.sequential({
       layers: [
-        tfl.layers.flatten({inputShape: [2, 5], name: lyrName_1}),
-        tfl.layers.dense({units: 3, name: lyrName_2, trainable: false}),
-        tfl.layers.dense({units: 1, name: lyrName_3}),
+        tfl.layers.flatten({inputShape: [2, 5], name: lyrName01}),
+        tfl.layers.dense({units: 3, name: lyrName02, trainable: false}),
+        tfl.layers.dense({units: 1, name: lyrName03}),
       ]
     });
     const lines = model.summary();
@@ -155,46 +159,87 @@ describeMathCPU('Model.summary', () => {
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
       '=================================================================',
-      `${lyrName_1} (Flatten)       [null,10]                 0         `,
+      `${lyrName01} (Flatten)       [null,10]                 0         `,
       '_________________________________________________________________',
-      `${lyrName_2} (Dense)         [null,3]                  33        `,
+      `${lyrName02} (Dense)         [null,3]                  33        `,
       '_________________________________________________________________',
-      `${lyrName_3} (Dense)         [null,1]                  4         `,
+      `${lyrName03} (Dense)         [null,1]                  4         `,
       '=================================================================',
       'Total params: 37',
       'Trainable params: 4',
       'Non-trainable params: 33',
       '_________________________________________________________________',
     ]);
-    // expect(consoleLogHistory).toEqual(lines);
+    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: nested', () => {
-    const mdlName_1 = getRandomLayerOrModelName(12);
+    const mdlName01 = getRandomLayerOrModelName(12);
     const innerModel = tfl.sequential({
       layers: [tfl.layers.dense({units: 3, inputShape: [10]})],
-      name: mdlName_1
+      name: mdlName01
     });
     const outerModel = tfl.sequential();
     outerModel.add(innerModel);
 
-    const lryName_2 = getRandomLayerOrModelName(12);
-    outerModel.add(tfl.layers.dense({units: 1, name: lryName_2}));
+    const lyrName02 = getRandomLayerOrModelName(12);
+    outerModel.add(tfl.layers.dense({units: 1, name: lyrName02}));
 
     const lines = outerModel.summary();
     expect(lines).toEqual([
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
       '=================================================================',
-      `${mdlName_1} (Sequential)    [null,3]                  33        `,
+      `${mdlName01} (Sequential)    [null,3]                  33        `,
       '_________________________________________________________________',
-      `${lryName_2} (Dense)         [null,1]                  4         `,
+      `${lyrName02} (Dense)         [null,1]                  4         `,
       '=================================================================',
       'Total params: 37',
       'Trainable params: 37',
       'Non-trainable params: 0',
       '_________________________________________________________________',
     ]);
-    // expect(consoleLogHistory).toEqual(lines);
+    expect(consoleLogHistory).toEqual(lines);
+  });
+
+  it('Functional model', () => {
+    const lyrName01 = getRandomLayerOrModelName(12);
+    const input1 = tfl.input({shape: [3], name: lyrName01});
+    const lyrName02 = getRandomLayerOrModelName(12);
+    const input2 = tfl.input({shape: [4], name: lyrName02});
+    const lyrName03 = getRandomLayerOrModelName(12);
+    const input3 = tfl.input({shape: [5], name: lyrName03});
+    const lyrName04 = getRandomLayerOrModelName(12);
+    const concat1 =
+        tfl.layers.concatenate({name: lyrName04}).apply([input1, input2]) as
+        tfl.SymbolicTensor;
+    const lyrName05 = getRandomLayerOrModelName(12);
+    const output =
+        tfl.layers.concatenate({name: lyrName05}).apply([concat1, input3]) as
+        tfl.SymbolicTensor;
+    const model =
+        tfl.model({inputs: [input1, input2, input3], outputs: output});
+
+    const lines = model.summary(70);
+    expect(lines).toEqual([
+      '______________________________________________________________________',
+      'Layer (type)           Output shape   Param # Recevies inputs         ',
+      '======================================================================',
+      `${lyrName01} (InputLay [null,3]       0                               `,
+      '______________________________________________________________________',
+      `${lyrName02} (InputLay [null,4]       0                               `,
+      '______________________________________________________________________',
+      `${lyrName04} (Concaten [null,7]       0       ${lyrName01}[0][0]      `,
+      `                                              ${lyrName02}[0][0]      `,
+      '______________________________________________________________________',
+      `${lyrName03} (InputLay [null,5]       0                               `,
+      '______________________________________________________________________',
+      `${lyrName05} (Concaten [null,12]      0       ${lyrName04}[0][0]      `,
+      `                                              ${lyrName03}[0][0]      `,
+      '======================================================================',
+      'Total params: 0', 'Trainable params: 0', 'Non-trainable params: 0',
+      '______________________________________________________________________'
+    ]);
+    expect(consoleLogHistory).toEqual(lines);
   });
 });

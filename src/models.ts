@@ -398,11 +398,11 @@ export class Sequential extends Model {
         this.inputs = getSourceInputs(this.outputs[0]);
       }
 
+      this.inboundNodes = [];
       // We create an input node, which we will keep updated
       // as we add more layers.
       // (This call has side effects.)
       // tslint:disable-next-line:no-unused-expression
-      this.inboundNodes = [];
       new Node({
         outboundLayer: this,
         inboundLayers: [],

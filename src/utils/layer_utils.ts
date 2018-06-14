@@ -51,7 +51,7 @@ export function printSummary(
 
   let relevantNodes: Node[];
   if (!sequentialLike) {
-    toDisplay.push('Connected to');
+    toDisplay.push('Recevies inputs');
     relevantNodes = [];
     for (const depth in model.nodesByDepth) {
       relevantNodes.push(...model.nodesByDepth[depth]);
@@ -72,7 +72,8 @@ export function printSummary(
     if (sequentialLike) {
       lines.push(printLayerSummary(layers[i], positions));
     } else {
-      // TODO(cais): DO NOT SUBMIT.
+      lines.push(...printLayerSummaryWithConnections(
+          layers[i], positions, relevantNodes));
     }
 
     printString((i === layers.length - 1 ? '=' : '_').repeat(lineLength));
@@ -155,7 +156,7 @@ function printRow(
 }
 
 /**
- * Prints a summary for a single Layer.
+ * Prints a summary for a single Layer, without connectivity information.
  *
  * @param layer: Layer instance to print.
  */
@@ -172,4 +173,47 @@ function printLayerSummary(layer: Layer, positions: number[]): string {
   const fields: string[] =
       [`${name} (${className})`, outputShape, layer.countParams().toString()];
   return printRow(fields, positions);
+}
+
+/**
+ * Prints a summary for a single Layer, with connectivity information.
+ */
+function printLayerSummaryWithConnections(
+    layer: Layer, positions: number[], relevantNodes: Node[]): string[] {
+  let outputShape: string;
+  try {
+    outputShape = JSON.stringify(layer.outputShape);
+  } catch (err) {
+    outputShape = 'multiple';
+  }
+
+  const connections: string[] = [];
+  for (const node of layer.inboundNodes) {
+    if (relevantNodes != null && relevantNodes.length > 0 &&
+        relevantNodes.indexOf(node) === -1) {
+      continue;
+    }
+    for (let i = 0; i < node.inboundLayers.length; ++i) {
+      const inboundLayer = node.inboundLayers[i].name;
+      const inboundLayerIndex = node.nodeIndices[i];
+      const inboundTensorIndex = node.tensorIndices[i];
+      connections.push(
+          `${inboundLayer}[${inboundLayerIndex}][${inboundTensorIndex}]`);
+    }
+  }
+  const name = layer.name;
+  const className = layer.getClassName();
+  const firstConnection = connections.length === 0 ? '' : connections[0];
+  const fields: string[] = [
+    `${name} (${className})`, outputShape, layer.countParams().toString(),
+    firstConnection
+  ];
+
+  const output = [printRow(fields, positions)];
+  if (connections.length > 1) {
+    for (let i = 1; i < connections.length; ++i) {
+      output.push(printRow(['', '', '', connections[i]], positions));
+    }
+  }
+  return output;
 }
