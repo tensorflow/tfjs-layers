@@ -165,6 +165,21 @@ describeMathCPU('Bidirectional Layer: Symbolic', () => {
     expect(outputs[1].shape).toEqual([10, 3]);
     expect(outputs[2].shape).toEqual([10, 3]);
   });
+  it('Bidirectional layer following a concatenate layer', () => {
+    const sequenceLength = 5;
+    const input1 = tfl.input({shape: [sequenceLength, 3]});
+    const input2 = tfl.input({shape: [sequenceLength, 4]});
+    const concat = tfl.layers.concatenate({axis: -1}).apply([input1, input2]) as
+        tfl.SymbolicTensor;
+    const lstmNumUnits = 3;
+    const bidi = tfl.layers.bidirectional({
+      layer: tfl.layers.lstm({units: lstmNumUnits, returnSequences: true}) as
+          tfl.RNN,
+      mergeMode: 'concat',
+    });
+    const bidiOut = bidi.apply(concat) as tfl.SymbolicTensor;
+    expect(bidiOut.shape).toEqual([null, sequenceLength, 2 * lstmNumUnits]);
+  });
   it('Serialization round trip', () => {
     const layer = tfl.layers.bidirectional({
       layer: new SimpleRNN({units: 3}),
