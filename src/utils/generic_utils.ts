@@ -15,6 +15,7 @@ import {DataType, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {AssertionError, ValueError} from '../errors';
 import {Shape} from '../types';
+import {LayerVariable} from '../variables';
 // tslint:enable
 
 /**
@@ -436,3 +437,19 @@ export function checkArrayTypeAndLength(
       x.every(e => typeof e === expectedType));
 }
 // tslint:enable:no-any
+
+
+/**
+ * Count the numbers in an Array of LayerVariables.
+ *
+ * @param weights: The weights of which the constituent numbers are to be
+ *   counted.
+ * @returns A count of the numbers in the weights.
+ */
+export function countParamsInWeights(weights: LayerVariable[]): number {
+  let count = 0;
+  for (const weight of weights) {
+    count += weight.shape.reduce((a, b) => a * b);
+  }
+  return count;
+}

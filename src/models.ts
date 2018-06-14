@@ -402,6 +402,7 @@ export class Sequential extends Model {
       // as we add more layers.
       // (This call has side effects.)
       // tslint:disable-next-line:no-unused-expression
+      this.inboundNodes = [];
       new Node({
         outboundLayer: this,
         inboundLayers: [],
@@ -501,6 +502,25 @@ export class Sequential extends Model {
     // TODO(michaelterry): Add feedInputNames, feedInputs, if needed.
     // TODO(michaelterry): Add callbackModel if needed.
     this.built = true;
+  }
+
+  countParams(): number {
+    if (!this.built) {
+      this.build();
+    }
+    return super.countParams();
+  }
+
+  summary(
+      lineLength?: number, positions?: number[],
+      // tslint:disable-next-line:no-any
+      printFn: (message?: any, ...optionalParams: any[]) => void = console.log):
+      string[] {
+    if (!this.built) {
+      this.build();
+    }
+    // return printSummary(this, lineLength, positions, printFn);
+    return super.summary(lineLength, positions, printFn);
   }
 
   /**

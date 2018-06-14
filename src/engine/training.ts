@@ -13,6 +13,7 @@
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {doc, io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
+
 import * as K from '../backend/tfjs_backend';
 import {BaseLogger, Callback, CallbackList, CustomCallbackConfig, disposeTensorsInLogs, History, standardizeCallbacks, UnresolvedLogs} from '../callbacks';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
@@ -21,6 +22,7 @@ import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LossOrMetricFn, NamedTensorMap, Shape} from '../types';
 import {count, singletonOrArray, unique} from '../utils/generic_utils';
+import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
 
@@ -648,6 +650,20 @@ export class Model extends Container {
 
   constructor(config: ContainerConfig) {
     super(config);
+  }
+
+  summary(
+      lineLength?: number, positions?: number[],
+      // tslint:disable-next-line:no-any
+      printFn: (message?: any, ...optionalParams: any[]) => void = console.log):
+      string[] {
+    if (!this.built) {
+      throw new ValueError(
+          `This model has never been called, thus its weights have not been ` +
+          `created yet. So no summary can be displayed. Build the model ` +
+          `first (e.g., by calling it on some test data).`);
+    }
+    return printSummary(this, lineLength, positions, printFn);
   }
 
   /**
