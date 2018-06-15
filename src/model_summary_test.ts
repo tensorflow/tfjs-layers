@@ -177,6 +177,35 @@ describeMathCPU('Model.summary', () => {
     expect(consoleLogHistory).toEqual(lines);
   });
 
+  it('Sequential model with Embedding layer', () => {
+    const lyrName01 = getRandomLayerOrModelName(12);
+    const lyrName02 = getRandomLayerOrModelName(12);
+    const model = tfl.sequential({
+      layers: [
+        tfl.layers.embedding({
+          inputDim: 10,
+          outputDim: 8,
+          inputShape: [null, 5],
+          name: lyrName01
+        }),
+        tfl.layers.dense({units: 3, name: lyrName02}),
+      ]
+    });
+    const lines = model.summary();
+    expect(lines).toEqual([
+      '_________________________________________________________________',
+      'Layer (type)                 Output shape              Param #   ',
+      '=================================================================',
+      `${lyrName01} (Embedding)     [null,null,5,8]           80        `,
+      '_________________________________________________________________',
+      `${lyrName02} (Dense)         [null,null,5,3]           27        `,
+      '=================================================================',
+      'Total params: 107', 'Trainable params: 107', 'Non-trainable params: 0',
+      '_________________________________________________________________'
+    ]);
+    expect(consoleLogHistory).toEqual(lines);
+  });
+
   it('Sequential model: nested', () => {
     const mdlName01 = getRandomLayerOrModelName(12);
     const innerModel = tfl.sequential({
@@ -224,26 +253,48 @@ describeMathCPU('Model.summary', () => {
     const model =
         tfl.model({inputs: [input1, input2, input3], outputs: output});
 
-    const lines = model.summary(70);
+    const lines = model.summary(70, [0.42, 0.64, 0.75, 1]);
     expect(lines).toEqual([
       '______________________________________________________________________',
-      'Layer (type)           Output shape   Param # Recevies inputs         ',
+      'Layer (type)                 Output shape   Param # Recevies inputs   ',
       '======================================================================',
-      `${lyrName01} (InputLay [null,3]       0                               `,
+      `${lyrName01} (InputLayer)    [null,3]       0                         `,
       '______________________________________________________________________',
-      `${lyrName02} (InputLay [null,4]       0                               `,
+      `${lyrName02} (InputLayer)    [null,4]       0                         `,
       '______________________________________________________________________',
-      `${lyrName04} (Concaten [null,7]       0       ${lyrName01}[0][0]      `,
-      `                                              ${lyrName02}[0][0]      `,
+      `${lyrName04} (Concatenate)   [null,7]       0       ${lyrName01}[0][0]`,
+      `                                                    ${lyrName02}[0][0]`,
       '______________________________________________________________________',
-      `${lyrName03} (InputLay [null,5]       0                               `,
+      `${lyrName03} (InputLayer)    [null,5]       0                         `,
       '______________________________________________________________________',
-      `${lyrName05} (Concaten [null,12]      0       ${lyrName04}[0][0]      `,
-      `                                              ${lyrName03}[0][0]      `,
+      `${lyrName05} (Concatenate)   [null,12]      0       ${lyrName04}[0][0]`,
+      `                                                    ${lyrName03}[0][0]`,
       '======================================================================',
       'Total params: 0', 'Trainable params: 0', 'Non-trainable params: 0',
       '______________________________________________________________________'
     ]);
     expect(consoleLogHistory).toEqual(lines);
+  });
+
+  it('Model with multiple outputs', () => {
+    const lyrName01 = getRandomLayerOrModelName(12);
+    const input1 = tfl.input({shape: [3, 4], name: lyrName01});
+    const lyrName02 = getRandomLayerOrModelName(12);
+    const outputs =
+        tfl.layers.simpleRNN({units: 2, returnState: true, name: lyrName02})
+            .apply(input1) as tfl.SymbolicTensor[];
+    const model = tfl.model({inputs: input1, outputs});
+    const lines = model.summary(70);
+    expect(lines).toEqual([
+      '______________________________________________________________________',
+      'Layer (type)                   Output shape                Param #    ',
+      '======================================================================',
+      `${lyrName01} (InputLayer)      [null,3,4]                  0          `,
+      '______________________________________________________________________',
+      `${lyrName02} (SimpleRNN)       [[null,2],[null,2]]         14         `,
+      '======================================================================',
+      'Total params: 14', 'Trainable params: 14', 'Non-trainable params: 0',
+      '______________________________________________________________________'
+    ]);
   });
 });

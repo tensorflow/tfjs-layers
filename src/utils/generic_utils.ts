@@ -440,16 +440,20 @@ export function checkArrayTypeAndLength(
 
 
 /**
- * Count the numbers in an Array of LayerVariables.
+ * Count the elements in an Array of LayerVariables.
  *
- * @param weights: The weights of which the constituent numbers are to be
- *   counted.
- * @returns A count of the numbers in the weights.
+ * @param weights: The LayerVariables of which the constituent numbers are to
+ *   be counted.
+ * @returns A count of the elements in all the LayerVariables
  */
 export function countParamsInWeights(weights: LayerVariable[]): number {
   let count = 0;
   for (const weight of weights) {
-    count += weight.shape.reduce((a, b) => a * b);
+    if (weight.shape.length === 0) {
+      count += 1;
+    } else {
+      count += weight.shape.reduce((a, b) => a * b);
+    }
   }
   return count;
 }

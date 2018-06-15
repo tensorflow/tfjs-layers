@@ -977,7 +977,6 @@ export abstract class Layer extends serialization.Serializable {
    *   nodes.
    */
   get outputShape(): Shape|Shape[] {
-    // TODO(cais): Unit test coverage. DO NOT SUBMIT.
     if (this.inboundNodes == null || this.inboundNodes.length === 0) {
       throw new AttributeError(
           `The layer ${this.name} has never been called and thus has no ` +
@@ -1017,7 +1016,6 @@ export abstract class Layer extends serialization.Serializable {
    *   weights are not defined yet.)
    */
   countParams(): number {
-    // TODO(cais0: Unit test coverage. DO NOT SUBMIT.
     if (!this.built) {
       throw new RuntimeError(
           `You tried to call countParams() on ${this.name}, ` +
