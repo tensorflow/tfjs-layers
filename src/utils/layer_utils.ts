@@ -20,7 +20,7 @@ import {countParamsInWeights} from './generic_utils';
  *   display to different terminal or console sizes.
  * @param positions Relative or absolute positions of log eleemnts in each
  *   line.
- *   If not provided, defaults to `[]` [0.45, 0.85, 1] for sequential-like
+ *   If not provided, defaults to `[0.45, 0.85, 1]` for sequential-like
  *   models and `[0.33, 0.55, 0.67, 1]` for non-sequential like models.
  * @param printFn Print function to use.
  *   It will be called on each line of the summary. You can provide a custom

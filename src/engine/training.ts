@@ -652,6 +652,36 @@ export class Model extends Container {
     super(config);
   }
 
+  /**
+   * Print a text summary of the model's layers.
+   *
+   * The summary includes
+   * - Name and type of all layers that comprise the model.
+   * - Output shape(s) of the layers
+   * - Number of weight parameters of each layer
+   * - If the model has non-sequential-like topology, the inputs each layer
+   *   receives
+   * - The total number of trainable and non-trainable parameters of the model.
+   *
+   * ```js
+   * const input1 = tf.input({shape: [10]});
+   * const input2 = tf.input({shape: [20]});
+   * const dense1 = tf.layers.dense({units: 4}).apply(input1);
+   * const dense2 = tf.layers.dense({units: 8}).apply(input2);
+   * const concat = tf.layers.concatenate().apply([dense1, dense2]);
+   * const output =
+   *     tf.layers.dense({units: 3, activation: 'softmax'}).apply(concat);
+   *
+   * const model = tf.model({inputs: [input1, input2], outputs: output});
+   * model.summary();
+   * ```
+   *
+   * @param lineLength Custom line length.
+   * @param positions Custom widths of each of the columns.
+   * @param printFn Custom print function. Can be used to replac the default
+   *   `console.log`.
+   * @returns The printed summary text as an Array of strings.
+   */
   summary(
       lineLength?: number, positions?: number[],
       // tslint:disable-next-line:no-any

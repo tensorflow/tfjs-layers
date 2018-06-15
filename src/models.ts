@@ -511,6 +511,30 @@ export class Sequential extends Model {
     return super.countParams();
   }
 
+  /**
+   * Print a text summary of the Sequential model's layers.
+   *
+   * The summary includes
+   * - Name and type of all layers that comprise the model.
+   * - Output shape(s) of the layers
+   * - Number of weight parameters of each layer
+   * - The total number of trainable and non-trainable parameters of the model.
+   *
+   * ```js
+   * const model = tf.sequential();
+   * model.add(
+   *     tf.layers.dense({units: 100, inputShape: [10], activation: 'relu'}));
+   * model.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
+   *
+   * model.summary();
+   * ```
+   *
+   * @param lineLength Custom line length.
+   * @param positions Custom widths of each of the columns.
+   * @param printFn Custom print function. Can be used to replac the default
+   *   `console.log`.
+   * @returns The printed summary text as an Array of strings.
+   */
   summary(
       lineLength?: number, positions?: number[],
       // tslint:disable-next-line:no-any
