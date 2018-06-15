@@ -18,21 +18,20 @@ import {countParamsInWeights} from './generic_utils';
  * @param model tf.Model instance.
  * @param lineLength Total length of printed lines. Set this to adapt to the
  *   display to different terminal or console sizes.
- * @param positions Relative or absolute positions of log eleemnts in each
- *   line.
+ * @param positions Relative or absolute positions of log elements in each
+ *   line. Each number corresponds to right-most (i.e., ending) position of a
+ *   column.
  *   If not provided, defaults to `[0.45, 0.85, 1]` for sequential-like
  *   models and `[0.33, 0.55, 0.67, 1]` for non-sequential like models.
  * @param printFn Print function to use.
  *   It will be called on each line of the summary. You can provide a custom
  *   function in order to capture the string summary. Defaults to `console.log`.
- * @returns The lines as an `Array` of `string`s.
  */
 export function printSummary(
     model: Model, lineLength?: number, positions?: number[],
     // tslint:disable-next-line:no-any
     printFn: (message?: any, ...optionalParams: any[]) => void =
-        console.log): string[] {
-  const lines: string[] = [];
+        console.log): void {
   const sequentialLike = isModelSequentialLike(model);
 
   // Header names for different log elements.
@@ -45,38 +44,34 @@ export function printSummary(
     positions = positions || [0.33, 0.55, 0.67, 1];
     // Header names for different log elements.
   }
+
   if (positions[positions.length - 1] <= 1) {
+    // `positions` is relative. Convert it to absolute positioning.
     positions = positions.map(p => Math.floor(lineLength * p));
   }
 
   let relevantNodes: Node[];
   if (!sequentialLike) {
-    toDisplay.push('Recevies inputs');
+    toDisplay.push('Receives inputs');
     relevantNodes = [];
     for (const depth in model.nodesByDepth) {
       relevantNodes.push(...model.nodesByDepth[depth]);
     }
   }
 
-  function printString(row: string) {
-    printFn(row);
-    lines.push(row);
-  }
-
-  printString('_'.repeat(lineLength));
-  lines.push(printRow(toDisplay, positions, printFn));
-  printString('='.repeat(lineLength));
+  printFn('_'.repeat(lineLength));
+  printRow(toDisplay, positions, printFn);
+  printFn('='.repeat(lineLength));
 
   const layers = model.layers;
   for (let i = 0; i < layers.length; ++i) {
     if (sequentialLike) {
-      lines.push(printLayerSummary(layers[i], positions, printFn));
+      printLayerSummary(layers[i], positions, printFn);
     } else {
-      lines.push(...printLayerSummaryWithConnections(
-          layers[i], positions, relevantNodes, printFn));
+      printLayerSummaryWithConnections(
+          layers[i], positions, relevantNodes, printFn);
     }
-
-    printString((i === layers.length - 1 ? '=' : '_').repeat(lineLength));
+    printFn((i === layers.length - 1 ? '=' : '_').repeat(lineLength));
   }
 
   // tslint:disable-next-line:no-any
@@ -92,12 +87,10 @@ export function printSummary(
   // tslint:enable:no-any
   const nonTrainableCount = countParamsInWeights(model.nonTrainableWeights);
 
-  printString(`Total params: ${trainableCount + nonTrainableCount}`);
-  printString(`Trainable params: ${trainableCount}`);
-  printString(`Non-trainable params: ${nonTrainableCount}`);
-  printString('_'.repeat(lineLength));
-
-  return lines;
+  printFn(`Total params: ${trainableCount + nonTrainableCount}`);
+  printFn(`Trainable params: ${trainableCount}`);
+  printFn(`Non-trainable params: ${nonTrainableCount}`);
+  printFn('_'.repeat(lineLength));
 }
 
 function isModelSequentialLike(model: Model): boolean {
@@ -140,8 +133,7 @@ function isModelSequentialLike(model: Model): boolean {
 function printRow(
     fields: string[], positions: number[],
     // tslint:disable-next-line:no-any
-    printFn: (message?: any, ...optionalParams: any[]) => void =
-        console.log): string {
+    printFn: (message?: any, ...optionalParams: any[]) => void = console.log) {
   let line = '';
   for (let i = 0; i < fields.length; ++i) {
     if (i > 0) {
@@ -163,7 +155,7 @@ function printRow(
 function printLayerSummary(
     layer: Layer, positions: number[],
     // tslint:disable-next-line:no-any
-    printFn: (message?: any, ...optionalParams: any[]) => void): string {
+    printFn: (message?: any, ...optionalParams: any[]) => void) {
   let outputShape: string;
   try {
     outputShape = JSON.stringify(layer.outputShape);
@@ -175,7 +167,7 @@ function printLayerSummary(
   const className = layer.getClassName();
   const fields: string[] =
       [`${name} (${className})`, outputShape, layer.countParams().toString()];
-  return printRow(fields, positions, printFn);
+  printRow(fields, positions, printFn);
 }
 
 /**
@@ -184,7 +176,7 @@ function printLayerSummary(
 function printLayerSummaryWithConnections(
     layer: Layer, positions: number[], relevantNodes: Node[],
     // tslint:disable-next-line:no-any
-    printFn: (message?: any, ...optionalParams: any[]) => void): string[] {
+    printFn: (message?: any, ...optionalParams: any[]) => void) {
   let outputShape: string;
   try {
     outputShape = JSON.stringify(layer.outputShape);
@@ -214,11 +206,8 @@ function printLayerSummaryWithConnections(
     firstConnection
   ];
 
-  const output = [printRow(fields, positions, printFn)];
-  if (connections.length > 1) {
-    for (let i = 1; i < connections.length; ++i) {
-      output.push(printRow(['', '', '', connections[i]], positions, printFn));
-    }
+  printRow(fields, positions, printFn);
+  for (let i = 1; i < connections.length; ++i) {
+    printRow(['', '', '', connections[i]], positions, printFn);
   }
-  return output;
 }

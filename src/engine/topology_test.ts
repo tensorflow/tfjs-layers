@@ -715,6 +715,17 @@ describeMathCPU('Layer', () => {
       expect(layer.outputShape).toEqual([null, 3]);
     });
 
+    it('Layers with two inboundNodes of different outputShapes', () => {
+      const layer = tfl.layers.dense({units: 3});
+      layer.apply(
+          new tfl.SymbolicTensor('float32', [null, 5, 4], null, [], {}));
+      layer.apply(
+          new tfl.SymbolicTensor('float32', [null, 6, 4], null, [], {}));
+      expect(layer.inboundNodes.length).toEqual(2);
+      expect(() => layer.outputShape)
+          .toThrowError(/has multiple inbound nodes/);
+    });
+
     it('Unbuilt layer throws Error', () => {
       const layer = tfl.layers.dense({units: 3});
       expect(() => layer.outputShape).toThrowError(/has never been called/);

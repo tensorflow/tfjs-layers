@@ -37,8 +37,8 @@ describeMathCPU('Model.summary', () => {
       layers:
           [tfl.layers.dense({units: 3, inputShape: [10], name: layerName})]
     });
-    const lines = model.summary();
-    expect(lines).toEqual([
+    model.summary();
+    expect(consoleLogHistory).toEqual([
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
       '=================================================================',
@@ -47,7 +47,6 @@ describeMathCPU('Model.summary', () => {
       'Total params: 33', 'Trainable params: 33', 'Non-trainable params: 0',
       '_________________________________________________________________'
     ]);
-    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: one layer: custom lineLength', () => {
@@ -57,8 +56,8 @@ describeMathCPU('Model.summary', () => {
           [tfl.layers.dense({units: 3, inputShape: [10], name: layerName})]
     });
     const lineLength = 70;
-    const lines = model.summary(lineLength);
-    expect(lines).toEqual([
+    model.summary(lineLength);
+    expect(consoleLogHistory).toEqual([
       '______________________________________________________________________',
       'Layer (type)                   Output shape                Param #    ',
       '======================================================================',
@@ -67,7 +66,6 @@ describeMathCPU('Model.summary', () => {
       'Total params: 33', 'Trainable params: 33', 'Non-trainable params: 0',
       '______________________________________________________________________'
     ]);
-    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: one layer: custom positions', () => {
@@ -78,8 +76,8 @@ describeMathCPU('Model.summary', () => {
     });
     const lineLength = 70;
     const positions: number[] = [0.5, 0.8, 1.0];
-    const lines = model.summary(lineLength, positions);
-    expect(lines).toEqual([
+    model.summary(lineLength, positions);
+    expect(consoleLogHistory).toEqual([
       '______________________________________________________________________',
       'Layer (type)                       Output shape         Param #       ',
       '======================================================================',
@@ -88,7 +86,6 @@ describeMathCPU('Model.summary', () => {
       'Total params: 33', 'Trainable params: 33', 'Non-trainable params: 0',
       '______________________________________________________________________'
     ]);
-    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: one layer: custom printFn', () => {
@@ -104,8 +101,8 @@ describeMathCPU('Model.summary', () => {
       messages.push(message);
     }
 
-    const lines = model.summary(null, null, rerouteLog);
-    expect(lines).toEqual([
+    model.summary(null, null, rerouteLog);
+    expect(messages).toEqual([
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
       '=================================================================',
@@ -115,9 +112,8 @@ describeMathCPU('Model.summary', () => {
       '_________________________________________________________________'
     ]);
 
-    // console.log should have received no calls. But rerouteLog should have
-    // received all the calls.
-    expect(messages).toEqual(lines);
+    // console.log should have received no calls.
+    expect(consoleLogHistory).toEqual([]);
   });
 
   it('Sequential model: three layers', () => {
@@ -131,8 +127,8 @@ describeMathCPU('Model.summary', () => {
         tfl.layers.dense({units: 1, name: lyrName03}),
       ]
     });
-    const lines = model.summary();
-    expect(lines).toEqual([
+    model.summary();
+    expect(consoleLogHistory).toEqual([
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
       '=================================================================',
@@ -147,7 +143,6 @@ describeMathCPU('Model.summary', () => {
       'Non-trainable params: 0',
       '_________________________________________________________________',
     ]);
-    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: with non-trainable layers', () => {
@@ -161,8 +156,8 @@ describeMathCPU('Model.summary', () => {
         tfl.layers.dense({units: 1, name: lyrName03}),
       ]
     });
-    const lines = model.summary();
-    expect(lines).toEqual([
+    model.summary();
+    expect(consoleLogHistory).toEqual([
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
       '=================================================================',
@@ -177,7 +172,6 @@ describeMathCPU('Model.summary', () => {
       'Non-trainable params: 33',
       '_________________________________________________________________',
     ]);
-    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model with Embedding layer', () => {
@@ -194,8 +188,8 @@ describeMathCPU('Model.summary', () => {
         tfl.layers.dense({units: 3, name: lyrName02}),
       ]
     });
-    const lines = model.summary();
-    expect(lines).toEqual([
+    model.summary();
+    expect(consoleLogHistory).toEqual([
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
       '=================================================================',
@@ -206,7 +200,6 @@ describeMathCPU('Model.summary', () => {
       'Total params: 107', 'Trainable params: 107', 'Non-trainable params: 0',
       '_________________________________________________________________'
     ]);
-    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Sequential model: nested', () => {
@@ -221,8 +214,8 @@ describeMathCPU('Model.summary', () => {
     const lyrName02 = getRandomLayerOrModelName();
     outerModel.add(tfl.layers.dense({units: 1, name: lyrName02}));
 
-    const lines = outerModel.summary();
-    expect(lines).toEqual([
+    outerModel.summary();
+    expect(consoleLogHistory).toEqual([
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
       '=================================================================',
@@ -235,7 +228,6 @@ describeMathCPU('Model.summary', () => {
       'Non-trainable params: 0',
       '_________________________________________________________________',
     ]);
-    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Functional model', () => {
@@ -258,10 +250,10 @@ describeMathCPU('Model.summary', () => {
 
     const lineLength = 70;
     const positions: number[] = [0.42, 0.64, 0.75, 1];
-    const lines = model.summary(lineLength, positions);
-    expect(lines).toEqual([
+    model.summary(lineLength, positions);
+    expect(consoleLogHistory).toEqual([
       '______________________________________________________________________',
-      'Layer (type)                 Output shape   Param # Recevies inputs   ',
+      'Layer (type)                 Output shape   Param # Receives inputs   ',
       '======================================================================',
       `${lyrName01} (InputLayer)    [null,3]       0                         `,
       '______________________________________________________________________',
@@ -278,7 +270,6 @@ describeMathCPU('Model.summary', () => {
       'Total params: 0', 'Trainable params: 0', 'Non-trainable params: 0',
       '______________________________________________________________________'
     ]);
-    expect(consoleLogHistory).toEqual(lines);
   });
 
   it('Model with multiple outputs', () => {
@@ -290,8 +281,8 @@ describeMathCPU('Model.summary', () => {
             .apply(input1) as tfl.SymbolicTensor[];
     const model = tfl.model({inputs: input1, outputs});
     const lineLength = 70;
-    const lines = model.summary(lineLength);
-    expect(lines).toEqual([
+    model.summary(lineLength);
+    expect(consoleLogHistory).toEqual([
       '______________________________________________________________________',
       'Layer (type)                   Output shape                Param #    ',
       '======================================================================',

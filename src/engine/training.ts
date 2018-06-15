@@ -676,17 +676,21 @@ export class Model extends Container {
    * model.summary();
    * ```
    *
-   * @param lineLength Custom line length.
-   * @param positions Custom widths of each of the columns.
-   * @param printFn Custom print function. Can be used to replac the default
-   *   `console.log`.
-   * @returns The printed summary text as an Array of strings.
+   * @param lineLength Custom line length, in number of characters.
+   * @param positions Custom widths of each of the columns, as either
+   *   fractions of `lineLength` (e.g., `[0.5, 0.75, 1]`) or absolute number
+   *   of characters (e.g., `[30, 50, 65]`). Each number corresponds to
+   *   right-most (i.e., ending) position of a column.
+   * @param printFn Custom print function. Can be used to replace the default
+   *   `console.log`. For example, you can use `x => {}` to mute the printed
+   *   messages in the console.
    */
+  @doc({heading: 'Models', subheading: 'Classes'})
   summary(
       lineLength?: number, positions?: number[],
-      // tslint:disable-next-line:no-any
-      printFn: (message?: any, ...optionalParams: any[]) => void = console.log):
-      string[] {
+      printFn:
+          // tslint:disable-next-line:no-any
+      (message?: any, ...optionalParams: any[]) => void = console.log) {
     if (!this.built) {
       throw new ValueError(
           `This model has never been called, thus its weights have not been ` +
