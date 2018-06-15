@@ -967,7 +967,7 @@ export abstract class Layer extends serialization.Serializable {
   }
 
   /**
-   * Retrieves the output shape(s) of a layer;
+   * Retrieves the output shape(s) of a layer.
    *
    * Only applicable if the layer has only one inbound node, or if all inbound
    * nodes have the same output shape.

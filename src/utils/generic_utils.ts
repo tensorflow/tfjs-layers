@@ -438,7 +438,6 @@ export function checkArrayTypeAndLength(
 }
 // tslint:enable:no-any
 
-
 /**
  * Count the elements in an Array of LayerVariables.
  *
