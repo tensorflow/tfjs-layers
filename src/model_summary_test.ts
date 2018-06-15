@@ -95,10 +95,13 @@ describeMathCPU('Model.summary', () => {
           [tfl.layers.dense({units: 3, inputShape: [10], name: layerName})]
     });
 
+    const messages: string[] = [];
     // tslint:disable-next-line:no-any
-    function muteLog(message?: any, ...optionalParams: any[]) {}
+    function rerouteLog(message?: any, ...optionalParams: any[]) {
+      messages.push(message);
+    }
 
-    const lines = model.summary(null, null, muteLog);
+    const lines = model.summary(null, null, rerouteLog);
     expect(lines).toEqual([
       '_________________________________________________________________',
       'Layer (type)                 Output shape              Param #   ',
@@ -109,8 +112,9 @@ describeMathCPU('Model.summary', () => {
       '_________________________________________________________________'
     ]);
 
-    // console.log should have received no calls.
-    expect(consoleLogHistory).toEqual([]);
+    // console.log should have received no calls. But rerouteLog should have
+    // received all the calls.
+    expect(messages).toEqual(lines);
   });
 
   it('Sequential model: three layers', () => {

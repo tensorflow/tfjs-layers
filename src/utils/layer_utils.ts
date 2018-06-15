@@ -70,10 +70,10 @@ export function printSummary(
   const layers = model.layers;
   for (let i = 0; i < layers.length; ++i) {
     if (sequentialLike) {
-      lines.push(printLayerSummary(layers[i], positions));
+      lines.push(printLayerSummary(layers[i], positions, printFn));
     } else {
       lines.push(...printLayerSummaryWithConnections(
-          layers[i], positions, relevantNodes));
+          layers[i], positions, relevantNodes, printFn));
     }
 
     printString((i === layers.length - 1 ? '=' : '_').repeat(lineLength));
@@ -160,7 +160,10 @@ function printRow(
  *
  * @param layer: Layer instance to print.
  */
-function printLayerSummary(layer: Layer, positions: number[]): string {
+function printLayerSummary(
+    layer: Layer, positions: number[],
+    // tslint:disable-next-line:no-any
+    printFn: (message?: any, ...optionalParams: any[]) => void): string {
   let outputShape: string;
   try {
     outputShape = JSON.stringify(layer.outputShape);
@@ -172,14 +175,16 @@ function printLayerSummary(layer: Layer, positions: number[]): string {
   const className = layer.getClassName();
   const fields: string[] =
       [`${name} (${className})`, outputShape, layer.countParams().toString()];
-  return printRow(fields, positions);
+  return printRow(fields, positions, printFn);
 }
 
 /**
  * Prints a summary for a single Layer, with connectivity information.
  */
 function printLayerSummaryWithConnections(
-    layer: Layer, positions: number[], relevantNodes: Node[]): string[] {
+    layer: Layer, positions: number[], relevantNodes: Node[],
+    // tslint:disable-next-line:no-any
+    printFn: (message?: any, ...optionalParams: any[]) => void): string[] {
   let outputShape: string;
   try {
     outputShape = JSON.stringify(layer.outputShape);
@@ -209,10 +214,10 @@ function printLayerSummaryWithConnections(
     firstConnection
   ];
 
-  const output = [printRow(fields, positions)];
+  const output = [printRow(fields, positions, printFn)];
   if (connections.length > 1) {
     for (let i = 1; i < connections.length; ++i) {
-      output.push(printRow(['', '', '', connections[i]], positions));
+      output.push(printRow(['', '', '', connections[i]], positions, printFn));
     }
   }
   return output;
