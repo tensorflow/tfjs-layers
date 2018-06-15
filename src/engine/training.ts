@@ -697,7 +697,7 @@ export class Model extends Container {
           `created yet. So no summary can be displayed. Build the model ` +
           `first (e.g., by calling it on some test data).`);
     }
-    return printSummary(this, lineLength, positions, printFn);
+    printSummary(this, lineLength, positions, printFn);
   }
 
   /**

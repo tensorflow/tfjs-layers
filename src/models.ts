@@ -547,7 +547,7 @@ export class Sequential extends Model {
     if (!this.built) {
       this.build();
     }
-    return super.summary(lineLength, positions, printFn);
+    super.summary(lineLength, positions, printFn);
   }
 
   /**

@@ -144,7 +144,6 @@ function printRow(
     line += ' '.repeat(positions[i] - line.length);
   }
   printFn(line);
-  return line;
 }
 
 /**
