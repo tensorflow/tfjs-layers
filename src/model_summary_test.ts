@@ -13,7 +13,7 @@
 import * as tfl from './index';
 import {describeMathCPU} from './utils/test_utils';
 
-function getRandomLayerOrModelName(length: number) {
+function getRandomLayerOrModelName(length = 12) {
   return 'L' + Math.random().toFixed(length - 1).slice(2);
 }
 
@@ -32,7 +32,7 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Sequential model: one layer', () => {
-    const layerName = getRandomLayerOrModelName(12);
+    const layerName = getRandomLayerOrModelName();
     const model = tfl.sequential({
       layers:
           [tfl.layers.dense({units: 3, inputShape: [10], name: layerName})]
@@ -51,12 +51,13 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Sequential model: one layer: custom lineLength', () => {
-    const layerName = getRandomLayerOrModelName(12);
+    const layerName = getRandomLayerOrModelName();
     const model = tfl.sequential({
       layers:
           [tfl.layers.dense({units: 3, inputShape: [10], name: layerName})]
     });
-    const lines = model.summary(70);
+    const lineLength = 70;
+    const lines = model.summary(lineLength);
     expect(lines).toEqual([
       '______________________________________________________________________',
       'Layer (type)                   Output shape                Param #    ',
@@ -70,12 +71,14 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Sequential model: one layer: custom positions', () => {
-    const layerName = getRandomLayerOrModelName(12);
+    const layerName = getRandomLayerOrModelName();
     const model = tfl.sequential({
       layers:
           [tfl.layers.dense({units: 3, inputShape: [10], name: layerName})]
     });
-    const lines = model.summary(70, [0.5, 0.8, 1.0]);
+    const lineLength = 70;
+    const positions: number[] = [0.5, 0.8, 1.0];
+    const lines = model.summary(lineLength, positions);
     expect(lines).toEqual([
       '______________________________________________________________________',
       'Layer (type)                       Output shape         Param #       ',
@@ -89,7 +92,7 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Sequential model: one layer: custom printFn', () => {
-    const layerName = getRandomLayerOrModelName(12);
+    const layerName = getRandomLayerOrModelName();
     const model = tfl.sequential({
       layers:
           [tfl.layers.dense({units: 3, inputShape: [10], name: layerName})]
@@ -118,9 +121,9 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Sequential model: three layers', () => {
-    const lyrName01 = getRandomLayerOrModelName(12);
-    const lyrName02 = getRandomLayerOrModelName(12);
-    const lyrName03 = getRandomLayerOrModelName(12);
+    const lyrName01 = getRandomLayerOrModelName();
+    const lyrName02 = getRandomLayerOrModelName();
+    const lyrName03 = getRandomLayerOrModelName();
     const model = tfl.sequential({
       layers: [
         tfl.layers.flatten({inputShape: [2, 5], name: lyrName01}),
@@ -148,9 +151,9 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Sequential model: with non-trainable layers', () => {
-    const lyrName01 = getRandomLayerOrModelName(12);
-    const lyrName02 = getRandomLayerOrModelName(12);
-    const lyrName03 = getRandomLayerOrModelName(12);
+    const lyrName01 = getRandomLayerOrModelName();
+    const lyrName02 = getRandomLayerOrModelName();
+    const lyrName03 = getRandomLayerOrModelName();
     const model = tfl.sequential({
       layers: [
         tfl.layers.flatten({inputShape: [2, 5], name: lyrName01}),
@@ -178,8 +181,8 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Sequential model with Embedding layer', () => {
-    const lyrName01 = getRandomLayerOrModelName(12);
-    const lyrName02 = getRandomLayerOrModelName(12);
+    const lyrName01 = getRandomLayerOrModelName();
+    const lyrName02 = getRandomLayerOrModelName();
     const model = tfl.sequential({
       layers: [
         tfl.layers.embedding({
@@ -207,7 +210,7 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Sequential model: nested', () => {
-    const mdlName01 = getRandomLayerOrModelName(12);
+    const mdlName01 = getRandomLayerOrModelName();
     const innerModel = tfl.sequential({
       layers: [tfl.layers.dense({units: 3, inputShape: [10]})],
       name: mdlName01
@@ -215,7 +218,7 @@ describeMathCPU('Model.summary', () => {
     const outerModel = tfl.sequential();
     outerModel.add(innerModel);
 
-    const lyrName02 = getRandomLayerOrModelName(12);
+    const lyrName02 = getRandomLayerOrModelName();
     outerModel.add(tfl.layers.dense({units: 1, name: lyrName02}));
 
     const lines = outerModel.summary();
@@ -236,24 +239,26 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Functional model', () => {
-    const lyrName01 = getRandomLayerOrModelName(12);
+    const lyrName01 = getRandomLayerOrModelName();
     const input1 = tfl.input({shape: [3], name: lyrName01});
-    const lyrName02 = getRandomLayerOrModelName(12);
+    const lyrName02 = getRandomLayerOrModelName();
     const input2 = tfl.input({shape: [4], name: lyrName02});
-    const lyrName03 = getRandomLayerOrModelName(12);
+    const lyrName03 = getRandomLayerOrModelName();
     const input3 = tfl.input({shape: [5], name: lyrName03});
-    const lyrName04 = getRandomLayerOrModelName(12);
+    const lyrName04 = getRandomLayerOrModelName();
     const concat1 =
         tfl.layers.concatenate({name: lyrName04}).apply([input1, input2]) as
         tfl.SymbolicTensor;
-    const lyrName05 = getRandomLayerOrModelName(12);
+    const lyrName05 = getRandomLayerOrModelName();
     const output =
         tfl.layers.concatenate({name: lyrName05}).apply([concat1, input3]) as
         tfl.SymbolicTensor;
     const model =
         tfl.model({inputs: [input1, input2, input3], outputs: output});
 
-    const lines = model.summary(70, [0.42, 0.64, 0.75, 1]);
+    const lineLength = 70;
+    const positions: number[] = [0.42, 0.64, 0.75, 1];
+    const lines = model.summary(lineLength, positions);
     expect(lines).toEqual([
       '______________________________________________________________________',
       'Layer (type)                 Output shape   Param # Recevies inputs   ',
@@ -277,14 +282,15 @@ describeMathCPU('Model.summary', () => {
   });
 
   it('Model with multiple outputs', () => {
-    const lyrName01 = getRandomLayerOrModelName(12);
+    const lyrName01 = getRandomLayerOrModelName();
     const input1 = tfl.input({shape: [3, 4], name: lyrName01});
-    const lyrName02 = getRandomLayerOrModelName(12);
+    const lyrName02 = getRandomLayerOrModelName();
     const outputs =
         tfl.layers.simpleRNN({units: 2, returnState: true, name: lyrName02})
             .apply(input1) as tfl.SymbolicTensor[];
     const model = tfl.model({inputs: input1, outputs});
-    const lines = model.summary(70);
+    const lineLength = 70;
+    const lines = model.summary(lineLength);
     expect(lines).toEqual([
       '______________________________________________________________________',
       'Layer (type)                   Output shape                Param #    ',
