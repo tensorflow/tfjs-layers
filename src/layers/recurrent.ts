@@ -2008,7 +2008,6 @@ export class LSTMCell extends RNNCell {
         }
 
         const z0 = K.sliceAlongLastAxis(z, 0, this.units);
-
         const z1 = K.sliceAlongLastAxis(z, this.units, this.units);
         const z2 = K.sliceAlongLastAxis(z, this.units * 2, this.units);
         const z3 = K.sliceAlongLastAxis(z, this.units * 3, this.units);
