@@ -1,9 +1,7 @@
 #### Description
-<!--
-Please describe the pull request here.
-Also, if this is an issue/bug fix, please add the issue link for reference here.
--->
+This pull request normalizes treatment of `strides` and `dilationRate` for `Conv1d` layers.
 
+* Expanded unit test 'conv1d' to cover `dilationRate=2` with `stride=1`.
 ---
 ##### For repository owners only:
 
