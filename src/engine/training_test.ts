@@ -1239,7 +1239,7 @@ describeMathCPUAndGPU(
         targets = ones([numSamples, 1]);
       }
 
-      it('predict: Single bactch', () => {
+      it('predict: Single batch', () => {
         const numExamples = 5;
         const batchSize = 32;  // batchSize >= numExamples ==> a single batch.
         createDenseModelAndData(numExamples);
@@ -1255,7 +1255,7 @@ describeMathCPUAndGPU(
         expect(numTensors1).toEqual(numTensors0);
       });
 
-      it('predict: Two bactches', () => {
+      it('predict: Two batches', () => {
         const numExamples = 5;
         const batchSize = 3;  // batchSize < numExamples ==> multiple batches.
         createDenseModelAndData(numExamples);
