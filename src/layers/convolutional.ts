@@ -354,7 +354,8 @@ export abstract class BaseConv extends Layer {
     this.biasRegularizer = getRegularizer(config.biasRegularizer);
     this.activityRegularizer = getRegularizer(config.activityRegularizer);
     this.dilationRate = normalizeArray(
-          config.dilationRate == null ? 1 : config.dilationRate, rank, 'dilationRate');
+        config.dilationRate == null ? 1 : config.dilationRate,
+        rank, 'dilationRate');
     if (this.rank === 1 &&
         (Array.isArray(this.dilationRate) &&
          (this.dilationRate as number[]).length !== 1)) {

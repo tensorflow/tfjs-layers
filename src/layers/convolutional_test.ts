@@ -106,10 +106,10 @@ describeMathCPUAndGPU('conv1d', () => {
   ];
 
   for (let i=0; i<strides.length; ++i) {
-    let stride = strides[i];
-    let dilationRate = dilations[i];
-    let expectation = expectations[i];
-    let testTitle = `outChannels=${outChannels}, stride=${stride}, ` +
+    const stride = strides[i];
+    const dilationRate = dilations[i];
+    const expectation = expectations[i];
+    const testTitle = `outChannels=${outChannels}, stride=${stride}, ` +
       `${paddingMode}, dilationRate=${dilationRate}, ${dataFormat}`;
     it(testTitle, () => {
       const x = tensor3d(xLength4Data, [1, 4, 1]);
@@ -119,7 +119,8 @@ describeMathCPUAndGPU('conv1d', () => {
       }
       const kernel =
           tfc.transpose(tensor3d(kernelData, [1, outChannels, 2]), [2, 0, 1]);
-      const y = conv1d(x, kernel, stride, paddingMode, dataFormat, dilationRate);
+      const y = conv1d(x, kernel, stride, paddingMode,
+          dataFormat, dilationRate);
       expectTensorsClose(y, tensor3d(expectation, [1, 2, 2]));
     });
   }
