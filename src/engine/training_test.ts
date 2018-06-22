@@ -13,19 +13,19 @@
  */
 
 // tslint:disable:max-line-length
-import {abs, mean, memory, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
+import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {CustomCallback, CustomCallbackConfig, Logs, UnresolvedLogs} from '../callbacks';
 import * as tfl from '../index';
 import {Regularizer} from '../regularizers';
-import {Kwargs, SymbolicTensor} from '../types';
+import {Kwargs} from '../types';
 import {pyListRepeat, stringsEqual} from '../utils/generic_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
+import {Logs, UnresolvedLogs} from './logs';
 // TODO(bileschi): Use external version of Layer.
-import {Layer} from './topology';
-import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, makeBatches, sliceArraysByIndices, standardizeInputData} from './training';
+import {Layer, SymbolicTensor} from './topology';
+import {CallbackList, checkArrayLengths, CustomCallback, CustomCallbackConfig, History, isDataArray, isDataDict, isDataTensor, makeBatches, Model, sliceArraysByIndices, standardizeInputData} from './training';
 
 // tslint:enable:max-line-length
 
@@ -801,11 +801,9 @@ describeMathCPUAndGPU('Model.fit', () => {
     expectTensorsClose(
         valLosses as number[], [386.35848999023438, 1808.7342529296875]);
     expectTensorsClose(
-        layer1.getWeights()[0],
-        K.scalarTimesArray(scalar(-0.61341441), ones([4, 10])));
+        layer1.getWeights()[0], mul(scalar(-0.61341441), ones([4, 10])));
     expectTensorsClose(
-        layer2.getWeights()[0],
-        K.scalarTimesArray(scalar(-1.77405429), ones([10, 1])));
+        layer2.getWeights()[0], mul(scalar(-1.77405429), ones([10, 1])));
 
     // Freeze the 1st layer and compile the model again.
     layer1.trainable = false;
@@ -822,12 +820,10 @@ describeMathCPUAndGPU('Model.fit', () => {
         valLosses as number[], [75.336524963378906, 3.1378798484802246]);
     // Expect no change in the value of layer1's kernel, due to the freezing.
     expectTensorsClose(
-        layer1.getWeights()[0],
-        K.scalarTimesArray(scalar(-0.61341441), ones([4, 10])));
+        layer1.getWeights()[0], mul(scalar(-0.61341441), ones([4, 10])));
     // Expect change in the value of layer2's kernel.
     expectTensorsClose(
-        layer2.getWeights()[0],
-        K.scalarTimesArray(scalar(-0.11295), ones([10, 1])));
+        layer2.getWeights()[0], mul(scalar(-0.11295), ones([10, 1])));
     done();
   });
 
@@ -1748,5 +1744,81 @@ describeMathCPUAndGPU('Model.execute', () => {
                        (model.layers[1].output as tfl.SymbolicTensor).name,
                        ) as Tensor;
     expectTensorsClose(output, zeros([2, 3]));
+  });
+});
+
+class MockModel extends Model {
+  constructor(name: string) {
+    super({inputs: [], outputs: [], name});
+  }
+}
+
+describe('CallbackList', () => {
+  it('Constructor with empty arg', async done => {
+    const callbackList = new CallbackList();
+    await callbackList.onTrainBegin();
+    await callbackList.onTrainEnd();
+    done();
+  });
+  it('Constructor and setParams with array of callbacks', () => {
+    const history1 = new History();
+    const history2 = new History();
+    const callbackList = new CallbackList([history1, history2]);
+    const params = {'verbose': 3};
+    callbackList.setParams(params);
+    expect(history1.params).toEqual(params);
+    expect(history2.params).toEqual(params);
+  });
+  it('Constructor and setModel with array of callbacks', () => {
+    const history1 = new History();
+    const history2 = new History();
+    const callbackList = new CallbackList([history1, history2]);
+    const model = new MockModel('MockModelA');
+    callbackList.setModel(model);
+    expect(history1.model).toEqual(model);
+    expect(history2.model).toEqual(model);
+  });
+  it('onTrainBegin', async done => {
+    const history1 = new History();
+    const history2 = new History();
+    const callbackList = new CallbackList([history1, history2]);
+    await callbackList.onTrainBegin();
+    expect(history1.epoch).toEqual([]);
+    expect(history1.history).toEqual({});
+    expect(history2.epoch).toEqual([]);
+    expect(history2.history).toEqual({});
+    done();
+  });
+  it('onEpochEnd', async done => {
+    const history1 = new History();
+    const history2 = new History();
+    const callbackList = new CallbackList([history1, history2]);
+    await callbackList.onTrainBegin();
+    await callbackList.onEpochEnd(100, {'val_loss': 10, 'val_accuracy': 0.1});
+    expect(history1.epoch).toEqual([100]);
+    expect(history1.history).toEqual({'val_loss': [10], 'val_accuracy': [0.1]});
+    expect(history2.epoch).toEqual([100]);
+    expect(history2.history).toEqual({'val_loss': [10], 'val_accuracy': [0.1]});
+    await callbackList.onEpochEnd(101, {'val_loss': 9.5, 'val_accuracy': 0.2});
+    expect(history1.epoch).toEqual([100, 101]);
+    expect(history1.history)
+        .toEqual({'val_loss': [10, 9.5], 'val_accuracy': [0.1, 0.2]});
+    expect(history2.epoch).toEqual([100, 101]);
+    expect(history2.history)
+        .toEqual({'val_loss': [10, 9.5], 'val_accuracy': [0.1, 0.2]});
+    done();
+  });
+  it('append', async done => {
+    const history1 = new History();
+    const history2 = new History();
+    const callbackList = new CallbackList([history1]);
+    await callbackList.onTrainBegin();
+    expect(history1.epoch).toEqual([]);
+    expect(history1.history).toEqual({});
+    await callbackList.append(history2);
+    await callbackList.onTrainBegin();
+    expect(history2.epoch).toEqual([]);
+    expect(history2.history).toEqual({});
+    done();
   });
 });
