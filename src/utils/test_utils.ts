@@ -16,7 +16,7 @@
 import {memory, Tensor, test_util} from '@tensorflow/tfjs-core';
 import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 
-import {disposeScalarCache} from '../engine/unique_id';
+import {disposeScalarCache} from '../backend/state';
 import {ValueError} from '../errors';
 
 // tslint:enable:max-line-length

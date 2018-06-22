@@ -17,7 +17,7 @@ import {elu, leakyRelu, serialization, Tensor} from '@tensorflow/tfjs-core';
 import {Softmax as softmaxActivation} from '../activations';
 import {cast} from '../backend/tfjs_backend';
 import {Layer, LayerConfig} from '../engine/topology';
-import {getScalar} from '../engine/unique_id';
+import {getScalar} from '../backend/state';
 import {NotImplementedError} from '../errors';
 import {Kwargs, Shape} from '../types';
 import {getExactlyOneTensor} from '../utils/types_utils';

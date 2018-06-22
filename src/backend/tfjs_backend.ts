@@ -17,7 +17,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {dispose, onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, tensor2d, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
 
 import {checkDataFormat, DataFormat} from '../common';
-import {disposeScalarCache, getScalar} from '../engine/unique_id';
+import {disposeScalarCache, getScalar} from '../backend/state';
 import {NotImplementedError, ValueError} from '../errors';
 import {HasShape, Shape} from '../types';
 import * as math_utils from '../utils/math_utils';

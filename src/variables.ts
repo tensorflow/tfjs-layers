@@ -13,7 +13,7 @@ import {DataType, Tensor, variableGrads} from '@tensorflow/tfjs-core';
 
 import {getScopedTensorName, getUniqueTensorName} from './common';
 import {Constraint} from './constraints';
-import {getNextUniqueTensorId} from './engine/unique_id';
+import {getNextUniqueTensorId} from './backend/state';
 import {NotImplementedError} from './errors';
 import {HasShape, Shape} from './types';
 

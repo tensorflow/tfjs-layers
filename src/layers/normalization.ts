@@ -18,7 +18,7 @@ import {serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, tidy, uti
 
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, Layer, LayerConfig} from '../engine/topology';
-import {getScalar} from '../engine/unique_id';
+import {getScalar} from '../backend/state';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';

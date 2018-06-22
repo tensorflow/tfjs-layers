@@ -14,10 +14,9 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {doc, io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
 
+import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {BaseLogger, Callback, CallbackList, CustomCallbackConfig, History, standardizeCallbacks} from '../callbacks';
-// import {BaseLogger, CustomCallbackConfig, disposeTensorsInLogs, History,
-// standardizeCallbacks} from '../callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import * as losses from '../losses';
@@ -32,7 +31,6 @@ import {LayerVariable} from '../variables';
 import {execute, FeedDict} from './executor';
 import {disposeTensorsInLogs, UnresolvedLogs} from './logs';
 import {Container, ContainerConfig, SymbolicTensor} from './topology';
-import {getScalar} from './unique_id';
 
 // tslint:enable:max-line-length
 

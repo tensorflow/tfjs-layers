@@ -13,7 +13,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
-import {getScalar} from './engine/unique_id';
+import {getScalar} from './backend/state';
 import {deserializeKerasObject} from './utils/generic_utils';
 
 /**

@@ -17,7 +17,7 @@ import {serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {Layer, LayerConfig, SymbolicTensor} from '../engine/topology';
-import {getScalar} from '../engine/unique_id';
+import {getScalar} from '../backend/state';
 import {NotImplementedError, ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';

@@ -14,7 +14,7 @@ import {scalar, Tensor, Tensor1D, tidy} from '@tensorflow/tfjs-core';
 
 import {epsilon} from './backend/common';
 import * as K from './backend/tfjs_backend';
-import {getScalar} from './engine/unique_id';
+import {getScalar} from './backend/state';
 import {ValueError} from './errors';
 import {LossOrMetricFn} from './types';
 

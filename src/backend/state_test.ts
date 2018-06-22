@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {getUid} from '../engine/unique_id';
+import {getUid} from '../backend/state';
 
 describe('getUID ', () => {
   it('second UID is different.', () => {

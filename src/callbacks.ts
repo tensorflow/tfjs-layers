@@ -14,7 +14,7 @@ import {add, div, keep, mul, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {Logs, resolveScalarsInLogs, UnresolvedLogs} from './engine/logs';
 import {Container} from './engine/topology';
-import {getScalar} from './engine/unique_id';
+import {getScalar} from './backend/state';
 import * as generic_utils from './utils/generic_utils';
 
 export type Params = {

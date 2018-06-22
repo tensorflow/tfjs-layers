@@ -26,7 +26,7 @@ import {convertTsToPythonic} from '../utils/serialization_utils';
 import * as types_utils from '../utils/types_utils';
 import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 import {version as layersVersion} from '../version';
-import {getNextUniqueTensorId, getUid} from './unique_id';
+import {getNextUniqueTensorId, getUid} from '../backend/state';
 // tslint:enable:max-line-length
 
 // TODO(michaelterry): This is a stub until it's defined.

@@ -13,7 +13,7 @@ import {DataType, doc, eye, linalg, mul, ones, randomUniform, scalar, Scalar, se
 
 import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
-import {getScalar} from './engine/unique_id';
+import {getScalar} from './backend/state';
 import {NotImplementedError, ValueError} from './errors';
 import {Shape} from './types';
 import {checkStringTypeUnionValue, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';

@@ -19,7 +19,7 @@ import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 import * as K from '../backend/tfjs_backend';
 import {nameScope} from '../common';
 import {Layer, LayerConfig, SymbolicTensor} from '../engine/topology';
-import {getScalar} from '../engine/unique_id';
+import {getScalar} from '../backend/state';
 import {NotImplementedError, ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
 import {RegularizerFn, RnnStepFunction} from '../types';

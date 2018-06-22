@@ -21,7 +21,7 @@ import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, SymbolicTensor} from '../engine/topology';
 import {Layer, LayerConfig} from '../engine/topology';
-import {getScalar} from '../engine/unique_id';
+import {getScalar} from '../backend/state';
 import {AttributeError, NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';

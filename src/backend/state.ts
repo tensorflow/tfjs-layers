@@ -8,6 +8,10 @@
  * =============================================================================
  */
 
+/**
+ * Utilities related to persistent state in the backend.
+ */
+
 import {DataType, keep, Scalar, scalar} from '@tensorflow/tfjs-core';
 
 /**
@@ -35,7 +39,6 @@ export function getUid(prefix = ''): string {
   _uidPrefixes[prefix] += 1;
   return prefix + _uidPrefixes[prefix].toString();
 }
-
 
 const scalarCache: {[typeKey: string]: {[key: number]: Scalar}} = {
   float32: {},

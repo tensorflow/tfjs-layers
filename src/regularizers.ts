@@ -15,7 +15,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {abs, add, doc, Scalar, serialization, sum, Tensor, tidy, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from './backend/tfjs_backend';
-import {getScalar} from './engine/unique_id';
+import {getScalar} from './backend/state';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 // tslint:enable:max-line-length
 
