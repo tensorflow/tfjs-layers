@@ -16,6 +16,7 @@
 import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
+import {CallbackList, CustomCallback, CustomCallbackConfig, History} from '../callbacks';
 import * as tfl from '../index';
 import {Regularizer} from '../regularizers';
 import {Kwargs} from '../types';
@@ -25,7 +26,7 @@ import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../uti
 import {Logs, UnresolvedLogs} from './logs';
 // TODO(bileschi): Use external version of Layer.
 import {Layer, SymbolicTensor} from './topology';
-import {CallbackList, checkArrayLengths, CustomCallback, CustomCallbackConfig, History, isDataArray, isDataDict, isDataTensor, makeBatches, Model, sliceArraysByIndices, standardizeInputData} from './training';
+import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, makeBatches, Model, sliceArraysByIndices, standardizeInputData} from './training';
 
 // tslint:enable:max-line-length
 
@@ -1078,7 +1079,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 
     async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {
       if (epoch === this.epochsToTrain - 1) {
-        this.model.stopTraining = true;
+        (this.model as Model).stopTraining = true;
       }
     }
   }
@@ -1110,7 +1111,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 
     async onBatchEnd(batch: number, logs?: Logs) {
       if (batch === this.batchesToTrain - 1) {
-        this.model.stopTraining = true;
+        (this.model as Model).stopTraining = true;
       }
     }
   }
