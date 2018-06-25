@@ -18,12 +18,11 @@ import {DataType, dispose, onesLike as coreOnesLike, Scalar, scalar, Tensor, Ten
 
 import {checkDataFormat, DataFormat, nameScope as commonNameScope} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
-import {Shape, SymbolicTensor} from '../types';
+import {Shape, StringDataType, SymbolicTensor} from '../types';
 import * as math_utils from '../utils/math_utils';
 import {LayerVariable} from '../variables';
 import {epsilon as common_epsilon} from './common';
 import {imageDataFormat} from './common';
-
 // tslint:enable
 
 /* Setting and getting backend from deeplearn.js. */
@@ -112,7 +111,7 @@ export function intShape(x: Tensor|SymbolicTensor): number[] {
  *
  * @param x The tensor.
  */
-export function dtype(x: Tensor|SymbolicTensor): DataType {
+export function dtype(x: Tensor|SymbolicTensor): DataType|StringDataType {
   // TODO(michaelterry): Update if additional data types are available.
   return (x instanceof Tensor) ? DEFAULT_DTYPE : (x as SymbolicTensor).dtype;
 }

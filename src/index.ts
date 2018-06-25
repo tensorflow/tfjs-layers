@@ -11,7 +11,7 @@
 // This file lists all exports of TensorFlow.js Layers
 
 // tslint:disable:max-line-length
-import {ConstraintExports, InitializerExports, LayerExports, MetricExports, ModelExports, RegularizerExports} from './exports';
+import {ConstraintExports, InitializerExports, LayerExports, MetricExports, ModelExports, PreprocessingExports, RegularizerExports} from './exports';
 
 export {Callback, CallbackList, CustomCallback, CustomCallbackConfig, Logs} from './callbacks';
 export {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
@@ -33,3 +33,4 @@ export const constraints = ConstraintExports;
 export const initializers = InitializerExports;
 export const metrics = MetricExports;
 export const regularizers = RegularizerExports;
+export const preprocessing = PreprocessingExports;

@@ -12,7 +12,6 @@
 
 // tslint:disable:max-line-length
 import {DataType, doc, Scalar, Tensor} from '@tensorflow/tfjs-core';
-
 import {getScopedTensorName, getUniqueTensorName} from './common';
 import {Layer} from './engine/topology';
 // tslint:enable:max-line-length
@@ -32,10 +31,17 @@ export function getNextUniqueTensorId(): number {
 }
 
 /**
+ * `StringDataType` is a set of data types including only `string`.
+ */
+export declare enum StringDataType {
+  string = 'string',
+}
+
+/**
  * `SymbolicTensor` is a placeholder for a Tensor without any concrete value.
  *
  * They are most often encountered when building a graph of `Layer`s for a
- * a `Model` and the input data's shape, but not values are known.
+ * a `Model` and the input data's shape is known, but not the values.
  */
 @doc({heading: 'Models', 'subheading': 'Classes'})
 export class SymbolicTensor {
@@ -74,7 +80,7 @@ export class SymbolicTensor {
    *   returned by apply().
    */
   constructor(
-      readonly dtype: DataType, readonly shape: Shape,
+      readonly dtype: DataType|StringDataType, readonly shape: Shape,
       public sourceLayer: Layer, readonly inputs: SymbolicTensor[],
       readonly callArgs: Kwargs, name?: string,
       readonly outputTensorIndex?: number) {

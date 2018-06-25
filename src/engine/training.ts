@@ -615,8 +615,12 @@ export interface ModelCompileConfig {
  * See also:
  *   `Sequential`, `loadModel`.
  */
+//@doc({heading: 'Models', subheading: 'Classes'})
+// export class Model extends Container implements tfc.InferenceModel {
+// TODO:(bileschi) Widen the definiton of InferenceModel to include string
+// tensors
 @doc({heading: 'Models', subheading: 'Classes'})
-export class Model extends Container implements tfc.InferenceModel {
+export class Model extends Container {
   static className = 'Model';
   optimizer: Optimizer;
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|

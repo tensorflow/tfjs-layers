@@ -34,10 +34,12 @@ import {categoricalCrossentropy, cosineProximity, meanAbsoluteError, meanAbsolut
 import {binaryAccuracy, binaryCrossentropy, categoricalAccuracy} from './metrics';
 import {loadModelInternal, Sequential, SequentialConfig} from './models';
 import {OneHot, OneHotLayerConfig} from './preprocess-layers/preprocess_core';
+export * from './preprocess-layers/preprocess_core';
 import {l1, L1Config, L1L2, L1L2Config, l2, L2Config, Regularizer} from './regularizers';
 import {SymbolicTensor} from './types';
 
 // tslint:enable:max-line-length
+
 
 export class ModelExports {
   // TODO(cais): Add doc string to all the public static functions in this
