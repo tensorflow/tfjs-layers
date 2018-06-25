@@ -13,12 +13,10 @@
  */
 
 // tslint:disable:max-line-length
-import {eye, Tensor, tensor1d, util, zeros} from '@tensorflow/tfjs-core';
+import {eye, Tensor, tensor1d, zeros} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';
-import {describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
-
-import {flattenStringArray, StringArray, StringTensor} from './preprocess_core';
+import {describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
 // tslint:enable:max-line-length
 
@@ -59,88 +57,5 @@ describeMathGPU('OneHot Layer: Tensor', () => {
     expect([sampleInput.length, units]).toEqual(y.shape);
     const expectedOutput = zeros([sampleInput.length, units]);
     expectTensorsClose(y, expectedOutput);
-  });
-});
-
-
-// TODO(bileschi): Expand the version in core to accept StringTensor and
-// string[];
-export function stringArraysEqual(n1: string[], n2: string[]) {
-  if (n1.length !== n2.length) {
-    return false;
-  }
-  for (let i = 0; i < n1.length; i++) {
-    if (n1[i] !== n2[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-// TODO(bileschi): Expand eversion in core to accept StringTensor and string[];
-export function expectStringArraysMatch(
-    actual: StringTensor|StringArray, expected: StringTensor|StringArray) {
-  if (!(actual instanceof StringTensor) &&
-      !(expected instanceof StringTensor)) {
-    const aType = actual.constructor.name;
-    const bType = expected.constructor.name;
-
-    if (aType !== bType) {
-      throw new Error(
-          `Arrays are of different type actual: ${aType} ` +
-          `vs expected: ${bType}`);
-    }
-  } else if (
-      actual instanceof StringTensor && expected instanceof StringTensor) {
-    if (!util.arraysEqual(actual.shape, expected.shape)) {
-      throw new Error(
-          `Arrays are of different shape actual: ${actual.shape} ` +
-          `vs expected: ${expected.shape}.`);
-    }
-  }
-
-  let actualValues: string[];
-  let expectedValues: string[];
-  if (actual instanceof StringTensor) {
-    actualValues = actual.stringValues;
-  } else {
-    actualValues = flattenStringArray(actual);
-  }
-  if (expected instanceof StringTensor) {
-    expectedValues = expected.stringValues;
-  } else {
-    expectedValues = flattenStringArray(expected);
-  }
-
-  if (actualValues.length !== expectedValues.length) {
-    throw new Error(
-        `Arrays have different lengths actual: ${actualValues.length} vs ` +
-        `expected: ${expectedValues.length}.\n` +
-        `Actual:   ${actualValues}.\n` +
-        `Expected: ${expectedValues}.`);
-  }
-  for (let i = 0; i < expectedValues.length; ++i) {
-    const a = actualValues[i];
-    const e = expectedValues[i];
-
-    if (a !== e) {
-      throw new Error(
-          `Arrays differ: actual[${i}] = ${a}, expected[${i}] = ${e}.\n` +
-          `Actual:   ${actualValues}.\n` +
-          `Expected: ${expectedValues}.`);
-    }
-  }
-}
-
-
-describeMathCPUAndGPU('String Tensor', () => {
-  it('can create a string tensor', () => {
-    const st: StringTensor = tfl.preprocessing.stringTensor2D(
-        [['hello', 'world'], ['mellow', 'morld']], [2, 2]);
-    expect(st.rank).toBe(2);
-    expect(st.size).toBe(4);
-    expectStringArraysMatch(st, ['hello', 'world', 'mellow', 'morld']);
-    // Out of bounds indexing.
-    expect(st.get(3, 3)).toBeUndefined();
   });
 });
