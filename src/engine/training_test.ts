@@ -16,7 +16,7 @@
 import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {CallbackList, CustomCallback, CustomCallbackConfig, History} from '../callbacks';
+import {CustomCallback, CustomCallbackConfig} from '../callbacks';
 import * as tfl from '../index';
 import {Regularizer} from '../regularizers';
 import {Kwargs} from '../types';
@@ -1745,81 +1745,5 @@ describeMathCPUAndGPU('Model.execute', () => {
                        (model.layers[1].output as tfl.SymbolicTensor).name,
                        ) as Tensor;
     expectTensorsClose(output, zeros([2, 3]));
-  });
-});
-
-class MockModel extends Model {
-  constructor(name: string) {
-    super({inputs: [], outputs: [], name});
-  }
-}
-
-describe('CallbackList', () => {
-  it('Constructor with empty arg', async done => {
-    const callbackList = new CallbackList();
-    await callbackList.onTrainBegin();
-    await callbackList.onTrainEnd();
-    done();
-  });
-  it('Constructor and setParams with array of callbacks', () => {
-    const history1 = new History();
-    const history2 = new History();
-    const callbackList = new CallbackList([history1, history2]);
-    const params = {'verbose': 3};
-    callbackList.setParams(params);
-    expect(history1.params).toEqual(params);
-    expect(history2.params).toEqual(params);
-  });
-  it('Constructor and setModel with array of callbacks', () => {
-    const history1 = new History();
-    const history2 = new History();
-    const callbackList = new CallbackList([history1, history2]);
-    const model = new MockModel('MockModelA');
-    callbackList.setModel(model);
-    expect(history1.model).toEqual(model);
-    expect(history2.model).toEqual(model);
-  });
-  it('onTrainBegin', async done => {
-    const history1 = new History();
-    const history2 = new History();
-    const callbackList = new CallbackList([history1, history2]);
-    await callbackList.onTrainBegin();
-    expect(history1.epoch).toEqual([]);
-    expect(history1.history).toEqual({});
-    expect(history2.epoch).toEqual([]);
-    expect(history2.history).toEqual({});
-    done();
-  });
-  it('onEpochEnd', async done => {
-    const history1 = new History();
-    const history2 = new History();
-    const callbackList = new CallbackList([history1, history2]);
-    await callbackList.onTrainBegin();
-    await callbackList.onEpochEnd(100, {'val_loss': 10, 'val_accuracy': 0.1});
-    expect(history1.epoch).toEqual([100]);
-    expect(history1.history).toEqual({'val_loss': [10], 'val_accuracy': [0.1]});
-    expect(history2.epoch).toEqual([100]);
-    expect(history2.history).toEqual({'val_loss': [10], 'val_accuracy': [0.1]});
-    await callbackList.onEpochEnd(101, {'val_loss': 9.5, 'val_accuracy': 0.2});
-    expect(history1.epoch).toEqual([100, 101]);
-    expect(history1.history)
-        .toEqual({'val_loss': [10, 9.5], 'val_accuracy': [0.1, 0.2]});
-    expect(history2.epoch).toEqual([100, 101]);
-    expect(history2.history)
-        .toEqual({'val_loss': [10, 9.5], 'val_accuracy': [0.1, 0.2]});
-    done();
-  });
-  it('append', async done => {
-    const history1 = new History();
-    const history2 = new History();
-    const callbackList = new CallbackList([history1]);
-    await callbackList.onTrainBegin();
-    expect(history1.epoch).toEqual([]);
-    expect(history1.history).toEqual({});
-    await callbackList.append(history2);
-    await callbackList.onTrainBegin();
-    expect(history2.epoch).toEqual([]);
-    expect(history2.history).toEqual({});
-    done();
   });
 });

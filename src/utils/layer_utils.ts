@@ -9,8 +9,7 @@
  */
 
 import {Container, Layer, Node} from '../engine/topology';
-
-import {countParamsInWeights} from './types_utils';
+import {countParamsInWeights} from './variable_utils';
 
 /**
  * Print the summary of a Model object.

@@ -14,7 +14,6 @@
 import {Tensor} from '@tensorflow/tfjs-core';
 import {ValueError} from '../errors';
 import {Shape} from '../types';
-import {LayerVariable} from '../variables';
 // tslint:enable
 
 
@@ -81,23 +80,4 @@ export function getExactlyOneShape(shapes: Shape|Shape[]): Shape {
   } else {
     return shapes as Shape;
   }
-}
-
-/**
- * Count the elements in an Array of LayerVariables.
- *
- * @param weights: The LayerVariables of which the constituent numbers are to
- *   be counted.
- * @returns A count of the elements in all the LayerVariables
- */
-export function countParamsInWeights(weights: LayerVariable[]): number {
-  let count = 0;
-  for (const weight of weights) {
-    if (weight.shape.length === 0) {
-      count += 1;
-    } else {
-      count += weight.shape.reduce((a, b) => a * b);
-    }
-  }
-  return count;
 }

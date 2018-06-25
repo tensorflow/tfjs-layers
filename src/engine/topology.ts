@@ -13,7 +13,7 @@
 // tslint:disable:max-line-length
 import {DataType, doc, Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
-// import * as K from '../backend/tfjs_backend';
+import {getNextUniqueTensorId, getUid} from '../backend/state';
 import {getScopedTensorName, getUniqueTensorName, nameScope} from '../common';
 import {Constraint} from '../constraints';
 import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
@@ -24,9 +24,9 @@ import {JsonDict, Kwargs, NamedTensorMap, RegularizerFn, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
 import * as types_utils from '../utils/types_utils';
+import * as variable_utils from '../utils/variable_utils';
 import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 import {version as layersVersion} from '../version';
-import {getNextUniqueTensorId, getUid} from '../backend/state';
 // tslint:enable:max-line-length
 
 // TODO(michaelterry): This is a stub until it's defined.
@@ -1079,7 +1079,7 @@ export abstract class Layer extends serialization.Serializable {
           `but the layer is not built yet. Build it first by calling ` +
           `build(batchInputShape).`);
     }
-    return types_utils.countParamsInWeights(this.weights);
+    return variable_utils.countParamsInWeights(this.weights);
   }
 
   /**

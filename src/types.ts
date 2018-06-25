@@ -12,8 +12,6 @@
 
 // tslint:disable:max-line-length
 import {Scalar, Tensor} from '@tensorflow/tfjs-core';
-
-// import {Layer} from './engine/topology';
 // tslint:enable:max-line-length
 
 /** @docalias number[] */
