@@ -165,3 +165,15 @@ describeMathCPUAndGPU('String Tensor Creation', () => {
     expect(st.get(0, 0, 0, 3, 3, 9)).toBeUndefined();
   });
 });
+
+describeMathCPUAndGPU('String Tensor Reshape', () => {
+  it('2D', () => {
+    const stOrig: StringTensor = tfl.preprocessing.stringTensor2d(
+        [['hello', 'world'], ['こんにちは', '世界']], [2, 2]);
+    const st = stOrig.reshape([1, 1, 4, 1, 1]);
+    expect(st.rank).toBe(5);
+    expect(st.size).toBe(4);
+    expectStringArraysMatch(st, ['hello', 'world', 'こんにちは', '世界']);
+    expect(st.get(0, 0, 3, 0, 0)).toBe('世界');
+  });
+});

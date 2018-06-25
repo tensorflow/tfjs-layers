@@ -146,8 +146,6 @@ export class StringTensor<R extends Rank = Rank> {
     for (let i = 0; i < locs.length - 1; ++i) {
       index += this.strides[i] * locs[i];
     }
-    console.log(this.stringValues);
-    console.log(index);
     return this.stringValues[index];
   }
 
