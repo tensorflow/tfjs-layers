@@ -13,10 +13,9 @@
 // tslint:disable:max-line-length
 import {doc, io, Scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
 
-import {History} from './callbacks';
-import {getSourceInputs, Input, Layer, Node, SymbolicTensor} from './engine/topology';
-import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
 import {getUid} from './backend/state';
+import {getSourceInputs, Input, Layer, Node, SymbolicTensor} from './engine/topology';
+import {History, Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
 import {Kwargs, NamedTensorMap, Shape} from './types';

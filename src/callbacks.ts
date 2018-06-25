@@ -12,9 +12,8 @@
 
 import {add, div, keep, mul, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
 
-import {Logs, resolveScalarsInLogs, UnresolvedLogs} from './engine/logs';
-import {Container} from './engine/topology';
 import {getScalar} from './backend/state';
+import {Logs, resolveScalarsInLogs, UnresolvedLogs} from './engine/logs';
 import * as generic_utils from './utils/generic_utils';
 
 export type Params = {
@@ -42,8 +41,6 @@ export type Params = {
 export abstract class Callback {
   // TODO(michaelterry): This type is a best guess.
   validationData: Tensor|Tensor[] = null;
-  /** Instance of `keras.models.Model`. Reference of the model being trained. */
-  model: Container = null;
   /**
    * Training parameters (eg. verbosity, batch size, number of epochs...).
    */
@@ -51,10 +48,6 @@ export abstract class Callback {
 
   setParams(params: Params): void {
     this.params = params;
-  }
-
-  setModel(model: Container): void {
-    this.model = model;
   }
 
   async onEpochBegin(epoch: number, logs?: UnresolvedLogs) {}
@@ -106,12 +99,6 @@ export class CallbackList {
   setParams(params: Params): void {
     for (const callback of this.callbacks) {
       callback.setParams(params);
-    }
-  }
-
-  setModel(model: Container): void {
-    for (const callback of this.callbacks) {
-      callback.setModel(model);
     }
   }
 
@@ -264,59 +251,6 @@ export class BaseLogger extends Callback {
           });
         }
       }
-    }
-  }
-}
-
-/**
- * Callback that records events into a `History` object. This callback is
- * automatically applied to every TF.js Layers model. The `History` object gets
- * returned by the `fit` method of models.
- */
-export class History extends Callback {
-  epoch: number[];
-  history: {[key: string]: Array<number|Tensor>};
-
-  async onTrainBegin(logs?: UnresolvedLogs) {
-    this.epoch = [];
-    this.history = {};
-  }
-
-  async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {
-    if (logs == null) {
-      logs = {};
-    }
-    this.epoch.push(epoch);
-    for (const key in logs) {
-      if (this.history[key] == null) {
-        this.history[key] = [];
-      }
-      this.history[key].push(logs[key]);
-    }
-  }
-
-  /**
-   * Await the values of all losses and metrics.
-   */
-  async syncData() {
-    const promises: Array<Promise<Float32Array|Int32Array|Uint8Array>> = [];
-    const keys: string[] = [];
-    const indices: number[] = [];
-    for (const key in this.history) {
-      const valueArray = this.history[key];
-      for (let i = 0; i < valueArray.length; ++i) {
-        if (typeof valueArray[i] !== 'number') {
-          const valueScalar = valueArray[i] as Tensor;
-          promises.push(valueScalar.data());
-          keys.push(key);
-          indices.push(i);
-        }
-      }
-    }
-    const values = await Promise.all(promises);
-    for (let n = 0; n < values.length; ++n) {
-      (this.history[keys[n]][indices[n]] as Tensor).dispose();
-      this.history[keys[n]][indices[n]] = values[n][0];
     }
   }
 }

@@ -16,7 +16,7 @@ import {doc, io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, T
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {BaseLogger, Callback, CallbackList, CustomCallbackConfig, History, standardizeCallbacks} from '../callbacks';
+import {BaseLogger, Callback, CallbackList, CustomCallbackConfig, standardizeCallbacks} from '../callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import * as losses from '../losses';
@@ -1356,7 +1356,7 @@ export class Model extends Container implements tfc.InferenceModel {
     if (verbose > 0) {
       throw new NotImplementedError('Verbose mode is not implemented yet.');
     }
-    const callbackList = new CallbackList(callbacks);
+    const callbackList = new ModelAwareCallbackList(callbacks);
 
     // TODO(cais): Figure out when this Model instance can have a dynamically
     //   set property called 'callback_model' as in PyKeras.
@@ -1940,3 +1940,79 @@ export class Model extends Container implements tfc.InferenceModel {
 }
 
 serialization.SerializationMap.register(Model);
+
+
+export abstract class ModelAwareCallback extends Callback {
+  /** Instance of `keras.models.Model`. Reference of the model being trained. */
+  model: Model = null;
+
+  setModel(model: Model): void {
+    this.model = model;
+  }
+}
+
+export class ModelAwareCallbackList extends CallbackList {
+  /** Instance of `keras.models.Model`. Reference of the model being trained. */
+  model: Model = null;
+
+  setModel(model: Model): void {
+    for (const callback of this.callbacks) {
+      if (callback instanceof ModelAwareCallback) {
+        callback.setModel(model);
+      }
+    }
+  }
+}
+
+/**
+ * Callback that records events into a `History` object. This callback is
+ * automatically applied to every TF.js Layers model. The `History` object gets
+ * returned by the `fit` method of models.
+ */
+export class History extends ModelAwareCallback {
+  epoch: number[];
+  history: {[key: string]: Array<number|Tensor>};
+
+  async onTrainBegin(logs?: UnresolvedLogs) {
+    this.epoch = [];
+    this.history = {};
+  }
+
+  async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {
+    if (logs == null) {
+      logs = {};
+    }
+    this.epoch.push(epoch);
+    for (const key in logs) {
+      if (this.history[key] == null) {
+        this.history[key] = [];
+      }
+      this.history[key].push(logs[key]);
+    }
+  }
+
+  /**
+   * Await the values of all losses and metrics.
+   */
+  async syncData() {
+    const promises: Array<Promise<Float32Array|Int32Array|Uint8Array>> = [];
+    const keys: string[] = [];
+    const indices: number[] = [];
+    for (const key in this.history) {
+      const valueArray = this.history[key];
+      for (let i = 0; i < valueArray.length; ++i) {
+        if (typeof valueArray[i] !== 'number') {
+          const valueScalar = valueArray[i] as Tensor;
+          promises.push(valueScalar.data());
+          keys.push(key);
+          indices.push(i);
+        }
+      }
+    }
+    const values = await Promise.all(promises);
+    for (let n = 0; n < values.length; ++n) {
+      (this.history[keys[n]][indices[n]] as Tensor).dispose();
+      this.history[keys[n]][indices[n]] = values[n][0];
+    }
+  }
+}

@@ -26,7 +26,7 @@ import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../uti
 import {Logs, UnresolvedLogs} from './logs';
 // TODO(bileschi): Use external version of Layer.
 import {Layer, SymbolicTensor} from './topology';
-import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, makeBatches, Model, sliceArraysByIndices, standardizeInputData} from './training';
+import {checkArrayLengths, History, isDataArray, isDataDict, isDataTensor, makeBatches, Model, ModelAwareCallbackList, sliceArraysByIndices, standardizeInputData} from './training';
 
 // tslint:enable:max-line-length
 
@@ -1070,7 +1070,7 @@ describeMathCPUAndGPU('Model.fit', () => {
         });
   });
 
-  class StopAfterNEpochs extends tfl.Callback {
+  class StopAfterNEpochs extends tfl.ModelAwareCallback {
     private readonly epochsToTrain: number;
     constructor(epochsToTrain: number) {
       super();
@@ -1079,7 +1079,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 
     async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {
       if (epoch === this.epochsToTrain - 1) {
-        (this.model as Model).stopTraining = true;
+        this.model.stopTraining = true;
       }
     }
   }
@@ -1102,7 +1102,7 @@ describeMathCPUAndGPU('Model.fit', () => {
         .catch(err => done.fail(err.stack));
   });
 
-  class StopAfterNBatches extends tfl.Callback {
+  class StopAfterNBatches extends tfl.ModelAwareCallback {
     private readonly batchesToTrain: number;
     constructor(epochsToTrain: number) {
       super();
@@ -1111,7 +1111,7 @@ describeMathCPUAndGPU('Model.fit', () => {
 
     async onBatchEnd(batch: number, logs?: Logs) {
       if (batch === this.batchesToTrain - 1) {
-        (this.model as Model).stopTraining = true;
+        this.model.stopTraining = true;
       }
     }
   }
@@ -1745,5 +1745,46 @@ describeMathCPUAndGPU('Model.execute', () => {
                        (model.layers[1].output as tfl.SymbolicTensor).name,
                        ) as Tensor;
     expectTensorsClose(output, zeros([2, 3]));
+  });
+});
+
+
+class MockModel extends Model {
+  constructor(name: string) {
+    super({inputs: [], outputs: [], name});
+  }
+}
+
+describe('History Callback', () => {
+  it('onTrainBegin', async done => {
+    const history = new History();
+    await history.onTrainBegin();
+    expect(history.epoch).toEqual([]);
+    expect(history.history).toEqual({});
+    done();
+  });
+  it('onEpochEnd', async done => {
+    const history = new History();
+    await history.onTrainBegin();
+    await history.onEpochEnd(0, {'val_loss': 10, 'val_accuracy': 0.1});
+    expect(history.epoch).toEqual([0]);
+    expect(history.history).toEqual({'val_loss': [10], 'val_accuracy': [0.1]});
+    await history.onEpochEnd(1, {'val_loss': 9.5, 'val_accuracy': 0.2});
+    expect(history.epoch).toEqual([0, 1]);
+    expect(history.history)
+        .toEqual({'val_loss': [10, 9.5], 'val_accuracy': [0.1, 0.2]});
+    done();
+  });
+});
+
+describe('ModelAwareCallbackList', () => {
+  it('Constructor and setModel with array of callbacks', () => {
+    const history1 = new History();
+    const history2 = new History();
+    const callbackList = new ModelAwareCallbackList([history1, history2]);
+    const model = new MockModel('MockModelA');
+    callbackList.setModel(model);
+    expect(history1.model).toEqual(model);
+    expect(history2.model).toEqual(model);
   });
 });

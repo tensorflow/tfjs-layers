@@ -16,7 +16,7 @@ import {ConstraintExports, InitializerExports, LayerExports, MetricExports, Mode
 export {Callback, CallbackList, CustomCallback, CustomCallbackConfig} from './callbacks';
 export {Logs} from './engine/logs';
 export {SymbolicTensor} from './engine/topology';
-export {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
+export {Model, ModelAwareCallback, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
 export {GRUCellLayerConfig, GRULayerConfig, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNLayerConfig, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig} from './layers/recurrent';
 export {ModelAndWeightsConfig, Sequential, SequentialConfig} from './models';
 export {Shape} from './types';
