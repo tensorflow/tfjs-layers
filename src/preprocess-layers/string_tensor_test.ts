@@ -177,3 +177,18 @@ describeMathCPUAndGPU('String Tensor Reshape', () => {
     expect(st.get(0, 0, 3, 0, 0)).toBe('世界');
   });
 });
+
+
+describeMathCPUAndGPU('String Tensor set value', () => {
+  it('2D', () => {
+    const st: StringTensor = tfl.preprocessing.stringTensor2d(
+        [['hello', 'world'], ['こんにちは', 'TODO...']], [2, 2]);
+    st.set('世界', 1, 1);
+    expect(st.rank).toBe(2);
+    expect(st.size).toBe(4);
+    expectStringArraysMatch(st, ['hello', 'world', 'こんにちは', '世界']);
+    expect(st.get(1, 1)).toBe('世界');
+    // Out of bounds indexing.
+    expect(st.get(3, 3)).toBeUndefined();
+  });
+});

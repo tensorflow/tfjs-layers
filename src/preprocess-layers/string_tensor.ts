@@ -149,6 +149,38 @@ export class StringTensor<R extends Rank = Rank> {
     return this.stringValues[index];
   }
 
+
+  locToIndex(locs: number[]): number {
+    if (this.rank === 0) {
+      return 0;
+    } else if (this.rank === 1) {
+      return locs[0];
+    }
+    let index = locs[locs.length - 1];
+    for (let i = 0; i < locs.length - 1; ++i) {
+      index += this.strides[i] * locs[i];
+    }
+    return index;
+  }
+
+  /**
+   * Sets the value in the `StringTensor` at the provided location.
+   *
+   * @param value The string to put into the `StringTensor`.
+   * @param locs The location indices.
+   */
+  set(value: string, ...locs: number[]) {
+    if (locs.length === 0) {
+      locs = [0];
+    }
+    util.assert(
+        locs.length === this.rank,
+        `The number of provided coordinates (${locs.length}) must ` +
+            `match the rank (${this.rank})`);
+    const index = this.locToIndex(locs);
+    this.stringValues[index] = value;
+  }
+
   /** Flatten a StringTensor to a 1D array. */
   @doc({heading: 'Tensors', subheading: 'Classes'})
   flatten(): StringTensor1D {
