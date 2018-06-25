@@ -927,7 +927,7 @@ export abstract class Layer extends serialization.Serializable {
         const inputShape = collectInputShape(inputs);
         const outputShape = this.computeOutputShape(inputShape);
         let output: SymbolicTensor|SymbolicTensor[];
-        const outputDType = guessOutputDType(inputs);
+        const outputDType = this.guessOutputDType(inputs);
 
         if (outputShape != null && outputShape.length > 0 &&
             Array.isArray(outputShape[0])) {
@@ -1024,6 +1024,21 @@ export abstract class Layer extends serialization.Serializable {
     }
     return generic_utils.countParamsInWeights(this.weights);
   }
+
+  /**
+   * Guesses output dtype based on inputs.
+   *
+   * At present, just returns 'float32' for any input.
+   *
+   * @param inputTensors List of input tensors (or single input tensor).
+   *
+   * @return The guessed DType. At present, always returns 'float32'.
+   */
+  guessOutputDType(inputTensors: SymbolicTensor|SymbolicTensor[]|Tensor|
+                   Tensor[]): DataType {
+    return 'float32';
+  }
+
 
   /**
    * Creates the layer weights.
@@ -1319,21 +1334,6 @@ function collectInputShape(inputTensors: SymbolicTensor|SymbolicTensor[]|Tensor|
   }
   return generic_utils.singletonOrArray(shapes);
 }
-
-/**
- * Guesses output dtype based on inputs.
- *
- * At present, just returns 'float32' for any input.
- *
- * @param inputTensors List of input tensors (or single input tensor).
- *
- * @return The guessed DType. At present, always returns 'float32'.
- */
-function guessOutputDType(inputTensors: SymbolicTensor|SymbolicTensor[]|Tensor|
-                          Tensor[]): DataType {
-  return 'float32';
-}
-
 
 /**
  * Constructor arguments for InputLayer.
