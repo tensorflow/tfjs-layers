@@ -16,7 +16,7 @@
 import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {CustomCallback, CustomCallbackConfig} from '../callbacks';
+import {CustomCallback, CustomCallbackConfig} from '../base_callbacks';
 import * as tfl from '../index';
 import {Regularizer} from '../regularizers';
 import {Kwargs} from '../types';
@@ -26,7 +26,7 @@ import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../uti
 import {Logs, UnresolvedLogs} from './logs';
 // TODO(bileschi): Use external version of Layer.
 import {Layer, SymbolicTensor} from './topology';
-import {checkArrayLengths, History, isDataArray, isDataDict, isDataTensor, makeBatches, Model, ModelAwareCallbackList, sliceArraysByIndices, standardizeInputData} from './training';
+import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, makeBatches, sliceArraysByIndices, standardizeInputData} from './training';
 
 // tslint:enable:max-line-length
 
@@ -1070,7 +1070,7 @@ describeMathCPUAndGPU('Model.fit', () => {
         });
   });
 
-  class StopAfterNEpochs extends tfl.ModelAwareCallback {
+  class StopAfterNEpochs extends tfl.Callback {
     private readonly epochsToTrain: number;
     constructor(epochsToTrain: number) {
       super();
@@ -1102,7 +1102,7 @@ describeMathCPUAndGPU('Model.fit', () => {
         .catch(err => done.fail(err.stack));
   });
 
-  class StopAfterNBatches extends tfl.ModelAwareCallback {
+  class StopAfterNBatches extends tfl.Callback {
     private readonly batchesToTrain: number;
     constructor(epochsToTrain: number) {
       super();
@@ -1745,46 +1745,5 @@ describeMathCPUAndGPU('Model.execute', () => {
                        (model.layers[1].output as tfl.SymbolicTensor).name,
                        ) as Tensor;
     expectTensorsClose(output, zeros([2, 3]));
-  });
-});
-
-
-class MockModel extends Model {
-  constructor(name: string) {
-    super({inputs: [], outputs: [], name});
-  }
-}
-
-describe('History Callback', () => {
-  it('onTrainBegin', async done => {
-    const history = new History();
-    await history.onTrainBegin();
-    expect(history.epoch).toEqual([]);
-    expect(history.history).toEqual({});
-    done();
-  });
-  it('onEpochEnd', async done => {
-    const history = new History();
-    await history.onTrainBegin();
-    await history.onEpochEnd(0, {'val_loss': 10, 'val_accuracy': 0.1});
-    expect(history.epoch).toEqual([0]);
-    expect(history.history).toEqual({'val_loss': [10], 'val_accuracy': [0.1]});
-    await history.onEpochEnd(1, {'val_loss': 9.5, 'val_accuracy': 0.2});
-    expect(history.epoch).toEqual([0, 1]);
-    expect(history.history)
-        .toEqual({'val_loss': [10, 9.5], 'val_accuracy': [0.1, 0.2]});
-    done();
-  });
-});
-
-describe('ModelAwareCallbackList', () => {
-  it('Constructor and setModel with array of callbacks', () => {
-    const history1 = new History();
-    const history2 = new History();
-    const callbackList = new ModelAwareCallbackList([history1, history2]);
-    const model = new MockModel('MockModelA');
-    callbackList.setModel(model);
-    expect(history1.model).toEqual(model);
-    expect(history2.model).toEqual(model);
   });
 });

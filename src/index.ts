@@ -13,10 +13,11 @@
 // tslint:disable:max-line-length
 import {ConstraintExports, InitializerExports, LayerExports, MetricExports, ModelExports, RegularizerExports} from './exports';
 
-export {Callback, CallbackList, CustomCallback, CustomCallbackConfig} from './callbacks';
+export {CallbackList, CustomCallback, CustomCallbackConfig} from './base_callbacks';
+export {Callback} from './callbacks';
 export {Logs} from './engine/logs';
 export {SymbolicTensor} from './engine/topology';
-export {Model, ModelAwareCallback, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
+export {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
 export {GRUCellLayerConfig, GRULayerConfig, LSTMCellLayerConfig, LSTMLayerConfig, RNN, RNNLayerConfig, SimpleRNNCellLayerConfig, SimpleRNNLayerConfig} from './layers/recurrent';
 export {ModelAndWeightsConfig, Sequential, SequentialConfig} from './models';
 export {Shape} from './types';

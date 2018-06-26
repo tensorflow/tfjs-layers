@@ -16,7 +16,7 @@ import {doc, io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, T
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {BaseLogger, Callback, CallbackList, CustomCallbackConfig, standardizeCallbacks} from '../callbacks';
+import {BaseCallback, BaseLogger, CallbackList, CustomCallbackConfig, History, standardizeCallbacks} from '../base_callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import * as losses from '../losses';
@@ -509,7 +509,7 @@ export interface ModelFitConfig {
    * Can consist of one or more of the following fields: `onTrainBegin`,
    * `onTrainEnd`, `onEpochBegin`, `onEpochEnd`, `onBatchBegin`, `onBatchEnd`.
    */
-  callbacks?: Callback[]|CustomCallbackConfig|CustomCallbackConfig[];
+  callbacks?: BaseCallback[]|CustomCallbackConfig|CustomCallbackConfig[];
 
   /**
    * Float between 0 and 1: fraction of the training data
@@ -1306,7 +1306,7 @@ export class Model extends Container implements tfc.InferenceModel {
   private async fitLoop(
       f: (data: Tensor[]) => Scalar[], ins: Tensor[], outLabels?: string[],
       batchSize?: number, epochs?: number, verbose?: number,
-      callbacks?: Callback[], valF?: (data: Tensor[]) => Scalar[],
+      callbacks?: BaseCallback[], valF?: (data: Tensor[]) => Scalar[],
       valIns?: Tensor[], shuffle?: boolean|string, callbackMetrics?: string[],
       initialEpoch = 0, stepsPerEpoch?: number,
       validationSteps?: number): Promise<History> {
@@ -1349,14 +1349,14 @@ export class Model extends Container implements tfc.InferenceModel {
     if (callbacks == null) {
       callbacks = [new BaseLogger()];
     } else {
-      callbacks = [new BaseLogger() as Callback].concat(callbacks);
+      callbacks = ([new BaseLogger()] as BaseCallback[]).concat(callbacks);
     }
     callbacks = callbacks.concat([this.history]);
 
     if (verbose > 0) {
       throw new NotImplementedError('Verbose mode is not implemented yet.');
     }
-    const callbackList = new ModelAwareCallbackList(callbacks);
+    const callbackList = new CallbackList(callbacks);
 
     // TODO(cais): Figure out when this Model instance can have a dynamically
     //   set property called 'callback_model' as in PyKeras.
@@ -1940,79 +1940,3 @@ export class Model extends Container implements tfc.InferenceModel {
 }
 
 serialization.SerializationMap.register(Model);
-
-
-export abstract class ModelAwareCallback extends Callback {
-  /** Instance of `keras.models.Model`. Reference of the model being trained. */
-  model: Model = null;
-
-  setModel(model: Model): void {
-    this.model = model;
-  }
-}
-
-export class ModelAwareCallbackList extends CallbackList {
-  /** Instance of `keras.models.Model`. Reference of the model being trained. */
-  model: Model = null;
-
-  setModel(model: Model): void {
-    for (const callback of this.callbacks) {
-      if (callback instanceof ModelAwareCallback) {
-        callback.setModel(model);
-      }
-    }
-  }
-}
-
-/**
- * Callback that records events into a `History` object. This callback is
- * automatically applied to every TF.js Layers model. The `History` object gets
- * returned by the `fit` method of models.
- */
-export class History extends ModelAwareCallback {
-  epoch: number[];
-  history: {[key: string]: Array<number|Tensor>};
-
-  async onTrainBegin(logs?: UnresolvedLogs) {
-    this.epoch = [];
-    this.history = {};
-  }
-
-  async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {
-    if (logs == null) {
-      logs = {};
-    }
-    this.epoch.push(epoch);
-    for (const key in logs) {
-      if (this.history[key] == null) {
-        this.history[key] = [];
-      }
-      this.history[key].push(logs[key]);
-    }
-  }
-
-  /**
-   * Await the values of all losses and metrics.
-   */
-  async syncData() {
-    const promises: Array<Promise<Float32Array|Int32Array|Uint8Array>> = [];
-    const keys: string[] = [];
-    const indices: number[] = [];
-    for (const key in this.history) {
-      const valueArray = this.history[key];
-      for (let i = 0; i < valueArray.length; ++i) {
-        if (typeof valueArray[i] !== 'number') {
-          const valueScalar = valueArray[i] as Tensor;
-          promises.push(valueScalar.data());
-          keys.push(key);
-          indices.push(i);
-        }
-      }
-    }
-    const values = await Promise.all(promises);
-    for (let n = 0; n < values.length; ++n) {
-      (this.history[keys[n]][indices[n]] as Tensor).dispose();
-      this.history[keys[n]][indices[n]] = values[n][0];
-    }
-  }
-}

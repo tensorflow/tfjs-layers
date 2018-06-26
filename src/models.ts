@@ -14,8 +14,9 @@
 import {doc, io, Scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {getUid} from './backend/state';
+import {History} from './base_callbacks';
 import {getSourceInputs, Input, Layer, Node, SymbolicTensor} from './engine/topology';
-import {History, Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
+import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
 import {Kwargs, NamedTensorMap, Shape} from './types';
