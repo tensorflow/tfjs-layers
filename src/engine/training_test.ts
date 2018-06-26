@@ -18,12 +18,12 @@ import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimiz
 import * as K from '../backend/tfjs_backend';
 import {CustomCallback, CustomCallbackConfig} from '../base_callbacks';
 import * as tfl from '../index';
+import {Logs, UnresolvedLogs} from '../logs';
 import {Regularizer} from '../regularizers';
 import {Kwargs} from '../types';
 import {pyListRepeat, stringsEqual} from '../utils/generic_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {Logs, UnresolvedLogs} from './logs';
 // TODO(bileschi): Use external version of Layer.
 import {Layer, SymbolicTensor} from './topology';
 import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, makeBatches, sliceArraysByIndices, standardizeInputData} from './training';

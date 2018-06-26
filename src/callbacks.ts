@@ -19,7 +19,7 @@ export abstract class Callback extends BaseCallback {
   model: Model = null;
 
   setModel(model: Container): void {
-    if (!(model instanceof Container)) {
+    if (!(model instanceof Model)) {
       throw new Error('model must be a Model, not some other Container');
     }
     this.model = model as Model;

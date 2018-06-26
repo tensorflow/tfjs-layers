@@ -17,8 +17,8 @@ import {scalar} from '@tensorflow/tfjs-core';
 
 import {BaseLogger, CallbackList, History} from './base_callbacks';
 import {Callback} from './callbacks';
-import {disposeTensorsInLogs, resolveScalarsInLogs, UnresolvedLogs} from './engine/logs';
 import {Model} from './engine/training';
+import {disposeTensorsInLogs, resolveScalarsInLogs, UnresolvedLogs} from './logs';
 import {describeMathCPUAndGPU} from './utils/test_utils';
 
 // tslint:enable:max-line-length

@@ -19,6 +19,7 @@ import * as K from '../backend/tfjs_backend';
 import {BaseCallback, BaseLogger, CallbackList, CustomCallbackConfig, History, standardizeCallbacks} from '../base_callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
+import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
@@ -29,7 +30,6 @@ import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
 
 import {execute, FeedDict} from './executor';
-import {disposeTensorsInLogs, UnresolvedLogs} from './logs';
 import {Container, ContainerConfig, SymbolicTensor} from './topology';
 
 // tslint:enable:max-line-length

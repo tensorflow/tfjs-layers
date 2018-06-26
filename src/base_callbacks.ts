@@ -13,8 +13,8 @@
 import {add, div, keep, mul, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {getScalar} from './backend/state';
-import {Logs, resolveScalarsInLogs, UnresolvedLogs} from './engine/logs';
 import {Container} from './engine/topology';
+import {Logs, resolveScalarsInLogs, UnresolvedLogs} from './logs';
 import * as generic_utils from './utils/generic_utils';
 
 
@@ -64,6 +64,12 @@ export abstract class BaseCallback {
 
   async onTrainEnd(logs?: UnresolvedLogs) {}
 
+  // Model needs to call Callback.setModel(), but cannot actually depend on
+  // Callback because that creates a cyclic dependency.  Providing this no-op
+  // method on BaseCallback breaks the cycle: this way Model can depend on
+  // BaseCallback but not on Callback.  The argument is typed as `Container`
+  // (the superclass of Model) to avoid recapitulating the cycle.  Callback
+  // overrides this method and enforces that the argument is really a Model.
   setModel(model: Container): void {
     // Do nothing. Use Callback instead of BaseCallback to track the model.
   }

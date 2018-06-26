@@ -11,9 +11,9 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {DataType, Tensor, variableGrads} from '@tensorflow/tfjs-core';
 
+import {getNextUniqueTensorId} from './backend/state';
 import {getScopedTensorName, getUniqueTensorName} from './common';
 import {Constraint} from './constraints';
-import {getNextUniqueTensorId} from './backend/state';
 import {NotImplementedError} from './errors';
 import {HasShape, Shape} from './types';
 
@@ -306,10 +306,6 @@ export function batchSetValue(
     variable.write(variableAndValue[1]);
   });
 }
-
-/**
- * Control flow.
- */
 
 /**
  * Returns the gradients of `variables` w.r.t. the return value of `lossFn`.
