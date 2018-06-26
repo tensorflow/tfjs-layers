@@ -17,6 +17,7 @@ import {oneHot, serialization, Tensor, Tensor1D, tidy,} from '@tensorflow/tfjs-c
 import {Layer, LayerConfig} from '../engine/topology';
 import {Kwargs, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
+// import {StringTensor} from './string_tensor';
 
 export interface OneHotLayerConfig extends LayerConfig {
   /** Positive integer, dimensionality of the output space. */
@@ -72,12 +73,13 @@ export class OneHot extends Layer {
 }
 serialization.SerializationMap.register(OneHot);
 
-/*
+
 export interface VocabularyLayerConfig extends LayerConfig {
   hashVocabSize: number;
   knownVocabSize: number;
 }
 
+/*
 // A vocabulary layer is a map from strings to integers in the range
 // [0, buckets), where buckets is hashVocabSize + knownVocabSize.
 export class VocabularyLayer extends Layer {
@@ -101,6 +103,12 @@ export class VocabularyLayer extends Layer {
   strToIntFn(key: string): number {
     return this.knownVocabulary.get(key);
   }
+
+  // DOING DOING DOING...
+  // Expand the definition of what a 'Layer' can do to include working with
+  // StringTensors...
+  // DOING DOING DOING...
+
 
   call(inputs: StringTensor|StringTensor[], kwargs: Kwargs): Tensor|Tensor[] {
     const stringTensor = generic_utils.getExactlyOneTensor(inputs);

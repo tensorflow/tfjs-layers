@@ -33,9 +33,10 @@ export function getNextUniqueTensorId(): number {
 /**
  * `StringDataType` is a set of data types including only `string`.
  */
-export declare enum StringDataType {
-  string = 'string',
+export interface StringDataTypeMap {
+  string: 'string';
 }
+export type StringDataType = keyof StringDataTypeMap;
 
 /**
  * `SymbolicTensor` is a placeholder for a Tensor without any concrete value.
