@@ -1559,7 +1559,7 @@ export class Model extends Container implements tfc.InferenceModel {
         }
         // Compute the metrics.
         for (let i = 0; i < this.metricsTensors.length; ++i) {
-          const metric = this.metricsTensors[i][0];  // TODO(cais): Restore.
+          const metric = this.metricsTensors[i][0];
           const outputIndex = this.metricsTensors[i][1];
           // TODO(cais): Replace K.mean() with a proper weighting function.
           const meanMetric =

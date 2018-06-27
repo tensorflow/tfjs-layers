@@ -142,13 +142,6 @@ export class CallbackList {
       logs = {};
     }
     for (const callback of this.callbacks) {
-      // console.log(
-      //     `Calling callback ${++i} of ${this.callbacks.length}: ` +
-      //     `numTensors = ${memory().numTensors}, ` +
-      //     `log keys: ${Object.keys(logs)}`);  // DEBUG
-      // for (const key in logs) {
-      //   console.log(`  * key: ${key}, value: ${logs[key]}`);  // DEBUG
-      // }
       await callback.onEpochEnd(epoch, logs);
     }
   }
@@ -345,7 +338,6 @@ export interface CustomCallbackConfig {
 /**
  * Custom callback for training.
  */
-// TODO(cais): Move to callbacks.ts. DO NOT SUBMIT.
 export class CustomCallback extends BaseCallback {
   protected readonly trainBegin: (logs?: Logs) => Promise<void>;
   protected readonly trainEnd: (logs?: Logs) => Promise<void>;

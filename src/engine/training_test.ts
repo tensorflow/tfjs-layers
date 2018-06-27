@@ -1321,8 +1321,7 @@ describeMathCPUAndGPU(
       });
     });
 
-// TODO(cais): Restore name. DO NOT SUBMIT.
-describeMathCPUAndGPU('Model.fit-No memory leak', () => {
+describeMathCPUAndGPU('Model.fit: No memory leak', () => {
   const inputSize = 4;   // Input vector size for model with one input.
   const numSamples = 5;  // Number of samples in a batch.
 
@@ -1527,7 +1526,6 @@ describeMathCPUAndGPU('Model.fit-No memory leak', () => {
      async done => {
        createDenseModelAndData();
 
-       // TODO(cais): Restore.
        model.compile(
            {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['mse']});
        //  model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
