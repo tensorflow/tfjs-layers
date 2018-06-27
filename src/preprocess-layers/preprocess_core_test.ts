@@ -152,7 +152,7 @@ describeMathCPUAndGPU('Vocab Layer: Tensor', () => {
         .toThrowError(/Key not in vocab/);
   });
 
-  // DOING DOING DOING.  Make it possible to save & load a vocabulary layer
+  // TODO(bileschi)  Make it possible to save & load a vocabulary layer
   // using the serialization api.
   //
   // This may require extending 'tensor_types.ts' in core.

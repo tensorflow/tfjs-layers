@@ -165,7 +165,7 @@ describeMathCPU('Vocabulary initializer', () => {
       config: {strings: initialVocab}
     };
     expectNoLeakedTensors(
-        () => getInitializer(initializerConfig).apply([3]), 0);
+        () => getInitializer(initializerConfig).apply([2]), 0);
   });
 });
 
