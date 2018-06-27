@@ -14,7 +14,9 @@ import {DataType, doc, eye, linalg, ones, randomUniform, scalar, Scalar, seriali
 import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
 import {NotImplementedError, ValueError} from './errors';
+import {PreprocessingExports, StringTensor} from './preprocess-layers/string_tensor';
 import {Shape} from './types';
+import {StringDataType} from './types';
 import {checkStringTypeUnionValue, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
 
@@ -49,7 +51,8 @@ export abstract class Initializer extends serialization.Serializable {
    * @param dtype
    * @return The init value.
    */
-  abstract apply(shape: Shape, dtype?: DataType): Tensor;
+  abstract apply(shape: Shape, dtype?: DataType|StringDataType): Tensor
+      |StringTensor;
 
   getConfig(): serialization.ConfigDict {
     return {};
@@ -62,7 +65,11 @@ export abstract class Initializer extends serialization.Serializable {
 export class Zeros extends Initializer {
   static className = 'Zeros';
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `zeros initializer does not support dType 'string'`);
+    }
     return zeros(shape, dtype);
   }
 }
@@ -74,7 +81,11 @@ serialization.SerializationMap.register(Zeros);
 export class Ones extends Initializer {
   static className = 'Ones';
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `ones initializer does not support dType 'string'`);
+    }
     return ones(shape, dtype);
   }
 }
@@ -96,7 +107,11 @@ export class Constant extends Initializer {
     this.value = config.value;
   }
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `constant initializer does not support dType 'string'`);
+    }
     return tidy(
         () => K.scalarTimesArray(scalar(this.value), ones(shape, dtype)));
   }
@@ -108,6 +123,42 @@ export class Constant extends Initializer {
   }
 }
 serialization.SerializationMap.register(Constant);
+
+export interface VocabConfig {
+  /** Ordered initial values for the StringTensor. */
+  strings: string[];
+}
+
+/**
+ * Initializer that returns a StringTensor initialized to set values.
+ */
+export class Vocab extends Initializer {
+  static className = 'Vocab';
+  private strings: string[];
+  constructor(config: VocabConfig) {
+    super();
+    this.strings = config.strings;
+  }
+
+  apply(shape: Shape, dtype?: StringDataType): Tensor|StringTensor {
+    if (shape.length > 1) {
+      throw new NotImplementedError(
+          'Vocab initializer only works on 1D StringTensors');
+    }
+    if (this.strings.length !== shape[0]) {
+      throw new ValueError(`Vocab initializer expected ${
+          shape[0]} strings but got ${this.strings.length}`);
+    }
+    return PreprocessingExports.stringTensor1d(this.strings);
+  }
+
+  getConfig(): serialization.ConfigDict {
+    return {
+      strings: this.strings,
+    };
+  }
+}
+serialization.SerializationMap.register(Vocab);
 
 export interface RandomUniformConfig {
   /** Lower bound of the range of random values to generate. */
@@ -140,7 +191,11 @@ export class RandomUniform extends Initializer {
     this.seed = config.seed;
   }
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `randomUniform does not support dType string.`);
+    }
     return randomUniform(shape, this.minval, this.maxval, dtype);
   }
 
@@ -178,10 +233,14 @@ export class RandomNormal extends Initializer {
     this.seed = config.seed;
   }
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
     if (dtype === 'bool') {
       throw new NotImplementedError(
           `randomNormal does not support dType bool.`);
+    }
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `randomNormal does not support dType string.`);
     }
     return K.randomNormal(shape, this.mean, this.stddev, dtype, this.seed);
   }
@@ -225,10 +284,14 @@ export class TruncatedNormal extends Initializer {
     this.seed = config.seed;
   }
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
     if (dtype === 'bool') {
       throw new NotImplementedError(
           `truncatedNormal does not support dType bool.`);
+    }
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `truncatedNormal does not support dType string.`);
     }
     return truncatedNormal(shape, this.mean, this.stddev, dtype, this.seed);
   }
@@ -258,7 +321,7 @@ export class Identity extends Initializer {
     this.gain = config.gain != null ? scalar(config.gain) : K.getScalar(1.0);
   }
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
     return tidy(() => {
       if (shape.length !== 2 || shape[0] !== shape[1]) {
         throw new ValueError(
@@ -362,7 +425,11 @@ export class VarianceScaling extends Initializer {
     this.seed = config.seed;
   }
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `VarianceScaling initializer does not support dType string.`);
+    }
     const fans = computeFans(shape);
     const fanIn = fans[0];
     const fanOut = fans[1];
@@ -544,7 +611,8 @@ export interface OrthogonalConfig extends SeedOnlyInitializerConfig {
  * Initializer that generates a random orthogonal matrix.
  *
  * Reference:
- * [Saxe et al., http://arxiv.org/abs/1312.6120](http://arxiv.org/abs/1312.6120)
+ * [Saxe et al.,
+ * http://arxiv.org/abs/1312.6120](http://arxiv.org/abs/1312.6120)
  */
 export class Orthogonal extends Initializer {
   static className = 'Orthogonal';
@@ -563,7 +631,7 @@ export class Orthogonal extends Initializer {
     }
   }
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
     return tidy(() => {
       if (shape.length !== 2) {
         throw new NotImplementedError(
@@ -600,7 +668,7 @@ serialization.SerializationMap.register(Orthogonal);
 /** @docinline */
 export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
     'heNormal'|'identity'|'leCunNormal'|'ones'|'orthogonal'|'randomNormal'|
-    'randomUniform'|'truncatedNormal'|'varianceScaling'|'zeros'|string;
+    'randomUniform'|'truncatedNormal'|'varianceScaling'|'vocab'|'zeros'|string;
 
 // Maps the JavaScript-like identifier keys to the corresponding registry
 // symbols.
@@ -618,6 +686,7 @@ export const INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:
       'randomUniform': 'RandomUniform',
       'truncatedNormal': 'TruncatedNormal',
       'varianceScaling': 'VarianceScaling',
+      'vocaab': 'Vocab',
       'zeros': 'Zeros'
     };
 

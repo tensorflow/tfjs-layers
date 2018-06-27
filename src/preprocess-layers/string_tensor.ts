@@ -102,6 +102,8 @@ export class StringTensor<R extends Rank = Rank> {
    */
   readonly strides: number[];
   readonly stringValues: string[];
+  // dtype is required here for duck-type compatibility with Tensor.
+  readonly dtype = 'string';
 
   get rank(): number {
     return this.shape.length;
@@ -128,6 +130,11 @@ export class StringTensor<R extends Rank = Rank> {
   static make<T extends StringTensor<R>, R extends Rank = Rank>(
       shape: ShapeMap[R], data: string[]): T {
     return new StringTensor(shape, data) as T;
+  }
+
+  // For duck-type compatability with Tensor.  Returns a copy of the strings.
+  dataSync(): string[] {
+    return this.stringValues.slice();
   }
 
   /**

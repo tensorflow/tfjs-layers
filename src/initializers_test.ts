@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {eye, serialization, Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
+import {eye, serialization, Tensor, Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as tfl from './index';
 import {checkDistribution, checkFanMode, getInitializer, serializeInitializer, VALID_DISTRIBUTION_VALUES, VALID_FAN_MODE_VALUES, VarianceScaling} from './initializers';
@@ -128,19 +128,52 @@ describeMathCPU('Identity initializer', () => {
     const initializerConfig:
         serialization.ConfigDict = {className: 'Identity', config: {gain: 5}};
     const init = getInitializer(initializerConfig);
-    const weights = init.apply([2, 2], 'float32');
+    const weights = init.apply([2, 2], 'float32') as Tensor;
     expect(weights.shape).toEqual([2, 2]);
     expect(weights.dtype).toEqual('float32');
     expectTensorsClose(weights, tensor2d([5, 0, 0, 5], [2, 2]));
   });
 });
 
+describeMathCPU('Vocabulary initializer', () => {
+  it('from config dict', () => {
+    const initialVocab = ['hello', 'world', 'こんにちは', '世界'];
+    const initializerConfig: serialization.ConfigDict = {
+      className: 'Vocab',
+      config: {strings: initialVocab}
+    };
+    const init = getInitializer(initializerConfig);
+    const weights = init.apply([4], 'string');
+    expect(weights.shape).toEqual([4]);
+    expect(weights.dtype).toEqual('string');
+    expect(weights.dataSync()).toEqual(initialVocab);
+  });
+  it('initializer vocab too small throws error', () => {
+    const initialVocab = ['one', 'two'];
+    const initializerConfig: serialization.ConfigDict = {
+      className: 'Vocab',
+      config: {strings: initialVocab}
+    };
+    const init = getInitializer(initializerConfig);
+    expect(() => init.apply([4], 'string'))
+        .toThrowError(/Vocab initializer expected 4 strings/);
+  });
+  it('Does not leak', () => {
+    const initialVocab = ['one', 'two'];
+    const initializerConfig: serialization.ConfigDict = {
+      className: 'Vocab',
+      config: {strings: initialVocab}
+    };
+    expectNoLeakedTensors(
+        () => getInitializer(initializerConfig).apply([3]), 0);
+  });
+});
 
 describeMathCPU('RandomUniform initializer', () => {
   const shape = [7, 2];
   it('default', () => {
     const init = getInitializer('randomUniform');
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -0.05, 0.05);
@@ -148,7 +181,7 @@ describeMathCPU('RandomUniform initializer', () => {
 
   it('default, upper case', () => {
     const init = getInitializer('RandomUniform');
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -0.05, 0.05);
@@ -160,7 +193,7 @@ describeMathCPU('RandomUniform initializer', () => {
       config: {minval: 17, maxval: 47}
     };
     const init = getInitializer(initializerConfig);
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, 17, 47);
@@ -174,7 +207,7 @@ describeMathCPU('RandomNormal initializer', () => {
   const shape = [7, 2];
   it('default', () => {
     const init = getInitializer('randomNormal');
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     // TODO(bileschi): Add test to assert the values match expectations.
@@ -209,7 +242,7 @@ describeMathCPU('HeNormal initializer', () => {
   const stddev = Math.sqrt(2 / shape[0]);
   it('default', () => {
     const init = getInitializer('heNormal');
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -2 * stddev, 2 * stddev);
@@ -218,7 +251,7 @@ describeMathCPU('HeNormal initializer', () => {
 
   it('default, upper case', () => {
     const init = getInitializer('HeNormal');
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -2 * stddev, 2 * stddev);
@@ -233,7 +266,7 @@ describeMathCPU('LecunNormal initializer', () => {
   const stddev = Math.sqrt(1 / shape[0]);
   it('default', () => {
     const init = getInitializer('leCunNormal');
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -2 * stddev, 2 * stddev);
@@ -242,7 +275,7 @@ describeMathCPU('LecunNormal initializer', () => {
 
   it('default, upper case', () => {
     const init = getInitializer('LeCunNormal');
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -2 * stddev, 2 * stddev);
@@ -256,7 +289,7 @@ describeMathCPU('TruncatedNormal initializer', () => {
   const shape = [7, 2];
   it('default', () => {
     const init = getInitializer('truncatedNormal');
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -0.1, 0.1);
@@ -264,7 +297,7 @@ describeMathCPU('TruncatedNormal initializer', () => {
 
   it('default, upper case', () => {
     const init = getInitializer('TruncatedNormal');
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -0.1, 0.1);
@@ -276,7 +309,7 @@ describeMathCPU('TruncatedNormal initializer', () => {
       config: {mean: 1.0, stddev: 0.5}
     };
     const init = getInitializer(initializerConfig);
-    const weights = init.apply(shape, 'float32');
+    const weights = init.apply(shape, 'float32') as Tensor;
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, 0.0, 2.0);

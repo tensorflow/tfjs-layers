@@ -1147,7 +1147,8 @@ export abstract class Layer extends serialization.Serializable {
       dtype = K.floatx();
     }
     const weight = new LayerVariable(
-        initializer.apply(shape, dtype), dtype, name, trainable, constraint);
+        initializer.apply(shape, dtype) as Tensor, dtype, name, trainable,
+        constraint);
     // Request backend not to dispose the weights of the model on scope() exit.
     if (regularizer != null) {
       this.addLoss(() => regularizer.apply(weight.read()));

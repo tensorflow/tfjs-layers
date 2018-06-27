@@ -1899,9 +1899,10 @@ export class LSTMCell extends RNNCell {
 
           apply(shape: Shape, dtype?: DataType): Tensor {
             // TODO(cais): More informative variable names?
-            const bI = capturedBiasInit.apply([capturedUnits]);
-            const bF = (new Ones()).apply([capturedUnits]);
-            const bCAndH = capturedBiasInit.apply([capturedUnits * 2]);
+            const bI = capturedBiasInit.apply([capturedUnits]) as Tensor;
+            const bF = (new Ones()).apply([capturedUnits]) as Tensor;
+            const bCAndH =
+                capturedBiasInit.apply([capturedUnits * 2]) as Tensor;
             return K.concatAlongFirstAxis(
                 K.concatAlongFirstAxis(bI, bF), bCAndH);
           }

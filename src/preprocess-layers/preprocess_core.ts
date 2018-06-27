@@ -156,7 +156,8 @@ export class VocabLayer extends Layer {
     if (Array.isArray(inputs)) {
       if (inputs.length !== 1) {
         throw new ValueError(
-            `Expected Tensor length to be 1; got ${inputs.length}`);
+            `Vocab initializer expected Tensor length to be 1; got ${
+                inputs.length}`);
       }
       stringTensor = inputs[0];
     } else {
