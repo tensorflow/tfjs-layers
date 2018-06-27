@@ -1531,14 +1531,9 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
        const validationSplit = 0.4;
 
        // First, perform a burn-in call.
-       await model.fit(inputs, targets, {
-         batchSize: numSamples,
-         epochs: 1,
-         validationSplit,
-         callbacks: {
-           onEpochEnd: async () => {},
-         }
-       });
+       await model.fit(
+           inputs, targets,
+           {batchSize: numSamples, epochs: 1, validationSplit});
        const numTensors0 = memory().numTensors;
 
        // Perform actual testing calls.
@@ -1587,9 +1582,6 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
          batchSize: 1,
          epochs,
          validationSplit,
-         callbacks: {
-           onBatchEnd: async () => {},
-         }
        });
        const numTensors0 = memory().numTensors;
 

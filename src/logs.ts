@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {Scalar} from '@tensorflow/tfjs-core';
+import {dispose, Scalar} from '@tensorflow/tfjs-core';
 
 /**
  * Logs in which values can be either numbers or Tensors (Scalars).
@@ -46,7 +46,7 @@ export async function resolveScalarsInLogs(logs: UnresolvedLogs) {
   }
 
   // Dispose the original scalar tensors.
-  scalarsToDispose.forEach(scalar => scalar.dispose());
+  dispose(scalarsToDispose);
 }
 
 /**
