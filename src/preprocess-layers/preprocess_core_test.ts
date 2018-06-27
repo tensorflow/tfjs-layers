@@ -154,6 +154,8 @@ describeMathCPUAndGPU('Vocab Layer: Tensor', () => {
 
   // DOING DOING DOING.  Make it possible to save & load a vocabulary layer
   // using the serialization api.
+  //
+  // This may require extending 'tensor_types.ts' in core.
 
   // DOING DOING DOING.  Make model.fit work with VocabLayer.
 });
