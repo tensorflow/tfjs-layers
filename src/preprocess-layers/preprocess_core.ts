@@ -13,11 +13,14 @@
  */
 
 // tslint:disable:max-line-length
-import {oneHot, serialization, Tensor, Tensor1D, tidy,} from '@tensorflow/tfjs-core';
+import {oneHot, serialization, Tensor, tensor, Tensor1D, tidy,} from '@tensorflow/tfjs-core';
+
 import {Layer, LayerConfig} from '../engine/topology';
+import {ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
-// import {StringTensor} from './string_tensor';
+
+import {StringTensor} from './string_tensor';
 
 export interface OneHotLayerConfig extends LayerConfig {
   /** Positive integer, dimensionality of the output space. */
@@ -74,67 +77,118 @@ export class OneHot extends Layer {
 serialization.SerializationMap.register(OneHot);
 
 
-export interface VocabularyLayerConfig extends LayerConfig {
-  hashVocabSize: number;
+export interface VocabLayerConfig extends LayerConfig {
+  hashVocabSize?: number;
   knownVocabSize: number;
 }
 
-/*
-// A vocabulary layer is a map from strings to integers in the range
+// TODO(bileschi): Replace with the hash op used in c++ / py tensorflow here:
+// core/lib/hash/hash.h
+export function vocabHash64(s: string) {
+  let hash = 0xDECAFCAFFE, i, chr;
+  if (s.length === 0) return hash;
+  for (i = 0; i < s.length; i++) {
+    chr = s.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;  // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
+
+// A `VocabLayer` is a fittable map from strings to integers in the range
 // [0, buckets), where buckets is hashVocabSize + knownVocabSize.
-export class VocabularyLayer extends Layer {
+export class VocabLayer extends Layer {
   static className = 'VocabularyLayer';
-  readonly hashVocabularySize = 0;
+  readonly hashVocabSize: number;
   readonly knownVocabSize: number;
 
   // Map of words in the known vocabulary.  Key is words in the known
   // vocabulary.  Value is a counter object used during fitting of the
   // vocabulary to a datset.
-  private knownVocabulary: Map<string, number>;
+  private knownVocab: Map<string, number>;
 
-  constructor(config: VocabularyLayerConfig) {
+  constructor(config: VocabLayerConfig) {
     super(config);
+    this.knownVocabSize = config.knownVocabSize;
+    this.hashVocabSize = config.hashVocabSize | 0;
   }
 
   public build(inputShape: Shape|Shape[]): void {
+    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    if (this.knownVocab == null) {
+      // TODO(bileschi): knownVocab initialization should go here.
+      this.knownVocab = new Map<string, number>();
+    }
     this.built = true;
   }
 
   strToIntFn(key: string): number {
-    return this.knownVocabulary.get(key);
+    // Index each word into the known Vocab.
+
+    // If hashVocabSize is greater than one, for each word that was *not*
+    // found in the known vocabulary, hash the word into hashVocabSize
+    // buckets and return that.
+    if (this.knownVocab.has(key)) {
+      return this.knownVocab.get(key);
+    } else {
+      if (this.hashVocabSize <= 0) {
+        throw new ValueError('Key not in vocab.  Configure hashVocabSize > 0.');
+      }
+      if (this.hashVocabSize === 1) {
+        // Out-of-vocabulary buckets begin after known vocabulary buckets.
+        return this.knownVocabSize;
+      }
+      // hashVocabSize > 1;
+      // Out-of-vocabulary buckets begin after known vocabulary buckets.
+      return this.hashBucketFn(key, this.hashVocabSize) + this.knownVocabSize;
+    }
   }
 
-  // DOING DOING DOING...
-  // Expand the definition of what a 'Layer' can do to include working with
-  // StringTensors...
-  // DOING DOING DOING...
-
+  // TODO(bileschi): Clone hash functions from tensorflow string ops.
+  // .../tensorflow/python/ops/lookup_ops.py#L841
+  hashBucketFn(s: string, numBuckets: number) {
+    return vocabHash64(s) % numBuckets;
+  }
 
   call(inputs: StringTensor|StringTensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    const stringTensor = generic_utils.getExactlyOneTensor(inputs);
+    let stringTensor: StringTensor;
+    if (Array.isArray(inputs)) {
+      if (inputs.length !== 1) {
+        throw new ValueError(
+            `Expected Tensor length to be 1; got ${inputs.length}`);
+      }
+      stringTensor = inputs[0];
+    } else {
+      stringTensor = inputs as StringTensor;
+    }
     return tidy(() => {
-      const stringValues = stringTensor.dataSync();
-      const intValues = stringValues.map(this.strToIntFn);
-
-      // Index each word into the known Vocabulary.
-
-      // If more than one hashVocabularySize, for each word that was *not* found
-      // in the known vocabulary, hash the word into hashVocabularySize into
-      // hashVocabularySize buckets and return that.
-
-      return tensor1d([1]);
-      return tensor(intValues, stringTensor.shape, 'int32'
+      const intValues: number[] = [];
+      stringTensor.stringValues.forEach(s => {
+        intValues.push(this.strToIntFn(s));
+      });
+      return tensor(intValues, stringTensor.shape, 'int32');
     });
   }
 
   getConfig(): serialization.ConfigDict {
     const config: serialization.ConfigDict = {
-      units: this.units,
+      hashVocabSize: this.hashVocabSize,
+      knownVocabSize: this.knownVocabSize,
     };
     const baseConfig = super.getConfig();
     Object.assign(config, baseConfig);
     return config;
   }
+
+  // TODO(bileschi):  I added this for testing.  Do we want something like this?
+  public setVocab(newVocab: Map<string, number>) {
+    this.knownVocab = newVocab;
+  }
+
+  // TODO(bileschi):  I added this for testing.  Do we want something like this?
+  public getVocab(): Map<string, number> {
+    return this.knownVocab;
+  }
 }
-serialization.SerializationMap.register(VocabularyLayer);
-*/
+serialization.SerializationMap.register(VocabLayer);

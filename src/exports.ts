@@ -33,7 +33,7 @@ import {Bidirectional, BidirectionalLayerConfig, TimeDistributed, Wrapper, Wrapp
 import {categoricalCrossentropy, cosineProximity, meanAbsoluteError, meanAbsolutePercentageError, meanSquaredError} from './losses';
 import {binaryAccuracy, binaryCrossentropy, categoricalAccuracy} from './metrics';
 import {loadModelInternal, Sequential, SequentialConfig} from './models';
-import {OneHot, OneHotLayerConfig} from './preprocess-layers/preprocess_core';
+import {OneHot, OneHotLayerConfig, VocabLayer, VocabLayerConfig} from './preprocess-layers/preprocess_core';
 export * from './preprocess-layers/string_tensor';
 import {l1, L1Config, L1L2, L1L2Config, l2, L2Config, Regularizer} from './regularizers';
 import {SymbolicTensor} from './types';
@@ -725,6 +725,17 @@ export class LayerExports {
   })
   static oneHot(config: OneHotLayerConfig): Layer {
     return new OneHot(config);
+  }
+
+  @doc({
+    heading: 'Layers',
+    subheading: 'Preprocessing',
+    namespace: 'layers',
+    useDocsFrom: 'VocabLayer',
+    configParamIndices: [0]
+  })
+  static vocab(config: VocabLayerConfig): Layer {
+    return new VocabLayer(config);
   }
 }
 

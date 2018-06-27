@@ -34,7 +34,7 @@ describe('SymbolicTensor Test', () => {
     expect(scalar.shape).toEqual([]);
     expect(scalar.rank).toEqual(0);
   });
-  fit('Can be string type', () => {
+  it('Can be string type', () => {
     const st1 = new SymbolicTensor('string', [4, 6], null, [], {});
     expect(st1.dtype).toEqual('string');
     expect(st1.shape).toEqual([4, 6]);

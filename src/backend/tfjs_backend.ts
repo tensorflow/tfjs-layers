@@ -18,9 +18,11 @@ import {DataType, dispose, onesLike as coreOnesLike, Scalar, scalar, Tensor, Ten
 
 import {checkDataFormat, DataFormat, nameScope as commonNameScope} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
+import {StringTensor} from '../preprocess-layers/string_tensor';
 import {Shape, StringDataType, SymbolicTensor} from '../types';
 import * as math_utils from '../utils/math_utils';
 import {LayerVariable} from '../variables';
+
 import {epsilon as common_epsilon} from './common';
 import {imageDataFormat} from './common';
 // tslint:enable
@@ -102,7 +104,7 @@ export function shape(x: Tensor|SymbolicTensor): Shape {
  * @param x The tensor.
  * @return Shape of the tensor as number[].
  */
-export function intShape(x: Tensor|SymbolicTensor): number[] {
+export function intShape(x: Tensor|StringTensor|SymbolicTensor): number[] {
   return x.shape;
 }
 
@@ -111,8 +113,12 @@ export function intShape(x: Tensor|SymbolicTensor): number[] {
  *
  * @param x The tensor.
  */
-export function dtype(x: Tensor|SymbolicTensor): DataType|StringDataType {
+export function dtype(x: Tensor|StringTensor|SymbolicTensor): DataType|
+    StringDataType {
   // TODO(michaelterry): Update if additional data types are available.
+  if (x instanceof StringTensor) {
+    return 'string';
+  }
   return (x instanceof Tensor) ? DEFAULT_DTYPE : (x as SymbolicTensor).dtype;
 }
 

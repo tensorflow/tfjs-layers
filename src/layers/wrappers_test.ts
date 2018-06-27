@@ -27,6 +27,8 @@ import {Bidirectional, BidirectionalMergeMode, checkBidirectionalMergeMode, Time
 
 // tslint:enable:max-line-length
 
+// TODO(bileschi) Add test for wrapper of string tensor.
+
 describeMathCPU('TimeDistributed Layer: Symbolic', () => {
   it('3D input: Dense', () => {
     const input = new tfl.SymbolicTensor('float32', [10, 8, 2], null, [], null);

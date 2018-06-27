@@ -27,6 +27,8 @@ import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsCl
 import {GRU, LSTM, rnn, RNN, RNNCell} from './recurrent';
 // tslint:enable:max-line-length
 
+// TODO(bileschi): Add test for recurrent string tensor?
+
 /**
  * A simplistic RNN step function for testing.
  * This step function simply

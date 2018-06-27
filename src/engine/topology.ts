@@ -18,8 +18,10 @@ import {Constraint} from '../constraints';
 import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {Initializer} from '../initializers';
 import {deserialize as deserializeLayer} from '../layers/serialization';
+import {StringTensor} from '../preprocess-layers/string_tensor';
 import {Regularizer} from '../regularizers';
 import {JsonDict, Kwargs, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor} from '../types';
+import {StringDataType} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
 import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
@@ -34,7 +36,7 @@ export type Op = (x: LayerVariable) => LayerVariable;
  */
 export interface InputSpecConfig {
   /** Expected datatype of the input. */
-  dtype?: DataType;
+  dtype?: DataType|StringDataType;
   /** Expected shape of the input (may include null for unchecked axes). */
   shape?: Shape;
   /** Expected rank of the input. */
@@ -58,7 +60,7 @@ export interface InputSpecConfig {
  */
 export class InputSpec {
   /** Expected datatype of the input. */
-  dtype?: DataType;
+  dtype?: DataType|StringDataType;
   /** Expected shape of the input (may include null for unchecked axes). */
   shape?: Shape;
   /** Expected rank of the input. */
@@ -317,7 +319,9 @@ export interface LayerConfig {
 // If necessary, add `output` arguments to the CallHook function.
 // This is currently used for testing only, but may be used for debugger-related
 // purposes in the future.
-export type CallHook = (inputs: Tensor|Tensor[], kwargs: Kwargs) => void;
+export type CallHook =
+    (inputs: Tensor|Tensor[]|StringTensor|StringTensor[], kwargs: Kwargs) =>
+        void;
 
 let _nextLayerID = 0;
 
@@ -638,7 +642,9 @@ export abstract class Layer extends serialization.Serializable {
    * @exception ValueError in case of mismatch between
    *   the provided inputs and the expectations of the layer.
    */
-  protected assertInputCompatibility(inputs: Tensor|Tensor[]|SymbolicTensor|
+  // TODO(bileschi):  Add tests for StringTensor compatablity.
+  protected assertInputCompatibility(inputs: Tensor|Tensor[]|StringTensor|
+                                     StringTensor[]|SymbolicTensor|
                                      SymbolicTensor[]): void {
     inputs = generic_utils.toList(inputs);
     if (this.inputSpec == null || this.inputSpec.length === 0) {
@@ -739,11 +745,14 @@ export abstract class Layer extends serialization.Serializable {
    *
    * @return A tensor or list/tuple of tensors.
    */
-  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+  // TODO(bileschi): Add tests for StringTensor call.
+  call(inputs: Tensor|Tensor[]|StringTensor|StringTensor[], kwargs: Kwargs):
+      Tensor|Tensor[]|StringTensor|StringTensor[] {
     return inputs;
   }
 
-  protected invokeCallHook(inputs: Tensor|Tensor[], kwargs: Kwargs) {
+  protected invokeCallHook(
+      inputs: Tensor|Tensor[]|StringTensor|StringTensor[], kwargs: Kwargs) {
     if (this._callHook != null) {
       this._callHook(inputs, kwargs);
     }
@@ -835,8 +844,10 @@ export abstract class Layer extends serialization.Serializable {
   // Porting Note: This is a replacement for __call__() in Python.
   @doc({heading: 'Models', 'subheading': 'Classes'})
   apply(
-      inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[], kwargs?: Kwargs):
-      Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
+      inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[]|StringTensor|
+      StringTensor[],
+      kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor
+      |SymbolicTensor[]|StringTensor|StringTensor[] {
     kwargs = kwargs || {};
 
     // Ensure inputs are all the same type.
@@ -1028,14 +1039,15 @@ export abstract class Layer extends serialization.Serializable {
   /**
    * Guesses output dtype based on inputs.
    *
-   * At present, just returns 'float32' for any input.
+   * At present, just returns 'float32'.
    *
    * @param inputTensors List of input tensors (or single input tensor).
    *
    * @return The guessed DType. At present, always returns 'float32'.
    */
   guessOutputDType(inputTensors: SymbolicTensor|SymbolicTensor[]|Tensor|
-                   Tensor[]): DataType {
+                   Tensor[]|StringTensor|StringTensor[]): DataType
+      |StringDataType {
     return 'float32';
   }
 
@@ -1324,10 +1336,12 @@ export abstract class Layer extends serialization.Serializable {
  *
  * @return List of shape tuples (or single tuple), one tuple per input.
  */
+// TODO(bileschi): Add tests for StringTensor type.
 function collectInputShape(inputTensors: SymbolicTensor|SymbolicTensor[]|Tensor|
-                           Tensor[]): Shape|Shape[] {
-  inputTensors =
-      generic_utils.toList(inputTensors) as SymbolicTensor[] | Tensor[];
+                           Tensor[]|StringTensor|StringTensor[]): Shape|
+    Shape[] {
+  inputTensors = generic_utils.toList(inputTensors) as SymbolicTensor[] |
+      Tensor[] | StringTensor[];
   const shapes: Shape[] = [];
   for (const x of inputTensors) {
     shapes.push(K.intShape(x));

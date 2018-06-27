@@ -475,7 +475,13 @@ describeMathCPU('Layer', () => {
            expect(() => runAssert(layer, inputs())).not.toThrowError();
          });
 
-      // TODO(michaelterry): Add dtype test once more dtypes supported.
+      it('Throws exception if inputs\' dtype != inputSpecs.dtype.', () => {
+        const inputSpecs = [new InputSpec({dtype: 'string'})];
+        const layer = new LayerForTest({});
+        layer.inputSpec = inputSpecs;
+        expect(() => runAssert(layer, inputs()))
+            .toThrowError(/ expected dtype=/);
+      });
 
       it('doesn\'t raise exception if inputs\' dimensions == inputSpecs.axes.',
          () => {

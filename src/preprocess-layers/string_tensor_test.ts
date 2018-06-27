@@ -26,20 +26,6 @@ import {flattenStringArray, StringArray, StringTensor} from './string_tensor';
 //////////////TEST UTIL STUFF///////////////////////////
 ////////////////////////////////////////////////////////
 
-// TODO(bileschi): Expand the version in core to accept StringTensor and
-// string[];
-export function stringArraysEqual(n1: string[], n2: string[]) {
-  if (n1.length !== n2.length) {
-    return false;
-  }
-  for (let i = 0; i < n1.length; i++) {
-    if (n1[i] !== n2[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
 // TODO(bileschi): Expand eversion in core to accept StringTensor and string[];
 export function expectStringArraysMatch(
     actual: StringTensor|StringArray, expected: StringTensor|StringArray) {
@@ -95,6 +81,9 @@ export function expectStringArraysMatch(
   }
 }
 
+////////////////////////////////////////////////////////
+////////////// ACTUAL TESTS ////////////////////////////
+////////////////////////////////////////////////////////
 
 describeMathCPUAndGPU('String Tensor Creation', () => {
   it('1D', () => {

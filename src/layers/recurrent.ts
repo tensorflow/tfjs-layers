@@ -23,6 +23,7 @@ import {InputSpec} from '../engine/topology';
 import {Layer, LayerConfig} from '../engine/topology';
 import {AttributeError, NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
+import {StringTensor} from '../preprocess-layers/string_tensor';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Kwargs, RnnStepFunction, Shape, SymbolicTensor} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -572,8 +573,9 @@ export class RNN extends Layer {
   }
 
   apply(
-      inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
-      kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
+      inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[], kwargs?: Kwargs):
+      Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[]|StringTensor
+      |StringTensor[] {
     // TODO(cais): Figure out whether initialState is in kwargs or inputs.
     let initialState: Tensor[]|SymbolicTensor[] =
         kwargs == null ? null : kwargs['initialState'];
