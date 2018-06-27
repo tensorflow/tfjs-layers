@@ -17,6 +17,7 @@ import {oneHot, serialization, Tensor, tensor, Tensor1D, tidy,} from '@tensorflo
 
 import {Layer, LayerConfig} from '../engine/topology';
 import {ValueError} from '../errors';
+import {getInitializer, Initializer, InitializerIdentifier} from '../initializers';
 import {Kwargs, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 
@@ -80,6 +81,7 @@ serialization.SerializationMap.register(OneHot);
 export interface VocabLayerConfig extends LayerConfig {
   hashVocabSize?: number;
   knownVocabSize: number;
+  vocabInitializer?: InitializerIdentifier|Initializer;
 }
 
 // TODO(bileschi): Replace with the hash op used in c++ / py tensorflow here:
@@ -102,23 +104,32 @@ export class VocabLayer extends Layer {
   static className = 'VocabularyLayer';
   readonly hashVocabSize: number;
   readonly knownVocabSize: number;
+  private vocabInitializer: Initializer;
+  readonly DEFAULT_VOCAB_INITIALIZER: InitializerIdentifier = 'rainbowVocab';
+
 
   // Map of words in the known vocabulary.  Key is words in the known
-  // vocabulary.  Value is a counter object used during fitting of the
-  // vocabulary to a datset.
+  // vocabulary.  Value is the intenger associated with that word.
   private knownVocab: Map<string, number>;
 
   constructor(config: VocabLayerConfig) {
     super(config);
     this.knownVocabSize = config.knownVocabSize;
     this.hashVocabSize = config.hashVocabSize | 0;
+    this.vocabInitializer = getInitializer(
+        config.vocabInitializer || this.DEFAULT_VOCAB_INITIALIZER);
   }
 
   public build(inputShape: Shape|Shape[]): void {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
-    if (this.knownVocab == null) {
-      // TODO(bileschi): knownVocab initialization should go here.
+    if (this.knownVocab == null && this.knownVocabSize &&
+        this.knownVocabSize > 0) {
+      const vocabTensor = this.vocabInitializer.apply(
+                              [this.knownVocabSize], 'string') as StringTensor;
       this.knownVocab = new Map<string, number>();
+      for (let i = 0; i < vocabTensor.size; i++) {
+        this.knownVocab.set(vocabTensor.get(i), i);
+      }
     }
     this.built = true;
   }
@@ -156,8 +167,7 @@ export class VocabLayer extends Layer {
     if (Array.isArray(inputs)) {
       if (inputs.length !== 1) {
         throw new ValueError(
-            `Vocab initializer expected Tensor length to be 1; got ${
-                inputs.length}`);
+            `Vocab layer expected one tensor input; got ${inputs.length}`);
       }
       stringTensor = inputs[0];
     } else {

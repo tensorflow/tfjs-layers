@@ -124,29 +124,35 @@ export class Constant extends Initializer {
 }
 serialization.SerializationMap.register(Constant);
 
-export interface VocabConfig {
+export interface KnownVocabConfig {
   /** Ordered initial values for the StringTensor. */
   strings: string[];
 }
 
 /**
- * Initializer that returns a StringTensor initialized to set values.
+ * Initializer that returns a StringTensor initialized to set of known values.
  */
-export class Vocab extends Initializer {
-  static className = 'Vocab';
+export class KnownVocab extends Initializer {
+  static className = 'KnownVocab';
   private strings: string[];
-  constructor(config: VocabConfig) {
+
+  constructor(config: KnownVocabConfig) {
     super();
+    if (config.strings == null) {
+      throw new ValueError(
+          `KnownVocab initializer expected an initial set` +
+          ` of strings but got ${this.strings}`);
+    }
     this.strings = config.strings;
   }
 
   apply(shape: Shape, dtype?: StringDataType): Tensor|StringTensor {
     if (shape.length > 1) {
       throw new NotImplementedError(
-          'Vocab initializer only works on 1D StringTensors');
+          'KnownVocab initializer only works on 1D StringTensors');
     }
     if (this.strings.length !== shape[0]) {
-      throw new ValueError(`Vocab initializer expected ${
+      throw new ValueError(`KnownVocab initializer expected ${
           shape[0]} strings but got ${this.strings.length}`);
     }
     return PreprocessingExports.stringTensor1d(this.strings);
@@ -158,7 +164,65 @@ export class Vocab extends Initializer {
     };
   }
 }
-serialization.SerializationMap.register(Vocab);
+serialization.SerializationMap.register(KnownVocab);
+
+
+export interface RainbowVocabConfig {
+  /** How many characters in each random 'word'. */
+  charactersPerString?: number;
+}
+
+/**
+ * Initializer that returns a StringTensor initialized to strings like
+ * 'aaa', 'aab', 'aac', etc.  Useful for testing and as a default vocabulary.
+ */
+export class RainbowVocab extends Initializer {
+  static className = 'RainbowVocab';
+  static characterMap = 'abcdefghijklmnopqrstuvwxyz';
+  private charactersPerString: number;
+  readonly DEFAULT_CHARACTERS_PER_STRING = 4;
+
+  constructor(config: RainbowVocabConfig) {
+    super();
+    if (config.charactersPerString > 0) {
+      this.charactersPerString = config.charactersPerString;
+    } else {
+      this.charactersPerString = this.DEFAULT_CHARACTERS_PER_STRING;
+    }
+  }
+
+  // Returns the `n`th alphabetical string of length `chars` made of only the
+  // characters in characterMap.
+  static intToString(n: number, chars: number): string {
+    let retString = '';
+    const N = this.characterMap.length;
+    for (let i = 0; i < chars; i++) {
+      const idx = n % N;
+      retString = this.characterMap.charAt(idx) + retString;
+      n = n / N;
+    }
+    return retString;
+  }
+
+  apply(shape: Shape, dtype?: StringDataType): Tensor|StringTensor {
+    if (shape.length > 1) {
+      throw new NotImplementedError(
+          'RainbowVocab initializer only works on 1D StringTensors');
+    }
+    const strings: string[] = [];
+    for (let i = 0; i < shape[0]; i++) {
+      strings.push(RainbowVocab.intToString(i, this.charactersPerString));
+    }
+    return PreprocessingExports.stringTensor1d(strings);
+  }
+
+  getConfig(): serialization.ConfigDict {
+    return {
+      charatersPersTring: this.charactersPerString,
+    };
+  }
+}
+serialization.SerializationMap.register(RainbowVocab);
 
 export interface RandomUniformConfig {
   /** Lower bound of the range of random values to generate. */
@@ -667,8 +731,9 @@ serialization.SerializationMap.register(Orthogonal);
 
 /** @docinline */
 export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
-    'heNormal'|'identity'|'leCunNormal'|'ones'|'orthogonal'|'randomNormal'|
-    'randomUniform'|'truncatedNormal'|'varianceScaling'|'vocab'|'zeros'|string;
+    'heNormal'|'identity'|'knownVocab'|'leCunNormal'|'ones'|'orthogonal'|
+    'randomNormal'|'randomUniform'|'rainbowVocab'|'truncatedNormal'|
+    'varianceScaling'|'zeros'|string;
 
 // Maps the JavaScript-like identifier keys to the corresponding registry
 // symbols.
@@ -679,14 +744,15 @@ export const INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:
       'glorotUniform': 'GlorotUniform',
       'heNormal': 'HeNormal',
       'identity': 'Identity',
+      'knownVocab': 'KnownVocab',
       'leCunNormal': 'LeCunNormal',
       'ones': 'Ones',
       'orthogonal': 'Orthogonal',
       'randomNormal': 'RandomNormal',
       'randomUniform': 'RandomUniform',
+      'rainbowVocab': 'RainbowVocab',
       'truncatedNormal': 'TruncatedNormal',
       'varianceScaling': 'VarianceScaling',
-      'vocaab': 'Vocab',
       'zeros': 'Zeros'
     };
 

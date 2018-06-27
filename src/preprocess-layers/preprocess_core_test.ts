@@ -78,7 +78,7 @@ describeMathCPU('Vocab Layer: Symbolic', () => {
            `input shape=${JSON.stringify(symbolicInput.shape)}`,
        () => {
          const hashVocabSize = 0;
-         const knownVocabSize = 10000;
+         const knownVocabSize = 10;
          const vocabLayer = tfl.layers.vocab({hashVocabSize, knownVocabSize});
          const output = vocabLayer.apply(symbolicInput) as tfl.SymbolicTensor;
 
@@ -91,7 +91,7 @@ describeMathCPU('Vocab Layer: Symbolic', () => {
 
   it('Vocab connects to dense: With undetermined batch dimension', () => {
     const input1 = new tfl.SymbolicTensor('string', [null, 4], null, [], null);
-    const vocabLayer1 = tfl.layers.vocab({knownVocabSize: 10000});
+    const vocabLayer1 = tfl.layers.vocab({knownVocabSize: 10});
     const output1 = vocabLayer1.apply(input1) as tfl.SymbolicTensor;
 
     const denseLayer2 = tfl.layers.dense({units: 6});

@@ -135,35 +135,55 @@ describeMathCPU('Identity initializer', () => {
   });
 });
 
-describeMathCPU('Vocabulary initializer', () => {
+describeMathCPU('KnownVocabulary initializer', () => {
   it('from config dict', () => {
-    const initialVocab = ['hello', 'world', 'こんにちは', '世界'];
+    const knownVocab = ['hello', 'world', 'こんにちは', '世界'];
     const initializerConfig: serialization.ConfigDict = {
-      className: 'Vocab',
-      config: {strings: initialVocab}
+      className: 'KnownVocab',
+      config: {strings: knownVocab}
     };
     const init = getInitializer(initializerConfig);
     const weights = init.apply([4], 'string');
     expect(weights.shape).toEqual([4]);
     expect(weights.dtype).toEqual('string');
-    expect(weights.dataSync()).toEqual(initialVocab);
+    expect(weights.dataSync()).toEqual(knownVocab);
   });
   it('initializer vocab too small throws error', () => {
-    const initialVocab = ['one', 'two'];
+    const knownVocab = ['one', 'two'];
     const initializerConfig: serialization.ConfigDict = {
-      className: 'Vocab',
-      config: {strings: initialVocab}
+      className: 'KnownVocab',
+      config: {strings: knownVocab}
     };
     const init = getInitializer(initializerConfig);
     expect(() => init.apply([4], 'string'))
-        .toThrowError(/Vocab initializer expected 4 strings/);
+        .toThrowError(/KnownVocab initializer expected 4 strings/);
   });
   it('Does not leak', () => {
-    const initialVocab = ['one', 'two'];
+    const knownVocab = ['one', 'two'];
     const initializerConfig: serialization.ConfigDict = {
-      className: 'Vocab',
-      config: {strings: initialVocab}
+      className: 'KnownVocab',
+      config: {strings: knownVocab}
     };
+    expectNoLeakedTensors(
+        () => getInitializer(initializerConfig).apply([2]), 0);
+  });
+});
+
+describeMathCPU('RainbowVocabulary initializer', () => {
+  it('from config dict', () => {
+    const initializerConfig: serialization.ConfigDict = {
+      className: 'RainbowVocab',
+      config: {charactersPerString: 3}
+    };
+    const init = getInitializer(initializerConfig);
+    const weights = init.apply([4], 'string');
+    expect(weights.shape).toEqual([4]);
+    expect(weights.dtype).toEqual('string');
+    expect(weights.dataSync()).toEqual(['aaa', 'aab', 'aac', 'aad']);
+  });
+  it('Does not leak', () => {
+    const initializerConfig:
+        serialization.ConfigDict = {className: 'RainbowVocab', config: {}};
     expectNoLeakedTensors(
         () => getInitializer(initializerConfig).apply([2]), 0);
   });
