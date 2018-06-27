@@ -10,11 +10,11 @@
 
 /* Original source: keras/callbacks.py */
 
-import {BaseCallback} from './base_callbacks';
+import {CustomCallback} from './base_callbacks';
 import {Container} from './engine/topology';
 import {Model} from './engine/training';
 
-export abstract class Callback extends BaseCallback {
+export abstract class Callback extends CustomCallback {
   /** Instance of `keras.models.Model`. Reference of the model being trained. */
   model: Model = null;
 

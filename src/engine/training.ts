@@ -16,7 +16,7 @@ import {doc, io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, T
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {BaseCallback, BaseLogger, CallbackList, CustomCallbackConfig, History, standardizeCallbacks} from '../base_callbacks';
+import {BaseCallback, BaseLogger, CallbackList, CustomCallback, CustomCallbackConfig, History} from '../base_callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
@@ -24,7 +24,7 @@ import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LossOrMetricFn, NamedTensorMap, Shape} from '../types';
-import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_utils';
+import {count, pyListRepeat, singletonOrArray, toList, unique} from '../utils/generic_utils';
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
@@ -1559,7 +1559,7 @@ export class Model extends Container implements tfc.InferenceModel {
         }
         // Compute the metrics.
         for (let i = 0; i < this.metricsTensors.length; ++i) {
-          const metric = this.metricsTensors[i][0];  // TODO(cais): Restore.
+          const metric = this.metricsTensors[i][0];
           const outputIndex = this.metricsTensors[i][1];
           // TODO(cais): Replace K.mean() with a proper weighting function.
           const meanMetric =
@@ -1940,3 +1940,24 @@ export class Model extends Container implements tfc.InferenceModel {
 }
 
 serialization.SerializationMap.register(Model);
+
+/**
+ * Standardize callbacks or configurations of them to an Array of callbacks.
+ */
+function standardizeCallbacks(callbacks: BaseCallback|BaseCallback[]|
+                              CustomCallbackConfig|
+                              CustomCallbackConfig[]): BaseCallback[] {
+  if (callbacks == null) {
+    return null;
+  }
+  if (callbacks instanceof BaseCallback) {
+    return [callbacks as BaseCallback];
+  }
+  if (Array.isArray(callbacks) && callbacks[0] instanceof BaseCallback) {
+    return callbacks as BaseCallback[];
+  }
+  // Convert custom callback configs to custom callback objects.
+  const callbackConfigs = toList(callbacks) as CustomCallbackConfig[];
+  return callbackConfigs.map(
+      callbackConfig => new CustomCallback(callbackConfig));
+}
