@@ -1528,8 +1528,9 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
 
        model.compile(
            {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['mse']});
-       //  model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
        const validationSplit = 0.4;
+
+       // First, perform a burn-in call.
        await model.fit(inputs, targets, {
          batchSize: numSamples,
          epochs: 1,
@@ -1539,6 +1540,8 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
          }
        });
        const numTensors0 = memory().numTensors;
+
+       // Perform actual testing calls.
        const numFitCalls = 2;
        for (let n = 0; n < numFitCalls; ++n) {
          const tensorCounts: number[] = [];
