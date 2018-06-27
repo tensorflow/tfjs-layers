@@ -1522,7 +1522,7 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
        done();
      });
 
-  it('Fit with onEpochEnd callback: no memoryleak: validation & metrics',
+  it('Fit with onEpochEnd callback: no memory leak: validation & metrics',
      async done => {
        createDenseModelAndData();
 
@@ -1567,7 +1567,7 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
        done();
      });
 
-  it('Fit with onBatchEnd callback: no memoryleak: validation & metrics',
+  it('Fit with onBatchEnd callback: no memory leak: validation & metrics',
      async done => {
        createDenseModelAndData();
 
