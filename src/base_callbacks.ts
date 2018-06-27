@@ -15,8 +15,6 @@ import {add, div, keep, mul, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
 import {getScalar} from './backend/state';
 import {Container} from './engine/topology';
 import {Logs, resolveScalarsInLogs, UnresolvedLogs} from './logs';
-import * as generic_utils from './utils/generic_utils';
-
 
 export type Params = {
   [key: string]: number|string|boolean|number[]|string[]|boolean[];
@@ -144,6 +142,13 @@ export class CallbackList {
       logs = {};
     }
     for (const callback of this.callbacks) {
+      // console.log(
+      //     `Calling callback ${++i} of ${this.callbacks.length}: ` +
+      //     `numTensors = ${memory().numTensors}, ` +
+      //     `log keys: ${Object.keys(logs)}`);  // DEBUG
+      // for (const key in logs) {
+      //   console.log(`  * key: ${key}, value: ${logs[key]}`);  // DEBUG
+      // }
       await callback.onEpochEnd(epoch, logs);
     }
   }
@@ -321,7 +326,8 @@ export class History extends BaseCallback {
     }
     const values = await Promise.all(promises);
     for (let n = 0; n < values.length; ++n) {
-      (this.history[keys[n]][indices[n]] as Tensor).dispose();
+      const tensorToDispose = this.history[keys[n]][indices[n]] as Tensor;
+      tensorToDispose.dispose();
       this.history[keys[n]][indices[n]] = values[n][0];
     }
   }
@@ -339,6 +345,7 @@ export interface CustomCallbackConfig {
 /**
  * Custom callback for training.
  */
+// TODO(cais): Move to callbacks.ts. DO NOT SUBMIT.
 export class CustomCallback extends BaseCallback {
   protected readonly trainBegin: (logs?: Logs) => Promise<void>;
   protected readonly trainEnd: (logs?: Logs) => Promise<void>;
@@ -347,8 +354,11 @@ export class CustomCallback extends BaseCallback {
   protected readonly batchBegin: (batch: number, logs?: Logs) => Promise<void>;
   protected readonly batchEnd: (batch: number, logs?: Logs) => Promise<void>;
 
-  constructor(config: CustomCallbackConfig) {
+  constructor(config?: CustomCallbackConfig) {
     super();
+    if (config == null) {
+      config = {};
+    }
     this.trainBegin = config.onTrainBegin;
     this.trainEnd = config.onTrainEnd;
     this.epochBegin = config.onEpochBegin;
@@ -398,26 +408,4 @@ export class CustomCallback extends BaseCallback {
       await this.trainEnd(logs as Logs);
     }
   }
-}
-
-/**
- * Standardize callbacks or configurations of them to an Array of callbacks.
- */
-export function standardizeCallbacks(callbacks: BaseCallback|BaseCallback[]|
-                                     CustomCallbackConfig|
-                                     CustomCallbackConfig[]): BaseCallback[] {
-  if (callbacks == null) {
-    return null;
-  }
-  if (callbacks instanceof BaseCallback) {
-    return [callbacks as BaseCallback];
-  }
-  if (Array.isArray(callbacks) && callbacks[0] instanceof BaseCallback) {
-    return callbacks as BaseCallback[];
-  }
-  // Convert custom callback configs to custom callback objects.
-  const callbackConfigs =
-      generic_utils.toList(callbacks) as CustomCallbackConfig[];
-  return callbackConfigs.map(
-      callbackConfig => new CustomCallback(callbackConfig));
 }
