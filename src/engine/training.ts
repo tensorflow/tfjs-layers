@@ -20,13 +20,14 @@ import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
+import {StringTensor} from '../preprocess-layers/string_tensor';
 import {LossOrMetricFn, NamedTensorMap, Shape, SymbolicTensor} from '../types';
 import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_utils';
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
 
-import {execute, FeedDict} from './executor';
+import {execute, Feed, FeedDict} from './executor';
 import {Container, ContainerConfig} from './topology';
 // tslint:enable:max-line-length
 
@@ -293,6 +294,41 @@ export function makeBatches(
  *   in the same way.
  */
 function sliceArrays(
+    arrays: Tensor|Tensor[]|StringTensor|StringTensor[], start: number,
+    stop: number): Tensor|StringTensor|Array<Tensor|StringTensor> {
+  console.log('sliceArrays');
+  if (arrays == null) {
+    return [null];
+  } else if (Array.isArray(arrays)) {
+    console.log('sliceArrays: isArray');
+
+    const returnArrays: Array<Tensor|StringTensor> = [];
+    for (let i = 0; i < arrays.length; i++) {
+      if (arrays[i] instanceof StringTensor) {
+        console.log(arrays);
+        // The 'as StringTensor' here is to enable
+        const a: StringTensor = arrays[i] as StringTensor;
+        returnArrays.push(a.slice(start, stop - start) as StringTensor);
+      } else {
+        returnArrays.push(
+            K.sliceAlongFirstAxis(arrays[i] as Tensor, start, stop - start) as
+            Tensor);
+      }
+    }
+    return returnArrays; /*  */
+  }
+  console.log('sliceArrays: is not Array');
+  // Not Array, therefore Tensor or StringTensor.
+  if (arrays instanceof StringTensor) {
+    console.log('sliceArrays, array is instance of stringTensor');
+    console.log(`arrays: ${JSON.stringify(arrays)}`);
+    return arrays.slice(start, stop - start) as StringTensor;
+  }
+  return K.sliceAlongFirstAxis(arrays as Tensor, start, stop - start);
+}
+
+// Original version
+/*function sliceArrays(
     arrays: Tensor|Tensor[], start: number, stop: number): Tensor|Tensor[] {
   if (arrays == null) {
     return [null];
@@ -303,6 +339,7 @@ function sliceArrays(
     return K.sliceAlongFirstAxis(arrays, start, stop - start);
   }
 }
+*/
 
 /**
  * Slice an Tensor or an Array of Tensors, by random-order indices.
@@ -361,9 +398,9 @@ export function sliceArraysByIndices(
  * @throws ValueError: on incorrect number of inputs or mismatches in shapes.
  */
 function checkInputData(
-    data: Tensor|Tensor[], names: string[], shapes?: Shape[],
-    checkBatchAxis = true, exceptionPrefix = '') {
-  let arrays: Tensor[];
+    data: Tensor|Tensor[]|StringTensor|StringTensor[], names: string[],
+    shapes?: Shape[], checkBatchAxis = true, exceptionPrefix = '') {
+  let arrays: Array<Tensor|StringTensor>;
   if (Array.isArray(data)) {
     if (data.length !== names.length) {
       throw new ValueError(
@@ -642,14 +679,15 @@ export class Model extends Container {
 
   metrics: string[]|{[outputName: string]: string};
   metricsNames: string[];
-  // Porting Note: `metrics_tensors` in PyKeras is a symbolic tensor. But given
+  // Porting Note: `metrics_tensors` in PyKeras is a symbolic tensor. But
+  // given
   //   the imperative nature of tfjs-core, `metricsTensors` is a
   //   TypeScript function here.
-  //   Also note that due to the imperative nature of tfjs-core, `metricsTensor`
-  //   here needs an output index to keep track of which output of the Model
-  //   a metric belongs to. This is unlike `metrics_tensors` in PyKeras,
-  //   which is a `list` of symbolic tensors, each of which has implicit
-  //   "knowledge" of the outputs it depends on.
+  //   Also note that due to the imperative nature of tfjs-core,
+  //   `metricsTensor` here needs an output index to keep track of which
+  //   output of the Model a metric belongs to. This is unlike
+  //   `metrics_tensors` in PyKeras, which is a `list` of symbolic tensors,
+  //   each of which has implicit "knowledge" of the outputs it depends on.
   metricsTensors: Array<[LossOrMetricFn, number]>;
 
   constructor(config: ContainerConfig) {
@@ -665,7 +703,8 @@ export class Model extends Container {
    * - Number of weight parameters of each layer
    * - If the model has non-sequential-like topology, the inputs each layer
    *   receives
-   * - The total number of trainable and non-trainable parameters of the model.
+   * - The total number of trainable and non-trainable parameters of the
+   * model.
    *
    * ```js
    * const input1 = tf.input({shape: [10]});
@@ -812,8 +851,10 @@ export class Model extends Container {
         }
       }
 
-      // Porting Note: Due to the imperative nature of the backend, we calculate
-      //   the regularizer penalties in the totalLossFunction, instead of here.
+      // Porting Note: Due to the imperative nature of the backend, we
+      // calculate
+      //   the regularizer penalties in the totalLossFunction, instead of
+      //   here.
     });
 
     const nestedMetrics = collectMetrics(config.metrics, this.outputNames);
@@ -910,7 +951,8 @@ export class Model extends Container {
     });
 
     // Porting Notes: Given the imperative backend of tfjs-core,
-    //   there is no need for constructing the symbolic graph and placeholders.
+    //   there is no need for constructing the symbolic graph and
+    //   placeholders.
     this.collectedTrainableWeights = this.trainableWeights;
   }
 
@@ -954,8 +996,8 @@ export class Model extends Container {
    * result.print();
    * ```
    *
-   * @param x `Tensor` of test data, or an `Array` of `Tensor`s if the model has
-   *   multiple inputs.
+   * @param x `Tensor` of test data, or an `Array` of `Tensor`s if the model
+   * has multiple inputs.
    * @param y `Tensor` of target data, or an `Array` of `Tensor`s if the model
    *   has multiple outputs.
    * @param config A `ModelEvaluateConfig`, containing optional fields.
@@ -974,7 +1016,8 @@ export class Model extends Container {
     // TODO(cais): Standardize `config.sampleWeights` as well.
     // Validate user data.
     const standardizedOuts = this.standardizeUserData(x, y, true, batchSize);
-    // TODO(cais): If uses `useLearningPhase`, set the corresponding element of
+    // TODO(cais): If uses `useLearningPhase`, set the corresponding element
+    // of
     //   the input to 0.
     const ins = standardizedOuts[0].concat(standardizedOuts[1]);
     this.makeTestFunction();
@@ -995,8 +1038,8 @@ export class Model extends Container {
    * @returns Number of samples provided.
    */
   private checkNumSamples(
-      ins: Tensor|Tensor[], batchSize?: number, steps?: number,
-      stepsName = 'steps'): number {
+      ins: Tensor|Tensor[]|StringTensor|StringTensor[], batchSize?: number,
+      steps?: number, stepsName = 'steps'): number {
     let numSamples: number;
     if (steps != null) {
       numSamples = null;
@@ -1070,7 +1113,8 @@ export class Model extends Container {
   }
 
   /**
-   * Retrieve the model's internal symbolic tensors from symbolic-tensor names.
+   * Retrieve the model's internal symbolic tensors from symbolic-tensor
+   * names.
    */
   private retrieveSymbolicTensors(symbolicTensorNames: string[]):
       SymbolicTensor[] {
@@ -1124,8 +1168,9 @@ export class Model extends Container {
    * @returns: Predictions as `Tensor` (if a single output) or an `Array` of
    *   `Tensor` (if multipe outputs).
    */
-  private predictLoop(ins: Tensor|Tensor[], batchSize = 32, verbose = false):
-      Tensor|Tensor[] {
+  private predictLoop(
+      ins: Tensor|Tensor[]|StringTensor|StringTensor[], batchSize = 32,
+      verbose = false): Tensor|Tensor[] {
     return tfc.tidy(() => {
       const numSamples = this.checkNumSamples(ins);
       if (verbose) {
@@ -1138,27 +1183,53 @@ export class Model extends Container {
       //   in numpy, e.g., x[1:3] = y. Therefore we use concatenation while
       //   iterating over the batches.
 
+      // console.log(`XXXXXXXX predictLoop`);
+      // console.log(`ins ${ins}`);
+      // console.log(`batchSize ${batchSize}`);
+      // console.log(`verbose ${verbose}`);
+      // console.log(`numSamples ${numSamples}`);
+
       const batches = makeBatches(numSamples, batchSize);
+      // console.log(`batches ${batches}`);
       const outs: Tensor[] = [];
       // TODO(cais): Can the scope() be pushed down inside the for loop?
       for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
         const batchOuts = tfc.tidy(() => {
           const batchStart = batches[batchIndex][0];
           const batchEnd = batches[batchIndex][1];
-          // TODO(cais): Take care of the case of the last element is a flag for
+          // TODO(cais): Take care of the case of the last element is a flag
+          // for
           //   training/test.
+          // console.log(ins.toString());
+          // console.log(`  batchStart ${batchStart}`);
+          // console.log(`  batchEnd ${batchEnd}`);
+          let lengthIns = 1;
+          if (ins instanceof Array) {
+            lengthIns = ins.length;
+          }
+          console.log(`Model.predictLoop predictLooplengthIns ${lengthIns}`);
           const insBatch = sliceArrays(ins, batchStart, batchEnd);
-
+          let lengthInsBatch = 1;
+          if (insBatch instanceof Array) {
+            lengthInsBatch = insBatch.length;
+          }
+          console.log(`Model.predictLoop lengthInsBatch ${lengthInsBatch}`);
           // Construct the feeds for execute();
           const feeds = [];
           if (Array.isArray(insBatch)) {
             for (let i = 0; i < insBatch.length; ++i) {
-              feeds.push({key: this.inputs[i], value: insBatch[i]});
+              feeds.push({key: this.inputs[i], value: insBatch[i]} as Feed);
             }
           } else {
-            feeds.push({key: this.inputs[0], value: insBatch});
+            feeds.push({key: this.inputs[0], value: insBatch} as Feed);
           }
+          // console.log(`  feeds.length ${feeds.length}`);
+          console.log(`Model.predict feeds.length ${feeds.length}`);
+          console.log(`Model.predictLoop building FeedDict`);
           const feedDict = new FeedDict(feeds);
+          console.log(`Model.predictLoop done building FeedDict`);
+          // console.log(`  feedDictKeys ${Object.keys(feedDict.id2Value)}`);
+          // console.log(`  About to call execute`);
           return execute(this.outputs, feedDict) as Tensor[];
         });
         if (batchIndex === 0) {
@@ -1202,14 +1273,18 @@ export class Model extends Container {
    *   number of samples that is not a multiple of the batch size.
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [1]})
-  predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
-      |Tensor[] {
+  predict(
+      x: Tensor|Tensor[]|StringTensor|StringTensor[],
+      config: ModelPredictConfig = {}): Tensor|Tensor[] {
+    console.log('model predict a');
     checkInputData(x, this.inputNames, this.feedInputShapes, false);
     // TODO(cais): Take care of stateful models.
     //   if (this.stateful) ...
     // TODO(cais): Take care of the learning_phase boolean flag.
     //   if (this.useLearningPhase) ...
+    console.log('model predict b');
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
+    console.log('model predict c');
     return this.predictLoop(x, batchSize);
   }
 

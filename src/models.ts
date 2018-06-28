@@ -19,6 +19,7 @@ import {getSourceInputs, Input, Layer, Node} from './engine/topology';
 import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
+import {StringTensor} from './preprocess-layers/string_tensor';
 import {Kwargs, NamedTensorMap, Shape} from './types';
 import {JsonDict, SymbolicTensor} from './types';
 import * as generic_utils from './utils/generic_utils';
@@ -641,11 +642,14 @@ export class Sequential extends Model {
    *   number of samples that is not a multiple of the batch size.
    */
   @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [1]})
-  predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
-      |Tensor[] {
+  predict(
+      x: Tensor|Tensor[]|StringTensor|StringTensor[],
+      config: ModelPredictConfig = {}): Tensor|Tensor[] {
     if (this.model == null) {
+      console.log('building...');
       this.build();
     }
+    console.log('built.');
     return this.model.predict(x, config);
   }
 

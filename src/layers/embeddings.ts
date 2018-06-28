@@ -13,7 +13,7 @@
  *
  * Original source: keras/constraints.py
  */
-import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
+import {DataType, serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 // tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
@@ -133,8 +133,12 @@ export class Embedding extends Layer {
   }
 
   public build(inputShape: Shape|Shape[]): void {
+    if (this.dtype === 'string') {
+      throw new NotImplementedError(
+          'String dType embedding errors are not implemented');
+    }
     this.embeddings = this.addWeight(
-        'embeddings', [this.inputDim, this.outputDim], this.dtype,
+        'embeddings', [this.inputDim, this.outputDim], this.dtype as DataType,
         this.embeddingsInitializer, this.embeddingsRegularizer, true,
         this.embeddingsConstraint);
     this.built = true;

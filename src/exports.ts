@@ -18,7 +18,7 @@ import {doc, io, Tensor} from '@tensorflow/tfjs-core';
 import {Constraint, MaxNorm, MaxNormConfig, MinMaxNorm, MinMaxNormConfig, NonNeg, UnitNorm, UnitNormConfig} from './constraints';
 import {ContainerConfig, Input, InputConfig, InputLayer, InputLayerConfig, Layer, LayerConfig} from './engine/topology';
 import {Model} from './engine/training';
-import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
+import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, KnownVocab, KnownVocabConfig, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RainbowVocab, RainbowVocabConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
 import {ELU, ELULayerConfig, LeakyReLU, LeakyReLULayerConfig, Softmax, SoftmaxLayerConfig, ThresholdedReLU, ThresholdedReLULayerConfig} from './layers/advanced_activations';
 import {Conv1D, Conv2D, Conv2DTranspose, ConvLayerConfig, Cropping2D, Cropping2DLayerConfig, SeparableConv2D, SeparableConvLayerConfig, UpSampling2D, UpSampling2DLayerConfig} from './layers/convolutional';
 import {DepthwiseConv2D, DepthwiseConv2DLayerConfig} from './layers/convolutional_depthwise';
@@ -913,6 +913,26 @@ export class InitializerExports {
   })
   static orthogonal(config: OrthogonalConfig): Initializer {
     return new Orthogonal(config);
+  }
+
+  @doc({
+    heading: 'Initializers',
+    namespace: 'initializers',
+    useDocsFrom: 'KnownVocabConfig',
+    configParamIndices: [0]
+  })
+  static knownVocab(config: KnownVocabConfig): Initializer {
+    return new KnownVocab(config);
+  }
+
+  @doc({
+    heading: 'Initializers',
+    namespace: 'initializers',
+    useDocsFrom: 'RainbowVocabConfig',
+    configParamIndices: [0]
+  })
+  static rainbowVocab(config: RainbowVocabConfig): Initializer {
+    return new RainbowVocab(config);
   }
 }
 

@@ -15,6 +15,7 @@
 // tslint:disable:max-line-length
 import {Rank, ShapeMap, util} from '@tensorflow/tfjs-core';
 import {doc} from '@tensorflow/tfjs-core';
+import {ValueError} from '../errors';
 
 /////////////////////////
 //// UTILS AND STUFF ////
@@ -117,6 +118,9 @@ export class StringTensor<R extends Rank = Rank> {
           `Constructing tensor of shape (${this.size}) should match the ` +
               `length of stringValues (${stringValues.length})`);
       this.stringValues = stringValues;
+    } else {
+      // Initialize stringValues to an emtpy array.
+      this.stringValues = [];
     }
     this.shape = shape.slice();
     this.strides = computeStrides(shape);
@@ -254,6 +258,121 @@ export class StringTensor<R extends Rank = Rank> {
     // TODO(bileschi): This implementation makes a copy of the strings, there
     // may be a way to save memory here.
     return StringTensor.make(newShape, this.stringValues);
+  }
+
+  // TODO(bileschi): Fuse with version in @tensorflow/tfjs-core slice_util.ts
+  assertParamsValid(begin: number[], size: number[]): void {
+    util.assert(
+        this.rank === begin.length,
+        `Error in slice${this.rank}D: Length of begin ${begin} must ` +
+            `match the rank of the array (${this.rank}).`);
+    util.assert(
+        this.rank === size.length,
+        `Error in slice${this.rank}D: Length of size ${size} must ` +
+            `match the rank of the array (${this.rank}).`);
+
+    for (let i = 0; i < this.rank; ++i) {
+      util.assert(
+          begin[i] + size[i] <= this.shape[i],
+          `Error in slice${this.rank}D: begin[${i}] + size[${i}] ` +
+              `(${begin[i] + size[i]}) would overflow this.shape[${i}] (${
+                  this.shape[i]})`);
+    }
+  }
+
+  sliceAlongOneAxis<T extends StringTensor<R>>(
+      axis: number, begin: number, size: number): T {
+    const _begin: number[] = [];
+    const _size: number[] = [];
+    if (axis < 0) {
+      throw new ValueError(`Asked to slice on axis ${axis} less than 0.`);
+    }
+    if (this.rank <= axis) {
+      throw new ValueError(`Asked to slice on axis ${axis} of a rank ${
+          this.rank} stringTensor.`);
+    }
+    // For rank 4, axis 2, with shape S
+    // _begin will be like:
+    //    [0, 0, begin, 0];
+    // _size will be like:
+    //    [this.shape[0],
+    //     this.shape[1],
+    //     size,
+    //     this.shape[3]];
+    for (let i = 0; i < this.rank; i++) {
+      if (i === axis) {
+        _begin.push(begin);
+        _size.push(size);
+      } else {
+        _begin.push(0);
+        _size.push(this.shape[i]);
+      }
+    }
+    return this.slice(_begin, _size);
+  }
+
+  // Mostly cribbed from @tensorflow/tfjs-core slice.ts
+  slice<T extends StringTensor<R>>(
+      begin: number|number[], size?: number|number[]): T {
+    console.log('XXXXXXXXXXXXX');
+    console.log('XXX i am StringTensor.slice');
+    console.log('XXXXXXXXXXXXX');
+    console.log(`this: ${JSON.stringify(this)}`);
+    if (this.rank === 0) {
+      throw new Error('Slicing stringScalar is not possible');
+    }
+    // The following logic allows for more ergonomic calls.
+    let begin_: number[];
+    if (typeof begin === 'number') {
+      begin_ = [begin, ...new Array(this.rank - 1).fill(0)];
+    } else if (begin.length < this.rank) {
+      begin_ = begin.concat(new Array(this.rank - begin.length).fill(0));
+    } else {
+      begin_ = begin;
+    }
+    let size_: number[];
+    if (size == null) {
+      size_ = new Array(this.rank).fill(-1);
+    } else if (typeof size === 'number') {
+      size_ = [size, ...new Array(this.rank - 1).fill(-1)];
+    } else if (size.length < this.rank) {
+      size_ = size.concat(new Array(this.rank - size.length).fill(-1));
+    } else {
+      size_ = size;
+    }
+    size_ = size_.map((d, i) => {
+      if (d >= 0) {
+        return d;
+      } else {
+        util.assert(d === -1, 'Bad value in size');
+        return this.shape[i] - begin_[i];
+      }
+    });
+    this.assertParamsValid(begin_, size_);
+
+    const buffer = new StringTensor<R>(size_ as ShapeMap[R]);
+    console.log(`created new StringTensor 'buffer': ${JSON.stringify(buffer)}`);
+    for (let i = 0; i < buffer.size; ++i) {
+      const loc = buffer.indexToLoc(i);
+      const xLoc = loc.map((idx, j) => idx + begin_[j]);
+      buffer.set(this.get(...xLoc), ...loc);
+    }
+    return buffer as T;
+  }
+
+  indexToLoc(index: number): number[] {
+    if (this.rank === 0) {
+      return [];
+    } else if (this.rank === 1) {
+      return [index];
+    }
+    const locs: number[] = new Array(this.shape.length);
+    for (let i = 0; i < locs.length - 1; ++i) {
+      locs[i] = Math.floor(index / this.strides[i]);
+      index -= locs[i] * this.strides[i];
+    }
+    locs[locs.length - 1] = index;
+    return locs;
   }
 }
 

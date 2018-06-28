@@ -114,6 +114,7 @@ export class VocabLayer extends Layer {
 
   constructor(config: VocabLayerConfig) {
     super(config);
+    this.dtype = 'string';
     this.knownVocabSize = config.knownVocabSize;
     this.hashVocabSize = config.hashVocabSize | 0;
     this.vocabInitializer = getInitializer(
@@ -122,10 +123,13 @@ export class VocabLayer extends Layer {
 
   public build(inputShape: Shape|Shape[]): void {
     inputShape = generic_utils.getExactlyOneShape(inputShape);
+    console.log('VocabLayer.build');
     if (this.knownVocab == null && this.knownVocabSize &&
         this.knownVocabSize > 0) {
+      console.log('VocabLayer.build -- apply vocabInitializer');
       const vocabTensor = this.vocabInitializer.apply(
                               [this.knownVocabSize], 'string') as StringTensor;
+      console.log('VocabLayer initialization complete');
       this.knownVocab = new Map<string, number>();
       for (let i = 0; i < vocabTensor.size; i++) {
         this.knownVocab.set(vocabTensor.get(i), i);
