@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {serialization, Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
+import {serialization, Tensor, tensor2d, Tensor3D, tensor3d, zeros} from '@tensorflow/tfjs-core';
 
 import {Layer} from '../engine/topology';
 import * as tfl from '../index';
@@ -164,6 +164,27 @@ describeMathCPU('Bidirectional Layer: Symbolic', () => {
     expect(outputs[0].shape).toEqual([10, 8, 3]);
     expect(outputs[1].shape).toEqual([10, 3]);
     expect(outputs[2].shape).toEqual([10, 3]);
+  });
+  it('Bidirectional layer following a concatenate layer', () => {
+    const sequenceLength = 5;
+    const input1 = tfl.input({shape: [sequenceLength, 3]});
+    const input2 = tfl.input({shape: [sequenceLength, 4]});
+    const concat = tfl.layers.concatenate({axis: -1}).apply([input1, input2]) as
+        tfl.SymbolicTensor;
+    const lstmNumUnits = 3;
+    const bidi = tfl.layers.bidirectional({
+      layer: tfl.layers.lstm({units: lstmNumUnits, returnSequences: true}) as
+          tfl.RNN,
+      mergeMode: 'concat',
+    });
+    const bidiOut = bidi.apply(concat) as tfl.SymbolicTensor;
+    expect(bidiOut.shape).toEqual([null, sequenceLength, 2 * lstmNumUnits]);
+
+    const model = tfl.model({inputs: [input1, input2], outputs: bidiOut});
+    const x1 = zeros([1, sequenceLength, 3]);
+    const x2 = zeros([1, sequenceLength, 4]);
+    const y = model.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, zeros([1, sequenceLength, 2 * lstmNumUnits]));
   });
   it('Serialization round trip', () => {
     const layer = tfl.layers.bidirectional({
