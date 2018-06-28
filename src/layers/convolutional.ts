@@ -355,13 +355,20 @@ export abstract class BaseConv extends Layer {
     this.biasRegularizer = getRegularizer(config.biasRegularizer);
     this.activityRegularizer = getRegularizer(config.activityRegularizer);
     this.dilationRate = config.dilationRate == null ? 1 : config.dilationRate;
-    if (this.rank === 1 &&
-        (Array.isArray(this.dilationRate) &&
-         (this.dilationRate as number[]).length !== 1)) {
-      throw new ValueError(
-          `dilationRate must be a number or an array of a single number ` +
-          `for 1D convolution, but received ` +
-          `${JSON.stringify(this.dilationRate)}`);
+    if (this.rank === 1 && Array.isArray(this.dilationRate)) {
+      if ((this.dilationRate as number[]).length !== 1) {
+        throw new ValueError(
+            `dilationRate must be a number or an array of a single number ` +
+            `for 1D convolution, but received ` +
+            `${JSON.stringify(this.dilationRate)}`);
+      } else {
+        // The tensorflow native backend (via tfjs-node) does not support a
+        // dilationRate as an array of length 1 (which is what is output from
+        // a model converted from Keras). And, in fact, it appears the tfjs-core
+        // makes a number of assumptions about dilationRate either being a
+        // number or an array of length 2. So convert it to a number
+        this.dilationRate = (this.dilationRate as number[])[0];
+      }
     }
     if (this.rank === 2) {
       if (typeof this.dilationRate === 'number') {
