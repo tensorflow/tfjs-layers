@@ -53,6 +53,31 @@ export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
 }
 
 /**
+ * Loss or metric function that always returns exactly zero.  Useful for
+ * multi-output models when some outputs should not influence gradients. Default
+ * loss when fitting layers without backpropegation.
+ *
+ *
+ * ```js
+ * const yTrue = tf.tensor2d([[0, 1], [3, 4]]);
+ * const yPred = tf.tensor2d([[0, 1], [-3, -4]]);
+ * const z = tf.metrics.zero(yTrue, yPred);
+ * mse.print();
+ * ```
+ *
+ * Aliases: `tf.metrics.`, `tf.metrics.mse`.
+ *
+ * @param yTrue Truth Tensor.
+ * @param yPred Prediction Tensor.
+ * @return Zero Tensor.
+ */
+export function zero(yTrue: Tensor, yPred: Tensor): Tensor {
+  // TODO(bileschi): replace implementation with just a call to zeros of the
+  // appropriate shape.
+  return tidy(() => tfc.mean(tfc.zerosLike(yPred), -1));
+}
+
+/**
  * Loss or metric function: Mean absolute error.
  *
  * Mathematically, mean absolute error is defined as:
@@ -62,8 +87,8 @@ export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
  * ```js
  * const yTrue = tf.tensor2d([[0, 1], [0, 0], [2, 3]]);
  * const yPred = tf.tensor2d([[0, 1], [0, 1], [-2, -3]]);
- * const mse = tf.metrics.meanAbsoluteError(yTrue, yPred);
- * mse.print();
+ * const mae = tf.metrics.meanAbsoluteError(yTrue, yPred);
+ * mae.print();
  * ```
  *
  * @param yTrue Truth Tensor.
@@ -80,8 +105,8 @@ export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
  * ```js
  * const yTrue = tf.tensor2d([[0, 1], [10, 20]]);
  * const yPred = tf.tensor2d([[0, 1], [11, 24]]);
- * const mse = tf.metrics.meanAbsolutePercentageError(yTrue, yPred);
- * mse.print();
+ * const e = tf.metrics.meanAbsolutePercentageError(yTrue, yPred);
+ * e.print();
  * ```
  *
  * Aliases: `tf.metrics.MAPE`, `tf.metrics.mape`.
@@ -333,7 +358,8 @@ export function get(identifierOrFn: string|LossOrMetricFn): LossOrMetricFn {
     binaryCrossentropy,
     kullbackLeiblerDivergence,
     poisson,
-    cosineProximity
+    cosineProximity,
+    zero
   };
   if (typeof identifierOrFn === 'string') {
     if (identifierOrFn in lossesMap) {

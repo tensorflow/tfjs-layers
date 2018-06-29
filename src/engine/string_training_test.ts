@@ -6,10 +6,10 @@ import {expectValuesInRange} from '@tensorflow/tfjs-core/dist/test_util';
 
 import * as tfl from '../index';
 import {initializers} from '../index';
-import {describeMathCPU, describeMathCPUAndGPU} from '../utils/test_utils';
+import {describeMathCPUAndGPU} from '../utils/test_utils';
 import {expectTensorsClose} from '../utils/test_utils';
 
-describeMathCPU('String preproc : Model.predict', () => {
+describeMathCPUAndGPU('String preproc : Model.predict', () => {
   it('basic model usage: predict', () => {
     // Define the vocabulary initializer
     const vocabInitializer = initializers.knownVocab(
@@ -42,32 +42,31 @@ describeMathCPU('String preproc : Model.predict', () => {
   });
 });
 
-describeMathCPUAndGPU('String preproc : compile and fit', () => {
-  it('basic model usage: fit', () => {
-    // Define a sequential model with just a vocab layer.
-    const knownVocabSize = 4;
-    const hashVocabSize = 1;
-    tfl.sequential({
-      layers: [tfl.layers.vocab({
-        name: 'myVocabLayer',
-        knownVocabSize,
-        hashVocabSize,
-        inputShape: [2]  // two words per example
-      })]
+/*describeMathCPU(
+    'String preproc : compileUnsupervised & fitUnsupervised', () => {
+      it('basic model usage: fit', () => {
+        // Define a sequential model with just a vocab layer.
+        const knownVocabSize = 4;
+        const hashVocabSize = 1;
+        const vocabModel = tfl.sequential({
+          layers: [tfl.layers.vocab({
+            name: 'myVocabLayer',
+            knownVocabSize,
+            hashVocabSize,
+            inputShape: [2]  // two words per example
+          })]
+        });
+        // Define an input array of words. 'w1', 'w2', 'w3', and 'w4' each
+        // appear twice.  Word 'wX' appears once.
+        const x = tfl.preprocessing.stringTensor1d(
+            ['w1', 'w1', 'w2', 'w2', 'w3', 'w3', 'w4', 'w4', 'wX']);
+        vocabModel.compile({optimizer: 'vocabCount', loss: 'zero'});
+        const batchSize = 3;
+        const epochs = 1;
+        const history = await vocabModel.fit(x, {batchSize, epochs});
+      });
     });
-    /*
-    // Define an input array of words. w1, w2, w3, and w4 appear twice.  wX
-    // appears once.
-    const x = tfl.preprocessing.stringTensor1d(
-      ['w1', 'w1', 'w2', 'w2', 'w3', 'w3', 'w4', 'w4', 'wX']);
-    vocabModel.preprocessingCompile({optimizer: 'vocabCount'});
-    const batchSize = 3;
-    const epochs = 1;
-    const history = await vocabModel.preprocessingFit(x, {batchSize, epochs});
-    //*/
-  });
-});
-
+*/
 
 // ORIGINAL SKETCH
 /*

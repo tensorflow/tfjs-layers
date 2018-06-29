@@ -37,6 +37,24 @@ describeMathCPUAndGPU('meanSquaredError', () => {
   });
 });
 
+describeMathCPUAndGPU('zero (the loss)', () => {
+  it('1D', () => {
+    const yTrue = tfc.zeros([3]);
+    const yPred = tensor1d([1, 2, 3]);
+    const expectedVal = scalar(0);
+    const result = losses.zero(yTrue, yPred);
+    expectTensorsClose(result, expectedVal);
+  });
+
+  it('2D', () => {
+    const yTrue = tfc.zeros([2, 2]);
+    const yPred = tensor2d([[1, 2], [3, 4]], [2, 2]);
+    const expectedVal = tensor1d([0, 0]);
+    const result = losses.zero(yTrue, yPred);
+    expectTensorsClose(result, expectedVal);
+  });
+});
+
 describeMathCPUAndGPU('meanAbsoluteError', () => {
   it('1D', () => {
     const yTrue = tfc.zeros([3]);
@@ -315,7 +333,7 @@ describe('losses get', () => {
                'squaredHinge', 'hinge', 'categoricalHinge', 'logcosh',
                'categoricalCrossentropy', 'sparseCategoricalCrossentropy',
                'binaryCrossentropy', 'kullbackLeiblerDivergence', 'poisson',
-               'cosineProximity']) {
+               'cosineProximity', 'zero']) {
     it(`can get ${lossName}`, () => {
       losses.get(lossName);
     });
