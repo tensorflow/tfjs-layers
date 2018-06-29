@@ -646,10 +646,10 @@ export class Sequential extends Model {
       x: Tensor|Tensor[]|StringTensor|StringTensor[],
       config: ModelPredictConfig = {}): Tensor|Tensor[] {
     if (this.model == null) {
-      console.log('building...');
+      // console.log('building...');
       this.build();
     }
-    console.log('built.');
+    // console.log('built.');
     return this.model.predict(x, config);
   }
 

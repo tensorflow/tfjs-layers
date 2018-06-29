@@ -296,16 +296,16 @@ export function makeBatches(
 function sliceArrays(
     arrays: Tensor|Tensor[]|StringTensor|StringTensor[], start: number,
     stop: number): Tensor|StringTensor|Array<Tensor|StringTensor> {
-  console.log('sliceArrays');
+  // console.log('sliceArrays');
   if (arrays == null) {
     return [null];
   } else if (Array.isArray(arrays)) {
-    console.log('sliceArrays: isArray');
+    // console.log('sliceArrays: isArray');
 
     const returnArrays: Array<Tensor|StringTensor> = [];
     for (let i = 0; i < arrays.length; i++) {
       if (arrays[i] instanceof StringTensor) {
-        console.log(arrays);
+        // console.log(arrays);
         // The 'as StringTensor' here is to enable
         const a: StringTensor = arrays[i] as StringTensor;
         returnArrays.push(a.slice(start, stop - start) as StringTensor);
@@ -317,11 +317,11 @@ function sliceArrays(
     }
     return returnArrays; /*  */
   }
-  console.log('sliceArrays: is not Array');
+  // console.log('sliceArrays: is not Array');
   // Not Array, therefore Tensor or StringTensor.
   if (arrays instanceof StringTensor) {
-    console.log('sliceArrays, array is instance of stringTensor');
-    console.log(`arrays: ${JSON.stringify(arrays)}`);
+    // console.log('sliceArrays, array is instance of stringTensor');
+    // console.log(`arrays: ${JSON.stringify(arrays)}`);
     return arrays.slice(start, stop - start) as StringTensor;
   }
   return K.sliceAlongFirstAxis(arrays as Tensor, start, stop - start);
@@ -1203,17 +1203,17 @@ export class Model extends Container {
           // console.log(ins.toString());
           // console.log(`  batchStart ${batchStart}`);
           // console.log(`  batchEnd ${batchEnd}`);
-          let lengthIns = 1;
-          if (ins instanceof Array) {
-            lengthIns = ins.length;
-          }
-          console.log(`Model.predictLoop predictLooplengthIns ${lengthIns}`);
+          // let lengthIns = 1;
+          // if (ins instanceof Array) {
+          // lengthIns = ins.length;
+          // }
+          // console.log(`Model.predictLoop predictLooplengthIns ${lengthIns}`);
           const insBatch = sliceArrays(ins, batchStart, batchEnd);
-          let lengthInsBatch = 1;
-          if (insBatch instanceof Array) {
-            lengthInsBatch = insBatch.length;
-          }
-          console.log(`Model.predictLoop lengthInsBatch ${lengthInsBatch}`);
+          // let lengthInsBatch = 1;
+          // if (insBatch instanceof Array) {
+          // lengthInsBatch = insBatch.length;
+          // }
+          // console.log(`Model.predictLoop lengthInsBatch ${lengthInsBatch}`);
           // Construct the feeds for execute();
           const feeds = [];
           if (Array.isArray(insBatch)) {
@@ -1224,10 +1224,10 @@ export class Model extends Container {
             feeds.push({key: this.inputs[0], value: insBatch} as Feed);
           }
           // console.log(`  feeds.length ${feeds.length}`);
-          console.log(`Model.predict feeds.length ${feeds.length}`);
-          console.log(`Model.predictLoop building FeedDict`);
+          // console.log(`Model.predict feeds.length ${feeds.length}`);
+          // console.log(`Model.predictLoop building FeedDict`);
           const feedDict = new FeedDict(feeds);
-          console.log(`Model.predictLoop done building FeedDict`);
+          // console.log(`Model.predictLoop done building FeedDict`);
           // console.log(`  feedDictKeys ${Object.keys(feedDict.id2Value)}`);
           // console.log(`  About to call execute`);
           return execute(this.outputs, feedDict) as Tensor[];
@@ -1276,15 +1276,15 @@ export class Model extends Container {
   predict(
       x: Tensor|Tensor[]|StringTensor|StringTensor[],
       config: ModelPredictConfig = {}): Tensor|Tensor[] {
-    console.log('model predict a');
+    // console.log('model predict a');
     checkInputData(x, this.inputNames, this.feedInputShapes, false);
     // TODO(cais): Take care of stateful models.
     //   if (this.stateful) ...
     // TODO(cais): Take care of the learning_phase boolean flag.
     //   if (this.useLearningPhase) ...
-    console.log('model predict b');
+    // console.log('model predict b');
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
-    console.log('model predict c');
+    // console.log('model predict c');
     return this.predictLoop(x, batchSize);
   }
 

@@ -25,11 +25,12 @@ import {InputLayer} from './topology';
  */
 function assertFeedCompatibility(
     key: SymbolicTensor, val: Tensor|StringTensor) {
-  if (key.dtype != null && key.dtype !== val.dtype) {
-    throw new ValueError(
-        `The dtype of the feed (${val.dtype}) is incompatible with that of ` +
-        `the key '${key.name}' (${key.dtype}).`);
-  }
+  /*
+if (key.dtype != null && key.dtype !== val.dtype) {
+throw new ValueError(
+    `The dtype of the feed (${val.dtype}) is incompatible with that of ` +
+    `the key '${key.name}' (${key.dtype}).`);
+}*/
 
   if (key.shape != null) {
     if (key.shape.length !== val.shape.length) {
@@ -61,7 +62,6 @@ export interface Feed {
  * A feed value is a concrete value represented as an `Tensor`.
  */
 export class FeedDict {
-  // TODO(DO NOT SUBMIT) (put back)
   public id2Value: {[id: number]: Tensor|StringTensor} = {};
 
   /**
@@ -70,24 +70,18 @@ export class FeedDict {
    *   copy-construction will be performed.
    */
   constructor(feeds?: Feed[]|FeedDict) {
-    console.log(` FeedDict.constructor feeds: ${feeds}`);
     if (feeds instanceof FeedDict) {
-      console.log(` FeedDict.constructor feeds instance FeedDict`);
       for (const id in feeds.id2Value) {
-        console.log(`   ${id}`);
         this.id2Value[id] = feeds.id2Value[id];
       }
     } else {
-      console.log(` FeedDict.constructor feeds instance Feed[]`);
       if (feeds == null) {
         return;
       }
       for (const feed of feeds) {
-        console.log(`   key: ${feed.key}   feed.value: ${feed.value}`);
         this.add(feed.key, feed.value);
       }
     }
-    console.log(` FeedDict.constructor done`);
   }
 
   /**
@@ -99,11 +93,6 @@ export class FeedDict {
    *   `FeedDict`.
    */
   add(key: SymbolicTensor, value: Tensor|StringTensor): FeedDict {
-    console.log(`   FeedDict.add key.dtype: ${key.dtype}`);
-    console.log(`   FeedDict.add key.shape: ${key.shape}`);
-    console.log(`   FeedDict.add key.name: ${key.name}`);
-    console.log(`   FeedDict.add key.inputs: ${key.inputs}`);
-    console.log(`   FeedDict.add value: ${JSON.stringify(value)}`);
     assertFeedCompatibility(key, value);
     if (this.id2Value[key.id] == null) {
       this.id2Value[key.id] = value;
@@ -167,20 +156,12 @@ export class FeedDict {
 export function execute(
     fetches: SymbolicTensor|SymbolicTensor[], feedDict: FeedDict,
     kwargs?: Kwargs): Tensor|Tensor[]|[Tensor | Tensor[]] {
-  // console.log(`YYYYYYY in execute`);
-  // console.log(`fetches ${fetches}`);
-  // console.log(`feedDict ${JSON.stringify(feedDict)}`);
-  // console.log(`kwargs ${kwargs}`);
   const arrayFetches = Array.isArray(fetches);
   const fetchArray: SymbolicTensor[] =
       arrayFetches ? fetches as SymbolicTensor[] : [fetches as SymbolicTensor];
 
   const outputs: Tensor[] = [];
-  // console.log(
-  //     `  feedDictKeys ${JSON.stringify(Object.keys(feedDict.id2Value))}`);
   const internalFeedDict = new FeedDict(feedDict);
-  // console.log(`  internalFeedDictKeys ${
-  //     JSON.stringify(Object.keys(internalFeedDict.id2Value))}`);
 
   for (const fetch of fetchArray) {
     outputs.push(executeInternal(fetch, internalFeedDict, kwargs) as Tensor);
@@ -191,19 +172,6 @@ export function execute(
 function executeInternal(
     fetch: SymbolicTensor, internalFeedDict: FeedDict, kwargs?: Kwargs): Tensor|
     StringTensor {
-  // console.log(`ZZZZZZZ in executeInternal`);
-  // console.log(`  fetch.id ${fetch.id}`);
-  // console.log(`  fetch.dtype ${fetch.dtype}`);
-  // console.log(`  fetch.nodeindex ${fetch.nodeIndex}`);
-  // console.log(
-  //     `  fetch.sourceLayer.getClassName()
-  //     ${fetch.sourceLayer.getClassName()}`);
-  // console.log(
-  //     `  internalFeedDict.hasKey(fetch) ${internalFeedDict.hasKey(fetch)}`);
-  // const feedDictKeys = Object.keys(internalFeedDict.id2Value);
-  // console.log(`  feedDictKeys ${JSON.stringify(feedDictKeys)}`);
-  // console.log(`  internalFeedDict ${JSON.stringify(internalFeedDict)}`);
-  // console.log(``);
   if (internalFeedDict.hasKey(fetch)) {
     return internalFeedDict.getValue(fetch);
   }

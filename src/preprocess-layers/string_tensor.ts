@@ -314,10 +314,6 @@ export class StringTensor<R extends Rank = Rank> {
   // Mostly cribbed from @tensorflow/tfjs-core slice.ts
   slice<T extends StringTensor<R>>(
       begin: number|number[], size?: number|number[]): T {
-    console.log('XXXXXXXXXXXXX');
-    console.log('XXX i am StringTensor.slice');
-    console.log('XXXXXXXXXXXXX');
-    console.log(`this: ${JSON.stringify(this)}`);
     if (this.rank === 0) {
       throw new Error('Slicing stringScalar is not possible');
     }
@@ -351,7 +347,6 @@ export class StringTensor<R extends Rank = Rank> {
     this.assertParamsValid(begin_, size_);
 
     const buffer = new StringTensor<R>(size_ as ShapeMap[R]);
-    console.log(`created new StringTensor 'buffer': ${JSON.stringify(buffer)}`);
     for (let i = 0; i < buffer.size; ++i) {
       const loc = buffer.indexToLoc(i);
       const xLoc = loc.map((idx, j) => idx + begin_[j]);
