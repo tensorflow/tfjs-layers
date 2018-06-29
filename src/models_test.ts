@@ -9,7 +9,7 @@
  */
 
 // tslint:disable:max-line-length
-import {io, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+import {DataType, io, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 
 import {Model} from './engine/training';
 import * as tfl from './index';
@@ -1044,7 +1044,7 @@ describeMathCPU('loadModel from IOHandler', () => {
   });
 });
 
-describeMathCPUAndGPU('Sequential', () => {
+ describeMathCPUAndGPU('Sequential', () => {
   const inputShape = [1, 6];
   const batchInputShape = [1].concat(inputShape);
   const firstReshape = [2, 3];
@@ -1104,6 +1104,18 @@ describeMathCPUAndGPU('Sequential', () => {
     expectTensorsClose(
         model.predict(getInputs()) as Tensor, getExpectedOutputs());
   });
+
+  const dtypes: DataType[] = ['int32', 'float32'];
+  for (const dtype of dtypes) {
+    it(`predict() works with input dtype ${dtype}.`, () => {
+      const embModel = tfl.sequential();
+      embModel.add(tfl.layers.embedding(
+        {inputShape: [1], inputDim: 10, outputDim: 2}));
+      const x = tensor2d([[0], [0], [1]], [3, 1], dtype as DataType);
+      const y = embModel.predict(x) as Tensor;
+      expect(y.dtype === dtype);
+    });
+  }
 
   it('predictOnBatch() threads data through the model.', () => {
     const batchSize = 10;

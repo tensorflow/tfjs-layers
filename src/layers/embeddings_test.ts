@@ -103,10 +103,10 @@ describeMathCPU('Embedding Layers: Tensor', () => {
   });
 
   const dtypes: DataType[] = ['int32', 'float32'];
-  for (const dtype in dtypes) {
-    fit(`Works with '${dtype}' dtype input`, () => {
+  for (const dtype of dtypes) {
+    it(`Works with '${dtype}' dtype input`, () => {
       // Input values are [0, 0, 1] with type 'float32'
-      const x = tensor2d([[0], [0], [1]], [3, 1]);
+      const x = tensor2d([[0], [0], [1]], [3, 1], dtype);
       const embeddingLayer = tfl.layers.embedding(
           {inputDim: 6, outputDim: 4, embeddingsInitializer: 'randomUniform'});
       const y = embeddingLayer.apply(x) as Tensor;

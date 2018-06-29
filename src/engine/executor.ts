@@ -21,12 +21,6 @@ import {InputLayer, SymbolicTensor} from './topology';
  * Helper function to check the dtype and shape compatibility of a feed value.
  */
 function assertFeedCompatibility(key: SymbolicTensor, val: Tensor) {
-  if (key.dtype != null && key.dtype !== val.dtype) {
-    throw new ValueError(
-        `The dtype of the feed (${val.dtype}) is incompatible with that of ` +
-        `the key '${key.name}' (${key.dtype}).`);
-  }
-
   if (key.shape != null) {
     if (key.shape.length !== val.shape.length) {
       throw new ValueError(
