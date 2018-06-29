@@ -1044,7 +1044,7 @@ describeMathCPU('loadModel from IOHandler', () => {
   });
 });
 
- describeMathCPUAndGPU('Sequential', () => {
+describeMathCPUAndGPU('Sequential', () => {
   const inputShape = [1, 6];
   const batchInputShape = [1].concat(inputShape);
   const firstReshape = [2, 3];
