@@ -27,7 +27,7 @@ import {ValueError} from './errors';
 export function getOptimizer(identifier: string): Optimizer {
   const optimizerMap: {[optimizerName: string]: () => Optimizer} = {
     'Adagrad': () => train.adagrad(.01),
-    'Adadelta': () => train.adadelta(1.0, 0.95, epsilon()),
+    'Adadelta': () => train.adadelta(1, 0.95, epsilon()),
     'Adam': () => train.adam(.001, .9, .999, epsilon()),
     'Adamax': () => train.adamax(0.002, .9, .999, epsilon(), 0),
     'RMSProp': () => train.rmsprop(.001, .9, 0, epsilon()),
