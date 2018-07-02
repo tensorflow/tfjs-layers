@@ -16,15 +16,16 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, tidy, util} from '@tensorflow/tfjs-core';
 
-import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, Layer, LayerConfig} from '../engine/topology';
+import {getScalar} from '../backend/state';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Kwargs, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
+import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
 // tslint:enable:max-line-length
@@ -47,26 +48,25 @@ export function batchNormalization(
     x: Tensor, mean: Tensor, variance: Tensor, beta?: Tensor, gamma?: Tensor,
     epsilon = 1e-3): Tensor {
   let out: Tensor;
-  if (K.ndim(x) === 2) {
+  if (x.rank === 2) {
     out = tfc.batchNormalization2d(
         x as Tensor2D, mean as Tensor2D | Tensor1D,
         variance as Tensor2D | Tensor1D, epsilon, gamma as Tensor2D | Tensor1D,
         beta as Tensor2D | Tensor1D);
-  } else if (K.ndim(x) === 3) {
+  } else if (x.rank === 3) {
     // TODO(cais): Check rank; give proper error message.
     out = tfc.batchNormalization3d(
         x as Tensor3D, mean as Tensor3D | Tensor1D,
         variance as Tensor3D | Tensor1D, epsilon, gamma as Tensor3D | Tensor1D,
         beta as Tensor3D | Tensor1D);
-  } else if (K.ndim(x) === 4) {
+  } else if (x.rank === 4) {
     out = tfc.batchNormalization4d(
         x as Tensor4D, mean as Tensor4D | Tensor1D,
         variance as Tensor4D | Tensor1D, epsilon, gamma as Tensor4D | Tensor1D,
         beta as Tensor4D | Tensor1D);
   } else {
     throw new NotImplementedError(
-        `batchNormalization is not implememnted for array of rank ${
-            K.ndim(x)} ` +
+        `batchNormalization is not implememnted for array of rank ${x.rank} ` +
         `yet`);
   }
   return out;
@@ -127,7 +127,7 @@ function broadcastNormalizeBatchInTraining(
            const mean = meanAndVariance.mean;
            const variance = meanAndVariance.variance;
            const targetShape: number[] = [];
-           for (const axis of math_utils.range(0, K.ndim(x))) {
+           for (const axis of math_utils.range(0, x.rank)) {
              if (reductionAxes.indexOf(axis) !== -1) {
                targetShape.push(1);
              } else {
@@ -162,7 +162,7 @@ export function normalizeBatchInTraining(
     x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
     epsilon = 1e-3): [Tensor, Tensor, Tensor] {
   if (util.arraysEqual(
-          reductionAxes.slice().sort(), math_utils.range(0, K.ndim(x) - 1))) {
+          reductionAxes.slice().sort(), math_utils.range(0, x.rank - 1))) {
     return regularNormalizeBatchInTraining(
         x, gamma, beta, reductionAxes, epsilon);
   } else {
@@ -316,7 +316,7 @@ export class BatchNormalization extends Layer {
   }
 
   public build(inputShape: Shape|Shape[]): void {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     const axis = this.axis >= 0 ? this.axis : (this.axis + inputShape.length);
     const dim = inputShape[axis];
     if (dim == null) {
@@ -349,8 +349,8 @@ export class BatchNormalization extends Layer {
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
       const training = kwargs['training'] == null ? false : kwargs['training'];
-      const input = generic_utils.getExactlyOneTensor(inputs);
-      const inputShape = K.shape(input);
+      const input = getExactlyOneTensor(inputs);
+      const inputShape = input.shape;
       const ndim = inputShape.length;
       const reductionAxes = math_utils.range(0, ndim);
       const axis = this.axis >= 0 ? this.axis : (this.axis + ndim);
@@ -396,7 +396,7 @@ export class BatchNormalization extends Layer {
       const sampleSize =
           math_utils.arrayProd(reductionAxes.map(axis => input.shape[axis]));
       const varianceDebiased = variance.mul(
-          K.getScalar(sampleSize / (sampleSize - (1 + this.epsilon))));
+          getScalar(sampleSize / (sampleSize - (1 + this.epsilon))));
 
       // Perform updates to moving mean and moving variance for training.
       // Porting Note: In PyKeras, these updates to `movingMean` and

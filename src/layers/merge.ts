@@ -16,11 +16,13 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {Layer, LayerConfig} from '../engine/topology';
+import {Layer, LayerConfig, SymbolicTensor} from '../engine/topology';
+import {getScalar} from '../backend/state';
 import {NotImplementedError, ValueError} from '../errors';
-import {Kwargs, Shape, SymbolicTensor} from '../types';
+import {Kwargs, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as mathUtils from '../utils/math_utils';
+import {getExactlyOneShape} from '../utils/types_utils';
 
 /**
  * Generic Merge layer for element-wise merge functions.
@@ -87,7 +89,7 @@ export abstract class Merge extends Layer {
     // Used purely for shape validation.
     if (Array.isArray(inputShape) && !Array.isArray(inputShape[0])) {
       // Make sure that inputShape is an Array of shape.
-      inputShape = [generic_utils.getExactlyOneShape(inputShape)];
+      inputShape = [getExactlyOneShape(inputShape)];
     }
     inputShape = inputShape as Shape[];
     if (inputShape.length < 2) {
@@ -133,13 +135,13 @@ export abstract class Merge extends Layer {
       inputs = inputs as Tensor[];
       if (this.reshapeRequired) {
         const reshapedInputs: Tensor[] = [];
-        const inputDims = inputs.map(input => K.ndim(input));
+        const inputDims = inputs.map(input => input.rank);
         if (inputDims.indexOf(null) === -1) {
           // If ranks of all inputs are available, we simply expand each of them
           // at axis=1 until all of them have the same rank.
           const maxNDim = mathUtils.max(inputDims);
           for (let x of inputs) {
-            const xNDim = K.ndim(x);
+            const xNDim = x.rank;
             for (let k = 0; k < maxNDim - xNDim; ++k) {
               x = K.expandDims(x, 1);
             }
@@ -151,9 +153,9 @@ export abstract class Merge extends Layer {
           // [batchSize, dim1, dim2, ...] -> [dim1, dim2, ..., batchSize]
           let transposed = false;
           for (const x of inputs) {
-            const xNDim = K.ndim(x);
+            const xNDim = x.rank;
             if (xNDim == null) {
-              const xShape = K.shape(x);
+              const xShape = x.shape;
               const batchSize = xShape[0];
               const newShape = xShape.slice(1).concat([batchSize]);
               let xTransposed = x.reshape(
@@ -172,12 +174,12 @@ export abstract class Merge extends Layer {
             }
           }
           let y = this.mergeFunction(reshapedInputs);
-          const yNDim = K.ndim(y);
+          const yNDim = y.rank;
           if (transposed) {
             // If inputs have been transposed, we have to transpose the output
             // too.
             if (yNDim == null) {
-              const yShape = K.shape(y);
+              const yShape = y.shape;
               const yNDim = yShape.length;
               const batchSize = yShape[yNDim - 1];
               const newShape =
@@ -441,7 +443,7 @@ export class Average extends Merge {
       for (const input of inputs) {
         output = tfc.add(output, input);
       }
-      return K.scalarTimesArray(K.getScalar(1 / inputs.length), output);
+      return tfc.mul(getScalar(1 / inputs.length), output);
     });
   }
 }
@@ -798,7 +800,15 @@ export class Concatenate extends Merge {
   }
 
   // TODO(cais): Implement computeMask();
-  // TODO(cais): Add getConfig();
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
+      'axis': this.axis,
+    };
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
 }
 serialization.SerializationMap.register(Concatenate);
 

@@ -14,10 +14,9 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {DataType, memory, Scalar, scalar, tensor1d, tensor2d, tensor3d, tensor4d, zeros} from '@tensorflow/tfjs-core';
+import {DataType, scalar, tensor1d, tensor2d, tensor3d, tensor4d, zeros} from '@tensorflow/tfjs-core';
 
-import {SymbolicTensor} from '../types';
-import {unique} from '../utils/generic_utils';
+import {SymbolicTensor} from '../engine/topology';
 import {range} from '../utils/math_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectNoLeakedTensors, expectTensorsClose} from '../utils/test_utils';
 import {LayerVariable} from '../variables';
@@ -37,99 +36,17 @@ describe('TensorMath', () => {
   });
 });
 
-describe('shape', () => {
-  it('Scalar', () => {
-    const x = zeros([]);
-    expect(K.shape(x)).toEqual([]);
-  });
-
-  it('Tensor1D', () => {
-    const x = zeros([3]);
-    expect(K.shape(x)).toEqual([3]);
-  });
-
-  it('Tensor2D', () => {
-    const x = zeros([3, 2]);
-    expect(K.shape(x)).toEqual([3, 2]);
-  });
-
-  it('Tensor3D', () => {
-    const x = zeros([4, 3, 2]);
-    expect(K.shape(x)).toEqual([4, 3, 2]);
-  });
-
-  it('Tensor4D', () => {
-    const x = zeros([4, 3, 2, 1]);
-    expect(K.shape(x)).toEqual([4, 3, 2, 1]);
-  });
-});
-
-describe('intShape', () => {
-  it('Scalar', () => {
-    const x = zeros([]);
-    expect(K.intShape(x)).toEqual([]);
-  });
-
-  it('Tensor1D', () => {
-    const x = zeros([3]);
-    expect(K.intShape(x)).toEqual([3]);
-  });
-
-  it('Tensor2D', () => {
-    const x = zeros([3, 2]);
-    expect(K.intShape(x)).toEqual([3, 2]);
-  });
-
-  it('Tensor3D', () => {
-    const x = zeros([4, 3, 2]);
-    expect(K.intShape(x)).toEqual([4, 3, 2]);
-  });
-
-  it('Tensor4D', () => {
-    const x = zeros([4, 3, 2, 1]);
-    expect(K.intShape(x)).toEqual([4, 3, 2, 1]);
-  });
-});
-
-describe('ndim', () => {
-  it('Scalar', () => {
-    const x = zeros([]);
-    expect(K.ndim(x)).toEqual(0);
-  });
-
-  it('Tensor1D', () => {
-    const x = zeros([3]);
-    expect(K.ndim(x)).toEqual(1);
-  });
-
-  it('Tensor2D', () => {
-    const x = zeros([3, 2]);
-    expect(K.ndim(x)).toEqual(2);
-  });
-
-  it('Tensor3D', () => {
-    const x = zeros([4, 3, 2]);
-    expect(K.ndim(x)).toEqual(3);
-  });
-
-  it('Tensor4D', () => {
-    const x = zeros([4, 3, 2, 1]);
-    expect(K.ndim(x)).toEqual(4);
-  });
-});
-
 describe('dtype', () => {
   it('returns float32 for an Tensor', () => {
     const x = zeros([1]);
-    expect(K.dtype(x)).toEqual('float32');
+    expect(x.dtype).toEqual('float32');
   });
 
   it('returns float32 for a SymbolicTensor', () => {
     const x = new SymbolicTensor('float32', [1], null, [], {});
-    expect(K.dtype(x)).toEqual('float32');
+    expect(x.dtype).toEqual('float32');
   });
 });
-
 
 describeMathCPU('countParams', () => {
   it('Scalar', () => {
@@ -591,76 +508,29 @@ describeMathCPUAndGPU('tile', () => {
   });
 });
 
-describeMathCPUAndGPU('Identity', () => {
-  it('Scalar', () => {
-    const s = scalar(12);
-    const sIdentity = K.identity(s);
-    expect(sIdentity.shape).toEqual([]);
-    expect(sIdentity.dataSync()).toEqual(new Float32Array([12]));
-  });
-
-  it('1D', () => {
-    const v = tensor1d([-12, 12]);
-    const vIdentity = K.identity(v);
-    expect(vIdentity.shape).toEqual([2]);
-    expect(vIdentity.dataSync()).toEqual(new Float32Array([-12, 12]));
-  });
-
-  it('2D', () => {
-    const m = tensor2d([[-12, 12], [-10, 10]], [2, 2]);
-    const mIdentity = K.identity(m);
-    expect(mIdentity.shape).toEqual([2, 2]);
-    expect(mIdentity.dataSync()).toEqual(new Float32Array([-12, 12, -10, 10]));
-  });
-});
-
-describeMathCPUAndGPU('scalarTimesArray', () => {
-  it('Scalar x Scalar', () => {
-    expectTensorsClose(K.scalarTimesArray(scalar(-2), scalar(-3)), scalar(6));
-  });
-  it('Scalar x 4D', () => {
-    const y = K.scalarTimesArray(scalar(-2), tfc.ones([2, 2, 2, 2]));
-    expect(y.shape).toEqual([2, 2, 2, 2]);
-    const yValues = Array.from(y.dataSync());
-    expect(unique(yValues)).toEqual([-2]);
-  });
-});
-
-describeMathCPUAndGPU('scalarPlusArray', () => {
-  it('Scalar + Scalar', () => {
-    expectTensorsClose(K.scalarPlusArray(scalar(-2), scalar(-3)), scalar(-5));
-  });
-  it('Scalar + 4D', () => {
-    const shape = [2, 2, 2, 2];
-    const y = K.scalarPlusArray(scalar(-1), tfc.ones(shape));
-    expectTensorsClose(y, tfc.zeros(shape));
-  });
-});
-
-
 describeMathCPUAndGPU('randomNormal', () => {
   const dtypes: DataType[] = ['float32', 'int32'];
   for (const dtype of dtypes) {
     // TODO(bileschi): Add probabilistic assertions on values here.
     it(`Scalar ${dtype}`, () => {
       const s = K.randomNormal([], 0, 10, dtype as 'float32' | 'int32');
-      expect(K.shape(s)).toEqual([]);
+      expect(s.shape).toEqual([]);
     });
 
     it(`1D ${dtype}`, () => {
       const v = K.randomNormal([20], 0, 2, dtype as 'float32' | 'int32');
-      expect(K.shape(v)).toEqual([20]);
+      expect(v.shape).toEqual([20]);
     });
 
     it(`2D ${dtype}`, () => {
       const x = K.randomNormal([3, 20], -10, 20, dtype as 'float32' | 'int32');
-      expect(K.shape(x)).toEqual([3, 20]);
+      expect(x.shape).toEqual([3, 20]);
     });
 
     it(`3D ${dtype}`, () => {
       const y =
           K.randomNormal([2, 3, 4], 100, 10, dtype as 'float32' | 'int32');
-      expect(K.shape(y)).toEqual([2, 3, 4]);
+      expect(y.shape).toEqual([2, 3, 4]);
     });
   }
 });
@@ -713,73 +583,6 @@ describeMathCPUAndGPU('sign', () => {
   it('2D', () => {
     const x = tensor2d([[1, 2, -1], [0, 3, -4]], [2, 3]);
     expectTensorsClose(K.sign(x), tensor2d([[1, 1, -1], [0, 1, -1]], [2, 3]));
-  });
-});
-
-
-describeMathCPUAndGPU('qr', () => {
-  it('1x1', () => {
-    const x = tensor2d([[10]], [1, 1]);
-    const [q, r] = K.qr(x);
-    expectTensorsClose(q, tensor2d([[-1]], [1, 1]));
-    expectTensorsClose(r, tensor2d([[-10]], [1, 1]));
-  });
-
-  it('2x2', () => {
-    const x = tensor2d([[1, 3], [-2, -4]], [2, 2]);
-    const [q, r] = K.qr(x);
-    expectTensorsClose(
-        q, tensor2d([[-0.4472, -0.8944], [0.8944, -0.4472]], [2, 2]));
-    expectTensorsClose(r, tensor2d([[-2.2361, -4.9193], [0, -0.8944]], [2, 2]));
-  });
-
-  it('3x3', () => {
-    const x = tensor2d([[1, 3, 2], [-2, 0, 7], [8, -9, 4]], [3, 3]);
-    const [q, r] = K.qr(x);
-    expectTensorsClose(
-        q,
-        tensor2d(
-            [
-              [-0.1204, 0.8729, 0.4729], [0.2408, -0.4364, 0.8669],
-              [-0.9631, -0.2182, 0.1576]
-            ],
-            [3, 3]));
-    expectTensorsClose(
-        r,
-        tensor2d(
-            [[-8.3066, 8.3066, -2.4077], [0, 4.5826, -2.1822], [0, 0, 7.6447]],
-            [3, 3]));
-  });
-
-  it('3x2', () => {
-    const x = tensor2d([[1, 2], [3, -3], [-2, 1]], [3, 2]);
-    const [q, r] = K.qr(x);
-    expectTensorsClose(
-        q,
-        tensor2d(
-            [
-              [-0.2673, 0.9221, 0.2798], [-0.8018, -0.3738, 0.4663],
-              [0.5345, -0.0997, 0.8393]
-            ],
-            [3, 3]));
-    expectTensorsClose(
-        r, tensor2d([[-3.7417, 2.4054], [0, 2.8661], [0, 0]], [3, 2]));
-  });
-
-  it('does not leak memory', () => {
-    const x = tensor2d([[1, 3], [-2, -4]], [2, 2]);
-    // The first call to qr creates and keeps internal singleton tensors.
-    // Subsequent calls should always create exactly two tensors.
-    K.qr(x);
-    // Count before real call.
-    const numTensors = memory().numTensors;
-    K.qr(x);
-    expect(memory().numTensors).toEqual(numTensors + 2);
-  });
-
-  it('Incorrect shape leads to error', () => {
-    const x = tensor2d([[1, 2, 3], [-3, -2, 1]], [2, 3]);
-    expect(() => K.qr(x)).toThrowError(/requires.*shape/);
   });
 });
 
@@ -967,47 +770,6 @@ describeMathCPUAndGPU('softsign', () => {
   });
 });
 
-describe('floatx ', () => {
-  it('returns "float32"', () => {
-    expect(K.floatx()).toEqual('float32');
-  });
-});
-
-describe('Name scope ', () => {
-  it('returns function\'s value from the name scope.', () => {
-    const name = 'name';
-    const val = 'val';
-    const fn = () => val;
-    expect(K.nameScope<string>(name, fn)).toEqual(val);
-  });
-
-  it('re-throws exception.', () => {
-    const exceptionValue = 'exception';
-    const exceptionFn = () => {
-      throw new Error(exceptionValue);
-    };
-    const nameScopeFn = () => {
-      K.nameScope('foo', exceptionFn);
-    };
-    expect(nameScopeFn).toThrowError(exceptionValue);
-  });
-});
-
-describe('getUID ', () => {
-  it('second UID is different.', () => {
-    const name = 'def';
-    const firstUID = K.getUid(name);
-    const secondUID = K.getUid(name);
-    expect(secondUID).not.toEqual(firstUID);
-  });
-
-  it('with no prefix works and returns different UIDs.', () => {
-    const firstUID = K.getUid();
-    const secondUID = K.getUid();
-    expect(firstUID).not.toEqual(secondUID);
-  });
-});
-
 describeMathCPUAndGPU('Sigmoid', () => {
   it('2D', () => {
     const xValues = [-5, -2, 0, 1, 2, 5];
@@ -1046,30 +808,5 @@ describe('inTrainPhase', () => {
   });
   it('training = default false', () => {
     expect(K.inTrainPhase(() => -5, () => 5)).toEqual(5);
-  });
-});
-
-describeMathCPUAndGPU('gradients', () => {
-  it('Simple mean: 1 variable', () => {
-    const var1 =
-        new LayerVariable(K.scalarTimesArray(scalar(2.0), tfc.ones([2, 2])));
-    const gradients =
-        K.gradients(() => tfc.mean(var1.read()) as Scalar, [var1]);
-    expect(gradients.length).toEqual(1);
-    expectTensorsClose(
-        tensor2d([[0.25, 0.25], [0.25, 0.25]], [2, 2]), gradients[0]);
-  });
-  it('Simple matmul and mean: 2 variables', () => {
-    const var1 = new LayerVariable(tensor2d([[1, 0], [0, 0]], [2, 2]));
-    const var2 = new LayerVariable(tensor2d([[1, 0], [0, 1]], [2, 2]));
-    const gradients = K.gradients(
-        () => tfc.mean(K.dot(var1.read(), var2.read())) as Scalar,
-        [var1, var2]);
-    expect(gradients.length).toEqual(2);
-    // d(loss) / d(var1).
-    expectTensorsClose(
-        tensor2d([[0.25, 0.25], [0.25, 0.25]], [2, 2]), gradients[0]);
-    // d(loss) / d(var2).
-    expectTensorsClose(tensor2d([[0.25, 0.25], [0, 0]], [2, 2]), gradients[1]);
   });
 });

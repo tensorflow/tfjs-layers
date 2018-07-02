@@ -13,15 +13,18 @@
 // tslint:disable:max-line-length
 import {DataType, doc, Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
-import * as K from '../backend/tfjs_backend';
+import {getNextUniqueTensorId, getUid} from '../backend/state';
+import {getScopedTensorName, getUniqueTensorName, nameScope} from '../common';
 import {Constraint} from '../constraints';
 import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {Initializer} from '../initializers';
 import {deserialize as deserializeLayer} from '../layers/serialization';
 import {Regularizer} from '../regularizers';
-import {JsonDict, Kwargs, NamedTensorMap, RegularizerFn, Shape, SymbolicTensor} from '../types';
+import {JsonDict, Kwargs, NamedTensorMap, RegularizerFn, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {convertTsToPythonic} from '../utils/serialization_utils';
+import * as types_utils from '../utils/types_utils';
+import * as variable_utils from '../utils/variable_utils';
 import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 import {version as layersVersion} from '../version';
 // tslint:enable:max-line-length
@@ -85,6 +88,62 @@ export class InputSpec {
     this.maxNDim = config.maxNDim;
     this.minNDim = config.minNDim;
     this.axes = config.axes || {};
+  }
+}
+
+/**
+ * `SymbolicTensor` is a placeholder for a Tensor without any concrete value.
+ *
+ * They are most often encountered when building a graph of `Layer`s for a
+ * a `Model` and the input data's shape, but not values are known.
+ */
+@doc({heading: 'Models', 'subheading': 'Classes'})
+export class SymbolicTensor {
+  /* A unique ID for the tensor to be able to differentiate tensors. */
+  readonly id: number;
+  // The fully scoped name of this Variable, including a unique suffix if needed
+  readonly name: string;
+  // The originally requested fully scoped name of this Variable, not including
+  // any unique suffix.  This may be needed when restoring weights because this
+  // original name is used as a key.
+  readonly originalName?: string;
+  /**
+   * Rank/dimensionality of the tensor.
+   */
+  readonly rank: number;
+  /**
+   * Replacement for _keras_history.
+   */
+  nodeIndex: number;
+  /**
+   * Replacement for _keras_history.
+   */
+  tensorIndex: number;
+
+  /**
+   *
+   * @param dtype
+   * @param shape
+   * @param sourceLayer The Layer that produced this symbolic tensor.
+   * @param inputs The inputs passed to sourceLayer's __call__() method.
+   * @param nodeIndex
+   * @param tensorIndex
+   * @param callArgs The keyword arguments passed to the __call__() method.
+   * @param name
+   * @param outputTensorIndex The index of this tensor in the list of outputs
+   *   returned by apply().
+   */
+  constructor(
+      readonly dtype: DataType, readonly shape: Shape,
+      public sourceLayer: Layer, readonly inputs: SymbolicTensor[],
+      readonly callArgs: Kwargs, name?: string,
+      readonly outputTensorIndex?: number) {
+    this.id = getNextUniqueTensorId();
+    if (name != null) {
+      this.originalName = getScopedTensorName(name);
+      this.name = getUniqueTensorName(this.originalName);
+    }
+    this.rank = shape.length;
   }
 }
 
@@ -245,7 +304,6 @@ export class Node {
     // List of shape tuples, shapes of outputTensors.
     this.outputShapes = config.outputShapes;
 
-
     // Add nodes to all layers involved.
     for (const layer of config.inboundLayers) {
       if (layer != null) {
@@ -399,7 +457,7 @@ export abstract class Layer extends serialization.Serializable {
     let name = config.name;
     if (!name) {
       const prefix = this.getClassName();
-      name = generic_utils.toSnakeCase(prefix) + '_' + K.getUid(prefix);
+      name = generic_utils.toSnakeCase(prefix) + '_' + getUid(prefix);
     }
     this.name = name;
 
@@ -429,7 +487,7 @@ export abstract class Layer extends serialization.Serializable {
         dtype = config.inputDType;
       }
       if (dtype == null) {
-        dtype = K.floatx();
+        dtype = 'float32';
       }
       this.dtype = dtype;
     }
@@ -660,7 +718,7 @@ export abstract class Layer extends serialization.Serializable {
       }
 
       // Check ndim.
-      const ndim = K.ndim(x);
+      const ndim = x.rank;
       if (spec.ndim != null) {
         if (ndim !== spec.ndim) {
           throw new ValueError(
@@ -685,17 +743,16 @@ export abstract class Layer extends serialization.Serializable {
 
       // Check dtype.
       if (spec.dtype != null) {
-        if (K.dtype(x) !== spec.dtype) {
-          const xDType = K.dtype(x);
+        if (x.dtype !== spec.dtype) {
           throw new ValueError(
               `Input ${inputIndex} is incompatible with layer ${this.name} ` +
-              `: expected dtype=${spec.dtype}, found dtype=${xDType}.`);
+              `: expected dtype=${spec.dtype}, found dtype=${x.dtype}.`);
         }
       }
 
       // Check specific shape axes.
       if (spec.axes) {
-        const xShape = K.intShape(x);
+        const xShape = x.shape;
         for (const key in spec.axes) {
           const axis = Number(key);
           const value = spec.axes[key];
@@ -715,10 +772,9 @@ export abstract class Layer extends serialization.Serializable {
 
       // Check shape.
       if (spec.shape != null) {
-        const xShape = K.intShape(x);
         for (let i = 0; i < spec.shape.length; ++i) {
           const specDim = spec.shape[i];
-          const dim = xShape[i];
+          const dim = x.shape[i];
           if (specDim != null && dim != null) {
             if (specDim !== dim) {
               throw new ValueError(
@@ -865,7 +921,7 @@ export abstract class Layer extends serialization.Serializable {
     }
 
     // TODO(michaelterry): nameScope() may not be necessary.
-    return K.nameScope(this.name, () => {
+    return nameScope(this.name, () => {
       // Handle laying building (weight creating, input spec locking).
       if (!this.built) {
         /*
@@ -877,7 +933,7 @@ export abstract class Layer extends serialization.Serializable {
         // Collect input shapes to build layer.
         const inputShapes: Shape[] = [];
         for (const xElem of generic_utils.toList(inputs)) {
-          inputShapes.push(K.intShape(xElem));
+          inputShapes.push(xElem.shape);
         }
         this.build(generic_utils.singletonOrArray(inputShapes));
         this.built = true;
@@ -910,7 +966,7 @@ export abstract class Layer extends serialization.Serializable {
         // backend.
         for (let x of outputList) {
           if (inputsList.indexOf(x) !== -1) {
-            x = K.identity(x);
+            x = x.clone();
           }
           outputListCopy.push(x);
         }
@@ -968,6 +1024,65 @@ export abstract class Layer extends serialization.Serializable {
   }
 
   /**
+   * Retrieves the output shape(s) of a layer.
+   *
+   * Only applicable if the layer has only one inbound node, or if all inbound
+   * nodes have the same output shape.
+   *
+   * @returns Output shape or shapes.
+   * @throws AttributeError: if the layer is connected to more than one incoming
+   *   nodes.
+   */
+  get outputShape(): Shape|Shape[] {
+    if (this.inboundNodes == null || this.inboundNodes.length === 0) {
+      throw new AttributeError(
+          `The layer ${this.name} has never been called and thus has no ` +
+          `defined output shape.`);
+    }
+    const allOutputShapes: string[] = [];
+    for (const node of this.inboundNodes) {
+      const shapeString = JSON.stringify(node.outputShapes);
+      if (allOutputShapes.indexOf(shapeString) === -1) {
+        allOutputShapes.push(shapeString);
+      }
+    }
+    if (allOutputShapes.length === 1) {
+      const outputShapes = this.inboundNodes[0].outputShapes;
+      if (Array.isArray(outputShapes) && Array.isArray(outputShapes[0]) &&
+          outputShapes.length === 1) {
+        return (outputShapes as Shape[])[0];
+      } else {
+        return outputShapes;
+      }
+
+    } else {
+      throw new AttributeError(
+          `The layer ${this.name} has multiple inbound nodes with different ` +
+          `output shapes. Hence the notion of "outut shape" is ill-defined ` +
+          `for the layer.`);
+      // TODO(cais): Implement getOutputShapeAt().
+    }
+  }
+
+  /**
+   * Counts the total number of numbers (e.g., float32, int32) in the
+   * weights.
+   *
+   * @returns An integer count.
+   * @throws RuntimeError: If the layer is not built yet (in which case its
+   *   weights are not defined yet.)
+   */
+  countParams(): number {
+    if (!this.built) {
+      throw new RuntimeError(
+          `You tried to call countParams() on ${this.name}, ` +
+          `but the layer is not built yet. Build it first by calling ` +
+          `build(batchInputShape).`);
+    }
+    return variable_utils.countParamsInWeights(this.weights);
+  }
+
+  /**
    * Creates the layer weights.
    *
    * Must be implemented on all layers that have weights.
@@ -976,7 +1091,7 @@ export abstract class Layer extends serialization.Serializable {
    *
    * @param inputShape A `Shape` or array of `Shape` (unused).
    */
-  public build(inputShape: Shape|Shape[]): void {
+  build(inputShape: Shape|Shape[]) {
     this.built = true;
   }
 
@@ -1059,7 +1174,7 @@ export abstract class Layer extends serialization.Serializable {
     this._addedWeightNames.push(name);
 
     if (dtype == null) {
-      dtype = K.floatx();
+      dtype = 'float32';
     }
     const weight = new LayerVariable(
         initializer.apply(shape, dtype), dtype, name, trainable, constraint);
@@ -1166,8 +1281,8 @@ export abstract class Layer extends serialization.Serializable {
     outputTensors = generic_utils.toList(outputTensors);
     inputMasks = generic_utils.toList(inputMasks);
     outputMasks = generic_utils.toList(outputMasks);
-    inputShapes = generic_utils.normalizeShapeList(inputShapes);
-    outputShapes = generic_utils.normalizeShapeList(outputShapes);
+    inputShapes = types_utils.normalizeShapeList(inputShapes);
+    outputShapes = types_utils.normalizeShapeList(outputShapes);
 
     // Collect input tensor(s) coordinates.
     const inboundLayers: Layer[] = [];
@@ -1178,7 +1293,7 @@ export abstract class Layer extends serialization.Serializable {
        * TODO(michaelterry): Keras adds this value to tensors; it's not
        * clear whether we'll use this or not.
        */
-      inboundLayers.push(x.sourceLayer);
+      inboundLayers.push(x.sourceLayer as Layer);
       nodeIndices.push(x.nodeIndex);
       tensorIndices.push(x.tensorIndex);
     }
@@ -1257,7 +1372,7 @@ function collectInputShape(inputTensors: SymbolicTensor|SymbolicTensor[]|Tensor|
       generic_utils.toList(inputTensors) as SymbolicTensor[] | Tensor[];
   const shapes: Shape[] = [];
   for (const x of inputTensors) {
-    shapes.push(K.intShape(x));
+    shapes.push(x.shape);
   }
   return generic_utils.singletonOrArray(shapes);
 }
@@ -1325,7 +1440,7 @@ export class InputLayer extends Layer {
   constructor(config: InputLayerConfig) {
     super({
       dtype: config.dtype,
-      name: config.name != null ? config.name : K.getUid('input').toString()
+      name: config.name != null ? config.name : getUid('input').toString()
     });
     // Normalize config.batchSize and config.sparse
     if (config.batchSize == null) {
@@ -1362,7 +1477,7 @@ export class InputLayer extends Layer {
       }
     }
 
-    const dtype = config.dtype || K.floatx();
+    const dtype = config.dtype || 'float32';
 
     this.batchInputShape = batchInputShape;
     this.dtype = dtype;
@@ -1485,7 +1600,7 @@ export function Input(config: InputConfig): SymbolicTensor {
 
   let dtype = config.dtype;
   if (dtype == null) {
-    dtype = K.floatx();
+    dtype = 'float32';
   }
 
   const inputLayer = new InputLayer({
@@ -1553,7 +1668,7 @@ export abstract class Container extends Layer {
     this.name = config.name;
     if (this.name == null) {
       const prefix = this.getClassName().toLowerCase();
-      this.name = K.getUid(prefix);
+      this.name = getUid(prefix);
     }
 
     this.supportsMasking = false;
@@ -1627,7 +1742,7 @@ export abstract class Container extends Layer {
       const layer = x.sourceLayer;
       const nodeIndex = x.nodeIndex;
       const tensorIndex = x.tensorIndex;
-      this.outputLayers.push(layer);
+      this.outputLayers.push(layer as Layer);
       this.outputLayersNodeIndices.push(nodeIndex);
       this.outputLayersTensorIndices.push(tensorIndex);
     }
@@ -1645,7 +1760,7 @@ export abstract class Container extends Layer {
       */
       generic_utils.assert(nodeIndex === 0, 'input layer has >1 nodes');
       generic_utils.assert(tensorIndex === 0, 'input layer has >1 tensors');
-      this.inputLayers.push(layer);
+      this.inputLayers.push(layer as Layer);
       this.inputLayersNodeIndices.push(nodeIndex);
       this.inputLayersTensorIndices.push(tensorIndex);
     }
@@ -1714,7 +1829,7 @@ export abstract class Container extends Layer {
         (tensor: SymbolicTensor, finishedNodes: Node[], nodesInProgress: Node[],
          layer?: Layer, nodeIndex?: number, tensorIndex?: number) => {
           if (layer == null || nodeIndex == null || tensorIndex == null) {
-            layer = tensor.sourceLayer;
+            layer = tensor.sourceLayer as Layer;
             nodeIndex = tensor.nodeIndex;
             tensorIndex = tensor.tensorIndex;
           }
@@ -2099,7 +2214,7 @@ export abstract class Container extends Layer {
    *   free dimensions, instead of an integer.
    */
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    const inputShapes = generic_utils.normalizeShapeList(inputShape);
+    const inputShapes = types_utils.normalizeShapeList(inputShape);
     if (inputShapes.length !== this.inputLayers.length) {
       throw new ValueError(
           `Invalid inputShape argument ${inputShape}: ` +
@@ -2145,7 +2260,7 @@ export abstract class Container extends Layer {
           const outputShape = layer.computeOutputShape(
               generic_utils.singletonOrArray(inputShapes));
 
-          const outputShapes = generic_utils.normalizeShapeList(outputShape);
+          const outputShapes = types_utils.normalizeShapeList(outputShape);
           const nodeIndex = layer.inboundNodes.indexOf(node);
           for (let j = 0; j < outputShapes.length; j++) {
             const shapeKey = `${layer.name}_${nodeIndex}_${j}`;
@@ -2788,7 +2903,6 @@ export function loadWeightsFromNamedTensorMap(
 
   batchSetValue(weightValueTuples);
 }
-
 
 // TODO(cais): Maybe remove the following (b/74015805).
 /**

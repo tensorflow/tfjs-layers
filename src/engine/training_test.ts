@@ -13,17 +13,19 @@
  */
 
 // tslint:disable:max-line-length
-import {abs, mean, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
+import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {CustomCallback, CustomCallbackConfig, Logs} from '../callbacks';
+import {CustomCallback, CustomCallbackConfig} from '../base_callbacks';
 import * as tfl from '../index';
+import {Logs, UnresolvedLogs} from '../logs';
 import {Regularizer} from '../regularizers';
 import {Kwargs} from '../types';
-import {pyListRepeat, stringsEqual} from '../utils/generic_utils';
+import {pyListRepeat, stringsEqual, unique} from '../utils/generic_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
+
 // TODO(bileschi): Use external version of Layer.
-import {Layer} from './topology';
+import {Layer, SymbolicTensor} from './topology';
 import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, makeBatches, sliceArraysByIndices, standardizeInputData} from './training';
 
 // tslint:enable:max-line-length
@@ -800,11 +802,9 @@ describeMathCPUAndGPU('Model.fit', () => {
     expectTensorsClose(
         valLosses as number[], [386.35848999023438, 1808.7342529296875]);
     expectTensorsClose(
-        layer1.getWeights()[0],
-        K.scalarTimesArray(scalar(-0.61341441), ones([4, 10])));
+        layer1.getWeights()[0], mul(scalar(-0.61341441), ones([4, 10])));
     expectTensorsClose(
-        layer2.getWeights()[0],
-        K.scalarTimesArray(scalar(-1.77405429), ones([10, 1])));
+        layer2.getWeights()[0], mul(scalar(-1.77405429), ones([10, 1])));
 
     // Freeze the 1st layer and compile the model again.
     layer1.trainable = false;
@@ -821,12 +821,10 @@ describeMathCPUAndGPU('Model.fit', () => {
         valLosses as number[], [75.336524963378906, 3.1378798484802246]);
     // Expect no change in the value of layer1's kernel, due to the freezing.
     expectTensorsClose(
-        layer1.getWeights()[0],
-        K.scalarTimesArray(scalar(-0.61341441), ones([4, 10])));
+        layer1.getWeights()[0], mul(scalar(-0.61341441), ones([4, 10])));
     // Expect change in the value of layer2's kernel.
     expectTensorsClose(
-        layer2.getWeights()[0],
-        K.scalarTimesArray(scalar(-0.11295), ones([10, 1])));
+        layer2.getWeights()[0], mul(scalar(-0.11295), ones([10, 1])));
     done();
   });
 
@@ -1072,27 +1070,74 @@ describeMathCPUAndGPU('Model.fit', () => {
         });
   });
 
-  // TODO(cais): Uncommment the test below once the 1-tensor leak during
-  // //   `updateVariable` is fixed.
-  // it('Repeated fit calls leads to no memory leak: no validation',
-  //    async done => {
-  //      createDenseModelAndData();
+  class StopAfterNEpochs extends tfl.Callback {
+    private readonly epochsToTrain: number;
+    constructor(epochsToTrain: number) {
+      super();
+      this.epochsToTrain = epochsToTrain;
+    }
 
-  //      model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
-  //      // Use batchSize === numSamples to get exactly one batch.
-  //      await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
-  //      const numTensors1 = memory().numTensors;
-  //      await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
-  //      const numTensors2 = memory().numTensors;
-  //      if (numTensors2 > numTensors1) {
-  //        done.fail(
-  //            `Memory leak detected during fit(): Leaked ` +
-  //            `${numTensors2 - numTensors1} tensor(s) after the ` +
-  //            `second fit() call.`);
-  //      } else {
-  //        done();
-  //      }
-  //    });
+    async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {
+      if (epoch === this.epochsToTrain - 1) {
+        this.model.stopTraining = true;
+      }
+    }
+  }
+
+  it('Stop training at the end of an epoch: Functional model', done => {
+    createDenseModelAndData(true);
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    // Order 10 epochs of training, but the training should stop after two
+    // epochs due to the callback.
+    model
+        .fit(inputs, targets, {
+          batchSize: numSamples,
+          epochs: 10,
+          callbacks: [new StopAfterNEpochs(2)]
+        })
+        .then(history => {
+          expect(history.history.loss.length).toEqual(2);
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
+
+  class StopAfterNBatches extends tfl.Callback {
+    private readonly batchesToTrain: number;
+    constructor(epochsToTrain: number) {
+      super();
+      this.batchesToTrain = epochsToTrain;
+    }
+
+    async onBatchEnd(batch: number, logs?: Logs) {
+      if (batch === this.batchesToTrain - 1) {
+        this.model.stopTraining = true;
+      }
+    }
+  }
+
+  it('Stop training at the end of a batch: Sequential model', done => {
+    const sequentialModel = tfl.sequential();
+    sequentialModel.add(tfl.layers.dense(
+        {units: 1, kernelInitializer: 'ones', inputShape: [inputSize]}));
+    // numSamples is 5.
+    inputs = ones([numSamples, inputSize]);
+    targets = ones([numSamples, 1]);
+    sequentialModel.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    // Order 10 epochs of training, but the training should stop after only one
+    // epochs due to the callback that orders the training to stop after two
+    // batches. The first epoch should have five batches  due to a batchSize
+    // of 1.
+    sequentialModel
+        .fit(
+            inputs, targets,
+            {batchSize: 1, epochs: 10, callbacks: [new StopAfterNBatches(2)]})
+        .then(history => {
+          expect(history.history.loss.length).toEqual(1);
+          done();
+        })
+        .catch(err => done.fail(err.stack));
+  });
 
   it('Invalid dict loss: nonexistent output name', () => {
     createDenseModelAndData();
@@ -1166,6 +1211,433 @@ describeMathCPUAndGPU('Model.fit with training-sensitive layers', () => {
 
     done();
   });
+});
+
+describeMathCPUAndGPU(
+    'Model.predict and Model.evaluate: No memory leak', () => {
+      const inputSize = 4;  // Input vector size for model with one input.
+
+      const inputTensor = tfl.layers.input(
+          {shape: [inputSize], name: 'inputLayer1', dtype: 'float32'});
+      let model: tfl.Model;
+      let inputs: Tensor;
+      let targets: Tensor;
+
+      function createDenseModelAndData(
+          numSamples: number,
+          kernelRegularizer?: string|Regularizer,
+          biasRegularizer?: string|Regularizer,
+          ): void {
+        const layer = tfl.layers.dense(
+            {units: 1, kernelInitializer: 'ones', kernelRegularizer});
+        const output = layer.apply(inputTensor) as tfl.SymbolicTensor;
+        model = new tfl.Model({inputs: [inputTensor], outputs: [output]});
+        inputs = ones([numSamples, inputSize]);
+        targets = ones([numSamples, 1]);
+      }
+
+      it('predict: Single batch', () => {
+        const numExamples = 5;
+        const batchSize = 32;  // batchSize >= numExamples ==> a single batch.
+        createDenseModelAndData(numExamples);
+        // Burn-in call.
+        let out = model.predict(inputs, {batchSize}) as Tensor;
+        out.dispose();
+        const numTensors0 = memory().numTensors;
+
+        // Actual call.
+        out = model.predict(inputs, {batchSize}) as Tensor;
+        out.dispose();
+        const numTensors1 = memory().numTensors;
+        expect(numTensors1).toEqual(numTensors0);
+      });
+
+      it('predict: Two batches', () => {
+        const numExamples = 5;
+        const batchSize = 3;  // batchSize < numExamples ==> multiple batches.
+        createDenseModelAndData(numExamples);
+        // Burn-in call.
+        let out = model.predict(inputs, {batchSize}) as Tensor;
+        out.dispose();
+        const numTensors0 = memory().numTensors;
+
+        // Actual call.
+        out = model.predict(inputs, {batchSize}) as Tensor;
+        out.dispose();
+        const numTensors1 = memory().numTensors;
+        expect(numTensors1).toEqual(numTensors0);
+      });
+
+      it('evaluate: Single batch, no metric', () => {
+        const numExamples = 5;
+        createDenseModelAndData(numExamples);
+        model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+        const batchSize = 32;  // batchSize >= numExamples ==> a single batch.
+        // Burn-in call.
+        let out = model.evaluate(inputs, targets, {batchSize}) as Tensor;
+        out.dispose();
+        const numTensors0 = memory().numTensors;
+
+        // Actual call.
+        out = model.evaluate(inputs, targets, {batchSize}) as Tensor;
+        out.dispose();
+        const numTensors1 = memory().numTensors;
+        expect(numTensors1).toEqual(numTensors0);
+      });
+
+      it('evaluate: Two batches, no metric', () => {
+        const numExamples = 5;
+        createDenseModelAndData(numExamples);
+        model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+        const batchSize = 3;  // batchSize < numExamples ==> multiple batches.
+        // Burn-in call.
+        let out = model.evaluate(inputs, targets, {batchSize}) as Tensor;
+        out.dispose();
+        const numTensors0 = memory().numTensors;
+
+        // Actual call.
+        out = model.evaluate(inputs, targets, {batchSize}) as Tensor;
+        out.dispose();
+        const numTensors1 = memory().numTensors;
+        expect(numTensors1).toEqual(numTensors0);
+      });
+
+      it('evaluate: Two batches, with metric', () => {
+        const numExamples = 5;
+        createDenseModelAndData(numExamples);
+        model.compile(
+            {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['mae']});
+        const batchSize = 3;  // batchSize < numExamples ==> multiple batches.
+        // Burn-in call.
+        let out = model.evaluate(inputs, targets, {batchSize}) as Tensor[];
+        out.forEach(tensor => tensor.dispose());
+        const numTensors0 = memory().numTensors;
+
+        // Actual call.
+        out = model.evaluate(inputs, targets, {batchSize}) as Tensor[];
+        out.forEach(tensor => tensor.dispose());
+        const numTensors1 = memory().numTensors;
+        expect(numTensors1).toEqual(numTensors0);
+      });
+    });
+
+describeMathCPUAndGPU('Model.fit: No memory leak', () => {
+  const inputSize = 4;   // Input vector size for model with one input.
+  const numSamples = 5;  // Number of samples in a batch.
+
+  const inputTensor = tfl.layers.input(
+      {shape: [inputSize], name: 'inputLayer1', dtype: 'float32'});
+  let model: tfl.Model;
+  let inputs: Tensor;
+  let targets: Tensor;
+  let valInputs: Tensor;
+  let valTargets: Tensor;
+
+  function createDenseModelAndData(
+      useBias = false,
+      kernelRegularizer?: string|Regularizer,
+      biasRegularizer?: string|Regularizer,
+      ): void {
+    const layer = tfl.layers.dense(
+        {units: 1, useBias, kernelInitializer: 'ones', kernelRegularizer});
+    const output = layer.apply(inputTensor) as tfl.SymbolicTensor;
+    model = new tfl.Model({inputs: [inputTensor], outputs: [output]});
+    inputs = ones([numSamples, inputSize]);
+    targets = ones([numSamples, 1]);
+    valInputs = zeros([numSamples, inputSize]);
+    valTargets = zeros([numSamples, 1]);
+  }
+
+  it('Repeated fit calls leads to no memory leak: no validation or metrics',
+     async done => {
+       createDenseModelAndData();
+
+       model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+       // Use batchSize === numSamples to get exactly one batch.
+       await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
+       const numTensors0 = memory().numTensors;
+       for (let i = 0; i < 2; ++i) {
+         await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
+         const numTensorsNow = memory().numTensors;
+         if (numTensorsNow > numTensors0) {
+           done.fail(
+               `Memory leak detected during fit(): Leaked ` +
+               `${numTensorsNow - numTensors0} tensor(s) after the ` +
+               `${i + 1}-th fit() call.`);
+         }
+       }
+       done();
+     });
+
+  it('Repeated fit calls leads to no memory leak: batchSize=1, ' +
+         'no validation or metrics',
+     async done => {
+       createDenseModelAndData();
+
+       model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+       const batchSize = 1;  // Use batchSize = 1.
+       await model.fit(inputs, targets, {batchSize, epochs: 1});
+       const numTensors0 = memory().numTensors;
+       for (let i = 0; i < 2; ++i) {
+         await model.fit(inputs, targets, {batchSize, epochs: 1});
+         const numTensorsNow = memory().numTensors;
+         if (numTensorsNow > numTensors0) {
+           done.fail(
+               `Memory leak detected during fit(): Leaked ` +
+               `${numTensorsNow - numTensors0} tensor(s) after the ` +
+               `${i + 1}-th fit() call.`);
+         }
+       }
+       done();
+     });
+
+  it('Repeated fit calls leads to no memory leak: with metrics', async done => {
+    createDenseModelAndData();
+
+    model.compile(
+        {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['mse']});
+    // Use batchSize === numSamples to get exactly one batch.
+    await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
+    const numTensors0 = memory().numTensors;
+    for (let i = 0; i < 2; ++i) {
+      await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
+      const numTensorsNow = memory().numTensors;
+      if (numTensorsNow > numTensors0) {
+        done.fail(
+            `Memory leak detected during fit(): Leaked ` +
+            `${numTensorsNow - numTensors0} tensor(s) after the ` +
+            `${i + 1}-th fit() call.`);
+      }
+    }
+    done();
+  });
+
+  it('Repeated fit calls leads to no memory leak: validationSplit',
+     async done => {
+       createDenseModelAndData();
+
+       const validationSplit = 0.4;
+       model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+       // Use batchSize === numSamples to get exactly one batch.
+       await model.fit(
+           inputs, targets,
+           {batchSize: numSamples, epochs: 1, validationSplit});
+       const numTensors0 = memory().numTensors;
+       for (let i = 0; i < 2; ++i) {
+         await model.fit(
+             inputs, targets,
+             {batchSize: numSamples, epochs: 1, validationSplit});
+         const numTensorsNow = memory().numTensors;
+         if (numTensorsNow > numTensors0) {
+           done.fail(
+               `Memory leak detected during fit(): Leaked ` +
+               `${numTensorsNow - numTensors0} tensor(s) after the ` +
+               `${i + 1}-th fit() call.`);
+         }
+       }
+       done();
+     });
+
+  it('Repeated fit calls leads to no memory leak: validationData',
+     async done => {
+       createDenseModelAndData();
+
+       const validationData: [Tensor, Tensor] = [valInputs, valTargets];
+       model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+       // Use batchSize === numSamples to get exactly one batch.
+       await model.fit(
+           inputs, targets, {batchSize: numSamples, epochs: 1, validationData});
+       const numTensors0 = memory().numTensors;
+       for (let i = 0; i < 2; ++i) {
+         await model.fit(
+             inputs, targets,
+             {batchSize: numSamples, epochs: 1, validationData});
+         const numTensorsNow = memory().numTensors;
+         if (numTensorsNow > numTensors0) {
+           done.fail(
+               `Memory leak detected during fit(): Leaked ` +
+               `${numTensorsNow - numTensors0} tensor(s) after the ` +
+               `${i + 1}-th fit() call.`);
+         }
+       }
+       done();
+     });
+
+  it('Repeated fit calls leads to no memory leak: metrics & validationSplit',
+     async done => {
+       createDenseModelAndData();
+
+       const validationSplit = 0.4;
+       model.compile(
+           {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['mse']});
+       // Use batchSize === numSamples to get exactly one batch.
+       await model.fit(
+           inputs, targets,
+           {batchSize: numSamples, epochs: 1, validationSplit});
+       const numTensors0 = memory().numTensors;
+       for (let i = 0; i < 2; ++i) {
+         await model.fit(
+             inputs, targets,
+             {batchSize: numSamples, epochs: 1, validationSplit});
+         const numTensorsNow = memory().numTensors;
+         if (numTensorsNow > numTensors0) {
+           done.fail(
+               `Memory leak detected during fit(): Leaked ` +
+               `${numTensorsNow - numTensors0} tensor(s) after the ` +
+               `${i + 1}-th fit() call.`);
+         }
+       }
+       done();
+     });
+
+  it('Repeated fit calls leads to no memory leak: batchSize=2, ' +
+         'metrics & validationSplit',
+     async done => {
+       createDenseModelAndData();
+
+       const validationSplit = 0.4;
+       model.compile(
+           {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['mse']});
+       const batchSize = 2;  // Use batchSize < numSamples.
+       const epochsPerIter = 2;
+       await model.fit(
+           inputs, targets, {batchSize, epochs: 1, validationSplit});
+       const numTensors0 = memory().numTensors;
+       for (let i = 0; i < 2; ++i) {
+         const history = await model.fit(
+             inputs, targets,
+             {batchSize, epochs: epochsPerIter, validationSplit});
+         expect(history.history['loss'].length).toEqual(epochsPerIter);
+         expect(history.history['val_loss'].length).toEqual(epochsPerIter);
+         expect(history.history['mse'].length).toEqual(epochsPerIter);
+         expect(history.history['val_mse'].length).toEqual(epochsPerIter);
+         const numTensorsNow = memory().numTensors;
+         if (numTensorsNow > numTensors0) {
+           done.fail(
+               `Memory leak detected during fit(): Leaked ` +
+               `${numTensorsNow - numTensors0} tensor(s) after the ` +
+               `${i + 1}-th fit() call.`);
+         }
+       }
+       done();
+     });
+
+  it('Fit with onEpochEnd callback: no memory leak: validation & metrics',
+     async done => {
+       createDenseModelAndData();
+
+       model.compile(
+           {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['mse']});
+       const validationSplit = 0.4;
+
+       // First, perform a burn-in call.
+       await model.fit(
+           inputs, targets,
+           {batchSize: numSamples, epochs: 1, validationSplit});
+       const numTensors0 = memory().numTensors;
+
+       // Perform actual testing calls.
+       const numFitCalls = 2;
+       for (let n = 0; n < numFitCalls; ++n) {
+         const tensorCounts: number[] = [];
+         await model.fit(inputs, targets, {
+           batchSize: numSamples,
+           epochs: 4,
+           validationSplit,
+           callbacks: {
+             onEpochEnd: async () => {
+               tensorCounts.push(memory().numTensors);
+             }
+           }
+         });
+         expect(tensorCounts.length).toEqual(4);
+         if (unique(tensorCounts).length !== 1) {
+           done.fail(
+               `Detected WebGL memory leak during fit() call with ` +
+               `onEpochEnd callback: tensor counts: ${tensorCounts}.`);
+         }
+         const numTensors1 = memory().numTensors;
+         if (numTensors1 > numTensors0) {
+           done.fail(
+               `Detected memory leak of ${numTensors1 - numTensors0} ` +
+               `tensor(s) after fit() call ${n + 1} of ${numFitCalls} ` +
+               `with onEpochEnd callback.`);
+         }
+       }
+       done();
+     });
+
+  it('Fit with onBatchEnd callback: no memory leak: validation & metrics',
+     async done => {
+       createDenseModelAndData();
+
+       model.compile(
+           {optimizer: 'SGD', loss: 'meanSquaredError', metrics: ['mse']});
+       const validationSplit = 0.4;
+       const epochs = 3;
+       const batchesPerEpoch = numSamples * (1 - validationSplit);
+
+       // First, perform a burn-in call.
+       await model.fit(inputs, targets, {
+         batchSize: 1,
+         epochs,
+         validationSplit,
+       });
+       const numTensors0 = memory().numTensors;
+
+       // Perform actual testing calls.
+       for (let n = 0; n < 2; ++n) {
+         const tensorCounts: number[] = [];
+         await model.fit(inputs, targets, {
+           batchSize: 1,
+           epochs,
+           validationSplit,
+           callbacks: {
+             onBatchEnd: async (batch: number, logs: Logs) => {
+               tensorCounts.push(memory().numTensors);
+             }
+           }
+         });
+         for (let epochIndex = 0; epochIndex < epochs; ++epochIndex) {
+           // Get the tensor counts within an epoch (i.e., from the first batch
+           // till the penultimate one.) Assert that the counts are constant,
+           // i.e., no increase in the tensor count within the epoch.
+           // N.B.: Even though the tensor count is expected to be constant
+           // across batches, across epochs, the count will increase, due to the
+           // per-epoch loss and metric values stored for the returned history
+           // object, which are currently downloaded via data() calls only at
+           // the end of the fit() call.
+           const beginBatch = batchesPerEpoch * epochIndex;
+           const endBatch = batchesPerEpoch * (epochIndex + 1);
+           const inEpochTensorCounts =
+               tensorCounts.slice(beginBatch, endBatch - 1);
+           if (unique(inEpochTensorCounts).length !== 1) {
+             done.fail(
+                 `Detected WebGL memory leak within epoch ${epochIndex + 1} ` +
+                 `of ${epochs} of the fit() call with ` +
+                 `onBatchEnd callback: tensor counts: ${inEpochTensorCounts}.`);
+           }
+           // Now, assert that the amount of increase in the number of tensors
+           // at the end of the epoch equals the expected value.
+           if (epochIndex < epochs - 1) {
+             // The expected increase of 4 comes from the fact that the fit()
+             // call here generates 4 additional scalars and will store them
+             // till the end of the fit() call:
+             //   loss, val_loss, mse and val_mse.
+             expect(tensorCounts[endBatch] - tensorCounts[beginBatch])
+                 .toEqual(4);
+           }
+         }
+         expect(tensorCounts.length).toEqual(batchesPerEpoch * epochs);
+         const numTensors1 = memory().numTensors;
+         if (numTensors1 > numTensors0) {
+           done.fail(
+               `Detected memory leak of ${numTensors1 - numTensors0} ` +
+               `tensor(s) after fit() call with callback.`);
+         }
+       }
+       done();
+     });
 });
 
 describeMathCPUAndGPU('Model.evaluate', () => {
@@ -1258,5 +1730,137 @@ describeMathCPUAndGPU('Load weights', () => {
     expectTensorsClose(
         model.apply(tensor2d([[1, 1, 1]], [1, 3])) as Tensor,
         tensor2d([[0.8, 1.0]], [1, 2]));
+  });
+});
+
+describeMathCPUAndGPU('Model.execute', () => {
+  function createFunctionalModel():
+      [tfl.Model, {[name: string]: tfl.SymbolicTensor}] {
+    const input1 = tfl.input({shape: [2, 3]});
+    const reshape1 = tfl.layers.reshape({targetShape: [3, 2]}).apply(input1) as
+        tfl.SymbolicTensor;
+    const input2 = tfl.input({shape: [3, 4]});
+    const concat =
+        tfl.layers.concatenate({axis: -1}).apply([reshape1, input2]) as
+        tfl.SymbolicTensor;
+    const model = tfl.model({inputs: [input1, input2], outputs: concat});
+
+    return [model, {input1, reshape1, input2, concat}];
+  }
+
+  function createSequentialModel(): tfl.Sequential {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 6,
+      inputShape: [4],
+      kernelInitializer: 'zeros',
+      useBias: false
+    }));
+    model.add(tfl.layers.dense(
+        {units: 3, kernelInitializer: 'zeros', useBias: false}));
+    model.add(tfl.layers.dense(
+        {units: 1, kernelInitializer: 'zeros', useBias: false}));
+    return model;
+  }
+
+  it('Functional model: single output', () => {
+    const [model, layers] = createFunctionalModel();
+    const inputs = [zeros([1, 2, 3]), zeros([1, 3, 4])];
+    const outputs = model.execute(inputs, layers['reshape1'].name) as Tensor;
+    expectTensorsClose(outputs, zeros([1, 3, 2]));
+  });
+
+  it('Functional model: multiple outputs', () => {
+    const [model, layers] = createFunctionalModel();
+    const inputs = [zeros([1, 2, 3]), zeros([1, 3, 4])];
+    const outputs = model.execute(inputs, [
+      layers['reshape1'].name, layers['concat'].name, layers['input2'].name
+    ]) as Tensor[];
+    expectTensorsClose(outputs[0], zeros([1, 3, 2]));
+    expectTensorsClose(outputs[1], zeros([1, 3, 6]));
+    expectTensorsClose(outputs[2], zeros([1, 3, 4]));
+  });
+
+  it('Functional model: Dictionary of inputs', () => {
+    const [model, layers] = createFunctionalModel();
+    const inputName1 = model.inputs[0].name;
+    const inputName2 = model.inputs[1].name;
+    const inputs: NamedTensorMap = {};
+    inputs[inputName1] = zeros([1, 2, 3]);
+    inputs[inputName2] = zeros([1, 3, 4]);
+    const outputs = model.execute(inputs, [
+      layers['reshape1'].name, layers['concat'].name, layers['input2'].name
+    ]) as Tensor[];
+    expectTensorsClose(outputs[0], zeros([1, 3, 2]));
+    expectTensorsClose(outputs[1], zeros([1, 3, 6]));
+    expectTensorsClose(outputs[2], zeros([1, 3, 4]));
+  });
+
+  it('Functional model: missing input in dictionary throws Error', () => {
+    const [model, layers] = createFunctionalModel();
+    const inputName2 = model.inputs[1].name;
+    const inputs: NamedTensorMap = {};
+    inputs[inputName2] = zeros([1, 3, 4]);
+    expect(() => model.execute(inputs, layers['reshape1'].name))
+        .toThrowError(/No value is provided for .* input/);
+  });
+
+  it('Functional model: Incorrect number of inputs throws Error', () => {
+    const [model, layers] = createFunctionalModel();
+    const inputs = [zeros([1, 2, 3])];
+    expect(() => model.execute(inputs, layers['reshape1'].name))
+        .toThrowError(/The number of inputs provided \(1\) does not match .*2/);
+  });
+
+  it('Functional model: nonexistent tensor name throws Error', () => {
+    const [model, layers] = createFunctionalModel();
+    const inputs = [zeros([1, 2, 3]), zeros([1, 3, 4])];
+    const nonexistentTensorName =
+        layers['reshape1'].name + Math.random().toFixed(4);
+    expect(() => model.execute(inputs, nonexistentTensorName))
+        .toThrowError(/Cannot find SymbolicTensors for output name/);
+    expect(() => model.execute(inputs, [
+      layers['reshape1'].name, nonexistentTensorName
+    ])).toThrowError(/Cannot find SymbolicTensors for output name/);
+  });
+
+  it('Functional model: empty outputs string throws Error', () => {
+    const model = createFunctionalModel()[0];
+    const inputs = [zeros([1, 2, 3]), zeros([1, 3, 4])];
+    expect(() => model.execute(inputs, [])).toThrowError(/empty Array/);
+  });
+
+  it('Sequential model: singleton input', () => {
+    const model = createSequentialModel();
+    const input = zeros([2, 4]);
+    const outputs = model.execute(input, [
+      (model.layers[2].output as tfl.SymbolicTensor).name,
+      (model.layers[1].output as tfl.SymbolicTensor).name,
+      (model.layers[0].output as tfl.SymbolicTensor).name,
+    ]) as Tensor[];
+    expectTensorsClose(outputs[0], zeros([2, 1]));
+    expectTensorsClose(outputs[1], zeros([2, 3]));
+    expectTensorsClose(outputs[2], zeros([2, 6]));
+  });
+
+  it('Sequential model: length-1 Array input', () => {
+    const model = createSequentialModel();
+    const input = [zeros([2, 4])];
+    const output = model.execute(
+                       input,
+                       (model.layers[1].output as tfl.SymbolicTensor).name,
+                       ) as Tensor;
+    expectTensorsClose(output, zeros([2, 3]));
+  });
+
+  it('Sequential model: length-1 dictionary input', () => {
+    const model = createSequentialModel();
+    const inputs: NamedTensorMap = {};
+    inputs[(model.input as SymbolicTensor).name] = zeros([2, 4]);
+    const output = model.execute(
+                       inputs,
+                       (model.layers[1].output as tfl.SymbolicTensor).name,
+                       ) as Tensor;
+    expectTensorsClose(output, zeros([2, 3]));
   });
 });

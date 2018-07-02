@@ -28,6 +28,7 @@ import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer
 import {Kwargs, Shape} from '../types';
 import {convOutputLength, deconvLength, normalizeArray} from '../utils/conv_utils';
 import * as generic_utils from '../utils/generic_utils';
+import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 // tslint:enable:max-line-length
 
@@ -164,15 +165,15 @@ export function conv2dWithBias(
       dataFormat = imageDataFormat();
     }
     checkDataFormat(dataFormat);
-    if (K.ndim(x) !== 3 && K.ndim(x) !== 4) {
+    if (x.rank !== 3 && x.rank !== 4) {
       throw new ValueError(
           `conv2dWithBias expects input to be of rank 3 or 4, but received ` +
-          `${K.ndim(x)}.`);
+          `${x.rank}.`);
     }
-    if (K.ndim(kernel) !== 3 && K.ndim(kernel) !== 4) {
+    if (kernel.rank !== 3 && kernel.rank !== 4) {
       throw new ValueError(
           `conv2dWithBias expects kernel to be of rank 3 or 4, but received ` +
-          `${K.ndim(x)}.`);
+          `${x.rank}.`);
     }
     let y = preprocessConv2DInput(x, dataFormat);
     if (padding === 'causal') {
@@ -303,41 +304,41 @@ export interface ConvLayerConfig extends BaseConvLayerConfig {
 }
 
 /**
- * Abstract nD convolution layer.
+ * Abstract convolution layer.
  */
-export abstract class Conv extends Layer {
+export abstract class BaseConv extends Layer {
   protected readonly rank: number;
-  protected readonly filters: number;
   protected readonly kernelSize: number[];
   protected readonly strides: number[];
   protected readonly padding: PaddingMode;
   protected readonly dataFormat: DataFormat;
-  protected readonly dilationRate: number|[number]|[number, number];
   protected readonly activation: Activation;
   protected readonly useBias: boolean;
-  protected readonly kernelInitializer?: Initializer;
+  protected readonly dilationRate: number[];
+
+  // Bias-related members are here because all convolution subclasses use the
+  // same configuration parmeters to control bias.  Kernel-related members
+  // are in subclass `Conv` because some subclasses use different parameters to
+  // control kernel properties, for instance, `DepthwiseConv2D` uses
+  // `depthwiseInitializer` instead of `kernelInitializer`.
   protected readonly biasInitializer?: Initializer;
-  protected readonly kernelConstraint?: Constraint;
   protected readonly biasConstraint?: Constraint;
-  protected readonly kernelRegularizer?: Regularizer;
   protected readonly biasRegularizer?: Regularizer;
 
-  protected kernel: LayerVariable = null;
   protected bias: LayerVariable = null;
 
   readonly DEFAULT_KERNEL_INITIALIZER: InitializerIdentifier = 'glorotNormal';
   readonly DEFAULT_BIAS_INITIALIZER: InitializerIdentifier = 'zeros';
 
-  constructor(rank: number, config: ConvLayerConfig) {
-    super(config);
+  constructor(rank: number, config: BaseConvLayerConfig) {
+    super(config as LayerConfig);
+    BaseConv.verifyConfig(config);
     this.rank = rank;
     if (this.rank !== 1 && this.rank !== 2) {
       throw new NotImplementedError(
           `Convolution layer for rank other than 1 or 2 (${this.rank}) is ` +
           `not implemented yet.`);
     }
-
-    this.filters = config.filters;
     this.kernelSize = normalizeArray(config.kernelSize, rank, 'kernelSize');
     this.strides = normalizeArray(
         config.strides == null ? 1 : config.strides, rank, 'strides');
@@ -346,8 +347,16 @@ export abstract class Conv extends Layer {
     this.dataFormat =
         config.dataFormat == null ? 'channelsLast' : config.dataFormat;
     checkDataFormat(this.dataFormat);
-
-    this.dilationRate = config.dilationRate == null ? 1 : config.dilationRate;
+    this.activation = getActivation(config.activation);
+    this.useBias = config.useBias == null ? true : config.useBias;
+    this.biasInitializer =
+        getInitializer(config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
+    this.biasConstraint = getConstraint(config.biasConstraint);
+    this.biasRegularizer = getRegularizer(config.biasRegularizer);
+    this.activityRegularizer = getRegularizer(config.activityRegularizer);
+    this.dilationRate = normalizeArray(
+        config.dilationRate == null ? 1 : config.dilationRate,
+        rank, 'dilationRate');
     if (this.rank === 1 &&
         (Array.isArray(this.dilationRate) &&
          (this.dilationRate as number[]).length !== 1)) {
@@ -365,22 +374,51 @@ export abstract class Conv extends Layer {
             `convolution, but received ${JSON.stringify(this.dilationRate)}`);
       }
     }
+  }
 
-    this.activation = getActivation(config.activation);
-    this.useBias = config.useBias == null ? true : config.useBias;
+  protected static verifyConfig(config: BaseConvLayerConfig) {
+    // Check config.kernelSize type and shape.
+    generic_utils.assert(
+        'kernelSize' in config, `required key 'kernelSize' not in config`);
+    if (typeof config.kernelSize !== 'number' &&
+        !generic_utils.checkArrayTypeAndLength(
+            config.kernelSize, 'number', 1, 2))
+      throw new ValueError(
+          `BaseConv expects config.kernelSize to be number or number[] with ` +
+          `length 1 or 2, but received ${JSON.stringify(config.kernelSize)}.`);
+  }
+}
+
+/**
+ * Abstract nD convolution layer.  Ancestor of convolution layers which reduce
+ * across channels, i.e., Conv1D and Conv2D, but not DepthwiseConv2D.
+ */
+export abstract class Conv extends BaseConv {
+  protected readonly filters: number;
+
+  protected kernel: LayerVariable = null;
+
+  // Bias-related properties are stored in the superclass `BaseConv` because all
+  // convolution subclasses use the same configuration parameters to control
+  // bias. Kernel-related properties are defined here rather than in the
+  // superclass because some convolution subclasses use different names and
+  // configuration parameters for their internal kernel state.
+  protected readonly kernelInitializer?: Initializer;
+  protected readonly kernelConstraint?: Constraint;
+  protected readonly kernelRegularizer?: Regularizer;
+
+  constructor(rank: number, config: ConvLayerConfig) {
+    super(rank, config as BaseConvLayerConfig);
+    Conv.verifyConfig(config);
+    this.filters = config.filters;
     this.kernelInitializer = getInitializer(
         config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
-    this.biasInitializer =
-        getInitializer(config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
     this.kernelConstraint = getConstraint(config.kernelConstraint);
-    this.biasConstraint = getConstraint(config.biasConstraint);
     this.kernelRegularizer = getRegularizer(config.kernelRegularizer);
-    this.biasRegularizer = getRegularizer(config.biasRegularizer);
-    this.activityRegularizer = getRegularizer(config.activityRegularizer);
   }
 
   build(inputShape: Shape|Shape[]): void {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     const channelAxis =
         this.dataFormat === 'channelsFirst' ? 1 : inputShape.length - 1;
     if (inputShape[channelAxis] == null) {
@@ -407,14 +445,14 @@ export abstract class Conv extends Layer {
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
-      inputs = generic_utils.getExactlyOneTensor(inputs);
+      inputs = getExactlyOneTensor(inputs);
       let outputs: Tensor;
       const biasValue = this.bias == null ? null : this.bias.read();
 
       if (this.rank === 1) {
         outputs = conv1dWithBias(
             inputs, this.kernel.read(), biasValue, this.strides[0],
-            this.padding, this.dataFormat, this.dilationRate as number);
+            this.padding, this.dataFormat, this.dilationRate[0]);
       } else if (this.rank === 2) {
         // TODO(cais): Move up to constructor.
         outputs = conv2dWithBias(
@@ -432,7 +470,7 @@ export abstract class Conv extends Layer {
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     const newSpace: number[] = [];
     const space = (this.dataFormat === 'channelsLast') ?
         inputShape.slice(1, inputShape.length - 1) :
@@ -479,6 +517,16 @@ export abstract class Conv extends Layer {
     Object.assign(config, baseConfig);
     return config;
   }
+
+  protected static verifyConfig(config: ConvLayerConfig) {
+    // Check config.filters type, shape, and value.
+    if (!('filters' in config) || typeof config.filters !== 'number' ||
+        config.filters < 1) {
+      throw new ValueError(
+          `Convolution layer expected config.filters to be a 'number' > 0 ` +
+          `but got ${JSON.stringify(config.filters)}`);
+    }
+  }
 }
 
 
@@ -502,12 +550,23 @@ export class Conv2D extends Conv {
   static className = 'Conv2D';
   constructor(config: ConvLayerConfig) {
     super(2, config);
+    Conv2D.verifyConfig(config);
   }
 
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
     delete config['rank'];
     return config;
+  }
+
+  protected static verifyConfig(config: ConvLayerConfig) {
+    // config.kernelSize must be a number or array of numbers.
+    if ((typeof config.kernelSize !== 'number') &&
+        !generic_utils.checkArrayTypeAndLength(
+            config.kernelSize, 'number', 1, 2))
+      throw new ValueError(
+          `Conv2D expects config.kernelSize to be number or number[] with ` +
+          `length 1 or 2, but received ${JSON.stringify(config.kernelSize)}.`);
   }
 }
 serialization.SerializationMap.register(Conv2D);
@@ -516,14 +575,15 @@ serialization.SerializationMap.register(Conv2D);
  * Transposed convolutional layer (sometimes called Deconvolution).
  *
  * The need for transposed convolutions generally arises
- * from the desire to use a transformation going in the opposite direction of a
- * normal convolution, i.e., from something that has the shape of the output of
- * some convolution to something that has the shape of its input while
- * maintaining a connectivity pattern that is compatible with said convolution.
+ * from the desire to use a transformation going in the opposite direction of
+ * a normal convolution, i.e., from something that has the shape of the output
+ * of some convolution to something that has the shape of its input while
+ * maintaining a connectivity pattern that is compatible with said
+ * convolution.
  *
  * When using this layer as the first layer in a model, provide the
- * configuration `inputShape` (`Array` of integers, does not include the sample
- * axis), e.g., `inputShape: [128, 128, 3]` for 128x128 RGB pictures in
+ * configuration `inputShape` (`Array` of integers, does not include the
+ * sample axis), e.g., `inputShape: [128, 128, 3]` for 128x128 RGB pictures in
  * `dataFormat: 'channelsLast'`.
  *
  * Input shape:
@@ -534,8 +594,8 @@ serialization.SerializationMap.register(Conv2D);
  *
  * Output shape:
  *   4D tensor with shape:
- *   `[batch, filters, newRows, newCols]` if `dataFormat` is `'channelsFirst'`.
- *   or 4D tensor with shape:
+ *   `[batch, filters, newRows, newCols]` if `dataFormat` is
+ * `'channelsFirst'`. or 4D tensor with shape:
  *   `[batch, newRows, newCols, filters]` if `dataFormat` is `'channelsLast'`.
  *
  * References:
@@ -560,7 +620,7 @@ export class Conv2DTranspose extends Conv2D {
   }
 
   build(inputShape: Shape|Shape[]): void {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
 
     if (inputShape.length !== 4) {
       throw new ValueError(
@@ -595,7 +655,7 @@ export class Conv2DTranspose extends Conv2D {
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tfc.tidy(() => {
-      let input = generic_utils.getExactlyOneTensor(inputs);
+      let input = getExactlyOneTensor(inputs);
       if (input.shape.length !== 4) {
         throw new ValueError(
             `Conv2DTranspose.call() expects input tensor to be rank-4, but ` +
@@ -655,7 +715,7 @@ export class Conv2DTranspose extends Conv2D {
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     const outputShape = inputShape.slice();
 
     let channelAxis: number;
@@ -790,7 +850,7 @@ export class SeparableConv extends Conv {
   }
 
   build(inputShape: Shape|Shape[]): void {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     if (inputShape.length < this.rank + 2) {
       throw new ValueError(
           `Inputs to SeparableConv${this.rank}D should have rank ` +
@@ -838,7 +898,7 @@ export class SeparableConv extends Conv {
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
-      inputs = generic_utils.getExactlyOneTensor(inputs);
+      inputs = getExactlyOneTensor(inputs);
 
       let output: Tensor;
       if (this.rank === 1) {
@@ -938,8 +998,8 @@ serialization.SerializationMap.register(SeparableConv2D);
  *
  * If `activation` is not `null`, it is applied to the outputs as well.
  *
- * When using this layer as the first layer in a model, provide an `inputShape`
- * argument `Array` or `null`.
+ * When using this layer as the first layer in a model, provide an
+ * `inputShape` argument `Array` or `null`.
  *
  * For example, `inputShape` would be:
  * - `[10, 128]` for sequences of 10 vectors of 128-dimensional vectors
@@ -949,6 +1009,7 @@ export class Conv1D extends Conv {
   static className = 'Conv1D';
   constructor(config: ConvLayerConfig) {
     super(1, config);
+    Conv1D.verifyConfig(config);
     this.inputSpec = [{ndim: 3}];
   }
 
@@ -958,12 +1019,22 @@ export class Conv1D extends Conv {
     delete config['dataFormat'];
     return config;
   }
+
+  static verifyConfig(config: ConvLayerConfig) {
+    // config.kernelSize must be a number or array of numbers.
+    if (typeof config.kernelSize !== 'number' &&
+        !generic_utils.checkArrayTypeAndLength(
+            config.kernelSize, 'number', 1, 1))
+      throw new ValueError(
+          `Conv1D expects config.kernelSize to be number or number[] with ` +
+          `length 1, but received ${JSON.stringify(config.kernelSize)}.`);
+  }
 }
 serialization.SerializationMap.register(Conv1D);
 
 export interface Cropping2DLayerConfig extends LayerConfig {
   /**
-   * Dimension of the corpping along the width and the height.
+   * Dimension of the cropping along the width and the height.
    * - If integer: the same symmetric cropping
    *  is applied to width and height.
    * - If list of 2 integers:
@@ -1060,7 +1131,7 @@ export class Cropping2D extends Layer {
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
-      inputs = generic_utils.getExactlyOneTensor(inputs);
+      inputs = getExactlyOneTensor(inputs);
 
       if (this.dataFormat === 'channelsLast') {
         const hSliced = K.sliceAlongAxis(
@@ -1088,3 +1159,101 @@ export class Cropping2D extends Layer {
   }
 }
 serialization.SerializationMap.register(Cropping2D);
+
+export interface UpSampling2DLayerConfig extends LayerConfig {
+  /**
+   * The upsampling factors for rows and columns.
+   *
+   * Defaults to `[2, 2]`.
+   */
+  size?: number[];
+  /**
+   * Format of the data, which determines the ordering of the dimensions in
+   * the inputs.
+   *
+   * `"channelsLast"` corresponds to inputs with shape
+   *   `[batch, ..., channels]`
+   *
+   *  `"channelsFirst"` corresponds to inputs with shape `[batch, channels,
+   * ...]`.
+   *
+   * Defaults to `"channelsLast"`.
+   */
+  dataFormat?: DataFormat;
+}
+
+/**
+ * Upsampling layer for 2D inputs.
+ *
+ * Repeats the rows and columns of the data
+ * by size[0] and size[1] respectively.
+ *
+ *
+ * Input shape:
+ *    4D tensor with shape:
+ *     - If `dataFormat` is `"channelsLast"`:
+ *         `[batch, rows, cols, channels]`
+ *     - If `dataFormat` is `"channelsFirst"`:
+ *        `[batch, channels, rows, cols]`
+ *
+ * Output shape:
+ *     4D tensor with shape:
+ *     - If `dataFormat` is `"channelsLast"`:
+ *        `[batch, upsampledRows, upsampledCols, channels]`
+ *     - If `dataFormat` is `"channelsFirst"`:
+ *         `[batch, channels, upsampledRows, upsampledCols]`
+ *
+ */
+export class UpSampling2D extends Layer {
+  static className = 'UpSampling2D';
+  protected readonly DEFAULT_SIZE = [2, 2];
+  protected readonly size: number[];
+  protected readonly dataFormat: DataFormat;
+
+  constructor(config: UpSampling2DLayerConfig) {
+    super(config);
+    this.inputSpec = [{ndim: 4}];
+    this.size = config.size === undefined ? this.DEFAULT_SIZE : config.size;
+    this.dataFormat =
+        config.dataFormat === undefined ? 'channelsLast' : config.dataFormat;
+  }
+
+  computeOutputShape(inputShape: Shape): Shape {
+    if (this.dataFormat === 'channelsFirst') {
+      const height = this.size[0] * inputShape[2];
+      const width = this.size[1] * inputShape[3];
+      return [inputShape[0], inputShape[1], height, width];
+    } else {
+      const height = this.size[0] * inputShape[1];
+      const width = this.size[1] * inputShape[2];
+      return [inputShape[0], height, width, inputShape[3]];
+    }
+  }
+
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+    return tfc.tidy(() => {
+      let input = getExactlyOneTensor(inputs) as Tensor4D;
+      const inputShape = input.shape;
+
+      if (this.dataFormat === 'channelsFirst') {
+        input = tfc.transpose(input, [0, 2, 3, 1]);
+        const height = this.size[0] * inputShape[2];
+        const width = this.size[1] * inputShape[3];
+        const resized = input.resizeNearestNeighbor([height, width]);
+        return tfc.transpose(resized, [0, 3, 1, 2]);
+      } else {
+        const height = this.size[0] * inputShape[1];
+        const width = this.size[1] * inputShape[2];
+        return input.resizeNearestNeighbor([height, width]);
+      }
+    });
+  }
+
+  getConfig(): serialization.ConfigDict {
+    const config = {size: this.size, dataFormat: this.dataFormat};
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+}
+serialization.SerializationMap.register(UpSampling2D);

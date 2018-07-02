@@ -17,11 +17,14 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {Layer, LayerConfig} from '../engine/topology';
+import {nameScope} from '../common';
+import {Layer, LayerConfig, SymbolicTensor} from '../engine/topology';
+import {getScalar} from '../backend/state';
 import {NotImplementedError, ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
-import {RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
+import {RegularizerFn, RnnStepFunction} from '../types';
 import * as generic_utils from '../utils/generic_utils';
+import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
 import {rnn, RNN} from './recurrent';
@@ -192,7 +195,7 @@ export class TimeDistributed extends Wrapper {
   }
 
   build(inputShape: Shape|Shape[]): void {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     if (inputShape.length < 3) {
       throw new ValueError(
           `TimeDistributed layer expects an input shape >= 3D, but received ` +
@@ -208,7 +211,7 @@ export class TimeDistributed extends Wrapper {
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     const childInputShape = [inputShape[0]].concat(inputShape.slice(2));
     const childOutputShape =
         this.layer.computeOutputShape(childInputShape) as Shape;
@@ -219,7 +222,7 @@ export class TimeDistributed extends Wrapper {
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
       // TODO(cais): Add 'training' and 'useLearningPhase' to kwargs.
-      inputs = generic_utils.getExactlyOneTensor(inputs);
+      inputs = getExactlyOneTensor(inputs);
       // Porting Note: In tfjs-layers, `inputs` are always concrete tensor
       // values. Hence the inputs can't have an undetermined first (batch)
       // dimension, which is why we always use the K.rnn approach here.
@@ -271,9 +274,20 @@ export class Bidirectional extends Wrapper {
 
   constructor(config: BidirectionalLayerConfig) {
     super(config);
-    this.forwardLayer = config.layer;
-    // TODO(cais): Perform shallow copy if necessary.
+
+    // Note: When creating `this.forwardLayer`, the original Layer object
+    //   (`config.layer`) ought to be cloned. This is why we call `getConfig()`
+    //   followed by `deserialize()`. Without this cloning, the layer names
+    //   saved during serialization will incorrectly contain the 'forward_'
+    //   prefix.
+    //   In Python Keras, this is done using `copy.copy` (shallow copy), which
+    //   does not have a simple equivalent in JavaScript. JavaScript's
+    //   `Object.assign()` does not copy methods.
     const layerConfig = config.layer.getConfig();
+    this.forwardLayer =
+        deserialize(
+            {className: config.layer.getClassName(), config: layerConfig}) as
+        RNN;
     layerConfig['goBackwards'] =
         layerConfig['goBackwards'] === true ? false : true;
     this.backwardLayer =
@@ -420,8 +434,7 @@ export class Bidirectional extends Wrapper {
       } else if (this.mergeMode === 'sum') {
         output = tfc.add(y as Tensor, yRev as Tensor);
       } else if (this.mergeMode === 'ave') {
-        output = K.scalarTimesArray(
-            K.getScalar(0.5), tfc.add(y as Tensor, yRev as Tensor));
+        output = tfc.mul(getScalar(0.5), tfc.add(y as Tensor, yRev as Tensor));
       } else if (this.mergeMode === 'mul') {
         output = tfc.mul(y as Tensor, yRev as Tensor);
       } else if (this.mergeMode == null) {
@@ -445,10 +458,10 @@ export class Bidirectional extends Wrapper {
   }
 
   build(inputShape: Shape|Shape[]): void {
-    K.nameScope(this.forwardLayer.name, () => {
+    nameScope(this.forwardLayer.name, () => {
       this.forwardLayer.build(inputShape);
     });
-    K.nameScope(this.backwardLayer.name, () => {
+    nameScope(this.backwardLayer.name, () => {
       this.backwardLayer.build(inputShape);
     });
     this.built = true;
@@ -467,6 +480,33 @@ export class Bidirectional extends Wrapper {
   }
 
   // TODO(cais): Implement constraints().
-  // TODO(cais): Implement getConfig().
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
+      'mergeMode': this.mergeMode,
+    };
+    // TODO(cais): Add logic for `numConstants` once the property is added.
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
+    const rnnLayer =
+        deserialize(config['layer'] as serialization.ConfigDict) as RNN;
+    delete config['layer'];
+    // TODO(cais): Add logic for `numConstants` once the property is added.
+    if (config['numConstants'] != null) {
+      throw new NotImplementedError(
+          `Deserialization of a Bidirectional layer with numConstants ` +
+          `present is not supported yet.`);
+    }
+    // tslint:disable-next-line:no-any
+    const newConfig: {[key: string]: any} = config;
+    newConfig['layer'] = rnnLayer;
+    return new cls(newConfig);
+  }
 }
 serialization.SerializationMap.register(Bidirectional);
