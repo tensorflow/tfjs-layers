@@ -28,11 +28,18 @@ export interface OneHotLayerConfig extends LayerConfig {
   units: number;
 }
 
+/**
+ * Preprocessing layers are distinct from Layers in that they are not
+ * affected by back-propegation.  They are not affected by .fit.  They may be
+ * affected by `Model.fitPreprocessing`.
+ */
+export abstract class PreprocessingLayer extends Layer {}
+
 
 /**
  * Requires input of shape [batch].  Produces output of shape [batch, units]
  */
-export class OneHot extends Layer {
+export class OneHot extends PreprocessingLayer {
   static className = 'OneHot';
   readonly units: number;
 
@@ -100,7 +107,7 @@ export function vocabHash64(s: string) {
 
 // A `VocabLayer` is a fittable map from strings to integers in the range
 // [0, buckets), where buckets is hashVocabSize + knownVocabSize.
-export class VocabLayer extends Layer {
+export class VocabLayer extends PreprocessingLayer {
   static className = 'VocabularyLayer';
   readonly hashVocabSize: number;
   readonly knownVocabSize: number;

@@ -10,7 +10,7 @@ import {describeMathCPUAndGPU} from '../utils/test_utils';
 import {expectTensorsClose} from '../utils/test_utils';
 
 describeMathCPUAndGPU('String preproc : Model.predict', () => {
-  it('basic model usage: predict', () => {
+  it('basic model usage: Sequential predict', () => {
     // Define the vocabulary initializer
     const vocabInitializer = initializers.knownVocab(
         {strings: ['hello', 'world', 'こんにちは', '世界']});
@@ -40,35 +40,41 @@ describeMathCPUAndGPU('String preproc : Model.predict', () => {
     expectValuesInRange(
         yOutOfVocab, knownVocabSize, knownVocabSize + hashVocabSize);
   });
+  it('basic model usage: Functional predict', () => {
+    // Define the vocabulary initializer
+    const vocabInitializer = initializers.knownVocab(
+        {strings: ['hello', 'world', 'こんにちは', '世界']});
+    // Define a model with just a vocab layer
+    const knownVocabSize = 4;
+    const hashVocabSize = 1;
+    const input = tfl.input({shape: [2]});
+    const vocabLayer = tfl.layers.vocab({
+      name: 'myVocabLayer',
+      knownVocabSize,
+      hashVocabSize,
+      vocabInitializer,
+      inputShape: [2]  // two words per example
+    });
+    const outputSymbolic = vocabLayer.apply(input) as tfl.SymbolicTensor;
+    const vocabModel = tfl.model({inputs: input, outputs: outputSymbolic});
+    // Matches known words.
+    const x = tfl.preprocessing.stringTensor2d(
+        [['world', 'hello'], ['世界', 'こんにちは']], [2, 2]);
+    const y = vocabModel.predict(x) as Tensor;
+    const yExpected = tensor2d([[1, 0], [3, 2]], [2, 2], 'int32');
+    expectTensorsClose(y, yExpected);
+    // Handles unknown words.
+    const xOutOfVocab = tfl.preprocessing.stringTensor2d(
+        [['these', 'words'], ['are', 'out'], ['of', 'vocabulary']], [3, 2]);
+    const yOutOfVocab = vocabModel.predict(xOutOfVocab) as Tensor;
+    // Out-of-vocab words should hash to buckets after the knownVocab
+    expectValuesInRange(
+        yOutOfVocab, knownVocabSize, knownVocabSize + hashVocabSize);
+  });
 });
 
-/*describeMathCPU(
-    'String preproc : compileUnsupervised & fitUnsupervised', () => {
-      it('basic model usage: fit', () => {
-        // Define a sequential model with just a vocab layer.
-        const knownVocabSize = 4;
-        const hashVocabSize = 1;
-        const vocabModel = tfl.sequential({
-          layers: [tfl.layers.vocab({
-            name: 'myVocabLayer',
-            knownVocabSize,
-            hashVocabSize,
-            inputShape: [2]  // two words per example
-          })]
-        });
-        // Define an input array of words. 'w1', 'w2', 'w3', and 'w4' each
-        // appear twice.  Word 'wX' appears once.
-        const x = tfl.preprocessing.stringTensor1d(
-            ['w1', 'w1', 'w2', 'w2', 'w3', 'w3', 'w4', 'w4', 'wX']);
-        vocabModel.compile({optimizer: 'vocabCount', loss: 'zero'});
-        const batchSize = 3;
-        const epochs = 1;
-        const history = await vocabModel.fit(x, {batchSize, epochs});
-      });
-    });
-*/
 
-// ORIGINAL SKETCH
+//  ORIGINAL SKETCH
 /*
 describeMathCPUAndGPU('String Preproc Model.fit', () => {
   // Define the vocabulary initializer
