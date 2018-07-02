@@ -29,8 +29,8 @@ export function getOptimizer(identifier: string): Optimizer {
     'Adagrad': () => train.adagrad(.01),
     'Adadelta': () => train.adadelta(1.0, 0.95, epsilon()),
     'Adam': () => train.adam(.001, .9, .999, epsilon()),
-    'Adamax': () => train.adamax(0.002, .9, .999, epsilon(), 0.0),
-    'RMSProp': () => train.rmsprop(.001, .9, null, epsilon()),
+    'Adamax': () => train.adamax(0.002, .9, .999, epsilon(), 0),
+    'RMSProp': () => train.rmsprop(.001, .9, 0, epsilon()),
     'SGD': () => train.sgd(.01)
   };
   optimizerMap['adagrad'] = optimizerMap['Adagrad'];
