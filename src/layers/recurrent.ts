@@ -17,11 +17,11 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {DataType, doc, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import {Activation, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
+import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, SymbolicTensor} from '../engine/topology';
 import {Layer, LayerConfig} from '../engine/topology';
-import {getScalar} from '../backend/state';
 import {AttributeError, NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
@@ -2505,7 +2505,7 @@ function generateDropoutMask(
     ones: () => Tensor, rate: number, training: boolean = null,
     count = 1): Tensor|Tensor[] {
   function droppedInputs(): Tensor {
-    return K.dropout(ones(), K.getScalar(rate));
+    return K.dropout(ones(), getScalar(rate));
   }
   if (count > 1) {
     const mask: Tensor[] = [];
