@@ -559,6 +559,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
+        // tslint:disable-next-line:no-unused-expression
         simpleRNN.apply(input, kwargs) as Tensor;
         if (dropout !== 0.0 && training) {
           expect(tfc.randomUniform).toHaveBeenCalledTimes(1);
@@ -592,6 +593,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
+        // tslint:disable-next-line:no-unused-expression
         simpleRNN.apply(input, kwargs) as Tensor;
         if (recurrentDropout !== 0.0 && training) {
           expect(tfc.randomUniform).toHaveBeenCalledTimes(1);
@@ -866,6 +868,7 @@ describeMathCPUAndGPU('GRU Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
+        // tslint:disable-next-line:no-unused-expression
         gru.apply(input, kwargs) as Tensor;
         if (dropout !== 0.0 && training) {
           expect(tfc.randomUniform).toHaveBeenCalledTimes(3);
@@ -900,6 +903,7 @@ describeMathCPUAndGPU('GRU Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
+        // tslint:disable-next-line:no-unused-expression
         gru.apply(input, kwargs) as Tensor;
         if (recurrentDropout !== 0.0 && training) {
           expect(tfc.randomUniform).toHaveBeenCalledTimes(3);
@@ -1187,6 +1191,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
+        // tslint:disable-next-line:no-unused-expression
         lstm.apply(input, kwargs) as Tensor;
         if (dropout !== 0.0 && training) {
           expect(tfc.randomUniform).toHaveBeenCalledTimes(4);
@@ -1221,6 +1226,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
+        // tslint:disable-next-line:no-unused-expression
         lstm.apply(input, kwargs) as Tensor;
         if (recurrentDropout !== 0.0 && training) {
           expect(tfc.randomUniform).toHaveBeenCalledTimes(4);
