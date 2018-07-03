@@ -1478,8 +1478,8 @@ export class GRUCell extends RNNCell {
                 () => tfc.onesLike(hTMinus1), this.recurrentDropout, training,
                 3) as Tensor[];
       }
-      const dpMask = this.dropoutMask as Tensor[];
-      const recDpMask = this.recurrentDropoutMask as Tensor[];
+      const dpMask = this.dropoutMask as [Tensor, Tensor, Tensor];
+      const recDpMask = this.recurrentDropoutMask as [Tensor, Tensor, Tensor];
       let z: Tensor;
       let r: Tensor;
       let hh: Tensor;
