@@ -1348,6 +1348,19 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
     valTargets = zeros([numSamples, 1]);
   }
 
+  function createLSTMModelAndData() {
+    const sequenceLength = 3;
+    const inputSize = 4;
+    model = new tfl.Sequential({
+      layers: [tfl.layers.lstm(
+          {units: 1, inputShape: [sequenceLength, inputSize]})]
+    });
+    inputs = ones([numSamples, sequenceLength, inputSize]);
+    targets = ones([numSamples, 1]);
+    valInputs = zeros([numSamples, sequenceLength, inputSize]);
+    valTargets = zeros([numSamples, 1]);
+  }
+
   it('Repeated fit calls leads to no memory leak: no validation or metrics',
      async done => {
        createDenseModelAndData();
@@ -1368,6 +1381,29 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
        }
        done();
      });
+
+  it('LSTM model fit does not leak', async done => {
+    console.log('================== BEGIN =======================');  // DEBUG
+    createLSTMModelAndData();
+
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
+    const numTensors0 = memory().numTensors;
+    const numFitCalls = 10;
+    for (let i = 0; i < numFitCalls; ++i) {
+      await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
+      const numTensorsNow = memory().numTensors;
+      console.log(`numTensorsNow = ${numTensorsNow}`);  // DEBUG
+      if (numTensorsNow > numTensors0) {
+        done.fail(
+            `Memory leak detected during fit(): Leaked ` +
+            `${numTensorsNow - numTensors0} tensor(s) after the ` +
+            `${i + 1}-th fit() call.`);
+      }
+    }
+    done();
+    console.log('================== END =======================');  // DEBUG
+  });
 
   it('Repeated fit calls leads to no memory leak: batchSize=1, ' +
          'no validation or metrics',
