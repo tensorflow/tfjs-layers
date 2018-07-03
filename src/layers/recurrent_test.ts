@@ -545,7 +545,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
           `returnSequences=false, returnState=false, useBias=true,` +
           ` ${training}, dropout=${dropout}`;
       it(testTitle, () => {
-        const timeSteps = 1;
+        const timeSteps = 3;
         const simpleRNN = tfl.layers.simpleRNN({
           units,
           kernelInitializer: 'ones',
@@ -579,7 +579,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
           `returnSequences=false, returnState=false, useBias=true,` +
           ` ${training}, recurrentDropout=${recurrentDropout}`;
       it(testTitle, () => {
-        const timeSteps = 1;
+        const timeSteps = 3;
         const simpleRNN = tfl.layers.simpleRNN({
           units,
           kernelInitializer: 'ones',
@@ -599,7 +599,9 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
           expect(tfc.randomUniform).toHaveBeenCalledTimes(1);
           expect(tfc.randomUniform).toHaveBeenCalledWith(
             [batchSize, units], 0, 1, 'float32');
-        }
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
       });
     }
   }
@@ -853,7 +855,6 @@ describeMathCPUAndGPU('GRU Tensor', () => {
           `returnSequences=false, returnState=false, useBias=true,` +
           ` ${training}, dropout=${dropout}`;
       it(testTitle, () => {
-        const timeSteps = 1;
         const gru = tfl.layers.gru({
           units,
           kernelInitializer: 'ones',
@@ -888,7 +889,6 @@ describeMathCPUAndGPU('GRU Tensor', () => {
           `returnSequences=false, returnState=false, useBias=true,` +
           ` ${training}, recurrentDropout=${recurrentDropout}`;
       it(testTitle, () => {
-        const timeSteps = 1;
         const gru = tfl.layers.gru({
           units,
           kernelInitializer: 'ones',
@@ -909,7 +909,9 @@ describeMathCPUAndGPU('GRU Tensor', () => {
           expect(tfc.randomUniform).toHaveBeenCalledTimes(3);
           expect(tfc.randomUniform).toHaveBeenCalledWith(
             [batchSize, units], 0, 1, 'float32');
-        }
+      } else {
+        expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+      }
       });
     }
   }
@@ -1176,7 +1178,6 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
           `returnSequences=false, returnState=false, useBias=true,` +
           ` ${training}, dropout=${dropout}`;
       it(testTitle, () => {
-        const timeSteps = 1;
         const lstm = tfl.layers.lstm({
           units,
           kernelInitializer: 'ones',
@@ -1211,7 +1212,6 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
           `returnSequences=false, returnState=false, useBias=true,` +
           ` ${training}, recurrentDropout=${recurrentDropout}`;
       it(testTitle, () => {
-        const timeSteps = 1;
         const lstm = tfl.layers.lstm({
           units,
           kernelInitializer: 'ones',
@@ -1232,6 +1232,8 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
           expect(tfc.randomUniform).toHaveBeenCalledTimes(4);
           expect(tfc.randomUniform).toHaveBeenCalledWith(
             [batchSize, units], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
         }
       });
     }

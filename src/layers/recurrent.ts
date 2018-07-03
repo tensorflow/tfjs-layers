@@ -1013,16 +1013,16 @@ export class SimpleRNNCell extends RNNCell {
       const training = kwargs['training'] == null ? false : kwargs['training'];
 
       if (0 < this.dropout && this.dropout < 1 && this.dropoutMask == null) {
-        this.dropoutMask = generateDropoutMask(() => {
-                             return tfc.onesLike(inputs as Tensor);
-                           }, this.dropout, training) as Tensor;
+        this.dropoutMask = generateDropoutMask(
+                               () => tfc.onesLike(inputs as Tensor),
+                               this.dropout, training) as Tensor;
       }
       if (0 < this.recurrentDropout && this.recurrentDropout < 1 &&
           this.recurrentDropoutMask == null) {
         this.recurrentDropoutMask =
-            generateDropoutMask(() => {
-              return tfc.onesLike(prevOutput);
-            }, this.recurrentDropout, training) as Tensor;
+            generateDropoutMask(
+                () => tfc.onesLike(prevOutput), this.recurrentDropout,
+                training) as Tensor;
       }
       let h: Tensor;
       const dpMask: Tensor = this.dropoutMask as Tensor;
@@ -1460,16 +1460,16 @@ export class GRUCell extends RNNCell {
       inputs = inputs[0];
 
       if (0 < this.dropout && this.dropout < 1 && this.dropoutMask == null) {
-        this.dropoutMask = generateDropoutMask(() => {
-                             return tfc.onesLike(inputs as Tensor);
-                           }, this.dropout, training, 3) as Tensor[];
+        this.dropoutMask = generateDropoutMask(
+                               () => tfc.onesLike(inputs as Tensor),
+                               this.dropout, training, 3) as Tensor[];
       }
       if (0 < this.recurrentDropout && this.recurrentDropout < 1 &&
           this.recurrentDropoutMask == null) {
         this.recurrentDropoutMask =
-            generateDropoutMask(() => {
-              return tfc.onesLike(hTMinus1);
-            }, this.recurrentDropout, training, 3) as Tensor[];
+            generateDropoutMask(
+                () => tfc.onesLike(hTMinus1), this.recurrentDropout, training,
+                3) as Tensor[];
       }
       const dpMask = this.dropoutMask as Tensor[];
       const recDpMask = this.recurrentDropoutMask as Tensor[];
@@ -1982,19 +1982,19 @@ export class LSTMCell extends RNNCell {
       inputs = inputs[0];
 
       if (0 < this.dropout && this.dropout < 1 && this.dropoutMask == null) {
-        this.dropoutMask = generateDropoutMask(() => {
-                             return tfc.onesLike(inputs as Tensor);
-                           }, this.dropout, training, 4) as Tensor[];
+        this.dropoutMask = generateDropoutMask(
+                               () => tfc.onesLike(inputs as Tensor),
+                               this.dropout, training, 4) as Tensor[];
       }
       if (0 < this.recurrentDropout && this.recurrentDropout < 1 &&
           this.recurrentDropoutMask == null) {
         this.recurrentDropoutMask =
-            generateDropoutMask(() => {
-              return tfc.onesLike(hTMinus1);
-            }, this.recurrentDropout, training, 4) as Tensor[];
+            generateDropoutMask(
+                () => tfc.onesLike(hTMinus1), this.recurrentDropout, training,
+                4) as Tensor[];
       }
-      const dpMask = this.dropoutMask as Tensor[];
-      const recDpMask = this.recurrentDropoutMask as Tensor[];
+      const dpMask = this.dropoutMask as [Tensor, Tensor, Tensor];
+      const recDpMask = this.recurrentDropoutMask as [Tensor, Tensor, Tensor];
 
       let i: Tensor;
       let f: Tensor;
@@ -2510,10 +2510,10 @@ function generateDropoutMask(
   if (count > 1) {
     const mask: Tensor[] = [];
     for (let i = 0; i < count; i++) {
-      mask.push(K.inTrainPhase(droppedInputs, ones, training = training));
+      mask.push(K.inTrainPhase(droppedInputs, ones, training));
     }
     return mask;
   } else {
-    return K.inTrainPhase(droppedInputs, ones, training = training);
+    return K.inTrainPhase(droppedInputs, ones, training);
   }
 }
