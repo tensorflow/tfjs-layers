@@ -2006,8 +2006,9 @@ export class LSTMCell extends RNNCell {
                 () => tfc.onesLike(hTMinus1), this.recurrentDropout, training,
                 4) as Tensor[];
       }
-      const dpMask = this.dropoutMask as [Tensor, Tensor, Tensor];
-      const recDpMask = this.recurrentDropoutMask as [Tensor, Tensor, Tensor];
+      const dpMask = this.dropoutMask as [Tensor, Tensor, Tensor, Tensor];
+      const recDpMask =
+          this.recurrentDropoutMask as [Tensor, Tensor, Tensor, Tensor];
 
       let i: Tensor;
       let f: Tensor;
