@@ -1185,7 +1185,14 @@ export class SimpleRNN extends RNN {
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
-      // TODO(cais): Add dropoutMask and recurrentDropoutMask.
+      if (this.cell.dropoutMask != null) {
+        tfc.dispose(this.cell.dropoutMask);
+        this.cell.dropoutMask = null;
+      }
+      if (this.cell.recurrentDropoutMask != null) {
+        tfc.dispose(this.cell.recurrentDropoutMask);
+        this.cell.recurrentDropoutMask = null;
+      }
       const mask = kwargs == null ? null : kwargs['mask'];
       const training = kwargs == null ? null : kwargs['training'];
       const initialState: Tensor[] =
@@ -1660,7 +1667,14 @@ export class GRU extends RNN {
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
-      // TODO(cais): Add dropoutMask and recurrentDropoutMask.
+      if (this.cell.dropoutMask != null) {
+        tfc.dispose(this.cell.dropoutMask);
+        this.cell.dropoutMask = null;
+      }
+      if (this.cell.recurrentDropoutMask != null) {
+        tfc.dispose(this.cell.recurrentDropoutMask);
+        this.cell.recurrentDropoutMask = null;
+      }
       const mask = kwargs == null ? null : kwargs['mask'];
       const training = kwargs == null ? null : kwargs['training'];
       const initialState: Tensor[] =
@@ -1980,7 +1994,6 @@ export class LSTMCell extends RNNCell {
       let hTMinus1 = inputs[1];    // Previous memory state.
       const cTMinus1 = inputs[2];  // Previous carry state.
       inputs = inputs[0];
-
       if (0 < this.dropout && this.dropout < 1 && this.dropoutMask == null) {
         this.dropoutMask = generateDropoutMask(
                                () => tfc.onesLike(inputs as Tensor),
@@ -2200,8 +2213,14 @@ export class LSTM extends RNN {
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
-      this.cell.dropoutMask = null;
-      this.cell.recurrentDropoutMask = null;
+      if (this.cell.dropoutMask != null) {
+        tfc.dispose(this.cell.dropoutMask);
+        this.cell.dropoutMask = null;
+      }
+      if (this.cell.recurrentDropoutMask != null) {
+        tfc.dispose(this.cell.recurrentDropoutMask);
+        this.cell.recurrentDropoutMask = null;
+      }
       const mask = kwargs == null ? null : kwargs['mask'];
       const training = kwargs == null ? null : kwargs['training'];
       const initialState: Tensor[] =
@@ -2512,8 +2531,9 @@ function generateDropoutMask(
     for (let i = 0; i < count; i++) {
       mask.push(K.inTrainPhase(droppedInputs, ones, training));
     }
+    mask.forEach(m => tfc.keep(m));
     return mask;
   } else {
-    return K.inTrainPhase(droppedInputs, ones, training);
+    return tfc.keep(K.inTrainPhase(droppedInputs, ones, training));
   }
 }

@@ -559,14 +559,16 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
-        // tslint:disable-next-line:no-unused-expression
-        simpleRNN.apply(input, kwargs) as Tensor;
-        if (dropout !== 0.0 && training) {
-          expect(tfc.randomUniform).toHaveBeenCalledTimes(1);
-          expect(tfc.randomUniform).toHaveBeenCalledWith(
-            [batchSize, inputSize], 0, 1, 'float32');
-        } else {
-          expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+        for (let i = 0; i < 2; i++){
+          // tslint:disable-next-line:no-unused-expression
+          simpleRNN.apply(input, kwargs) as Tensor;
+          if (dropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(1  * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, inputSize], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
         }
       });
     }
@@ -593,14 +595,16 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
-        // tslint:disable-next-line:no-unused-expression
-        simpleRNN.apply(input, kwargs) as Tensor;
-        if (recurrentDropout !== 0.0 && training) {
-          expect(tfc.randomUniform).toHaveBeenCalledTimes(1);
-          expect(tfc.randomUniform).toHaveBeenCalledWith(
-            [batchSize, units], 0, 1, 'float32');
-          } else {
-            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+        for (let i = 0; i < 2; i++){
+          // tslint:disable-next-line:no-unused-expression
+          simpleRNN.apply(input, kwargs) as Tensor;
+          if (recurrentDropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(1 * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, units], 0, 1, 'float32');
+            } else {
+              expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+            }
           }
       });
     }
@@ -869,14 +873,16 @@ describeMathCPUAndGPU('GRU Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
-        // tslint:disable-next-line:no-unused-expression
-        gru.apply(input, kwargs) as Tensor;
-        if (dropout !== 0.0 && training) {
-          expect(tfc.randomUniform).toHaveBeenCalledTimes(3);
-          expect(tfc.randomUniform).toHaveBeenCalledWith(
-            [batchSize, inputSize], 0, 1, 'float32');
-        } else {
-          expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+        for (let i = 0; i < 2; i++){
+          // tslint:disable-next-line:no-unused-expression
+          gru.apply(input, kwargs) as Tensor;
+          if (dropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(3  * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, inputSize], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
         }
       });
     }
@@ -903,15 +909,17 @@ describeMathCPUAndGPU('GRU Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
-        // tslint:disable-next-line:no-unused-expression
-        gru.apply(input, kwargs) as Tensor;
-        if (recurrentDropout !== 0.0 && training) {
-          expect(tfc.randomUniform).toHaveBeenCalledTimes(3);
-          expect(tfc.randomUniform).toHaveBeenCalledWith(
-            [batchSize, units], 0, 1, 'float32');
-      } else {
-        expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
-      }
+        for (let i = 0; i < 2; i++){
+          // tslint:disable-next-line:no-unused-expression
+          gru.apply(input, kwargs) as Tensor;
+          if (recurrentDropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(3 * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, units], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
+        }
       });
     }
   }
@@ -1192,14 +1200,16 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
-        // tslint:disable-next-line:no-unused-expression
-        lstm.apply(input, kwargs) as Tensor;
-        if (dropout !== 0.0 && training) {
-          expect(tfc.randomUniform).toHaveBeenCalledTimes(4);
-          expect(tfc.randomUniform).toHaveBeenCalledWith(
-            [batchSize, inputSize], 0, 1, 'float32');
-        } else {
-          expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+        for (let i = 0; i < 2; i++){
+          // tslint:disable-next-line:no-unused-expression
+          lstm.apply(input, kwargs) as Tensor;
+          if (dropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(4 * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, inputSize], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
         }
       });
     }
@@ -1226,15 +1236,17 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         }
         const input = tfc.ones([batchSize, timeSteps, inputSize]);
         spyOn(tfc, 'randomUniform').and.callThrough();
-        // tslint:disable-next-line:no-unused-expression
-        lstm.apply(input, kwargs) as Tensor;
-        if (recurrentDropout !== 0.0 && training) {
-          expect(tfc.randomUniform).toHaveBeenCalledTimes(4);
-          expect(tfc.randomUniform).toHaveBeenCalledWith(
-            [batchSize, units], 0, 1, 'float32');
-          } else {
-            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
-        }
+        for (let i = 0; i < 2; i++){
+          // tslint:disable-next-line:no-unused-expression
+          lstm.apply(input, kwargs) as Tensor;
+          if (recurrentDropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(4 * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, units], 0, 1, 'float32');
+            } else {
+              expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+            }
+          }
       });
     }
   }
