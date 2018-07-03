@@ -1766,14 +1766,16 @@ export class Model extends Container {
     //  Since the function are defined below in the scope, we don't have
     //  equivalents of PyKeras's `_make_train_funciton`.
 
-    // Creat a function that performs the following actions:
-    //   1) computes the losses,
-    //   2) add them to get the total loss,
-    //   3) call the optimizer computes the gradients of the Model's trainable
-    //      weights w.r.t. the total loss and update the variables.
-    //   4) calculate the metrics
-    //   5) return the values of the losses and metrics.
-    const trainFunction = (data: Tensor[]) => {
+    // Create a function that performs the following actions:
+    //   1) Computes the losses,
+    //   2) Adds them to get the total loss,
+    //   3) Calls the optimizer, which:
+    //      3a) Computes the gradients of the Model's trainable weights
+    //          with respect to the total loss and
+    //      3b) Updates the variables.
+    //   4) Calculates the metrics
+    //   5) Returns the values of the losses and metrics.
+    const trainFunction = (data: Tensor[]): Scalar[] => {
       const losses: Tensor[] = [];
       const lossValues: Scalar[] = [];
 

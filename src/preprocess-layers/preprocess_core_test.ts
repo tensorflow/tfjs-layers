@@ -19,7 +19,7 @@ import {expectArraysEqual, expectValuesInRange} from '@tensorflow/tfjs-core/dist
 import * as tfl from '../index';
 import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {VocabLayer} from './preprocess_core';
+import {VocabLayer, VocabLayerOptimizer} from './preprocess_core';
 
 // tslint:enable:max-line-length
 
@@ -158,4 +158,36 @@ describeMathCPUAndGPU('Vocab Layer: Tensor', () => {
   // This may require extending 'tensor_types.ts' in core.
 
   // DOING DOING DOING.  Make model.fit work with VocabLayer.
+});
+
+
+describeMathCPUAndGPU('Vocab Layer: fit', () => {
+  fit('Call with known tokens', () => {
+    const vocabLayer = tfl.layers.vocab({
+      knownVocabSize: 100,
+      hashVocabSize: 0,
+      optimizer: new VocabLayerOptimizer()
+    }) as VocabLayer;
+    vocabLayer.fit();
+
+    // DOING DOING DOING
+    // Extend .fit() to take inputStrings as input
+    // Extend VocabLayerOptimzier to count the strings and set the vocab
+    // DOING DOING DOING y18m07d02
+
+    // from training.ts 1681
+    // async fit(
+    //   x: Tensor|Tensor[]|{[inputName: string]: Tensor},
+    //   y: Tensor|Tensor[]|{[inputName: string]: Tensor},
+    //   config: ModelFitConfig = {}): Promise<History>
+
+
+    /*
+      const inputStrings =
+        tfl.preprocessing.stringTensor2d([['hello'], ['world']], [2, 1]);
+      const expectedOutput = tensor2d([[0], [1]], [2, 1], 'int32');
+      expectTensorsClose(
+        vocabLayer.apply(inputStrings, null) as Tensor, expectedOutput);
+    });*/
+  });
 });

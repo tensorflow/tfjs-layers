@@ -14,6 +14,7 @@
 
 // tslint:disable:max-line-length
 import {oneHot, serialization, Tensor, tensor, Tensor1D, tidy,} from '@tensorflow/tfjs-core';
+import {ConfigDict, Serializable} from '@tensorflow/tfjs-core/dist/serialization';
 
 import {Layer, LayerConfig} from '../engine/topology';
 import {ValueError} from '../errors';
@@ -84,11 +85,57 @@ export class OneHot extends PreprocessingLayer {
 }
 serialization.SerializationMap.register(OneHot);
 
+export class VocabLayerOptimizer extends Serializable {
+  static className = 'VocabLayerOptimizer';
+  public wordCount: Map<string, number>;
+
+  constructor() {
+    super();
+    this.wordCount = new Map<string, number>();
+  }
+
+  getConfig(): ConfigDict {
+    return {};
+  }
+
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
+    return new cls();
+  }
+
+  public updateCounts(words: StringTensor) {
+    // For every string in the StringTensor
+    for (const word in words.stringValues) {
+      // if string is a key in wordCount, update it.
+      if (this.wordCount.has(word)) {
+        this.wordCount.set(word, this.wordCount.get(word) + 1);
+      } else {
+        this.wordCount.set(word, 1);
+      }
+    }
+  }
+
+  // Modifies provided vocab to replace low-count words with higher-count words.
+  public updateVocab(vocab: Map<string, number>, knownVocabSize: number) {
+    // TODO(bileschi): There is room for optimization here by, e.g., only adding
+    // and removing values from the map and never moving them.
+    vocab.clear();
+    // Convert WordCount into (count, word) pairs and sort by descending count.
+    // Insert the top
+
+    // DOING DOING DOING DOING
+    // Complete this function.
+    // DOING DOING DOING DOING 7/3/2018
+  }
+}
+serialization.SerializationMap.register(VocabLayerOptimizer);
 
 export interface VocabLayerConfig extends LayerConfig {
   hashVocabSize?: number;
   knownVocabSize: number;
   vocabInitializer?: InitializerIdentifier|Initializer;
+  optimizer?: VocabLayerOptimizer;
 }
 
 // TODO(bileschi): Replace with the hash op used in c++ / py tensorflow here:
@@ -112,6 +159,8 @@ export class VocabLayer extends PreprocessingLayer {
   readonly hashVocabSize: number;
   readonly knownVocabSize: number;
   private vocabInitializer: Initializer;
+  private optimizer: VocabLayerOptimizer;
+
   readonly DEFAULT_VOCAB_INITIALIZER: InitializerIdentifier = 'rainbowVocab';
 
 
@@ -126,6 +175,9 @@ export class VocabLayer extends PreprocessingLayer {
     this.hashVocabSize = config.hashVocabSize | 0;
     this.vocabInitializer = getInitializer(
         config.vocabInitializer || this.DEFAULT_VOCAB_INITIALIZER);
+    // Like Model, optimzer may be undefined here if it was not provided via
+    // config.
+    this.optimizer = config.optimizer;
   }
 
   public build(inputShape: Shape|Shape[]): void {
@@ -143,6 +195,20 @@ export class VocabLayer extends PreprocessingLayer {
       }
     }
     this.built = true;
+  }
+
+  // TODO(bileschi): This should probably return a `History` or some other way
+  // of keeping track of what happens
+  public fit(x: StringTensor): void {
+    if (this.optimizer) {
+      this.optimizer.updateCounts(x);
+      this.optimizer.updateVocab(this.knownVocab);
+    } else {
+      throw new ValueError(
+          '.fit() called on VocabLayer with no optimizer' +
+          'VocabLayer must be configured with an optimizer to be fittable');
+    }
+    console.log(this.optimizer.getConfig());
   }
 
   strToIntFn(key: string): number {
