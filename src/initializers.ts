@@ -11,9 +11,9 @@
 // tslint:disable:max-line-length
 import {DataType, doc, eye, linalg, mul, ones, randomUniform, scalar, Scalar, serialization, Tensor, Tensor2D, tidy, truncatedNormal, zeros} from '@tensorflow/tfjs-core';
 
+import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
-import {getScalar} from './backend/state';
 import {NotImplementedError, ValueError} from './errors';
 import {Shape} from './types';
 import {checkStringTypeUnionValue, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
@@ -94,6 +94,10 @@ export class Constant extends Initializer {
   private value: number;
   constructor(config: ConstantConfig) {
     super();
+    if (typeof config !== 'object') {
+      throw new ValueError(
+          `Expected argument of type ConstantConfig but got ${config}`);
+    }
     this.value = config.value;
   }
 
