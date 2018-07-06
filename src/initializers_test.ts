@@ -82,7 +82,7 @@ describeMathCPU('Ones initializer', () => {
 });
 
 describeMathCPU('Constant initializer', () => {
-  fit('1D, from config dict', () => {
+  it('1D, from config dict', () => {
     const initializerConfig:
         serialization.ConfigDict = {className: 'Constant', config: {value: 5}};
     const init = getInitializer(initializerConfig);
@@ -92,7 +92,7 @@ describeMathCPU('Constant initializer', () => {
     expect(weights.dataSync()).toEqual(new Float32Array([5, 5, 5]));
   });
 
-  fit('1D, from builder function', () => {
+  it('1D, from builder function', () => {
     const init = tfl.initializers.constant({value: 5});
     const weights = init.apply([3], 'float32');
     expect(weights.shape).toEqual([3]);
@@ -100,13 +100,13 @@ describeMathCPU('Constant initializer', () => {
     expect(weights.dataSync()).toEqual(new Float32Array([5, 5, 5]));
   });
 
-  fit('1D, from builder function: passing a direct value throws error', () => {
+  it('1D, from builder function: passing a direct value throws error', () => {
     // tslint:disable-next-line:no-any
     expect(() => tfl.initializers.constant(5 as any))
         .toThrowError(/Expected.*ConstantConfig/);
   });
 
-  fit('2D, from config dict', () => {
+  it('2D, from config dict', () => {
     const initializerConfig:
         serialization.ConfigDict = {className: 'Constant', config: {value: 5}};
     const init = getInitializer(initializerConfig);
@@ -116,7 +116,7 @@ describeMathCPU('Constant initializer', () => {
     expect(weights.dataSync()).toEqual(new Float32Array([5, 5, 5, 5]));
   });
 
-  fit('Does not leak', () => {
+  it('Does not leak', () => {
     const initializerConfig:
         serialization.ConfigDict = {className: 'Constant', config: {value: 5}};
     expectNoLeakedTensors(
