@@ -12,15 +12,18 @@
  * Executor: Evaluates SymbolicTensor based on feeds.
  */
 
-import {Tensor} from '@tensorflow/tfjs-core';
+import {cast, Tensor} from '@tensorflow/tfjs-core';
+
 import {ValueError} from '../errors';
 import {Kwargs} from '../types';
+
 import {InputLayer, SymbolicTensor} from './topology';
 
 /**
  * Helper function to check the dtype and shape compatibility of a feed value.
  */
-function assertFeedCompatibility(key: SymbolicTensor, val: Tensor) {
+function assertFeedCompatibility(key: SymbolicTensor, val: Tensor): Tensor {
+  // 1. Check shape compatibility.  If shapes are not compatible, error.
   if (key.shape != null) {
     if (key.shape.length !== val.shape.length) {
       throw new ValueError(
@@ -35,6 +38,20 @@ function assertFeedCompatibility(key: SymbolicTensor, val: Tensor) {
             `incompatible with that of the key (${key.shape[i]}).`);
       }
     }
+  }
+  // 2. Check dtype compatibility.
+  if (key.dtype == null || key.dtype === val.dtype) {
+    //  2a.  If types match, return val tensor as is.
+    return val;
+  }
+  try {
+    //  2b. Attempt to convert to expected type.
+    return cast(val, key.dtype);
+  } catch (err) {
+    //  2c. If conversion fails, return helpful error.
+    throw new ValueError(
+        `The dtype of the feed (${val.dtype}) is incompatible with that of ` +
+        `the key '${key.name}' (${key.dtype}).`);
   }
 }
 
@@ -82,9 +99,9 @@ export class FeedDict {
    *   `FeedDict`.
    */
   add(key: SymbolicTensor, value: Tensor): FeedDict {
-    assertFeedCompatibility(key, value);
+    const typeCompatibleValue = assertFeedCompatibility(key, value);
     if (this.id2Value[key.id] == null) {
-      this.id2Value[key.id] = value;
+      this.id2Value[key.id] = typeCompatibleValue;
     } else {
       throw new ValueError(`Duplicate key: name=${key.name}, id=${key.id}`);
     }

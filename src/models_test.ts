@@ -18,7 +18,7 @@ import {deserialize} from './layers/serialization';
 import {loadModelInternal, ModelAndWeightsConfig, modelFromJSON} from './models';
 import {JsonDict} from './types';
 import {convertPythonicToTs} from './utils/serialization_utils';
-import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
+import {describeMathCPU, expectTensorsClose, describeMathCPUAndGPU} from './utils/test_utils';
 import {version as layersVersion} from './version';
 
 // tslint:enable:max-line-length
@@ -1114,6 +1114,23 @@ describeMathCPUAndGPU('Sequential', () => {
       const x = tensor2d([[0], [0], [1]], [3, 1], dtype as DataType);
       const y = embModel.predict(x) as Tensor;
       expect(y.dtype === dtype);
+    });
+
+    it(`compile() works with input dtype ${dtype}.`, () => {
+      const embModel = tfl.sequential();
+      embModel.add(tfl.layers.embedding(
+        {inputShape: [1], inputDim: 10, outputDim: 2}));
+      embModel.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+    });
+
+    it(`fit() works with input dtype ${dtype}.`, () => {
+      const embModel = tfl.sequential();
+      embModel.add(tfl.layers.embedding(
+        {inputShape: [1], inputDim: 10, outputDim: 2}));
+        embModel.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+        const x = tensor2d([[0]], [1, 1], dtype as DataType);
+        const y = tensor2d([[0.5, 0.5]], [1, 2], 'float32');
+        embModel.fit(x, y);
     });
   }
 
