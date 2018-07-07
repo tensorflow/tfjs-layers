@@ -1790,8 +1790,8 @@ export class Model extends Container implements tfc.InferenceModel {
     const callbacks = standardizeCallbacks(config.callbacks);
     const out = await this.fitLoop(
         trainFunction, ins, outLabels, batchSize, config.epochs, config.verbose,
-        callbacks, valFunction, valIns, config.shuffle, callbackMetrics, config.initialEpoch,
-        null, null);
+        callbacks, valFunction, valIns, config.shuffle, callbackMetrics, 
+        config.initialEpoch, null, null);
     if (needValidationDisposal) {
       valIns.forEach(tensor => tensor.dispose());
       inputs.forEach(tensor => tensor.dispose());
