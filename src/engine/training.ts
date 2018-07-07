@@ -1799,7 +1799,6 @@ export class Model extends Container implements tfc.InferenceModel {
     }
     return out;
     // TODO(cais): Add value to outLabels.
-    // TODO(cais): Add initialEpoch.
   }
 
   /**
