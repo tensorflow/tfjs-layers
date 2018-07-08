@@ -19,6 +19,7 @@ import {scalar, Tensor, tensor1d, tensor3d, Tensor4D, tensor4d, util} from '@ten
 import {DataFormat, PaddingMode} from '../common';
 import * as tfl from '../index';
 import {InitializerIdentifier} from '../initializers';
+import {Shape} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {conv1d, conv1dWithBias, conv2d, conv2dWithBias} from './convolutional';
@@ -100,17 +101,14 @@ describeMathCPUAndGPU('conv1d', () => {
   const paddingMode = 'valid';
   const strides = [2, 1];
   const dilations = [1, 2];
-  const expectations = [
-    [-10, -10, -40, -40],
-    [-30, -30, -60, -60]
-  ];
+  const expectations = [[-10, -10, -40, -40], [-30, -30, -60, -60]];
 
   for (let i = 0; i < strides.length; ++i) {
     const stride = strides[i];
     const dilationRate = dilations[i];
     const expectation = expectations[i];
     const testTitle = `outChannels=${outChannels}, stride=${stride}, ` +
-      `${paddingMode}, dilationRate=${dilationRate}, ${dataFormat}`;
+        `${paddingMode}, dilationRate=${dilationRate}, ${dataFormat}`;
     it(testTitle, () => {
       const x = tensor3d(xLength4Data, [1, 4, 1]);
       let kernelData: number[] = [];
@@ -119,8 +117,8 @@ describeMathCPUAndGPU('conv1d', () => {
       }
       const kernel =
           tfc.transpose(tensor3d(kernelData, [1, outChannels, 2]), [2, 0, 1]);
-      const y = conv1d(x, kernel, stride, paddingMode,
-          dataFormat, dilationRate);
+      const y =
+          conv1d(x, kernel, stride, paddingMode, dataFormat, dilationRate);
       expectTensorsClose(y, tensor3d(expectation, [1, 2, 2]));
     });
   }
@@ -977,46 +975,63 @@ describe('Cropping2D Layer', () => {
 describeMathCPU('UpSampling2D Layer: Symbolic', () => {
   const dataFormats: DataFormat[] = ['channelsFirst', 'channelsLast'];
   const sizes = [undefined, [2, 2]];
+  const imageSizeDeterminedArray: boolean[] = [true, false];
 
   for (const dataFormat of dataFormats) {
     for (const size of sizes) {
-      const testTitle = `size=${size}, ${dataFormat}`;
-      it(testTitle, () => {
-        const inputShape =
-            dataFormat === 'channelsFirst' ? [2, 16, 11, 9] : [2, 11, 9, 16];
-        const symbolicInput =
-            new tfl.SymbolicTensor('float32', inputShape, null, [], null);
+      for (const imageSizeDetermined of imageSizeDeterminedArray) {
+        const testTitle = `size=${size}, ${dataFormat}`;
+        it(testTitle, () => {
+          let inputShape: Shape;
+          if (imageSizeDetermined) {
+            inputShape = dataFormat === 'channelsFirst' ? [2, 16, 11, 9] :
+                                                          [2, 11, 9, 16];
+          } else {
+            inputShape = dataFormat === 'channelsFirst' ? [2, 16, null, null] :
+                                                          [2, null, null, 16];
+          }
+          const symbolicInput =
+              new tfl.SymbolicTensor('float32', inputShape, null, [], null);
 
-        const upSampling2dLayer = tfl.layers.upSampling2d({
-          size,
-          dataFormat,
+          const upSampling2dLayer = tfl.layers.upSampling2d({
+            size,
+            dataFormat,
+          });
+
+          const output =
+              upSampling2dLayer.apply(symbolicInput) as tfl.SymbolicTensor;
+
+          let outputRows: number;
+          let outputCols: number;
+          if (size === undefined) {
+            outputRows = 2;
+            outputCols = 2;
+          } else {
+            outputRows = size[0];
+            outputCols = size[1];
+          }
+          let expectedShape: [number, number, number, number];
+          if (imageSizeDetermined) {
+            if (dataFormat === 'channelsFirst') {
+              outputRows *= inputShape[2];
+              outputCols *= inputShape[3];
+              expectedShape = [2, 16, outputRows, outputCols];
+            } else {
+              outputRows *= inputShape[1];
+              outputCols *= inputShape[2];
+              expectedShape = [2, outputRows, outputCols, 16];
+            }
+          } else {
+            if (dataFormat === 'channelsFirst') {
+              expectedShape = [2, 16, null, null];
+            } else {
+              expectedShape = [2, null, null, 16];
+            }
+          }
+
+          expect(output.shape).toEqual(expectedShape);
         });
-
-        const output =
-            upSampling2dLayer.apply(symbolicInput) as tfl.SymbolicTensor;
-
-        let outputRows: number;
-        let outputCols: number;
-        if (size === undefined) {
-          outputRows = 2;
-          outputCols = 2;
-        } else {
-          outputRows = size[0];
-          outputCols = size[1];
-        }
-        let expectedShape: [number, number, number, number];
-        if (dataFormat === 'channelsFirst') {
-          outputRows *= inputShape[2];
-          outputCols *= inputShape[3];
-          expectedShape = [2, 16, outputRows, outputCols];
-        } else {
-          outputRows *= inputShape[1];
-          outputCols *= inputShape[2];
-          expectedShape = [2, outputRows, outputCols, 16];
-        }
-
-        expect(output.shape).toEqual(expectedShape);
-      });
+      }
     }
   }
 });
@@ -1043,7 +1058,7 @@ describe('UpSampling2D Layer', () => {
   });
 
 
-  it('check with channels last', () => {
+  it('channels last', () => {
     const layer =
         tfl.layers.upSampling2d({size: [2, 2], dataFormat: 'channelsLast'});
     const x = tensor4d(
@@ -1065,7 +1080,7 @@ describe('UpSampling2D Layer', () => {
   });
 
 
-  it('check with channels first', () => {
+  it('channels first', () => {
     const layer =
         tfl.layers.upSampling2d({size: [2, 2], dataFormat: 'channelsFirst'});
     const x = tensor4d(
@@ -1081,5 +1096,40 @@ describe('UpSampling2D Layer', () => {
         [1, 1, 4, 4]);
 
     expectTensorsClose(layer.apply(x, null) as Tensor, y);
+  });
+
+  it('undetermined image size', () => {
+    const layer =
+        tfl.layers.upSampling2d({size: [2, 2], dataFormat: 'channelsLast'});
+    const x1 = tensor4d(
+        [
+          [[[1], [2]], [[3], [4]]],
+        ],
+        [1, 2, 2, 1]);
+    const y1 = tensor4d(
+        [
+          [
+            [[1], [1], [2], [2]], [[1], [1], [2], [2]], [[3], [3], [4], [4]],
+            [[3], [3], [4], [4]]
+          ],
+        ],
+        [1, 4, 4, 1]);
+    expectTensorsClose(layer.apply(x1, null) as Tensor, y1);
+
+    const x2 = tensor4d(
+        [
+          [[[1], [2]]],
+        ],
+        [1, 1, 2, 1]);
+
+    const y2 = tensor4d(
+        [
+          [
+            [[1], [1], [2], [2]],
+            [[1], [1], [2], [2]],
+          ],
+        ],
+        [1, 2, 4, 1]);
+    expectTensorsClose(layer.apply(x2, null) as Tensor, y2);
   });
 });
