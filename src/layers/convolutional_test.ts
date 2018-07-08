@@ -980,7 +980,8 @@ describeMathCPU('UpSampling2D Layer: Symbolic', () => {
   for (const dataFormat of dataFormats) {
     for (const size of sizes) {
       for (const undeterminedDimension of undeterminedDimensionArray) {
-        const testTitle = `size=${size}, ${dataFormat}`;
+        const testTitle = `size = ${size}, ${dataFormat}` +
+            `undetermined dimension = ${JSON.stringify(undeterminedDimension)}`;
         it(testTitle, () => {
           let inputShape: Shape;
           if (undeterminedDimension == null) {
