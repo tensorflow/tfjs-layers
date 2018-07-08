@@ -975,18 +975,21 @@ describe('Cropping2D Layer', () => {
 describeMathCPU('UpSampling2D Layer: Symbolic', () => {
   const dataFormats: DataFormat[] = ['channelsFirst', 'channelsLast'];
   const sizes = [undefined, [2, 2]];
-  const imageSizeDeterminedArray: boolean[] = [true, false];
+  const undeterminedDimensionArray: string[] = [null, 'height', 'both'];
 
   for (const dataFormat of dataFormats) {
     for (const size of sizes) {
-      for (const imageSizeDetermined of imageSizeDeterminedArray) {
+      for (const undeterminedDimension of undeterminedDimensionArray) {
         const testTitle = `size=${size}, ${dataFormat}`;
         it(testTitle, () => {
           let inputShape: Shape;
-          if (imageSizeDetermined) {
+          if (undeterminedDimension == null) {
             inputShape = dataFormat === 'channelsFirst' ? [2, 16, 11, 9] :
                                                           [2, 11, 9, 16];
-          } else {
+          } else if (undeterminedDimension === 'height') {
+            inputShape = dataFormat === 'channelsFirst' ? [2, 16, null, 9] :
+                                                          [2, null, 9, 16];
+          } else if (undeterminedDimension === 'both') {
             inputShape = dataFormat === 'channelsFirst' ? [2, 16, null, null] :
                                                           [2, null, null, 16];
           }
@@ -1011,7 +1014,7 @@ describeMathCPU('UpSampling2D Layer: Symbolic', () => {
             outputCols = size[1];
           }
           let expectedShape: [number, number, number, number];
-          if (imageSizeDetermined) {
+          if (undeterminedDimension == null) {
             if (dataFormat === 'channelsFirst') {
               outputRows *= inputShape[2];
               outputCols *= inputShape[3];
@@ -1021,10 +1024,19 @@ describeMathCPU('UpSampling2D Layer: Symbolic', () => {
               outputCols *= inputShape[2];
               expectedShape = [2, outputRows, outputCols, 16];
             }
-          } else {
+          } else if (undeterminedDimension === 'height') {
+            if (dataFormat === 'channelsFirst') {
+              outputCols *= inputShape[3];
+              expectedShape = [2, 16, null, outputCols];
+            } else {
+              outputCols *= inputShape[2];
+              expectedShape = [2, null, outputCols, 16];
+            }
+          } else if (undeterminedDimension === 'both') {
             if (dataFormat === 'channelsFirst') {
               expectedShape = [2, 16, null, null];
             } else {
+              outputCols *= inputShape[2];
               expectedShape = [2, null, null, 16];
             }
           }
