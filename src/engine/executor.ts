@@ -50,8 +50,8 @@ function assertFeedCompatibility(key: SymbolicTensor, val: Tensor): Tensor {
   } catch (err) {
     //  2c. If conversion fails, return helpful error.
     throw new ValueError(
-        `The dtype of the feed (${val.dtype}) is incompatible with that of ` +
-        `the key '${key.name}' (${key.dtype}).`);
+        `The dtype of the feed (${val.dtype}) can not be cast to the dtype ` +
+        `of the key '${key.name}' (${key.dtype}).`);
   }
 }
 
@@ -99,9 +99,8 @@ export class FeedDict {
    *   `FeedDict`.
    */
   add(key: SymbolicTensor, value: Tensor): FeedDict {
-    const typeCompatibleValue = assertFeedCompatibility(key, value);
     if (this.id2Value[key.id] == null) {
-      this.id2Value[key.id] = typeCompatibleValue;
+      this.id2Value[key.id] = assertFeedCompatibility(key, value);
     } else {
       throw new ValueError(`Duplicate key: name=${key.name}, id=${key.id}`);
     }
