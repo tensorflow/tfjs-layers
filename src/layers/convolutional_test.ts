@@ -1111,7 +1111,7 @@ describe('UpSampling2D Layer', () => {
     expectTensorsClose(layer.apply(x, null) as Tensor, y);
   });
 
-  it('undetermined image size', () => {
+  it('varying input image sizes', () => {
     const layer =
         tfl.layers.upSampling2d({size: [2, 2], dataFormat: 'channelsLast'});
     const x1 = tensor4d(
