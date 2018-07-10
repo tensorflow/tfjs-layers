@@ -519,6 +519,7 @@ describeMathCPUAndGPU('Model.fit', () => {
            })
            .then(history => {
              expect(history.epoch).toEqual([1]);
+             expect(history.history.loss.length).toEqual(1);
              done();
            });
      });
