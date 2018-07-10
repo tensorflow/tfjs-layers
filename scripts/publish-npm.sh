@@ -20,15 +20,15 @@ set -e
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 ORIGIN=`git config --get remote.origin.url`
 
-# if [ "$BRANCH" != "master" ]; then
-#   echo "Error: Switch to the master branch before publishing."
-#   exit
-# fi
+if [ "$BRANCH" != "master" ]; then
+  echo "Error: Switch to the master branch before publishing."
+  exit
+fi
 
-# if ! [[ "$ORIGIN" =~ tensorflow/tfjs-layers ]]; then
-#   echo "Error: Switch to the main repo (tensorflow/tfjs-layers)."
-#   exit
-# fi
+if ! [[ "$ORIGIN" =~ tensorflow/tfjs-layers ]]; then
+  echo "Error: Switch to the main repo (tensorflow/tfjs-layers)."
+  exit
+fi
 
 yarn build-npm
 ./scripts/make-version # This is for safety in case you forgot to do 2).
