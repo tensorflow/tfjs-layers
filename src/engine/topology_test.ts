@@ -16,8 +16,9 @@ import {NamedTensorMap, Shape} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 import {LayerVariable, onesVariable, zerosVariable} from '../variables';
 
+import {Container, ContainerConfig, loadWeightsFromJson, loadWeightsFromNamedTensorMap} from './container';
 import {execute, FeedDict} from './executor';
-import {Container, ContainerConfig, getSourceInputs, InputSpec, Layer, LayerConfig, loadWeightsFromJson, loadWeightsFromNamedTensorMap, Node} from './topology';
+import {getSourceInputs, InputSpec, Layer, LayerConfig, Node} from './topology';
 
 // tslint:enable
 
