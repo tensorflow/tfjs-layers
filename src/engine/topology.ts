@@ -983,6 +983,12 @@ export abstract class Layer extends serialization.Serializable {
         let output: SymbolicTensor|SymbolicTensor[];
         const outputDType = guessOutputDType(inputs);
 
+        // Check compatibilty between the input's shape and this layer's
+        if (Array.isArray(inputs) && inputs.length === 1 ||
+            !Array.isArray(inputs)) {
+          this.warnOnIncompatibleInputShape(inputShape as Shape);
+        }
+
         if (outputShape != null && outputShape.length > 0 &&
             Array.isArray(outputShape[0])) {
           // We have multiple output shapes. Create multiple output tensors.
@@ -1018,6 +1024,40 @@ export abstract class Layer extends serialization.Serializable {
         return output;
       }
     });
+  }
+
+  /**
+   * Check compatibility between input shape and this layer's batchInputShape.
+   *
+   * Print warning if any incompatibility is found.
+   *
+   * @param inputShape Input shape to be checked.
+   */
+  protected warnOnIncompatibleInputShape(inputShape: Shape) {
+    if (this.batchInputShape == null) {
+      return;
+    } else if (inputShape.length !== this.batchInputShape.length) {
+      console.warn(
+          `The rank of the input tensor provided (shape: ` +
+          `${JSON.stringify(inputShape)}) does not match that of the ` +
+          `batchInputShape (${JSON.stringify(this.batchInputShape)}) ` +
+          `of the layer ${this.name}`);
+    } else {
+      let dimMismatch = false;
+      this.batchInputShape.forEach((dimension, i) => {
+        if (dimension != null && inputShape[i] != null &&
+            inputShape[i] !== dimension) {
+          dimMismatch = true;
+        }
+      });
+      if (dimMismatch) {
+        console.warn(
+            `The shape of the input tensor ` +
+            `(${JSON.stringify(inputShape)}) does not ` +
+            `match the expectation of layer ${this.name}: ` +
+            `${JSON.stringify(this.batchInputShape)}`);
+      }
+    }
   }
 
   /**
