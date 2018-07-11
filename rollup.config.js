@@ -38,7 +38,9 @@ const PREAMBLE = `/**
  */`;
 
 function minify() {
-  return uglify({output: {preamble: PREAMBLE}});
+  return uglify(
+      {output: {preamble: PREAMBLE}},
+  );
 }
 
 function config({plugins = [], output = {}}) {
@@ -82,8 +84,12 @@ function config({plugins = [], output = {}}) {
 
 export default [
   config({
-    output:
-        {format: 'umd', name: 'tf', extend: true, file: 'dist/tf-layers.js'}
+    output: {
+      format: 'umd',
+      name: 'tf',
+      extend: true,
+      file: 'dist/tf-layers.js',
+    }
   }),
   config({
     plugins: [minify()],
