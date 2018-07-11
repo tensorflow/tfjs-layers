@@ -984,10 +984,9 @@ export abstract class Layer extends serialization.Serializable {
         const outputDType = guessOutputDType(inputs);
 
         // Check compatibilty between the input's shape and this layer's
-        if (Array.isArray(inputs) && inputs.length === 1 ||
-            !Array.isArray(inputs)) {
-          this.warnOnIncompatibleInputShape(inputShape as Shape);
-        }
+        this.warnOnIncompatibleInputShape(
+            Array.isArray(inputs) ? inputShape[0] as Shape :
+                                    inputShape as Shape);
 
         if (outputShape != null && outputShape.length > 0 &&
             Array.isArray(outputShape[0])) {

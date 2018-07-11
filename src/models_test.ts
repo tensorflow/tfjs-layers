@@ -1114,6 +1114,19 @@ describeMathCPUAndGPU('Sequential', () => {
         .toMatch(/rank .*null,8.* does not match .*null,3,7.* /);
   });
 
+  it('Compatible inputShape leads to NO warning', () => {
+    let recordedWarnMessage: string;
+    spyOn(console, 'warn')
+        .and.callFake((message: string) => recordedWarnMessage = message);
+    tfl.sequential({
+      layers: [
+        tfl.layers.reshape({targetShape: [8], inputShape: [2, 4]}),
+        tfl.layers.dense({units: 1, inputShape: [8]})
+      ]
+    });
+    expect(recordedWarnMessage).toEqual(undefined);
+  });
+
   it('throws error if try to pop too many layers', () => {
     const model = tfl.sequential();
     expect(() => model.pop()).toThrowError(/There are no layers in the model/);

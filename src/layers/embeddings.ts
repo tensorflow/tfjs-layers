@@ -141,7 +141,7 @@ export class Embedding extends Layer {
   }
 
   // Override warnOnIncompatibleInputShape because an embedding layer allows
-  // the input to be of a different rank from the initial value.
+  // the input to have varying ranks.
   protected warnOnIncompatibleInputShape(inputShape: Shape) {}
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
