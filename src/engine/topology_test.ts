@@ -550,9 +550,8 @@ describeMathCPU('Layer', () => {
 
     it('Incompatible inputShape leads to warning', () => {
       let recordedWarnMessage: string;
-      spyOn(console, 'warn').and.callFake((message: string) => {
-        recordedWarnMessage = message;
-      });
+      spyOn(console, 'warn')
+          .and.callFake((message: string) => recordedWarnMessage = message);
       const layer1 = tfl.layers.dense({units: 2, inputShape: [5]});
       layer1.apply(tfl.input({shape: [4]}));
       expect(recordedWarnMessage)
@@ -561,9 +560,8 @@ describeMathCPU('Layer', () => {
 
     it('Incompatible inputShape leads to warning: batchInputShape', () => {
       let recordedWarnMessage: string;
-      spyOn(console, 'warn').and.callFake((message: string) => {
-        recordedWarnMessage = message;
-      });
+      spyOn(console, 'warn')
+          .and.callFake((message: string) => recordedWarnMessage = message);
       const layer1 = tfl.layers.dense({units: 2, batchInputShape: [2, 3, 5]});
       layer1.apply(tfl.input({shape: [4, 5]}));
       expect(recordedWarnMessage)
@@ -573,9 +571,8 @@ describeMathCPU('Layer', () => {
 
     it('Incompatible inputShape rank leads to warning', () => {
       let recordedWarnMessage: string;
-      spyOn(console, 'warn').and.callFake((message: string) => {
-        recordedWarnMessage = message;
-      });
+      spyOn(console, 'warn')
+          .and.callFake((message: string) => recordedWarnMessage = message);
       const layer1 = tfl.layers.dense({units: 2, inputShape: [5]});
       layer1.apply(tfl.input({shape: [4, 3]}));
       expect(recordedWarnMessage)
@@ -584,9 +581,8 @@ describeMathCPU('Layer', () => {
 
     it('Incompatible inputShape rank leads to warning: batchInputShape', () => {
       let recordedWarnMessage: string;
-      spyOn(console, 'warn').and.callFake((message: string) => {
-        recordedWarnMessage = message;
-      });
+      spyOn(console, 'warn')
+          .and.callFake((message: string) => recordedWarnMessage = message);
       const layer1 = tfl.layers.dense({units: 2, batchInputShape: [3, 5]});
       layer1.apply(tfl.input({shape: [4, 3]}));
       expect(recordedWarnMessage)
