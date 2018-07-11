@@ -722,8 +722,6 @@ export abstract class Container extends Layer {
     return modelConfig;
   }
 
-
-
   /**
    * Returns a JSON string containing the network configuration.
    *
