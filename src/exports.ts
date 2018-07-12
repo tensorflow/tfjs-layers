@@ -15,7 +15,9 @@
 // tslint:disable:max-line-length
 import {io} from '@tensorflow/tfjs-core';
 
-import {ContainerConfig, Input, InputConfig, SymbolicTensor} from './engine/topology';
+import {ContainerConfig} from './engine/container';
+import {Input, InputConfig,} from './engine/input_layer';
+import {SymbolicTensor} from './engine/topology';
 import {Model} from './engine/training';
 import {loadModelInternal, Sequential, SequentialConfig} from './models';
 
