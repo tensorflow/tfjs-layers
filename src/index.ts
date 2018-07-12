@@ -29,5 +29,6 @@ export {GRUCellLayerConfig, GRULayerConfig, LSTMCellLayerConfig, LSTMLayerConfig
 export {Logs} from './logs';
 export {ModelAndWeightsConfig, Sequential, SequentialConfig} from './models';
 export {Shape} from './types';
+export {LayerVariable} from './variables';
 export {version as version_layers} from './version';
 export {constraints, initializers, layers, metrics, regularizers};
