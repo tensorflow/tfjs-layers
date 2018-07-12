@@ -59,7 +59,7 @@ function exportCNNModel(exportPath: string): void {
 function exportDepthwiseCNNModel(exportPath: string): void {
   const model = tfl.sequential();
 
-  // Cover separable and non-separable convoluational layers.
+  // Cover depthwise 2D convoluational layer.
   model.add(tfl.layers.depthwiseConv2d({
     depthMultiplier: 2,
     kernelSize: [3, 3],
