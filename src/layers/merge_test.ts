@@ -85,8 +85,8 @@ describeMathCPUAndGPU('Add-Functional', () => {
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = tfl.layers.input({shape: [2, 2]});
-    const input2 = tfl.layers.input({shape: [2, 2]});
+    const input1 = tfl.input({shape: [2, 2]});
+    const input2 = tfl.input({shape: [2, 2]});
     const output =
         tfl.layers.add().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
@@ -100,7 +100,7 @@ describeMathCPUAndGPU('Add-Functional', () => {
   });
 
   it('predict() with functional model with Add layer works', () => {
-    const input = tfl.layers.input({shape: [24, 24, 3]});
+    const input = tfl.input({shape: [24, 24, 3]});
     const conv1 =
         tfl.layers.conv2d({filters: 4, kernelSize: [3, 3]}).apply(input) as
         tfl.SymbolicTensor;
@@ -127,8 +127,8 @@ describeMathCPUAndGPU('Multiply-Functional', () => {
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = tfl.layers.input({shape: [2, 2]});
-    const input2 = tfl.layers.input({shape: [2, 2]});
+    const input1 = tfl.input({shape: [2, 2]});
+    const input2 = tfl.input({shape: [2, 2]});
     const output =
         tfl.layers.multiply().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
@@ -154,8 +154,8 @@ describeMathCPUAndGPU('Average-Functional', () => {
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = tfl.layers.input({shape: [2, 2]});
-    const input2 = tfl.layers.input({shape: [2, 2]});
+    const input1 = tfl.input({shape: [2, 2]});
+    const input2 = tfl.input({shape: [2, 2]});
     const output =
         tfl.layers.average().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
@@ -181,8 +181,8 @@ describeMathCPUAndGPU('Maximum-Functional', () => {
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = tfl.layers.input({shape: [2, 2]});
-    const input2 = tfl.layers.input({shape: [2, 2]});
+    const input1 = tfl.input({shape: [2, 2]});
+    const input2 = tfl.input({shape: [2, 2]});
     const output =
         tfl.layers.maximum().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
@@ -208,8 +208,8 @@ describeMathCPUAndGPU('Minimum-Functional', () => {
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = tfl.layers.input({shape: [2, 2]});
-    const input2 = tfl.layers.input({shape: [2, 2]});
+    const input1 = tfl.input({shape: [2, 2]});
+    const input2 = tfl.input({shape: [2, 2]});
     const output =
         tfl.layers.minimum().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 2]);
@@ -236,8 +236,8 @@ describeMathCPUAndGPU('Concatenate-Functional', () => {
   });
 
   it('Calling with symbolic tensors returns symbolic tensor', () => {
-    const input1 = tfl.layers.input({shape: [2, 3]});
-    const input2 = tfl.layers.input({shape: [2, 4]});
+    const input1 = tfl.input({shape: [2, 3]});
+    const input2 = tfl.input({shape: [2, 4]});
     const output =
         tfl.layers.concatenate().apply([input1, input2]) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([null, 2, 7]);

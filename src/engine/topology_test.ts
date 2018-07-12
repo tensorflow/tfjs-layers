@@ -902,7 +902,7 @@ describeMathCPU('Layer', () => {
 //   (b/74015805).
 describeMathCPUAndGPU('loadWeightsFromJson', () => {
   const inputTensor =
-      tfl.layers.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
+      tfl.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
 
   it('One layer', () => {
     const denseLayer =
@@ -1084,7 +1084,7 @@ describeMathCPUAndGPU('loadWeightsFromJson', () => {
 
 describeMathCPUAndGPU('loadWeightsFromNamedTensorMap', () => {
   const inputTensor =
-      tfl.layers.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
+      tfl.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
 
   it('One layer', () => {
     const denseLayer =
