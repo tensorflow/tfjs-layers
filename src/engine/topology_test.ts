@@ -1034,7 +1034,7 @@ describeMathCPU('InputLayer', () => {
 describe('Input()', () => {
   it('throws an exception if neither shape nor batchShape are specified',
      () => {
-       expect(() => tfl.layers.input({}))
+       expect(() => tfl.input({}))
            .toThrowError(/Please provide to Input either/);
      });
 
@@ -1044,7 +1044,7 @@ describe('Input()', () => {
   const dtype = 'float32';
 
   it('returns an initialized symbolicTensor given a shape.', () => {
-    const symbolicTensor = tfl.layers.input({shape, name, dtype});
+    const symbolicTensor = tfl.input({shape, name, dtype});
     expect(symbolicTensor instanceof tfl.SymbolicTensor).toBe(true);
     expect(symbolicTensor.shape).toEqual([null].concat(shape));
     expect(symbolicTensor.name).toMatch(/abc/);
@@ -1052,12 +1052,12 @@ describe('Input()', () => {
   });
 
   it('returns a SymbolicTensor given a batchShape', () => {
-    const symbolicTensor = tfl.layers.input({batchShape});
+    const symbolicTensor = tfl.input({batchShape});
     expect(symbolicTensor.shape).toEqual(batchShape);
   });
 
   it('throws exception if both shape and batchShape are specified.', () => {
-    expect(() => tfl.layers.input({shape, batchShape}))
+    expect(() => tfl.input({shape, batchShape}))
         .toThrowError(/Please provide either a `shape`/);
   });
 
@@ -1283,7 +1283,7 @@ describeMathCPUAndGPU('Container', () => {
 
   it('weights gets all weights.', () => {
     const inputShape = [1, 6];
-    const inputLayer = tfl.layers.input({shape: inputShape});
+    const inputLayer = tfl.input({shape: inputShape});
     const layer1 = tfl.layers.dense({units: 2, useBias: false});
     const layer2 = tfl.layers.dense({units: 1, useBias: true});
     const output = layer2.apply(layer1.apply(inputLayer)) as tfl.SymbolicTensor;
@@ -1298,7 +1298,7 @@ describeMathCPUAndGPU('Container', () => {
 
   it('trainableWeights and nonTrainableWeights.', () => {
     const inputShape = [1, 6];
-    const inputLayer = tfl.layers.input({shape: inputShape});
+    const inputLayer = tfl.input({shape: inputShape});
     const layer1 = tfl.layers.dense({units: 2, useBias: false});
     const layer2 = tfl.layers.dense({units: 1, useBias: true});
     const output = layer2.apply(layer1.apply(inputLayer)) as tfl.SymbolicTensor;
@@ -1315,7 +1315,7 @@ describeMathCPUAndGPU('Container', () => {
   it('call() executes all layers.', () => {
     const inputShape = [1, 6];
     const finalShape = [3, 2];
-    const inputLayer = tfl.layers.input({shape: inputShape});
+    const inputLayer = tfl.input({shape: inputShape});
     const layer1 = tfl.layers.reshape({name: 'layer1', targetShape: [2, 3]});
     const layer2 =
         tfl.layers.reshape({name: 'layer2', targetShape: finalShape});
@@ -1331,7 +1331,7 @@ describeMathCPUAndGPU('Container', () => {
   it('apply() executes all layers with concrete tensors.', () => {
     const inputShape = [1, 6];
     const finalShape = [3, 2];
-    const inputLayer = tfl.layers.input({shape: inputShape});
+    const inputLayer = tfl.input({shape: inputShape});
     const layer1 = tfl.layers.reshape({name: 'layer1', targetShape: [2, 3]});
     const layer2 =
         tfl.layers.reshape({name: 'layer2', targetShape: finalShape});
@@ -1347,7 +1347,7 @@ describeMathCPUAndGPU('Container', () => {
   it('apply() executes all layers with symbolic tensors.', () => {
     const inputShape = [1, 6];
     const finalShape = [3, 2];
-    const inputLayer = tfl.layers.input({shape: inputShape});
+    const inputLayer = tfl.input({shape: inputShape});
     const layer1 = tfl.layers.reshape({name: 'layer1', targetShape: [2, 3]});
     const layer2 =
         tfl.layers.reshape({name: 'layer2', targetShape: finalShape});
@@ -1356,7 +1356,7 @@ describeMathCPUAndGPU('Container', () => {
     const container =
         new ContainerForTest({inputs: [inputLayer], outputs: [output]});
 
-    const newInput = tfl.layers.input({shape: [1, 6]});
+    const newInput = tfl.input({shape: [1, 6]});
     const symbolicResult = container.apply(newInput);
     expect(symbolicResult instanceof tfl.SymbolicTensor).toEqual(true);
     const concreteResult = execute(
@@ -1369,7 +1369,7 @@ describeMathCPUAndGPU('Container', () => {
   it('computeOutputShape() computes the correct outputShape', () => {
     const inputShape = [2, 3];
     const finalShape = [3, 2];
-    const inputLayer = tfl.layers.input({shape: inputShape});
+    const inputLayer = tfl.input({shape: inputShape});
     const layer = tfl.layers.reshape({targetShape: finalShape});
     const output = layer.apply(inputLayer) as tfl.SymbolicTensor;
     const container =
@@ -1385,7 +1385,7 @@ describeMathCPUAndGPU('Container', () => {
 
   it('trainableWeights tracks only trainable weights', () => {
     const inputShape = [2, 2];
-    const inputLayer = tfl.layers.input({shape: inputShape});
+    const inputLayer = tfl.input({shape: inputShape});
     const layer1 = tfl.layers.reshape({targetShape: [4], name: 'reshapeLayer'});
     const layer1Output = layer1.apply(inputLayer) as tfl.SymbolicTensor;
     const layer2 =
@@ -1402,7 +1402,7 @@ describeMathCPUAndGPU('Container', () => {
 
   function createSimpleTwoLayerContainer(): [Container, Layer[]] {
     const inputShape = [2, 2];
-    const inputLayer = tfl.layers.input({shape: inputShape});
+    const inputLayer = tfl.input({shape: inputShape});
     const layer1 = tfl.layers.reshape({targetShape: [4], name: 'reshapeLayer'});
     const layer1Output = layer1.apply(inputLayer) as tfl.SymbolicTensor;
     const layer2 =
@@ -1451,7 +1451,7 @@ describeMathCPUAndGPU('Container.calculateLosses', () => {
   function createSimpleOneLayerContainer(useRegularizers: boolean):
       [Container, Layer[]] {
     const inputShape = [2];
-    const inputLayer = tfl.layers.input({shape: inputShape});
+    const inputLayer = tfl.input({shape: inputShape});
     const kernelRegularizer =
         useRegularizers ? tfl.regularizers.l1({l1: 2}) : null;
     const biasRegularizer =
@@ -1487,7 +1487,7 @@ describeMathCPUAndGPU('Container.calculateLosses', () => {
 
 describe('getSourceInputs()', () => {
   it('returns the single source input', () => {
-    const inputTensor = tfl.layers.input({shape: [1]});
+    const inputTensor = tfl.input({shape: [1]});
     const layer1 = new LayerForTest({name: 'layer1'});
     const layer2 = new LayerForTest({name: 'layer2'});
     const output =
@@ -1496,8 +1496,8 @@ describe('getSourceInputs()', () => {
   });
 
   it('returns all inputs', () => {
-    const input1 = tfl.layers.input({shape: [1], name: 'input1'});
-    const input2 = tfl.layers.input({shape: [1], name: 'input2'});
+    const input1 = tfl.input({shape: [1], name: 'input1'});
+    const input2 = tfl.input({shape: [1], name: 'input2'});
     const layer = new LayerForTest({});
     const output1 = layer.apply(input1) as tfl.SymbolicTensor;
     const output2 = layer.apply(input2) as tfl.SymbolicTensor;
@@ -1510,7 +1510,7 @@ describe('getSourceInputs()', () => {
 //   (b/74015805).
 describeMathCPUAndGPU('loadWeightsFromJson', () => {
   const inputTensor =
-      tfl.layers.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
+      tfl.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
 
   it('One layer', () => {
     const denseLayer =
@@ -1692,7 +1692,7 @@ describeMathCPUAndGPU('loadWeightsFromJson', () => {
 
 describeMathCPUAndGPU('loadWeightsFromNamedTensorMap', () => {
   const inputTensor =
-      tfl.layers.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
+      tfl.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
 
   it('One layer', () => {
     const denseLayer =
