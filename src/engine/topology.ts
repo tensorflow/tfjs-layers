@@ -982,8 +982,6 @@ export abstract class Layer extends serialization.Serializable {
         const outputShape = this.computeOutputShape(inputShape);
         let output: SymbolicTensor|SymbolicTensor[];
         const outputDType = guessOutputDType(inputs);
-
-        // Check compatibilty between the input's shape and this layer's
         this.warnOnIncompatibleInputShape(
             Array.isArray(inputs) ? inputShape[0] as Shape :
                                     inputShape as Shape);
