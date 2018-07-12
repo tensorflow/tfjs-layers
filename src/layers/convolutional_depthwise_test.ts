@@ -157,7 +157,6 @@ describeMathCPU('DepthwiseConv2D-Symbolic', () => {
     const tsConfig = convertPythonicToTs(pythonicConfig) as any;
     const layerPrime = tfl.layers.depthwiseConv2d(tsConfig);
     const configPrime = layerPrime.getConfig();
-    console.log(JSON.stringify(configPrime));  // DEBUG
     expect(configPrime.kernelSize).toEqual([3, 3]);
     expect(configPrime.depthMultiplier).toEqual(4);
     expect(configPrime.activation).toEqual('relu');
