@@ -208,10 +208,7 @@ export class DepthwiseConv2D extends BaseConv {
 
   getConfig(): serialization.ConfigDict {
     const config = super.getConfig();
-    delete config['filters'];
-    delete config['kernelInitializer'];
-    delete config['kernelRegularizer'];
-    delete config['kernelConstraint'];
+    delete config['rank'];
     config['depthMultiplier'] = this.depthMultiplier;
     config['depthwiseInitializer'] =
         serializeInitializer(this.depthwiseInitializer);
