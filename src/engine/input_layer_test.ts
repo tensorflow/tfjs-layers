@@ -201,7 +201,7 @@ class LayerForTest extends tfl.layers.Layer {
 describe('Input()', () => {
   it('throws an exception if neither shape nor batchShape are specified',
      () => {
-       expect(() => tfl.input({}))
+       expect(() => tfl.layers.input({}))
            .toThrowError(/Please provide to Input either/);
      });
 
@@ -211,7 +211,7 @@ describe('Input()', () => {
   const dtype = 'float32';
 
   it('returns an initialized symbolicTensor given a shape.', () => {
-    const symbolicTensor = tfl.input({shape, name, dtype});
+    const symbolicTensor = tfl.layers.input({shape, name, dtype});
     expect(symbolicTensor instanceof tfl.SymbolicTensor).toBe(true);
     expect(symbolicTensor.shape).toEqual([null].concat(shape));
     expect(symbolicTensor.name).toMatch(/abc/);
@@ -219,12 +219,12 @@ describe('Input()', () => {
   });
 
   it('returns a SymbolicTensor given a batchShape', () => {
-    const symbolicTensor = tfl.input({batchShape});
+    const symbolicTensor = tfl.layers.input({batchShape});
     expect(symbolicTensor.shape).toEqual(batchShape);
   });
 
   it('throws exception if both shape and batchShape are specified.', () => {
-    expect(() => tfl.input({shape, batchShape}))
+    expect(() => tfl.layers.input({shape, batchShape}))
         .toThrowError(/Please provide either a `shape`/);
   });
 
