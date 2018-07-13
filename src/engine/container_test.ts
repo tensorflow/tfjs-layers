@@ -117,7 +117,7 @@ describeMathCPUAndGPU('Container', () => {
 
   beforeEach(() => {
     inputTensor =
-        tfl.layers.input({shape: [1], name: inputLayerName, dtype: 'float32'});
+        tfl.input({shape: [1], name: inputLayerName, dtype: 'float32'});
     layer = new LayerForTest({name: layerName});
     output = layer.apply(inputTensor) as tfl.SymbolicTensor;
     simpleContainer = new ContainerForTest(

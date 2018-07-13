@@ -1753,10 +1753,10 @@ describeMathCPUAndGPU('Load weights', () => {
 describeMathCPUAndGPU('Model.execute', () => {
   function createFunctionalModel():
       [tfl.Model, {[name: string]: tfl.SymbolicTensor}] {
-    const input1 = tfl.layers.input({shape: [2, 3]});
+    const input1 = tfl.input({shape: [2, 3]});
     const reshape1 = tfl.layers.reshape({targetShape: [3, 2]}).apply(input1) as
         tfl.SymbolicTensor;
-    const input2 = tfl.layers.input({shape: [3, 4]});
+    const input2 = tfl.input({shape: [3, 4]});
     const concat =
         tfl.layers.concatenate({axis: -1}).apply([reshape1, input2]) as
         tfl.SymbolicTensor;

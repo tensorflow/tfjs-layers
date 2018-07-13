@@ -553,7 +553,7 @@ describeMathCPU('Layer', () => {
       spyOn(console, 'warn')
           .and.callFake((message: string) => recordedWarnMessage = message);
       const layer1 = tfl.layers.dense({units: 2, inputShape: [5]});
-      layer1.apply(tfl.layers.input({shape: [4]}));
+      layer1.apply(tfl.input({shape: [4]}));
       expect(recordedWarnMessage)
           .toMatch(/shape of the input tensor .*null,4.* not match .*null,5.*/);
     });
@@ -563,7 +563,7 @@ describeMathCPU('Layer', () => {
       spyOn(console, 'warn')
           .and.callFake((message: string) => recordedWarnMessage = message);
       const layer1 = tfl.layers.dense({units: 2, batchInputShape: [2, 3, 5]});
-      layer1.apply(tfl.layers.input({shape: [4, 5]}));
+      layer1.apply(tfl.input({shape: [4, 5]}));
       expect(recordedWarnMessage)
           .toMatch(
               /shape of the input tensor .*null,4,5.* not match .*2,3,5.*/);
@@ -574,7 +574,7 @@ describeMathCPU('Layer', () => {
       spyOn(console, 'warn')
           .and.callFake((message: string) => recordedWarnMessage = message);
       const layer1 = tfl.layers.dense({units: 2, inputShape: [5]});
-      layer1.apply(tfl.layers.input({shape: [4, 3]}));
+      layer1.apply(tfl.input({shape: [4, 3]}));
       expect(recordedWarnMessage)
           .toMatch(/rank .*null,4,3.* does not match .*null,5.*/);
     });
@@ -584,7 +584,7 @@ describeMathCPU('Layer', () => {
       spyOn(console, 'warn')
           .and.callFake((message: string) => recordedWarnMessage = message);
       const layer1 = tfl.layers.dense({units: 2, batchInputShape: [3, 5]});
-      layer1.apply(tfl.layers.input({shape: [4, 3]}));
+      layer1.apply(tfl.input({shape: [4, 3]}));
       expect(recordedWarnMessage)
           .toMatch(/rank .*null,4,3.* does not match .*3,5.*/);
     });
@@ -594,7 +594,7 @@ describeMathCPU('Layer', () => {
       spyOn(console, 'warn')
           .and.callFake((message: string) => recordedWarnMessage = message);
       const layer1 = tfl.layers.dense({units: 2, inputShape: [5]});
-      layer1.apply(tfl.layers.input({shape: [5]}));
+      layer1.apply(tfl.input({shape: [5]}));
       expect(recordedWarnMessage).toEqual(undefined);
     });
   });
@@ -902,7 +902,7 @@ describeMathCPU('Layer', () => {
 //   (b/74015805).
 describeMathCPUAndGPU('loadWeightsFromJson', () => {
   const inputTensor =
-      tfl.layers.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
+      tfl.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
 
   it('One layer', () => {
     const denseLayer =
@@ -1084,7 +1084,7 @@ describeMathCPUAndGPU('loadWeightsFromJson', () => {
 
 describeMathCPUAndGPU('loadWeightsFromNamedTensorMap', () => {
   const inputTensor =
-      tfl.layers.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
+      tfl.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
 
   it('One layer', () => {
     const denseLayer =
