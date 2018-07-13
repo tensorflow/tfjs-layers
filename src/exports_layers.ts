@@ -655,7 +655,7 @@ export function timeDistributed(config: WrapperLayerConfig): Layer {
   return new TimeDistributed(config);
 }
 
-// Alises for pooling.
+// Aliases for pooling.
 export const globalMaxPool1d = globalMaxPooling1d;
 export const globalMaxPool2d = globalMaxPooling2d;
 export const maxPool1d = maxPooling1d;
