@@ -16,6 +16,7 @@
 import {ones, scalar, serialization, Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
 
 import {Layer, SymbolicTensor} from '../engine/topology';
+import {Model} from '../engine/training';
 import * as tfl from '../index';
 import {convertPythonicToTs} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
@@ -362,6 +363,20 @@ describeMathCPUAndGPU('Bidirectional with initial state', () => {
     expectTensorsClose(yVals[1], tensor2d([[0.8188354, 0.8188354, 0.8188354]]));
   });
 
+  it('Model serialization round trip', () => {
+    // Disable the console warning about the unserialization SymbolicTensor in
+    // the CallArgs.
+    spyOn(console, 'warn');
+    createLayer();
+    const model = tfl.model({inputs: [x, initState1, initState2], outputs: y});
+    const json1 = model.toJSON(null, false);
+    const model2 =
+        deserialize(convertPythonicToTs(json1) as serialization.ConfigDict) as
+        Model;
+    const json2 = model2.toJSON(null, false);
+    expect(json2).toEqual(json1);
+  });
+
   it('Incorrect number of initial-state tensors leads to error', () => {
     initState1 = tfl.input({shape: [recurrentUnits]});
     initState2 = tfl.input({shape: [recurrentUnits]});
@@ -374,7 +389,7 @@ describeMathCPUAndGPU('Bidirectional with initial state', () => {
     });
     expect(() => bidi.apply(x, {
       initialState: [initState1]
-    })).toThrowError(/the state should be .*RNNs/)
+    })).toThrowError(/the state should be .*RNNs/);
   });
   // TODO(cais): Make sure toJSON works.
   // console.log(model.toJSON());  // DEBUG
