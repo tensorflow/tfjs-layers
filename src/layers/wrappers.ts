@@ -380,10 +380,6 @@ export class Bidirectional extends Wrapper {
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
       kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
-    // let initialState: Tensor[]|SymbolicTensor[] = null;
-    // if (kwargs != null) {
-    //   initialState = kwargs['initialState'];
-    // }
     let initialState: Tensor[]|SymbolicTensor[] =
         kwargs == null ? null : kwargs['initialState'];
     let constants: Tensor[]|SymbolicTensor[] =
@@ -415,7 +411,7 @@ export class Bidirectional extends Wrapper {
             'When passing `initialState` to a Bidrectional RNN, ' +
             'the state should be an Array containing the states of ' +
             'the underlying RNNs.');
-      }  // TODO(cais): Coverage, DO NOT SUBMIT.
+      }
       kwargs['initialState'] = initialState;
       additionalInputs.push(...initialState);
       const stateSpecs = (initialState as Array<Tensor|SymbolicTensor>)

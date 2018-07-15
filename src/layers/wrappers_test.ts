@@ -391,6 +391,4 @@ describeMathCPUAndGPU('Bidirectional with initial state', () => {
       initialState: [initState1]
     })).toThrowError(/the state should be .*RNNs/);
   });
-  // TODO(cais): Make sure toJSON works.
-  // console.log(model.toJSON());  // DEBUG
 });
