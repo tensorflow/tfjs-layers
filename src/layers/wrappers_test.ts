@@ -13,15 +13,15 @@
  */
 
 // tslint:disable:max-line-length
-import {serialization, Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
+import {ones, scalar, serialization, Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
 
-import {Layer} from '../engine/topology';
+import {Layer, SymbolicTensor} from '../engine/topology';
 import * as tfl from '../index';
 import {convertPythonicToTs} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {Dense, Reshape} from './core';
-import {SimpleRNN} from './recurrent';
+import {RNN, SimpleRNN} from './recurrent';
 import {deserialize} from './serialization';
 import {Bidirectional, BidirectionalMergeMode, checkBidirectionalMergeMode, TimeDistributed, VALID_BIDIRECTIONAL_MERGE_MODES} from './wrappers';
 
@@ -298,4 +298,84 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
     expectTensorsClose(
         y[2], tensor2d([[-0.9842659, -0.9842659, -0.9842659]], [1, 3]));
   });
+});
+
+describeMathCPUAndGPU('Bidirectional with initial state', () => {
+  const sequenceLength = 4;
+  const recurrentUnits = 3;
+  const inputDim = 2;
+  let initState1: SymbolicTensor;
+  let initState2: SymbolicTensor;
+  let bidiLayer: Bidirectional;
+  let x: SymbolicTensor;
+  let y: SymbolicTensor[];
+
+  function createLayer() {
+    initState1 = tfl.input({shape: [recurrentUnits]});
+    initState2 = tfl.input({shape: [recurrentUnits]});
+    x = tfl.input({shape: [sequenceLength, inputDim]});
+    bidiLayer = tfl.layers.bidirectional({
+      layer: tfl.layers.gru({
+        units: recurrentUnits,
+        kernelInitializer: 'zeros',
+        recurrentInitializer: 'zeros',
+        biasInitializer: 'ones'
+      }) as RNN,
+      mergeMode: null,
+    }) as Bidirectional;
+    y = bidiLayer.apply(x, {initialState: [initState1, initState2]}) as
+        SymbolicTensor[];
+  }
+
+  it('Correct shapes', () => {
+    createLayer();
+    expect(y.length).toEqual(2);
+    expect(y[0].shape).toEqual([null, recurrentUnits]);
+    expect(y[1].shape).toEqual([null, recurrentUnits]);
+  });
+
+  it('apply() with concrete tensors', () => {
+    createLayer();
+    const xVal = ones([1, sequenceLength, inputDim]);
+    const initState1Val = ones([1, recurrentUnits]).mul(scalar(-1));
+    const initState2Val = ones([1, recurrentUnits]);
+    const yVals =
+        bidiLayer.apply(xVal, {initialState: [initState1Val, initState2Val]}) as
+        Tensor[];
+    expect(yVals.length).toEqual(2);
+    expectTensorsClose(
+        yVals[0], tensor2d([[0.33863544, 0.33863544, 0.33863544]]));
+    expectTensorsClose(yVals[1], tensor2d([[0.8188354, 0.8188354, 0.8188354]]));
+  });
+
+  it('Model predict', () => {
+    createLayer();
+    const model = tfl.model({inputs: [x, initState1, initState2], outputs: y});
+    const xVal = ones([1, sequenceLength, inputDim]);
+    const initState1Val = ones([1, recurrentUnits]).mul(scalar(-1));
+    const initState2Val = ones([1, recurrentUnits]);
+    const yVals =
+        model.predict([xVal, initState1Val, initState2Val]) as Tensor[];
+    expect(yVals.length).toEqual(2);
+    expectTensorsClose(
+        yVals[0], tensor2d([[0.33863544, 0.33863544, 0.33863544]]));
+    expectTensorsClose(yVals[1], tensor2d([[0.8188354, 0.8188354, 0.8188354]]));
+  });
+
+  it('Incorrect number of initial-state tensors leads to error', () => {
+    initState1 = tfl.input({shape: [recurrentUnits]});
+    initState2 = tfl.input({shape: [recurrentUnits]});
+    x = tfl.input({shape: [sequenceLength, inputDim]});
+    const bidi = tfl.layers.bidirectional({
+      layer: tfl.layers.gru({
+        units: recurrentUnits,
+      }) as RNN,
+      mergeMode: null,
+    });
+    expect(() => bidi.apply(x, {
+      initialState: [initState1]
+    })).toThrowError(/the state should be .*RNNs/)
+  });
+  // TODO(cais): Make sure toJSON works.
+  // console.log(model.toJSON());  // DEBUG
 });
