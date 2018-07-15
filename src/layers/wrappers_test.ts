@@ -346,6 +346,8 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
     model.fit(x, y)
         .then(history => {
           expect(history.history.loss[0]).toBeCloseTo(0.0901649);
+          expectTensorsClose(
+              model.predict(x) as Tensor, tensor2d([[0.6927189, 0.66077083]]));
           done();
         })
         .catch(err => {
@@ -399,6 +401,8 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
     model.fit(x, y)
         .then(history => {
           expect(history.history.loss[0]).toBeCloseTo(0.0766952);
+          expectTensorsClose(
+              model.predict(x) as Tensor, tensor2d([[0.6767467]]));
           done();
         })
         .catch(err => {
