@@ -247,7 +247,7 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
         kernelInitializer: 'ones',
         recurrentInitializer: 'ones',
         useBias: false,
-        returnState,
+        returnState
       }),
       mergeMode,
     });
@@ -298,7 +298,6 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
     expectTensorsClose(
         y[2], tensor2d([[-0.9842659, -0.9842659, -0.9842659]], [1, 3]));
   });
-
 
   // The golden values in the test below can be obtained with the following
   // Python Keras code.
