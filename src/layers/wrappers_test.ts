@@ -325,7 +325,7 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
   // history = model.fit(x, y)
   // print(history.history)
   // ```
-  it('Backwards LSTM: predict and fit: concat', done => {
+  it('Backwards LSTM: predict and fit: concat', async () => {
     const lstm = tfl.layers.lstm({
       units: 1,
       kernelInitializer: 'ones',
@@ -343,16 +343,10 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
     const y = tensor2d([[0.3, 0.5]]);
     expectTensorsClose(
         model.predict(x) as Tensor, tensor2d([[0.69299805, 0.66088]]));
-    model.fit(x, y)
-        .then(history => {
-          expect(history.history.loss[0]).toBeCloseTo(0.0901649);
-          expectTensorsClose(
-              model.predict(x) as Tensor, tensor2d([[0.6927189, 0.66077083]]));
-          done();
-        })
-        .catch(err => {
-          done.fail(err.stack);
-        });
+    const history = await model.fit(x, y);
+    expect(history.history.loss[0]).toBeCloseTo(0.0901649);
+    expectTensorsClose(
+        model.predict(x) as Tensor, tensor2d([[0.6927189, 0.66077083]]));
   });
 
   // The golden values in the test below can be obtained with the following
