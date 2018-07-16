@@ -331,8 +331,7 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
       kernelInitializer: 'ones',
       recurrentInitializer: 'ones',
       biasInitializer: 'ones',
-      goBackwards: true,
-      inputShape: [2, 2]
+      goBackwards: true
     }) as RNN;
     const bidi = tfl.layers.bidirectional(
         {layer: lstm, inputShape: [2, 2], mergeMode: 'concat'});
@@ -381,8 +380,7 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
       kernelInitializer: 'ones',
       recurrentInitializer: 'ones',
       biasInitializer: 'ones',
-      goBackwards: true,
-      inputShape: [2, 2]
+      goBackwards: true
     }) as RNN;
     const bidi = tfl.layers.bidirectional(
         {layer: lstm, inputShape: [2, 2], mergeMode: 'ave'});
