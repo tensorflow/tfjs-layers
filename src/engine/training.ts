@@ -12,7 +12,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {doc, io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
+import {io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
@@ -29,8 +29,9 @@ import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
 
+import {Container, ContainerConfig} from './container';
 import {execute, FeedDict} from './executor';
-import {Container, ContainerConfig, SymbolicTensor} from './topology';
+import {SymbolicTensor} from './topology';
 
 // tslint:enable:max-line-length
 
@@ -619,7 +620,7 @@ export interface ModelCompileConfig {
  * See also:
  *   `Sequential`, `loadModel`.
  */
-@doc({heading: 'Models', subheading: 'Classes'})
+/** @doc {heading: 'Models', subheading: 'Classes'} */
 export class Model extends Container implements tfc.InferenceModel {
   static className = 'Model';
   optimizer: Optimizer;
@@ -689,7 +690,7 @@ export class Model extends Container implements tfc.InferenceModel {
    *   `console.log`. For example, you can use `x => {}` to mute the printed
    *   messages in the console.
    */
-  @doc({heading: 'Models', subheading: 'Classes'})
+  /** @doc {heading: 'Models', subheading: 'Classes'} */
   summary(
       lineLength?: number, positions?: number[],
       printFn:
@@ -712,7 +713,9 @@ export class Model extends Container implements tfc.InferenceModel {
    * @param config a `ModelCompileConfig` specifying the loss, optimizer, and
    * metrics to be used for fitting and evaluating this model.
    */
-  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [0]})
+  /**
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [0]}
+   */
   compile(config: ModelCompileConfig): void {
     if (config.loss == null) {
       config.loss = [];
@@ -965,10 +968,12 @@ export class Model extends Container implements tfc.InferenceModel {
    *   and/or metrics). The attribute `model.metricsNames`
    *   will give you the display labels for the scalar outputs.
    */
-  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
+  /**
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   */
   evaluate(
-      x: Tensor|Tensor[], y: Tensor|Tensor[], config: ModelEvaluateConfig = {}):
-      Scalar|Scalar[] {
+      x: Tensor|Tensor[], y: Tensor|Tensor[],
+      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
@@ -1201,7 +1206,9 @@ export class Model extends Container implements tfc.InferenceModel {
    *   and the model's expectations, or in case a stateful model receives a
    *   number of samples that is not a multiple of the batch size.
    */
-  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [1]})
+  /**
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
+   */
   predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
       |Tensor[] {
     checkInputData(x, this.inputNames, this.feedInputShapes, false);
@@ -1225,7 +1232,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * @param x: Input samples, as an Tensor
    * @return Tensor(s) of predictions
    */
-  @doc({heading: 'Models', subheading: 'Classes'})
+  /** @doc {heading: 'Models', subheading: 'Classes'} */
   predictOnBatch(x: Tensor): Tensor|Tensor[] {
     checkInputData(x, this.inputNames, this.feedInputShapes, true);
     // TODO(cais): Take care of the learning_phase boolean flag.
@@ -1308,7 +1315,7 @@ export class Model extends Container implements tfc.InferenceModel {
       batchSize?: number, epochs?: number, verbose?: number,
       callbacks?: BaseCallback[], valF?: (data: Tensor[]) => Scalar[],
       valIns?: Tensor[], shuffle?: boolean|string, callbackMetrics?: string[],
-      initialEpoch = 0, stepsPerEpoch?: number,
+      initialEpoch?: number, stepsPerEpoch?: number,
       validationSteps?: number): Promise<History> {
     if (batchSize == null) {
       batchSize = 32;
@@ -1363,6 +1370,7 @@ export class Model extends Container implements tfc.InferenceModel {
     callbackList.setModel(this);
     callbackList.setParams({
       epochs,
+      initialEpoch,
       steps: stepsPerEpoch,
       verbose,
       doValidation,
@@ -1602,7 +1610,9 @@ export class Model extends Container implements tfc.InferenceModel {
    * @exception ValueError In case of mismatch between the provided input data
    *   and what the model expects.
    */
-  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [2]})
+  /**
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   */
   async fit(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
@@ -1789,8 +1799,8 @@ export class Model extends Container implements tfc.InferenceModel {
     const callbacks = standardizeCallbacks(config.callbacks);
     const out = await this.fitLoop(
         trainFunction, ins, outLabels, batchSize, config.epochs, config.verbose,
-        callbacks, valFunction, valIns, config.shuffle, callbackMetrics, null,
-        null, null);
+        callbacks, valFunction, valIns, config.shuffle, callbackMetrics,
+        config.initialEpoch, null, null);
     if (needValidationDisposal) {
       valIns.forEach(tensor => tensor.dispose());
       inputs.forEach(tensor => tensor.dispose());
@@ -1798,7 +1808,6 @@ export class Model extends Container implements tfc.InferenceModel {
     }
     return out;
     // TODO(cais): Add value to outLabels.
-    // TODO(cais): Add initialEpoch.
   }
 
   /**
@@ -1902,7 +1911,9 @@ export class Model extends Container implements tfc.InferenceModel {
    *   saving, such as byte sizes of the saved artifacts for the model's
    *   topology and weight values.
    */
-  @doc({heading: 'Models', subheading: 'Classes', configParamIndices: [1]})
+  /**
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
+   */
   // tslint:enable:max-line-length
   async save(handlerOrURL: io.IOHandler|string, config?: io.SaveConfig):
       Promise<io.SaveResult> {

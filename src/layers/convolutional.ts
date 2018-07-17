@@ -314,7 +314,7 @@ export abstract class BaseConv extends Layer {
   protected readonly dataFormat: DataFormat;
   protected readonly activation: Activation;
   protected readonly useBias: boolean;
-  protected readonly dilationRate: number|[number]|[number, number];
+  protected readonly dilationRate: number[];
 
   // Bias-related members are here because all convolution subclasses use the
   // same configuration parmeters to control bias.  Kernel-related members
@@ -354,7 +354,9 @@ export abstract class BaseConv extends Layer {
     this.biasConstraint = getConstraint(config.biasConstraint);
     this.biasRegularizer = getRegularizer(config.biasRegularizer);
     this.activityRegularizer = getRegularizer(config.activityRegularizer);
-    this.dilationRate = config.dilationRate == null ? 1 : config.dilationRate;
+    this.dilationRate = normalizeArray(
+        config.dilationRate == null ? 1 : config.dilationRate, rank,
+        'dilationRate');
     if (this.rank === 1 &&
         (Array.isArray(this.dilationRate) &&
          (this.dilationRate as number[]).length !== 1)) {
@@ -384,6 +386,25 @@ export abstract class BaseConv extends Layer {
       throw new ValueError(
           `BaseConv expects config.kernelSize to be number or number[] with ` +
           `length 1 or 2, but received ${JSON.stringify(config.kernelSize)}.`);
+  }
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
+      kernelSize: this.kernelSize,
+      strides: this.strides,
+      padding: this.padding,
+      dataFormat: this.dataFormat,
+      dilationRate: this.dilationRate,
+      activation: serializeActivation(this.activation),
+      useBias: this.useBias,
+      biasInitializer: serializeInitializer(this.biasInitializer),
+      biasRegularizer: serializeRegularizer(this.biasRegularizer),
+      activityRegularizer: serializeRegularizer(this.activityRegularizer),
+      biasConstraint: serializeConstraint(this.biasConstraint)
+    };
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
   }
 }
 
@@ -450,7 +471,7 @@ export abstract class Conv extends BaseConv {
       if (this.rank === 1) {
         outputs = conv1dWithBias(
             inputs, this.kernel.read(), biasValue, this.strides[0],
-            this.padding, this.dataFormat, this.dilationRate as number);
+            this.padding, this.dataFormat, this.dilationRate[0]);
       } else if (this.rank === 2) {
         // TODO(cais): Move up to constructor.
         outputs = conv2dWithBias(
@@ -493,23 +514,11 @@ export abstract class Conv extends BaseConv {
   }
 
   getConfig(): serialization.ConfigDict {
-    const config: serialization.ConfigDict = {
-      rank: this.rank,
+    const config = {
       filters: this.filters,
-      kernelSize: this.kernelSize,
-      strides: this.strides,
-      padding: this.padding,
-      dataFormat: this.dataFormat,
-      dilationRate: this.dilationRate,
-      activation: serializeActivation(this.activation),
-      useBias: this.useBias,
       kernelInitializer: serializeInitializer(this.kernelInitializer),
-      biasInitializer: serializeInitializer(this.biasInitializer),
       kernelRegularizer: serializeRegularizer(this.kernelRegularizer),
-      biasRegularizer: serializeRegularizer(this.biasRegularizer),
-      activityRegularizer: serializeRegularizer(this.activityRegularizer),
-      kernelConstraint: serializeConstraint(this.kernelConstraint),
-      biasConstraint: serializeConstraint(this.biasConstraint)
+      kernelConstraint: serializeConstraint(this.kernelConstraint)
     };
     const baseConfig = super.getConfig();
     Object.assign(config, baseConfig);
@@ -1211,19 +1220,21 @@ export class UpSampling2D extends Layer {
   constructor(config: UpSampling2DLayerConfig) {
     super(config);
     this.inputSpec = [{ndim: 4}];
-    this.size = config.size === undefined ? this.DEFAULT_SIZE : config.size;
+    this.size = config.size == null ? this.DEFAULT_SIZE : config.size;
     this.dataFormat =
-        config.dataFormat === undefined ? 'channelsLast' : config.dataFormat;
+        config.dataFormat == null ? 'channelsLast' : config.dataFormat;
   }
 
   computeOutputShape(inputShape: Shape): Shape {
     if (this.dataFormat === 'channelsFirst') {
-      const height = this.size[0] * inputShape[2];
-      const width = this.size[1] * inputShape[3];
+      const height =
+          inputShape[2] == null ? null : this.size[0] * inputShape[2];
+      const width = inputShape[3] == null ? null : this.size[1] * inputShape[3];
       return [inputShape[0], inputShape[1], height, width];
     } else {
-      const height = this.size[0] * inputShape[1];
-      const width = this.size[1] * inputShape[2];
+      const height =
+          inputShape[1] == null ? null : this.size[0] * inputShape[1];
+      const width = inputShape[2] == null ? null : this.size[1] * inputShape[2];
       return [inputShape[0], height, width, inputShape[3]];
     }
   }
