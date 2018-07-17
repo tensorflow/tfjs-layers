@@ -18,6 +18,7 @@ import {ValueError} from '../errors';
 import {Kwargs} from '../types';
 
 import {InputLayer} from './input_layer';
+import {SymbolicTensor} from './topology';
 
 /**
  * Helper function to check the dtype and shape compatibility of a feed value.
