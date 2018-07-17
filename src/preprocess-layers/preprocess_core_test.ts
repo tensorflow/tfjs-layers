@@ -162,13 +162,14 @@ describeMathCPUAndGPU('Vocab Layer: Tensor', () => {
 
 
 describeMathCPUAndGPU('Vocab Layer: fit', () => {
-  fit('Call with known tokens', () => {
+  it('Call with known tokens', () => {
     const vocabLayer = tfl.layers.vocab({
       knownVocabSize: 100,
       hashVocabSize: 0,
       optimizer: new VocabLayerOptimizer()
     }) as VocabLayer;
-    vocabLayer.fit();
+    console.log(vocabLayer);
+    // vocabLayer.fit();
 
     // DOING DOING DOING
     // Extend .fit() to take inputStrings as input

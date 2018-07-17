@@ -202,7 +202,8 @@ export class VocabLayer extends PreprocessingLayer {
   public fit(x: StringTensor): void {
     if (this.optimizer) {
       this.optimizer.updateCounts(x);
-      this.optimizer.updateVocab(this.knownVocab);
+      // DOING DOING DOING: make this work.
+      // this.optimizer.updateVocab(this.knownVocab);
     } else {
       throw new ValueError(
           '.fit() called on VocabLayer with no optimizer' +
