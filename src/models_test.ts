@@ -1106,6 +1106,7 @@ describeMathCPUAndGPU('Sequential', () => {
   });
 
   const dtypes: DataType[] = ['int32', 'float32'];
+  // TODO(bileschi): Add test for casting incompatible types, once they exist.
   for (const dtype of dtypes) {
     it(`predict() works with input dtype ${dtype}.`, () => {
       console.log(`predict() works with input dtype ${dtype}.`);
