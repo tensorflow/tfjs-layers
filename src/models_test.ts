@@ -1148,7 +1148,6 @@ describeMathCPUAndGPU('Sequential', () => {
   // TODO(bileschi): Add test for casting incompatible types, once they exist.
   for (const dtype of dtypes) {
     it(`predict() works with input dtype ${dtype}.`, () => {
-      console.log(`predict() works with input dtype ${dtype}.`);
       const embModel = tfl.sequential();
       embModel.add(tfl.layers.embedding(
         {inputShape: [1], inputDim: 10, outputDim: 2}));
