@@ -408,17 +408,18 @@ describeMathCPUAndGPU('Bidirectional with initial state', () => {
   const sequenceLength = 4;
   const recurrentUnits = 3;
   const inputDim = 2;
-  let initState1: SymbolicTensor;
-  let initState2: SymbolicTensor;
-  let bidiLayer: Bidirectional;
-  let x: SymbolicTensor;
-  let y: SymbolicTensor[];
 
-  function createLayer() {
-    initState1 = tfl.input({shape: [recurrentUnits]});
-    initState2 = tfl.input({shape: [recurrentUnits]});
-    x = tfl.input({shape: [sequenceLength, inputDim]});
-    bidiLayer = tfl.layers.bidirectional({
+  function createLayerAndTensors(): {
+    bidiLayer: Bidirectional,
+    initState1: SymbolicTensor,
+    initState2: SymbolicTensor,
+    inputTensor: SymbolicTensor,
+    outputTensors: SymbolicTensor[],
+  } {
+    const initState1 = tfl.input({shape: [recurrentUnits]});
+    const initState2 = tfl.input({shape: [recurrentUnits]});
+    const inputTensor = tfl.input({shape: [sequenceLength, inputDim]});
+    const bidiLayer = tfl.layers.bidirectional({
       layer: tfl.layers.gru({
         units: recurrentUnits,
         kernelInitializer: 'zeros',
@@ -427,25 +428,32 @@ describeMathCPUAndGPU('Bidirectional with initial state', () => {
       }) as RNN,
       mergeMode: null,
     }) as Bidirectional;
-    y = bidiLayer.apply(x, {initialState: [initState1, initState2]}) as
+    const outputTensors =
+        bidiLayer.apply(
+            inputTensor, {initialState: [initState1, initState2]}) as
         SymbolicTensor[];
+    return {bidiLayer, initState1, initState2, inputTensor, outputTensors};
   }
 
   it('Correct shapes', () => {
-    createLayer();
-    expect(y.length).toEqual(2);
-    expect(y[0].shape).toEqual([null, recurrentUnits]);
-    expect(y[1].shape).toEqual([null, recurrentUnits]);
+    const layerAndTensors = createLayerAndTensors();
+    expect(layerAndTensors.outputTensors.length).toEqual(2);
+    expect(layerAndTensors.outputTensors[0].shape).toEqual([
+      null, recurrentUnits
+    ]);
+    expect(layerAndTensors.outputTensors[1].shape).toEqual([
+      null, recurrentUnits
+    ]);
   });
 
   it('apply() with concrete tensors', () => {
-    createLayer();
+    const layerAndTensors = createLayerAndTensors();
     const xVal = ones([1, sequenceLength, inputDim]);
     const initState1Val = ones([1, recurrentUnits]).mul(scalar(-1));
     const initState2Val = ones([1, recurrentUnits]);
     const yVals =
-        bidiLayer.apply(xVal, {initialState: [initState1Val, initState2Val]}) as
-        Tensor[];
+        layerAndTensors.bidiLayer.apply(
+            xVal, {initialState: [initState1Val, initState2Val]}) as Tensor[];
     expect(yVals.length).toEqual(2);
     expectTensorsClose(
         yVals[0], tensor2d([[0.33863544, 0.33863544, 0.33863544]]));
@@ -453,8 +461,14 @@ describeMathCPUAndGPU('Bidirectional with initial state', () => {
   });
 
   it('Model predict', () => {
-    createLayer();
-    const model = tfl.model({inputs: [x, initState1, initState2], outputs: y});
+    const layerAndTensors = createLayerAndTensors();
+    const model = tfl.model({
+      inputs: [
+        layerAndTensors.inputTensor, layerAndTensors.initState1,
+        layerAndTensors.initState2
+      ],
+      outputs: layerAndTensors.outputTensors
+    });
     const xVal = ones([1, sequenceLength, inputDim]);
     const initState1Val = ones([1, recurrentUnits]).mul(scalar(-1));
     const initState2Val = ones([1, recurrentUnits]);
@@ -470,8 +484,14 @@ describeMathCPUAndGPU('Bidirectional with initial state', () => {
     // Disable the console warning about the unserialization SymbolicTensor in
     // the CallArgs.
     spyOn(console, 'warn');
-    createLayer();
-    const model = tfl.model({inputs: [x, initState1, initState2], outputs: y});
+    const layerAndTensors = createLayerAndTensors();
+    const model = tfl.model({
+      inputs: [
+        layerAndTensors.inputTensor, layerAndTensors.initState1,
+        layerAndTensors.initState2
+      ],
+      outputs: layerAndTensors.outputTensors
+    });
     const json1 = model.toJSON(null, false);
     const model2 =
         deserialize(convertPythonicToTs(json1) as serialization.ConfigDict) as
@@ -481,9 +501,8 @@ describeMathCPUAndGPU('Bidirectional with initial state', () => {
   });
 
   it('Incorrect number of initial-state tensors leads to error', () => {
-    initState1 = tfl.input({shape: [recurrentUnits]});
-    initState2 = tfl.input({shape: [recurrentUnits]});
-    x = tfl.input({shape: [sequenceLength, inputDim]});
+    const initState1 = tfl.input({shape: [recurrentUnits]});
+    const x = tfl.input({shape: [sequenceLength, inputDim]});
     const bidi = tfl.layers.bidirectional({
       layer: tfl.layers.gru({
         units: recurrentUnits,

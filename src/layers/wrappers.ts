@@ -440,6 +440,14 @@ export class Bidirectional extends Wrapper {
       const fullInput = [inputs].concat(additionalInputs);
       const fullInputSpec = this.inputSpec.concat(additionalSpecs);
       // Perform the call temporarily and replace inputSpec.
+      // Note: with initial states symbolic calls and non-symbolic calls to this
+      // method differ in how the initial states are passed. For symbolic calls,
+      // the initial states are passed in the first arg, as an Array of
+      // SymbolicTensors; for non-symbolic calls, they are passed in the second
+      // arg as a part of the kwargs. Hence the need to temporarily modify
+      // inputSpec here.
+      // TODO(cais): Make refactoring so that this hacky code below is no
+      // longer needed.
       const originalInputSpec = this.inputSpec;
       this.inputSpec = fullInputSpec;
       const output =
