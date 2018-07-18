@@ -23,6 +23,7 @@ import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
+import {StringTensor} from '../preprocess-layers/string_tensor';
 import {LossOrMetricFn, NamedTensorMap, Shape} from '../types';
 import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_utils';
 import {printSummary} from '../utils/layer_utils';
@@ -30,7 +31,7 @@ import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
 
 import {Container, ContainerConfig} from './container';
-import {execute, FeedDict} from './executor';
+import {execute, Feed, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
 
 // tslint:enable:max-line-length
@@ -298,16 +299,52 @@ export function makeBatches(
  *   in the same way.
  */
 function sliceArrays(
-    arrays: Tensor|Tensor[], start: number, stop: number): Tensor|Tensor[] {
+    arrays: Tensor|Tensor[]|StringTensor|StringTensor[], start: number,
+    stop: number): Tensor|StringTensor|Array<Tensor|StringTensor> {
+  // console.log('sliceArrays');
   if (arrays == null) {
     return [null];
   } else if (Array.isArray(arrays)) {
-    return arrays.map(
-        array => K.sliceAlongFirstAxis(array, start, stop - start));
-  } else {  // Tensor.
-    return K.sliceAlongFirstAxis(arrays, start, stop - start);
+    // console.log('sliceArrays: isArray');
+
+    const returnArrays: Array<Tensor|StringTensor> = [];
+    for (let i = 0; i < arrays.length; i++) {
+      if (arrays[i] instanceof StringTensor) {
+        // console.log(arrays);
+        // The 'as StringTensor' here is to enable
+        const a: StringTensor = arrays[i] as StringTensor;
+        returnArrays.push(a.slice(start, stop - start) as StringTensor);
+      } else {
+        returnArrays.push(
+            K.sliceAlongFirstAxis(arrays[i] as Tensor, start, stop - start) as
+            Tensor);
+      }
+    }
+    return returnArrays; /*  */
   }
+  // console.log('sliceArrays: is not Array');
+  // Not Array, therefore Tensor or StringTensor.
+  if (arrays instanceof StringTensor) {
+    // console.log('sliceArrays, array is instance of stringTensor');
+    // console.log(`arrays: ${JSON.stringify(arrays)}`);
+    return arrays.slice(start, stop - start) as StringTensor;
+  }
+  return K.sliceAlongFirstAxis(arrays as Tensor, start, stop - start);
 }
+
+// TODO(bileschi) Remove this DO NOT SUBMIT
+// Original version
+// function sliceArrays(
+//     arrays: Tensor|Tensor[], start: number, stop: number): Tensor|Tensor[] {
+//   if (arrays == null) {
+//     return [null];
+//   } else if (Array.isArray(arrays)) {
+//     return arrays.map(
+//         array => K.sliceAlongFirstAxis(array, start, stop - start));
+//   } else {  // Tensor.
+//     return K.sliceAlongFirstAxis(arrays, start, stop - start);
+//   }
+//}
 
 /**
  * Slice an Tensor or an Array of Tensors, by random-order indices.
@@ -366,9 +403,9 @@ export function sliceArraysByIndices(
  * @throws ValueError: on incorrect number of inputs or mismatches in shapes.
  */
 function checkInputData(
-    data: Tensor|Tensor[], names: string[], shapes?: Shape[],
-    checkBatchAxis = true, exceptionPrefix = '') {
-  let arrays: Tensor[];
+    data: Tensor|Tensor[]|StringTensor|StringTensor[], names: string[],
+    shapes?: Shape[], checkBatchAxis = true, exceptionPrefix = '') {
+  let arrays: Array<Tensor|StringTensor>;
   if (Array.isArray(data)) {
     if (data.length !== names.length) {
       throw new ValueError(
@@ -621,7 +658,10 @@ export interface ModelCompileConfig {
  *   `Sequential`, `loadModel`.
  */
 /** @doc {heading: 'Models', subheading: 'Classes'} */
-export class Model extends Container implements tfc.InferenceModel {
+// TODO(bileschi): Expand the definition of tfc.InferenceModel to include
+// StringTensors
+// export class Model extends Container implements tfc.InferenceModel {
+export class Model extends Container {
   static className = 'Model';
   optimizer: Optimizer;
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
@@ -1000,8 +1040,8 @@ export class Model extends Container implements tfc.InferenceModel {
    * @returns Number of samples provided.
    */
   private checkNumSamples(
-      ins: Tensor|Tensor[], batchSize?: number, steps?: number,
-      stepsName = 'steps'): number {
+      ins: Tensor|Tensor[]|StringTensor|StringTensor[], batchSize?: number,
+      steps?: number, stepsName = 'steps'): number {
     let numSamples: number;
     if (steps != null) {
       numSamples = null;
@@ -1129,8 +1169,9 @@ export class Model extends Container implements tfc.InferenceModel {
    * @returns: Predictions as `Tensor` (if a single output) or an `Array` of
    *   `Tensor` (if multipe outputs).
    */
-  private predictLoop(ins: Tensor|Tensor[], batchSize = 32, verbose = false):
-      Tensor|Tensor[] {
+  private predictLoop(
+      ins: Tensor|Tensor[]|StringTensor|StringTensor[], batchSize = 32,
+      verbose = false): Tensor|Tensor[] {
     return tfc.tidy(() => {
       const numSamples = this.checkNumSamples(ins);
       if (verbose) {
@@ -1158,10 +1199,10 @@ export class Model extends Container implements tfc.InferenceModel {
           const feeds = [];
           if (Array.isArray(insBatch)) {
             for (let i = 0; i < insBatch.length; ++i) {
-              feeds.push({key: this.inputs[i], value: insBatch[i]});
+              feeds.push({key: this.inputs[i], value: insBatch[i]} as Feed);
             }
           } else {
-            feeds.push({key: this.inputs[0], value: insBatch});
+            feeds.push({key: this.inputs[0], value: insBatch} as Feed);
           }
           const feedDict = new FeedDict(feeds);
           return execute(this.outputs, feedDict) as Tensor[];
@@ -1209,8 +1250,10 @@ export class Model extends Container implements tfc.InferenceModel {
   /**
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
    */
-  predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
-      |Tensor[] {
+  predict(
+      x: Tensor|Tensor[]|StringTensor|StringTensor[],
+      config: ModelPredictConfig = {}): Tensor|Tensor[]|StringTensor
+      |StringTensor[] {
     checkInputData(x, this.inputNames, this.feedInputShapes, false);
     // TODO(cais): Take care of stateful models.
     //   if (this.stateful) ...

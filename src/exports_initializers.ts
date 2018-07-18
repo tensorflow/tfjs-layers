@@ -8,7 +8,7 @@
  * =============================================================================
  */
 // tslint:disable-next-line:max-line-length
-import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
+import {Constant, ConstantConfig, GlorotNormal, GlorotUniform, HeNormal, Identity, IdentityConfig, Initializer, KnownVocab, KnownVocabConfig, LeCunNormal, Ones, Orthogonal, OrthogonalConfig, RainbowVocab, RainbowVocabConfig, RandomNormal, RandomNormalConfig, RandomUniform, RandomUniformConfig, SeedOnlyInitializerConfig, TruncatedNormal, TruncatedNormalConfig, VarianceScaling, VarianceScalingConfig, Zeros} from './initializers';
 
 /**
  * @doc {
@@ -162,4 +162,29 @@ export function leCunNormal(config: SeedOnlyInitializerConfig): Initializer {
  */
 export function orthogonal(config: OrthogonalConfig): Initializer {
   return new Orthogonal(config);
+}
+
+
+/**
+ * @doc {
+ *   heading: 'Initializers',
+ *   namespace: 'initializers',
+ *   useDocsFrom: 'KnownVocabConfig',
+ *   configParamIndices: [0]
+ * }
+ */
+export function knownVocab(config: KnownVocabConfig): Initializer {
+  return new KnownVocab(config);
+}
+
+/**
+ * @doc {
+ *   heading: 'Initializers',
+ *   namespace: 'initializers',
+ *   useDocsFrom: 'RainbowVocabConfig',
+ *   configParamIndices: [0]
+ * }
+ */
+export function rainbowVocab(config: RainbowVocabConfig): Initializer {
+  return new RainbowVocab(config);
 }

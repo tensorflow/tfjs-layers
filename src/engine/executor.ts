@@ -15,6 +15,7 @@
 import {cast, Tensor} from '@tensorflow/tfjs-core';
 
 import {ValueError} from '../errors';
+import {StringTensor} from '../preprocess-layers/string_tensor';
 import {Kwargs} from '../types';
 
 import {InputLayer} from './input_layer';
@@ -23,7 +24,8 @@ import {SymbolicTensor} from './topology';
 /**
  * Helper function to check the dtype and shape compatibility of a feed value.
  */
-function assertFeedCompatibility(key: SymbolicTensor, val: Tensor): Tensor {
+function assertFeedCompatibility(
+    key: SymbolicTensor, val: Tensor|StringTensor): Tensor|StringTensor {
   // 1. Check shape compatibility.  If shapes are not compatible, error.
   if (key.shape != null) {
     if (key.shape.length !== val.shape.length) {
@@ -45,23 +47,31 @@ function assertFeedCompatibility(key: SymbolicTensor, val: Tensor): Tensor {
     //  2a.  If types match, return val tensor as is.
     return val;
   }
-  try {
-    //  2b. Attempt to convert to expected type.
-    return cast(val, key.dtype);
-  } catch (err) {
-    //  2c. If conversion fails, return helpful error.
+  // TODO(bileschi): Once tf.cast is upgraded to understand 'string' this
+  // will become less complex.
+  if (val instanceof StringTensor || key.dtype === 'string') {
     throw new ValueError(
-        `The dtype of the feed (${val.dtype}) can not be cast to the dtype ` +
+        `A The dtype of the feed (${val.dtype}) can not be cast to the dtype ` +
         `of the key '${key.name}' (${key.dtype}).`);
+  } else {
+    try {
+      //  2b. Attempt to convert to expected type.
+      return cast(val, key.dtype);
+    } catch (err) {
+      //  2c. If conversion fails, return helpful error.
+      throw new ValueError(
+          `B The dtype of the feed (${
+              val.dtype}) can not be cast to the dtype ` +
+          `of the key '${key.name}' (${key.dtype}).`);
+    }
   }
 }
-
 /**
  * A concrete Tensor value for a symbolic tensor as the key.
  */
 export interface Feed {
   key: SymbolicTensor;
-  value: Tensor;
+  value: Tensor|StringTensor;
 }
 
 /**
@@ -69,7 +79,7 @@ export interface Feed {
  * A feed value is a concrete value represented as an `Tensor`.
  */
 export class FeedDict {
-  private id2Value: {[id: number]: Tensor} = {};
+  private id2Value: {[id: number]: Tensor|StringTensor} = {};
 
   /**
    * Constructor, optionally does copy-construction.
@@ -99,7 +109,7 @@ export class FeedDict {
    * @throws ValueError: If the key `SymbolicTensor` already exists in the
    *   `FeedDict`.
    */
-  add(key: SymbolicTensor, value: Tensor): FeedDict {
+  add(key: SymbolicTensor, value: Tensor|StringTensor): FeedDict {
     if (this.id2Value[key.id] == null) {
       this.id2Value[key.id] = assertFeedCompatibility(key, value);
     } else {
@@ -131,7 +141,7 @@ export class FeedDict {
    * @returns If `key` exists, the corresponding feed value.
    * @throws ValueError: If `key` does not exist in this `FeedDict`.
    */
-  getValue(key: SymbolicTensor): Tensor {
+  getValue(key: SymbolicTensor): Tensor|StringTensor {
     if (this.id2Value[key.id] == null) {
       throw new ValueError(`Nonexistent key: ${JSON.stringify(key)}`);
     } else {
@@ -146,8 +156,8 @@ export class FeedDict {
  * A `SymbolicTensor` object is a node in a computation graph of TF.js
  * Layers. The object is backed by a source layer and input
  * `SymbolicTensor`s to the source layer. This method evaluates
- * the `call()` method of the source layer, using concrete values of the inputs
- * obtained from either
+ * the `call()` method of the source layer, using concrete values of the
+ * inputs obtained from either
  * * `feedDict`, if the input key exists in `feedDict`, or else,
  * * a recursive call to `execute()` itself.
  *
@@ -176,8 +186,8 @@ export function execute(
 }
 
 function executeInternal(
-    fetch: SymbolicTensor, internalFeedDict: FeedDict,
-    kwargs?: Kwargs): Tensor {
+    fetch: SymbolicTensor, internalFeedDict: FeedDict, kwargs?: Kwargs): Tensor|
+    StringTensor {
   if (internalFeedDict.hasKey(fetch)) {
     return internalFeedDict.getValue(fetch);
   }

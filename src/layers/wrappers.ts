@@ -16,11 +16,12 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
+import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {nameScope} from '../common';
 import {Layer, LayerConfig, SymbolicTensor} from '../engine/topology';
-import {getScalar} from '../backend/state';
 import {NotImplementedError, ValueError} from '../errors';
+import {StringTensor} from '../preprocess-layers/string_tensor';
 import {Kwargs, Shape} from '../types';
 import {RegularizerFn, RnnStepFunction} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -376,15 +377,18 @@ export class Bidirectional extends Wrapper {
   }
 
   apply(
-      inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
-      kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
-    let initialState: Tensor[]|SymbolicTensor[] = null;
+      inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[]|StringTensor|
+      StringTensor[],
+      kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor
+      |SymbolicTensor[]|StringTensor|StringTensor[] {
+    let initialState: Tensor[]|SymbolicTensor[]|StringTensor[] = null;
     if (kwargs != null) {
       initialState = kwargs['initialState'];
     }
     if (Array.isArray(inputs)) {
-      initialState = (inputs as Tensor[] | SymbolicTensor[]).slice(1);
-      inputs = (inputs as Tensor[] | SymbolicTensor[])[0];
+      initialState =
+          (inputs as Tensor[] | SymbolicTensor[] | StringTensor[]).slice(1);
+      inputs = (inputs as Tensor[] | SymbolicTensor[] | StringTensor[])[0];
     }
 
     if (initialState == null || initialState.length === 0) {

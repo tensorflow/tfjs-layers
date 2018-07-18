@@ -14,7 +14,9 @@ import {DataType, eye, linalg, mul, ones, randomUniform, scalar, Scalar, seriali
 import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
+import {StringDataType} from './engine/topology';
 import {NotImplementedError, ValueError} from './errors';
+import {PreprocessingExports, StringTensor} from './preprocess-layers/string_tensor';
 import {Shape} from './types';
 import {checkStringTypeUnionValue, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
@@ -51,7 +53,8 @@ export abstract class Initializer extends serialization.Serializable {
    * @param dtype
    * @return The init value.
    */
-  abstract apply(shape: Shape, dtype?: DataType): Tensor;
+  abstract apply(shape: Shape, dtype?: DataType|StringDataType): Tensor
+      |StringTensor;
 
   getConfig(): serialization.ConfigDict {
     return {};
@@ -64,7 +67,11 @@ export abstract class Initializer extends serialization.Serializable {
 export class Zeros extends Initializer {
   static className = 'Zeros';
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `zeros initializer does not support dType 'string'`);
+    }
     return zeros(shape, dtype);
   }
 }
@@ -76,7 +83,11 @@ serialization.SerializationMap.register(Zeros);
 export class Ones extends Initializer {
   static className = 'Ones';
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `ones initializer does not support dType 'string'`);
+    }
     return ones(shape, dtype);
   }
 }
@@ -105,7 +116,11 @@ export class Constant extends Initializer {
     this.value = config.value;
   }
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `constant initializer does not support dType 'string'`);
+    }
     return tidy(() => mul(scalar(this.value), ones(shape, dtype)));
   }
 
@@ -116,6 +131,106 @@ export class Constant extends Initializer {
   }
 }
 serialization.SerializationMap.register(Constant);
+
+export interface KnownVocabConfig {
+  /** Ordered initial values for the StringTensor. */
+  strings: string[];
+}
+
+/**
+ * Initializer that returns a StringTensor initialized to set of known values.
+ */
+export class KnownVocab extends Initializer {
+  static className = 'KnownVocab';
+  private strings: string[];
+
+  constructor(config: KnownVocabConfig) {
+    super();
+    if (config.strings == null) {
+      throw new ValueError(
+          `KnownVocab initializer expected an initial set` +
+          ` of strings but got ${this.strings}`);
+    }
+    this.strings = config.strings;
+  }
+
+  apply(shape: Shape, dtype?: StringDataType): Tensor|StringTensor {
+    if (shape.length > 1) {
+      throw new NotImplementedError(
+          'KnownVocab initializer only works on 1D StringTensors');
+    }
+    if (this.strings.length !== shape[0]) {
+      throw new ValueError(`KnownVocab initializer expected ${
+          shape[0]} strings but got ${this.strings.length}`);
+    }
+    return PreprocessingExports.stringTensor1d(this.strings);
+  }
+
+  getConfig(): serialization.ConfigDict {
+    return {
+      strings: this.strings,
+    };
+  }
+}
+serialization.SerializationMap.register(KnownVocab);
+
+
+export interface RainbowVocabConfig {
+  /** How many characters in each random 'word'. */
+  charactersPerString?: number;
+}
+
+/**
+ * Initializer that returns a StringTensor initialized to strings like
+ * 'aaa', 'aab', 'aac', etc.  Useful for testing and as a default vocabulary.
+ */
+export class RainbowVocab extends Initializer {
+  static className = 'RainbowVocab';
+  static characterMap = 'abcdefghijklmnopqrstuvwxyz';
+  private charactersPerString: number;
+  readonly DEFAULT_CHARACTERS_PER_STRING = 4;
+
+  constructor(config: RainbowVocabConfig) {
+    super();
+    if (config.charactersPerString > 0) {
+      this.charactersPerString = config.charactersPerString;
+    } else {
+      this.charactersPerString = this.DEFAULT_CHARACTERS_PER_STRING;
+    }
+  }
+
+  // Returns the `n`th alphabetical string of length `chars` made of only the
+  // characters in characterMap.
+  static intToString(n: number, chars: number): string {
+    let retString = '';
+    const N = this.characterMap.length;
+    for (let i = 0; i < chars; i++) {
+      const idx = n % N;
+      retString = this.characterMap.charAt(idx) + retString;
+      n = n / N;
+    }
+    return retString;
+  }
+
+  apply(shape: Shape, dtype?: StringDataType): Tensor|StringTensor {
+    if (shape.length > 1) {
+      throw new NotImplementedError(
+          'RainbowVocab initializer only works on 1D StringTensors');
+    }
+    const strings: string[] = [];
+    for (let i = 0; i < shape[0]; i++) {
+      strings.push(RainbowVocab.intToString(i, this.charactersPerString));
+    }
+    return PreprocessingExports.stringTensor1d(strings);
+  }
+
+  getConfig(): serialization.ConfigDict {
+    return {
+      charatersPersTring: this.charactersPerString,
+    };
+  }
+}
+serialization.SerializationMap.register(RainbowVocab);
 
 export interface RandomUniformConfig {
   /** Lower bound of the range of random values to generate. */
@@ -148,7 +263,11 @@ export class RandomUniform extends Initializer {
     this.seed = config.seed;
   }
 
-  apply(shape: Shape, dtype?: DataType): Tensor {
+  apply(shape: Shape, dtype?: DataType|StringDataType): Tensor|StringTensor {
+    if (dtype === 'string') {
+      throw new NotImplementedError(
+          `randomUniform does not support dType string.`);
+    }
     return randomUniform(shape, this.minval, this.maxval, dtype);
   }
 
@@ -622,6 +741,7 @@ export const INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:
       'leCunNormal': 'LeCunNormal',
       'ones': 'Ones',
       'orthogonal': 'Orthogonal',
+      'rainbowVocab': 'RainbowVocab',
       'randomNormal': 'RandomNormal',
       'randomUniform': 'RandomUniform',
       'truncatedNormal': 'TruncatedNormal',

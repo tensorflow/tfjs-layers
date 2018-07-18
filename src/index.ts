@@ -15,6 +15,7 @@ import * as constraints from './exports_constraints';
 import * as initializers from './exports_initializers';
 import * as layers from './exports_layers';
 import * as metrics from './exports_metrics';
+import * as preprocessing from './exports_preprocessing';
 import * as regularizers from './exports_regularizers';
 
 export {CallbackList, CustomCallback, CustomCallbackConfig} from './base_callbacks';
@@ -31,4 +32,12 @@ export {ModelAndWeightsConfig, Sequential, SequentialConfig} from './models';
 export {Shape} from './types';
 export {LayerVariable} from './variables';
 export {version as version_layers} from './version';
-export {constraints, initializers, layers, metrics, regularizers};
+// tslint:disable-next-line:max-line-length
+export {
+  constraints,
+  initializers,
+  layers,
+  metrics,
+  preprocessing,
+  regularizers
+};

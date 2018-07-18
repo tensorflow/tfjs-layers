@@ -133,6 +133,10 @@ export class Embedding extends Layer {
   }
 
   public build(inputShape: Shape|Shape[]): void {
+    if (this.dtype === 'string') {
+      throw new NotImplementedError(
+          'String output embedding layers are not implemented');
+    }
     this.embeddings = this.addWeight(
         'embeddings', [this.inputDim, this.outputDim], this.dtype,
         this.embeddingsInitializer, this.embeddingsRegularizer, true,
