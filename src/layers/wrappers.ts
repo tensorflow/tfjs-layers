@@ -462,17 +462,16 @@ export class Bidirectional extends Wrapper {
 
       let y: Tensor|Tensor[];
       let yRev: Tensor|Tensor[];
-      if (initialState != null) {
+      if (initialState == null) {
+        y = this.forwardLayer.call(inputs, kwargs);
+        yRev = this.backwardLayer.call(inputs, kwargs);
+      } else {
         const forwardState = initialState.slice(0, initialState.length / 2);
         const backwardState = initialState.slice(initialState.length / 2);
         y = this.forwardLayer.call(
             inputs, Object.assign(kwargs, {initialState: forwardState}));
         yRev = this.forwardLayer.call(
             inputs, Object.assign(kwargs, {initialState: backwardState}));
-      } else {
-        // TODO(cais): Implement support for initial state.
-        y = this.forwardLayer.call(inputs, kwargs);
-        yRev = this.backwardLayer.call(inputs, kwargs);
       }
 
       let states: Tensor[];
