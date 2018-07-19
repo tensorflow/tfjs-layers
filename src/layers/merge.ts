@@ -15,9 +15,9 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
+import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {Layer, LayerConfig, SymbolicTensor} from '../engine/topology';
-import {getScalar} from '../backend/state';
 import {NotImplementedError, ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -143,7 +143,7 @@ export abstract class Merge extends Layer {
           for (let x of inputs) {
             const xNDim = x.rank;
             for (let k = 0; k < maxNDim - xNDim; ++k) {
-              x = K.expandDims(x, 1);
+              x = K.expandDims(x, 1) as Tensor;
             }
             reshapedInputs.push(x);
           }

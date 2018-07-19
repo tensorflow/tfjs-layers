@@ -130,30 +130,35 @@ describeMathCPUAndGPU('cast', () => {
 describeMathCPUAndGPU('expandDims', () => {
   it('Scalar to 1D', () => {
     const x = scalar(10);
-    expectTensorsClose(K.expandDims(x), tensor1d([10]));
+    expectTensorsClose(K.expandDims(x) as tfc.Tensor, tensor1d([10]));
   });
   it('1D to 2D: Last dimension', () => {
     const x = tensor1d([10, 20, 30]);
-    expectTensorsClose(K.expandDims(x), tensor2d([[10], [20], [30]], [3, 1]));
+    expectTensorsClose(
+        K.expandDims(x) as tfc.Tensor, tensor2d([[10], [20], [30]], [3, 1]));
   });
   it('1D to 2D: First dimension', () => {
     const x = tensor1d([10, 20, 30]);
-    expectTensorsClose(K.expandDims(x, 0), tensor2d([[10, 20, 30]], [1, 3]));
+    expectTensorsClose(
+        K.expandDims(x, 0) as tfc.Tensor, tensor2d([[10, 20, 30]], [1, 3]));
   });
   it('2D to 3D: Last dimension', () => {
     const x = tensor2d([[10, 20], [30, 40]], [2, 2]);
     expectTensorsClose(
-        K.expandDims(x), tensor3d([[[10], [20]], [[30], [40]]], [2, 2, 1]));
+        K.expandDims(x) as tfc.Tensor,
+        tensor3d([[[10], [20]], [[30], [40]]], [2, 2, 1]));
   });
   it('2D to 3D: Second dimension', () => {
     const x = tensor2d([[10, 20], [30, 40]], [2, 2]);
     expectTensorsClose(
-        K.expandDims(x, 1), tensor3d([[[10, 20]], [[30, 40]]], [2, 1, 2]));
+        K.expandDims(x, 1) as tfc.Tensor,
+        tensor3d([[[10, 20]], [[30, 40]]], [2, 1, 2]));
   });
   it('2D to 3D: First dimension', () => {
     const x = tensor2d([[10, 20], [30, 40]], [2, 2]);
     expectTensorsClose(
-        K.expandDims(x, 0), tensor3d([[[10, 20], [30, 40]]], [1, 2, 2]));
+        K.expandDims(x, 0) as tfc.Tensor,
+        tensor3d([[[10, 20], [30, 40]]], [1, 2, 2]));
   });
 });
 

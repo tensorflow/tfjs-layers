@@ -1,21 +1,20 @@
 // Show off VocabLayer when  you get to this point.
 
 
-import {Tensor, tensor2d} from '@tensorflow/tfjs-core';
+import {Tensor, tensor2d, test_util} from '@tensorflow/tfjs-core';
 import {expectValuesInRange} from '@tensorflow/tfjs-core/dist/test_util';
 
 import * as tfl from '../index';
 import {initializers} from '../index';
-import {describeMathCPU} from '../utils/test_utils';
+import {describeMathCPU, describeMathCPUAndGPU} from '../utils/test_utils';
 import {expectTensorsClose} from '../utils/test_utils';
 
-// describeMathCPUAndGPU('String preproc : Model.predict', () => {
-describeMathCPU('String preproc : Model.predict', () => {
+describeMathCPUAndGPU('String preproc : Model.predict', () => {
   it('basic model usage: Sequential predict', () => {
     // Define the vocabulary initializer
     const vocabInitializer = initializers.knownVocab(
         {strings: ['hello', 'world', 'こんにちは', '世界']});
-    // Define a model with just a vocab layer
+    // Define a Sequential model with just a vocab layer
     const knownVocabSize = 4;
     const hashVocabSize = 1;
     const vocabModel = tfl.sequential({
@@ -46,7 +45,7 @@ describeMathCPU('String preproc : Model.predict', () => {
     // Define the vocabulary initializer
     const vocabInitializer = initializers.knownVocab(
         {strings: ['hello', 'world', 'こんにちは', '世界']});
-    // Define a model with just a vocab layer
+    // Define a functional-style model with just a vocab layer
     const knownVocabSize = 4;
     const hashVocabSize = 1;
     const input = tfl.input({shape: [2], dtype: 'string'});
@@ -78,35 +77,41 @@ describeMathCPU('String preproc : Model.predict', () => {
 
 
 //  ORIGINAL SKETCH
-/*
-describeMathCPUAndGPU('String Preproc Model.fit', () => {
-  // Define the vocabulary initializer
-  const vocabInitializer = initializers.knownVocab([
-    "hello", "world", "benkyou", "suru"
-  ]);
-  // Define a model with just a vocab layer
-  const vocabModel = models.sequential([
-    preprocessingLayers.vocab({
-      name: 'myVocabLayer',
-      knownVocabSize: 4,
-      hashVocabSize: 1,
-      vocabInitializer: vocabInitializer
-    })]);
-  // Compile the model with an optimizer for the vocab layer.
-  vocabModel.compile({
-    optimizer: vocabCounter,
-    loss: undefined,
-  });
-  const trainInputs = stringTensor1D([
-    "a", "a", "b", "b", "c", "c", "d", "d"]);
-  // Fit the model to a tensor of strings
-  await vocabModel.fit(
-    trainInputs, trainInputs, { batchSize: 1, epochs: 1 });
-  // call predict on a string of inputs and expect the new vocab values.
-  const testInputs = stringTensor1D([
-    "a", "b", "c","d", "hello"]);
-  testOutputs = model.predict(testInputs);
-  expectArraysClose(testOutputs, [0, 1, 2, 3, 4]);
+// describeMathCPUAndGPU('String Preproc Model.fit', () => {
+describeMathCPU('String Preproc Model.fit', () => {
+  fit('no need to compile', async done => {
+    // Define the vocabulary initializer
+    const vocabInitializer = initializers.knownVocab(
+        {strings: ['hello', 'world', 'こんにちは', '世界']});
+    // Define a Sequential model with just a vocab layer
+    const knownVocabSize = 4;
+    const hashVocabSize = 1;
+    const vocabModel = tfl.sequential({
+      layers: [tfl.layers.vocab({
+        name: 'myVocabLayer',
+        knownVocabSize,
+        hashVocabSize,
+        vocabInitializer,
+        inputShape: [2]  // two words per example
+      })]
+    });
+    // Compile the model with an optimizer for the vocab layer.
+    vocabModel.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
 
+    const trainInputs = tfl.preprocessing.stringTensor2d(
+        [['a', 'a'], ['b', 'b'], ['c', 'c'], ['d', 'd']]);
+    // Fit the model to a tensor of strings
+    console.log('AAA');
+    vocabModel.fit(trainInputs, null, {batchSize: 1, epochs: 1}).catch(err => {
+      done.fail(err.stack);
+    });
+    console.log('BBB');
+    // call predict on a string of inputs and expect the new vocab values.
+    const testInputs = tfl.preprocessing.stringTensor2d(
+        [['a', 'b'], ['c', 'd'], ['hello', 'world']]);
+    const testOutputs = vocabModel.predict(testInputs);
+    test_util.expectArraysClose(
+        testOutputs as Tensor, tensor2d([[0, 1], [2, 3], [4, 4]]));
+    done();
+  });
 });
-*/

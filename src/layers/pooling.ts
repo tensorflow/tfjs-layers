@@ -169,7 +169,7 @@ export abstract class Pooling1D extends Layer {
     return tidy(() => {
       this.invokeCallHook(inputs, kwargs);
       // Add dummy last dimension.
-      inputs = K.expandDims(getExactlyOneTensor(inputs), 2);
+      inputs = K.expandDims(getExactlyOneTensor(inputs), 2) as Tensor;
       const output = this.poolingFunction(
           getExactlyOneTensor(inputs), [this.poolSize[0], 1],
           [this.strides[0], 1], this.padding, 'channelsLast');

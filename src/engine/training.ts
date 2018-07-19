@@ -23,6 +23,7 @@ import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
+import {PreprocessingLayer} from '../preprocess-layers/preprocess_core';
 import {StringTensor} from '../preprocess-layers/string_tensor';
 import {LossOrMetricFn, NamedTensorMap, Shape} from '../types';
 import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_utils';
@@ -32,6 +33,7 @@ import {LayerVariable} from '../variables';
 
 import {Container, ContainerConfig} from './container';
 import {execute, Feed, FeedDict} from './executor';
+import {InputLayer} from './input_layer';
 import {SymbolicTensor} from './topology';
 
 // tslint:enable:max-line-length
@@ -39,24 +41,28 @@ import {SymbolicTensor} from './topology';
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
  */
-export function isDataTensor(x: Tensor|Tensor[]|{[inputName: string]: Tensor}|
-                             {[inputName: string]: Tensor[]}): boolean {
-  return x instanceof Tensor;
+export function isDataTensor(
+    x: Tensor|StringTensor|Array<StringTensor|Tensor>|
+    {[inputName: string]: Tensor | StringTensor}|
+    {[inputName: string]: Tensor[] | StringTensor[]}): boolean {
+  return (x instanceof Tensor) || (x instanceof StringTensor);
 }
 
 /**
  * Helper function for polymorphic input data: 2. Array of Tensor.
  */
-export function isDataArray(x: Tensor|Tensor[]|
-                            {[inputName: string]: Tensor}): boolean {
+export function isDataArray(
+    x: Tensor|StringTensor|Array<StringTensor|Tensor>|
+    {[inputName: string]: Tensor | StringTensor}): boolean {
   return Array.isArray(x);
 }
 
 /**
  * Helper function for polymorphic input data: 3. "dict" of Tensor.
  */
-export function isDataDict(x: Tensor|Tensor[]|
-                           {[inputName: string]: Tensor}): boolean {
+export function isDataDict(
+    x: Tensor|StringTensor|Array<StringTensor|Tensor>|
+    {[inputName: string]: Tensor | StringTensor}): boolean {
   return !isDataTensor(x) && !isDataArray(x);
 }
 
@@ -72,8 +78,10 @@ export function isDataDict(x: Tensor|Tensor[]|
  * @throws ValueError: in case of improperly formatted user data.
  */
 export function standardizeInputData(
-    data: Tensor|Tensor[]|{[inputName: string]: Tensor}, names: string[],
-    shapes?: Shape[], checkBatchAxis = true, exceptionPrefix = ''): Tensor[] {
+    data: Tensor|StringTensor|Array<StringTensor|Tensor>|
+    {[inputName: string]: Tensor | StringTensor},
+    names: string[], shapes?: Shape[], checkBatchAxis = true,
+    exceptionPrefix = ''): Array<Tensor|StringTensor> {
   if (names == null || names.length === 0) {
     // Check for the case where the model expected no data, but some data got
     // sent.
@@ -104,7 +112,7 @@ export function standardizeInputData(
     return names.map(name => null);
   }
 
-  let arrays: Tensor[];
+  let arrays: Array<Tensor|StringTensor>;
   if (isDataDict(data)) {
     data = data as {[inputName: string]: Tensor};
     arrays = [];
@@ -114,7 +122,12 @@ export function standardizeInputData(
             `No data provided for "${name}". Need data for each key in: ` +
             `${names}`);
       }
-      arrays.push(data[name]);
+      // TODO(bileschi): Can the below be cleaned up?
+      if (data[name] instanceof StringTensor) {
+        (arrays as StringTensor[]).push(data[name] as StringTensor);
+      } else {
+        (arrays as Tensor[]).push(data[name] as Tensor);
+      }
     }
   } else if (isDataArray(data)) {
     data = data as Tensor[];
@@ -185,7 +198,10 @@ export function standardizeInputData(
  * @throws ValueError: in case of incorrectly formatted data.
  */
 export function checkArrayLengths(
-    inputs: Tensor[], targets: Tensor[], weights?: Tensor[]) {
+    inputs:|Array<Tensor|StringTensor>, targets:|Array<Tensor|StringTensor>,
+    weights?:|Array<Tensor|StringTensor>) {
+  console.log('checkArrayLengths A');
+  console.log(`checkArrayLengths targets = ${targets}`);
   const setX = unique(inputs.map(input => input.shape[0]));
   setX.sort();
   const setY = unique(targets.map(target => target.shape[0]));
@@ -212,7 +228,7 @@ export function checkArrayLengths(
 }
 
 /**
- * Validation on the compatibility of targes and loss functions.
+ * Validation on the compatibility of targets and loss functions.
  *
  * This helps prevent users from using loss functions incorrectly.
  *
@@ -221,7 +237,8 @@ export function checkArrayLengths(
  * @param outputShapes `Array` of shapes of model outputs.
  */
 function checkLossAndTargetCompatibility(
-    targets: Tensor[], lossFns: LossOrMetricFn[], outputShapes: Shape[]) {
+    targets: Array<Tensor|StringTensor>, lossFns: LossOrMetricFn[],
+    outputShapes: Shape[]) {
   // TODO(cais): Dedicated test coverage?
   const keyLosses = [
     losses.meanSquaredError, losses.binaryCrossentropy,
@@ -299,19 +316,14 @@ export function makeBatches(
  *   in the same way.
  */
 function sliceArrays(
-    arrays: Tensor|Tensor[]|StringTensor|StringTensor[], start: number,
+    arrays: Tensor|StringTensor|Array<Tensor|StringTensor>, start: number,
     stop: number): Tensor|StringTensor|Array<Tensor|StringTensor> {
-  // console.log('sliceArrays');
   if (arrays == null) {
     return [null];
   } else if (Array.isArray(arrays)) {
-    // console.log('sliceArrays: isArray');
-
     const returnArrays: Array<Tensor|StringTensor> = [];
     for (let i = 0; i < arrays.length; i++) {
       if (arrays[i] instanceof StringTensor) {
-        // console.log(arrays);
-        // The 'as StringTensor' here is to enable
         const a: StringTensor = arrays[i] as StringTensor;
         returnArrays.push(a.slice(start, stop - start) as StringTensor);
       } else {
@@ -322,11 +334,8 @@ function sliceArrays(
     }
     return returnArrays; /*  */
   }
-  // console.log('sliceArrays: is not Array');
   // Not Array, therefore Tensor or StringTensor.
   if (arrays instanceof StringTensor) {
-    // console.log('sliceArrays, array is instance of stringTensor');
-    // console.log(`arrays: ${JSON.stringify(arrays)}`);
     return arrays.slice(start, stop - start) as StringTensor;
   }
   return K.sliceAlongFirstAxis(arrays as Tensor, start, stop - start);
@@ -360,7 +369,8 @@ function sliceArrays(
  * @returns Result(s) of the slicing.
  */
 export function sliceArraysByIndices(
-    arrays: Tensor|Tensor[], indices: Tensor1D): Tensor|Tensor[] {
+    arrays: Tensor|StringTensor|Array<Tensor|StringTensor>,
+    indices: Tensor1D): Tensor|StringTensor|Array<Tensor|StringTensor> {
   return tfc.tidy(() => {
     if (arrays == null) {
       return null;
@@ -757,6 +767,7 @@ export class Model extends Container {
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [0]}
    */
   compile(config: ModelCompileConfig): void {
+    console.log('compile A');
     if (config.loss == null) {
       config.loss = [];
     }
@@ -1040,7 +1051,7 @@ export class Model extends Container {
    * @returns Number of samples provided.
    */
   private checkNumSamples(
-      ins: Tensor|Tensor[]|StringTensor|StringTensor[], batchSize?: number,
+      ins: Tensor|StringTensor|Array<Tensor|StringTensor>, batchSize?: number,
       steps?: number, stepsName = 'steps'): number {
     let numSamples: number;
     if (steps != null) {
@@ -1284,9 +1295,15 @@ export class Model extends Container {
   }
 
   protected standardizeUserData(
-      x: Tensor|Tensor[]|{[inputName: string]: Tensor},
-      y: Tensor|Tensor[]|{[inputName: string]: Tensor}, checkBatchAxis = true,
-      batchSize?: number): [Tensor[], Tensor[], Tensor[]] {
+      x: Tensor|StringTensor|Array<Tensor|StringTensor>|
+      {[inputName: string]: Tensor | StringTensor},
+      y: Tensor|StringTensor|Array<Tensor|StringTensor>|
+      {[inputName: string]: Tensor | StringTensor},
+      checkBatchAxis = true, batchSize?: number):
+      [
+        Array<Tensor|StringTensor>, Array<Tensor|StringTensor>,
+        Array<Tensor|StringTensor>
+      ] {
     // TODO(cais): Add sampleWeight, classWeight
     if (this.optimizer == null) {
       throw new RuntimeError(
@@ -1308,12 +1325,30 @@ export class Model extends Container {
     x = standardizeInputData(
             x, this.feedInputNames, this.feedInputShapes, false, 'input') as
         Tensor[];
-    y = standardizeInputData(
-            y, this.feedOutputNames, outputShapes, false, 'target') as Tensor[];
-    // TODO(cais): Standardize sampleWeights & classWeights.
-    checkArrayLengths(x, y, null);
-    // TODO(cais): Check sampleWeights as well.
-    checkLossAndTargetCompatibility(y, this.feedLossFns, this.feedOutputShapes);
+    // If this model is entirely unsupervised, there is no need to check y.
+    let modelIsSupervised = false;
+    for (const layer of this.layers) {
+      console.log(layer.getClassName());
+      console.log(layer instanceof PreprocessingLayer);
+      if (!(layer instanceof PreprocessingLayer) &&
+          !(layer instanceof InputLayer)) {
+        modelIsSupervised = true;
+        break;
+      }
+    }
+    console.log(`modelIsSupervised ${modelIsSupervised}`);
+    if (modelIsSupervised) {
+      y = standardizeInputData(
+              y, this.feedOutputNames, outputShapes, false, 'target') as
+          Tensor[];
+      // TODO(cais): Standardize sampleWeights & classWeights.
+      checkArrayLengths(x, y, null);
+      // TODO(cais): Check sampleWeights as well.
+      checkLossAndTargetCompatibility(
+          y, this.feedLossFns, this.feedOutputShapes);
+    } else {
+      checkArrayLengths(x, x, null);
+    }
     if (this.stateful && batchSize != null && batchSize > 0) {
       if (x[0].shape[0] % batchSize !== 0) {
         throw new ValueError(
@@ -1323,7 +1358,7 @@ export class Model extends Container {
       }
     }
     // TODO(cais): Deal with the case of model.stateful == true.
-    return [x, y, null];
+    return [x, y as Tensor[], null];
   }
 
   /**
@@ -1354,12 +1389,14 @@ export class Model extends Container {
    * @returns A `History` object.
    */
   private async fitLoop(
-      f: (data: Tensor[]) => Scalar[], ins: Tensor[], outLabels?: string[],
-      batchSize?: number, epochs?: number, verbose?: number,
-      callbacks?: BaseCallback[], valF?: (data: Tensor[]) => Scalar[],
-      valIns?: Tensor[], shuffle?: boolean|string, callbackMetrics?: string[],
+      f: (data: Tensor[]) => Scalar[], ins: Array<Tensor|StringTensor>,
+      outLabels?: string[], batchSize?: number, epochs?: number,
+      verbose?: number, callbacks?: BaseCallback[],
+      valF?: (data: Tensor[]) => Scalar[], valIns?: Array<Tensor|StringTensor>,
+      shuffle?: boolean|string, callbackMetrics?: string[],
       initialEpoch?: number, stepsPerEpoch?: number,
       validationSteps?: number): Promise<History> {
+    console.log('fitLoop A');
     if (batchSize == null) {
       batchSize = 32;
     }
@@ -1408,6 +1445,7 @@ export class Model extends Container {
     }
     const callbackList = new CallbackList(callbacks);
 
+    console.log('fitLoop B');
     // TODO(cais): Figure out when this Model instance can have a dynamically
     //   set property called 'callback_model' as in PyKeras.
     callbackList.setModel(this);
@@ -1426,6 +1464,8 @@ export class Model extends Container {
     // TODO(cais): Pre-convert feeds for performance as in PyKeras.
 
     for (let epoch = initialEpoch; epoch < epochs; ++epoch) {
+      console.log('fitLoop C (loophead)');
+
       await callbackList.onEpochBegin(epoch);
       const epochLogs: UnresolvedLogs = {};
       if (stepsPerEpoch != null) {
@@ -1444,10 +1484,12 @@ export class Model extends Container {
 
         const batches = makeBatches(numTrainSamples, batchSize);
         for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
+          console.log('fitLoop D (loophead 2)');
           const batchLogs: UnresolvedLogs = {};
           await callbackList.onBatchBegin(batchIndex, batchLogs);
 
           tfc.tidy(() => {
+            console.log('fitLoop E (tidy)');
             const batchStart = batches[batchIndex][0];
             const batchEnd = batches[batchIndex][1];
             const batchIds = K.sliceAlongFirstAxis(
@@ -1456,9 +1498,11 @@ export class Model extends Container {
             batchLogs['batch'] = batchIndex;
             batchLogs['size'] = batchEnd - batchStart;
 
+            console.log('fitLoop F (tidy)');
             // TODO(cais): In ins, train flag can be a number, instead of an
             //   Tensor? Do we need to handle this in tfjs-layers?
             const insBatch = sliceArraysByIndices(ins, batchIds) as Tensor[];
+            console.log('fitLoop G (tidy)');
             const outs = f(insBatch);
             for (let i = 0; i < outLabels.length; ++i) {
               const label = outLabels[i];
@@ -1468,6 +1512,7 @@ export class Model extends Container {
               // TODO(cais): Use scope() to avoid ownership.
             }
 
+            console.log('fitLoop H (tidy)');
             if (batchIndex === batches.length - 1) {  // Last batch.
               if (doValidation) {
                 const valOuts = this.testLoop(valF, valIns, batchSize);
@@ -1500,6 +1545,7 @@ export class Model extends Container {
         break;
       }
     }
+    console.log('fitLoop X (loopComplete)');
     await callbackList.onTrainEnd();
 
     await this.history.syncData();
@@ -1517,8 +1563,8 @@ export class Model extends Container {
    * @returns Array of Scalars.
    */
   private testLoop(
-      f: (data: Tensor[]) => Scalar[], ins: Tensor[], batchSize?: number,
-      verbose = 0, steps?: number): Scalar[] {
+      f: (data: Tensor[]) => Scalar[], ins: Array<Tensor|StringTensor>,
+      batchSize?: number, verbose = 0, steps?: number): Scalar[] {
     return tfc.tidy(() => {
       const numSamples = this.checkNumSamples(ins, batchSize, steps, 'steps');
       const outs: Scalar[] = [];
@@ -1657,9 +1703,11 @@ export class Model extends Container {
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
    */
   async fit(
-      x: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      x: Tensor|Tensor[]|StringTensor|StringTensor[]|
+      {[inputName: string]: Tensor | StringTensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
       config: ModelFitConfig = {}): Promise<History> {
+    console.log('Model.fit a');
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // Validate user data.
@@ -1672,9 +1720,9 @@ export class Model extends Container {
 
     // Prepare validation data.
     let doValidation = false;
-    let valX: Tensor|Tensor[];
-    let valY: Tensor|Tensor[];
-    let valIns: Tensor[];
+    let valX: Tensor|Array<Tensor|StringTensor>;
+    let valY: Tensor|Array<Tensor|StringTensor>;
+    let valIns: Array<Tensor|StringTensor>;
     // A flag to keep track of whether `valIns`, `inputs` and `targets` need
     // to be memory-disposed prior to returning from this method. This is the
     // case if `config.validationSplit` is set to a number between 0 and 1, in
@@ -1713,13 +1761,15 @@ export class Model extends Container {
       const splitAt =
           Math.floor(inputs[0].shape[0] * (1 - config.validationSplit));
       const originalBatchSize = inputs[0].shape[0];
-      valX = sliceArrays(inputs, splitAt, originalBatchSize) as Tensor[];
+      valX = sliceArrays(inputs, splitAt, originalBatchSize) as Tensor[] |
+          StringTensor[];
       inputs = sliceArrays(inputs, 0, splitAt) as Tensor[];
       valY = sliceArrays(targets, splitAt, originalBatchSize) as Tensor[];
       targets = sliceArrays(targets, 0, splitAt) as Tensor[];
       needValidationDisposal = true;
       // TODO(cais): Once sampleWeights becomes available, slice it to get
       //   valSampleWeights.
+
       valIns = valX.concat(valY);
 
       // TODO(cais): Add useLearningPhase data properly.

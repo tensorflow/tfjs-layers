@@ -374,6 +374,10 @@ export class StringTensor<R extends Rank = Rank> {
     locs[locs.length - 1] = index;
     return locs;
   }
+
+  // TODO(bileschi): Does dispose for string tensor need to do something more
+  // than no-op?
+  dispose(): void {}
 }
 
 export type StringScalar = StringTensor<Rank.R0>;

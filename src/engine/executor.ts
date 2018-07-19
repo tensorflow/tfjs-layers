@@ -51,7 +51,7 @@ function assertFeedCompatibility(
   // will become less complex.
   if (val instanceof StringTensor || key.dtype === 'string') {
     throw new ValueError(
-        `A The dtype of the feed (${val.dtype}) can not be cast to the dtype ` +
+        `The dtype of the feed (${val.dtype}) can not be cast to the dtype ` +
         `of the key '${key.name}' (${key.dtype}).`);
   } else {
     try {
@@ -60,8 +60,7 @@ function assertFeedCompatibility(
     } catch (err) {
       //  2c. If conversion fails, return helpful error.
       throw new ValueError(
-          `B The dtype of the feed (${
-              val.dtype}) can not be cast to the dtype ` +
+          `The dtype of the feed (${val.dtype}) can not be cast to the dtype ` +
           `of the key '${key.name}' (${key.dtype}).`);
     }
   }

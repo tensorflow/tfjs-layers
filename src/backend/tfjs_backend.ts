@@ -19,6 +19,7 @@ import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Te
 import {disposeScalarCache, getScalar} from '../backend/state';
 import {checkDataFormat, DataFormat} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
+import {StringTensor} from '../preprocess-layers/string_tensor';
 import {HasShape, Shape} from '../types';
 import * as math_utils from '../utils/math_utils';
 
@@ -83,13 +84,21 @@ export function cast(x: Tensor, dtype: 'float32'|'int32'|'bool'): Tensor {
  * @param axis Position where to add the new axis.
  * @returns Result of the dimension expansion.
  */
-export function expandDims(x: Tensor, axis = -1): Tensor {
+export function expandDims(x: Tensor|StringTensor, axis = -1): Tensor|
+    StringTensor {
   const outShape = x.shape.slice();
   if (axis < 0) {
     axis = outShape.length + axis + 1;
   }
   outShape.splice(axis, 0, 1);
-  return x.reshape(outShape);
+  // The below if statement is silly, but the dynamic dispatch of just calling
+  // `return x.reshape(outShape);` results in a TypeScript compile error of
+  // "Cannot invoke an expression whose type lacks a call signature."
+  if (x instanceof Tensor) {
+    return x.reshape(outShape);
+  } else {
+    return x.reshape(outShape);
+  }
 }
 
 /**
@@ -110,7 +119,7 @@ export function repeat(x: Tensor, n: number): Tensor {
           `repeat() expects a rank-2 tensor, but received a ` +
           `rank-${x.shape.length} tensor.`);
     }
-    const y = expandDims(x, 1);
+    const y = expandDims(x, 1) as Tensor;
     return tile(y, [1, n, 1]);
   });
 }
@@ -453,15 +462,40 @@ export function oneHot(indices: Tensor, numClasses: number): Tensor {
  * @returns The result of the gathering as a tensor.
  */
 export function gather(
-    reference: Tensor, indices: number[]|Tensor1D, axis?: number): Tensor {
+    reference: Tensor|StringTensor, indices: number[]|Tensor1D,
+    axis?: number): Tensor {
   return tidy(() => {
     if (Array.isArray(indices)) {
       indices = tensor1d(indices, 'int32');
     } else {
       indices = indices.toInt();
     }
-    return tfc.gather(reference, indices, axis);
+    if (reference instanceof Tensor) {
+      return tfc.gather(reference, indices, axis);
+    } else {
+      return stringGather(reference, indicies, axis);
+    }
   });
+}
+
+function stringGather<T extends StringTensor>(
+    x: T, indices: Tensor1D, axis: number): T {
+  const newShape: number[] = x.shape.slice();
+  const indicesValues = indices.dataSync();
+  newShape[axis] = indicesValues.length;
+  const result = buffer(newShape, x.dtype);
+  const xBuf = x.buffer();
+
+  for (let i = 0; i < result.size; ++i) {
+    const newLoc = result.indexToLoc(i);
+
+    const originalLoc: number[] = newLoc.slice();
+    originalLoc[axis] = indicesValues[newLoc[axis]];
+
+    const originalIndex = xBuf.locToIndex(originalLoc);
+    result.values[i] = xBuf.values[originalIndex];
+  }
+  return result.toTensor() as T;
 }
 
 /**

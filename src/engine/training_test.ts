@@ -69,26 +69,26 @@ describeMathCPU('standardizeInputData', () => {
   it('Singleton Tensor, Array of one name', () => {
     const outputs = standardizeInputData(scalar(42), ['Foo']);
     expect(outputs.length).toEqual(1);
-    expectTensorsClose(outputs[0], scalar(42));
+    expectTensorsClose(outputs[0] as Tensor, scalar(42));
   });
   it('Array of one Tensor, Array of one name', () => {
     const outputs = standardizeInputData([scalar(42)], ['Foo']);
     expect(outputs.length).toEqual(1);
-    expectTensorsClose(outputs[0], scalar(42));
+    expectTensorsClose(outputs[0] as Tensor, scalar(42));
   });
   it('Array of two Tensors, Array of two names', () => {
     const outputs =
         standardizeInputData([scalar(42), scalar(21)], ['Foo', 'Bar']);
     expect(outputs.length).toEqual(2);
-    expectTensorsClose(outputs[0], scalar(42));
-    expectTensorsClose(outputs[1], scalar(21));
+    expectTensorsClose(outputs[0] as Tensor, scalar(42));
+    expectTensorsClose(outputs[1] as Tensor, scalar(21));
   });
   it('Dict of two Tensors, Array of two names', () => {
     const outputs = standardizeInputData(
         {'Foo': scalar(42), 'Bar': scalar(21)}, ['Foo', 'Bar']);
     expect(outputs.length).toEqual(2);
-    expectTensorsClose(outputs[0], scalar(42));
-    expectTensorsClose(outputs[1], scalar(21));
+    expectTensorsClose(outputs[0] as Tensor, scalar(42));
+    expectTensorsClose(outputs[1] as Tensor, scalar(21));
   });
   it('Unexpected data leads to exception: singleton Tensor', () => {
     expect(() => standardizeInputData(scalar(42), []))

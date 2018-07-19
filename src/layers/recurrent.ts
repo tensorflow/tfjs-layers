@@ -718,7 +718,7 @@ export class RNN extends Layer {
       let initialState = tfc.zeros(inputs.shape);
       // [Samples].
       initialState = tfc.sum(initialState, [1, 2]);
-      initialState = K.expandDims(initialState);  // [Samples, 1].
+      initialState = K.expandDims(initialState) as Tensor;  // [Samples, 1].
 
       if (Array.isArray(this.cell.stateSize)) {
         return this.cell.stateSize.map(

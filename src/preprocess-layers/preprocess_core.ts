@@ -31,8 +31,8 @@ export interface OneHotLayerConfig extends LayerConfig {
 
 /**
  * Preprocessing layers are distinct from Layers in that they are not
- * affected by back-propegation.  They are not affected by .fit.  They may be
- * affected by `Model.fitPreprocessing`.
+ * affected by back-propagation.  They are not affected by .fit.  They may be
+ * affected by `Model.fitUnsupervised`.
  */
 export abstract class PreprocessingLayer extends Layer {}
 
