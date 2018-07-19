@@ -200,8 +200,6 @@ export function standardizeInputData(
 export function checkArrayLengths(
     inputs:|Array<Tensor|StringTensor>, targets:|Array<Tensor|StringTensor>,
     weights?:|Array<Tensor|StringTensor>) {
-  console.log('checkArrayLengths A');
-  console.log(`checkArrayLengths targets = ${targets}`);
   const setX = unique(inputs.map(input => input.shape[0]));
   setX.sort();
   const setY = unique(targets.map(target => target.shape[0]));
@@ -378,8 +376,6 @@ export function sliceArraysByIndices(
         array =>
             (sliceArraysByIndices(array, indices) as Tensor | StringTensor));
   } else {
-    // TODO(cais): indices should be a pre-constructed Tensor1D to avoid
-    //   tensor1d() calls.
     return K.gather(
         arrays, indices.dtype === 'int32' ? indices : indices.toInt());
   }
@@ -766,7 +762,6 @@ export class Model extends Container {
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [0]}
    */
   compile(config: ModelCompileConfig): void {
-    console.log('compile A');
     if (config.loss == null) {
       config.loss = [];
     }
@@ -1327,15 +1322,12 @@ export class Model extends Container {
     // If this model is entirely unsupervised, there is no need to check y.
     let modelIsSupervised = false;
     for (const layer of this.layers) {
-      console.log(layer.getClassName());
-      console.log(layer instanceof PreprocessingLayer);
       if (!(layer instanceof PreprocessingLayer) &&
           !(layer instanceof InputLayer)) {
         modelIsSupervised = true;
         break;
       }
     }
-    console.log(`modelIsSupervised ${modelIsSupervised}`);
     if (modelIsSupervised) {
       y = standardizeInputData(
               y, this.feedOutputNames, outputShapes, false, 'target') as
@@ -1395,7 +1387,6 @@ export class Model extends Container {
       shuffle?: boolean|string, callbackMetrics?: string[],
       initialEpoch?: number, stepsPerEpoch?: number,
       validationSteps?: number): Promise<History> {
-    console.log('fitLoop A');
     if (batchSize == null) {
       batchSize = 32;
     }
@@ -1444,7 +1435,6 @@ export class Model extends Container {
     }
     const callbackList = new CallbackList(callbacks);
 
-    console.log('fitLoop B');
     // TODO(cais): Figure out when this Model instance can have a dynamically
     //   set property called 'callback_model' as in PyKeras.
     callbackList.setModel(this);
@@ -1463,8 +1453,6 @@ export class Model extends Container {
     // TODO(cais): Pre-convert feeds for performance as in PyKeras.
 
     for (let epoch = initialEpoch; epoch < epochs; ++epoch) {
-      console.log('fitLoop C (loophead)');
-
       await callbackList.onEpochBegin(epoch);
       const epochLogs: UnresolvedLogs = {};
       if (stepsPerEpoch != null) {
@@ -1483,12 +1471,10 @@ export class Model extends Container {
 
         const batches = makeBatches(numTrainSamples, batchSize);
         for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
-          console.log('fitLoop D (loophead 2)');
           const batchLogs: UnresolvedLogs = {};
           await callbackList.onBatchBegin(batchIndex, batchLogs);
 
           tfc.tidy(() => {
-            console.log('fitLoop E (tidy)');
             const batchStart = batches[batchIndex][0];
             const batchEnd = batches[batchIndex][1];
             const batchIds = K.sliceAlongFirstAxis(
@@ -1496,12 +1482,9 @@ export class Model extends Container {
                                  batchEnd - batchStart) as Tensor1D;
             batchLogs['batch'] = batchIndex;
             batchLogs['size'] = batchEnd - batchStart;
-
-            console.log('fitLoop F (tidy)');
             // TODO(cais): In ins, train flag can be a number, instead of an
             //   Tensor? Do we need to handle this in tfjs-layers?
             const insBatch = sliceArraysByIndices(ins, batchIds) as Tensor[];
-            console.log('fitLoop G (tidy)');
             const outs = f(insBatch);
             for (let i = 0; i < outLabels.length; ++i) {
               const label = outLabels[i];
@@ -1511,7 +1494,6 @@ export class Model extends Container {
               // TODO(cais): Use scope() to avoid ownership.
             }
 
-            console.log('fitLoop H (tidy)');
             if (batchIndex === batches.length - 1) {  // Last batch.
               if (doValidation) {
                 const valOuts = this.testLoop(valF, valIns, batchSize);
@@ -1544,7 +1526,6 @@ export class Model extends Container {
         break;
       }
     }
-    console.log('fitLoop X (loopComplete)');
     await callbackList.onTrainEnd();
 
     await this.history.syncData();
@@ -1706,7 +1687,6 @@ export class Model extends Container {
       {[inputName: string]: Tensor | StringTensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
       config: ModelFitConfig = {}): Promise<History> {
-    console.log('Model.fit a');
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // Validate user data.

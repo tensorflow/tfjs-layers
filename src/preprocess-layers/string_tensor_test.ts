@@ -169,8 +169,8 @@ describeMathCPUAndGPU('String Tensor Reshape', () => {
 });
 
 
-describeMathCPUAndGPU('String Tensor set value', () => {
-  it('2D', () => {
+describeMathCPUAndGPU('String Tensor set value: ', () => {
+  it('by loc 2D', () => {
     const st: StringTensor = tfl.preprocessing.stringTensor2d(
         [['hello', 'world'], ['こんにちは', 'TODO...']], [2, 2]);
     st.set('世界', 1, 1);
@@ -180,5 +180,39 @@ describeMathCPUAndGPU('String Tensor set value', () => {
     expect(st.get(1, 1)).toBe('世界');
     // Out of bounds indexing.
     expect(st.get(3, 3)).toBeUndefined();
+  });
+
+  it('by index 2D', () => {
+    const st: StringTensor = tfl.preprocessing.stringTensor2d(
+        [['hello', 'world'], ['こんにちは', 'TODO...']], [2, 2]);
+    st.set('世界', 3);
+    expect(st.rank).toBe(2);
+    expect(st.size).toBe(4);
+    expectStringArraysMatch(st, ['hello', 'world', 'こんにちは', '世界']);
+    expect(st.get(1, 1)).toBe('世界');
+  });
+});
+
+describeMathCPUAndGPU('String Tensor get value: ', () => {
+  it('by loc 2D', () => {
+    const st: StringTensor = tfl.preprocessing.stringTensor2d(
+        [['a', 'bb'], ['ccc', 'dddd']], [2, 2]);
+    expect(st.get(0, 0)).toBe('a');
+    expect(st.get(0, 1)).toBe('bb');
+    expect(st.get(1, 0)).toBe('ccc');
+    expect(st.get(1, 1)).toBe('dddd');
+    // Out of bounds indexing.
+    expect(st.get(2, 0)).toBeUndefined();
+  });
+
+  it('by index 2D', () => {
+    const st: StringTensor = tfl.preprocessing.stringTensor2d(
+        [['a', 'bb'], ['ccc', 'dddd']], [2, 2]);
+    expect(st.get(0)).toBe('a');
+    expect(st.get(1)).toBe('bb');
+    expect(st.get(2)).toBe('ccc');
+    expect(st.get(3)).toBe('dddd');
+    // Out of bounds indexing.
+    expect(st.get(4)).toBeUndefined();
   });
 });

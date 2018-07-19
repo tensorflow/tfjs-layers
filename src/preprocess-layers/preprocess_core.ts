@@ -36,7 +36,6 @@ export interface OneHotLayerConfig extends LayerConfig {
  */
 export abstract class PreprocessingLayer extends Layer {}
 
-
 /**
  * Requires input of shape [batch].  Produces output of shape [batch, units]
  */
@@ -85,6 +84,15 @@ export class OneHot extends PreprocessingLayer {
 }
 serialization.SerializationMap.register(OneHot);
 
+// TODO(bileschi): delete this helper function
+function _mapToStr(map: Map<string, number>): string {
+  const retval: Array<[string, number]> = [];
+  // tslint:disable-next-line:no-any
+  map.forEach((v, k) => retval.push([k, v]));
+  return JSON.stringify(retval);
+}
+
+
 export class VocabLayerOptimizer extends Serializable {
   static className = 'VocabLayerOptimizer';
   public wordCount: Map<string, number>;
@@ -104,9 +112,9 @@ export class VocabLayerOptimizer extends Serializable {
     return new cls();
   }
 
+
   public updateCounts(words: StringTensor) {
-    // For every string in the StringTensor
-    for (const word in words.stringValues) {
+    for (const word of words.stringValues) {
       // if string is a key in wordCount, update it.
       if (this.wordCount.has(word)) {
         this.wordCount.set(word, this.wordCount.get(word) + 1);
@@ -116,17 +124,40 @@ export class VocabLayerOptimizer extends Serializable {
     }
   }
 
+  // Sort by greater count first, alphabetically second.
+  protected _compareCountWords(a: [number, string], b: [number, string]):
+      number {
+    if (a[0] === b[0]) {
+      // If the counts are the same, a should come first if it's alphabetically
+      // first.
+      return +(a[1] > b[1]);
+    } else {
+      // Otherwise a is should come first if its count is larger.
+      return +(a[0] < b[0]);
+    }
+  }
+
   // Modifies provided vocab to replace low-count words with higher-count words.
   public updateVocab(vocab: Map<string, number>, knownVocabSize: number) {
     // TODO(bileschi): There is room for optimization here by, e.g., only adding
     // and removing values from the map and never moving them.
     vocab.clear();
-    // Convert WordCount into (count, word) pairs and sort by descending count.
-    // Insert the top
-
-    // DOING DOING DOING DOING
-    // Complete this function.
-    // DOING DOING DOING DOING 7/3/2018
+    // 1. Convert this.wordCount into (count, word) pairs.
+    const countWordPairs: Array<[number, string]> = [];
+    this.wordCount.forEach((valUnused, key) => {
+      countWordPairs.push([this.wordCount.get(key), key]);
+    });
+    // 2. sort countWordPairs by descending count.
+    countWordPairs.sort(this._compareCountWords);
+    // 3. Insert the top knownVocabSize words into vocab
+    let numInserted = 0;
+    for (const countAndWord of countWordPairs) {
+      vocab.set(countAndWord[1], numInserted);
+      numInserted++;
+      if (numInserted >= knownVocabSize) {
+        break;
+      }
+    }
   }
 }
 serialization.SerializationMap.register(VocabLayerOptimizer);
@@ -199,17 +230,25 @@ export class VocabLayer extends PreprocessingLayer {
 
   // TODO(bileschi): This should probably return a `History` or some other way
   // of keeping track of what happens
-  public fit(x: StringTensor): void {
+  public fitUnsupervised(x: StringTensor): void {
     if (this.optimizer) {
+      if (!(this.built)) {
+        this.build(x.shape);
+      }
+      console.log('fitUnsupervised A-----------');
+      console.log(`this.knownVocab ${_mapToStr(this.knownVocab)}`);
+      console.log(`this.knownVocabSize ${this.knownVocabSize}`);
       this.optimizer.updateCounts(x);
-      // DOING DOING DOING: make this work.
-      // this.optimizer.updateVocab(this.knownVocab);
+      this.optimizer.updateVocab(this.knownVocab, this.knownVocabSize);
+      console.log('fitUnsupervised B');
+      console.log(`this.knownVocab ${_mapToStr(this.knownVocab)}`);
+      console.log(`this.knownVocabSize ${this.knownVocabSize}`);
     } else {
       throw new ValueError(
           '.fit() called on VocabLayer with no optimizer' +
           'VocabLayer must be configured with an optimizer to be fittable');
     }
-    console.log(this.optimizer.getConfig());
+    console.log('fitUnsupervised DONE =============');
   }
 
   strToIntFn(key: string): number {

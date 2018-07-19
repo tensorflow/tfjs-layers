@@ -19,12 +19,12 @@ import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Te
 import {disposeScalarCache, getScalar} from '../backend/state';
 import {checkDataFormat, DataFormat} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
+import {stringTensor} from '../exports_preprocessing';
 import {StringTensor} from '../preprocess-layers/string_tensor';
 import {HasShape, Shape} from '../types';
 import * as math_utils from '../utils/math_utils';
 
 import {imageDataFormat} from './common';
-import {stringTensor} from '../exports_preprocessing';
 
 // tslint:enable
 
@@ -478,11 +478,15 @@ export function gather(
   });
 }
 
-//TODO(bileschi): Add tests for gather on  a string type tensor.
+// TODO(bileschi): Add tests for gather on  a string type tensor.
 function stringGather<T extends StringTensor>(
     x: T, indices: number[]|Tensor1D, axis: number): T {
   const newShape: number[] = x.shape.slice();
-  let indicesValues: number[] | Float32Array | Int32Array | Uint8Array;
+  let newSize = 1;
+  for (const axisCount of newShape) {
+    newSize *= axisCount;
+  }
+  let indicesValues: number[]|Float32Array|Int32Array|Uint8Array;
   if (Array.isArray(indices)) {
     indicesValues = indices;
   } else {
@@ -490,13 +494,22 @@ function stringGather<T extends StringTensor>(
   }
 
   newShape[axis] = indicesValues.length;
-  const result = stringTensor(null, newShape);
+  // TODO(bileschi): Create a helper function for building string tensors
+  // without setting values.
+  const result = stringTensor(Array(newSize).fill(null), newShape);
+  console.log(`newShape ${newShape}`);
 
   for (let i = 0; i < result.size; ++i) {
+    console.log(`i ${i}`);
+    console.log(`result.shape ${result.shape}`);
     const newLoc = result.indexToLoc(i);
+    console.log(`newLoc ${newLoc}`);
     const originalLoc: number[] = newLoc.slice();
     originalLoc[axis] = indicesValues[newLoc[axis]];
+    console.log(`originalLoc ${originalLoc}`);
+    console.log(`x ${JSON.stringify(x)}`);
     const originalIndex = x.locToIndex(originalLoc);
+    console.log(`originalIndex ${originalIndex}`);
     result.set(x.get(originalIndex), i);
   }
   return result as T;

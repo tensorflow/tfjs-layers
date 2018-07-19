@@ -161,34 +161,20 @@ describeMathCPUAndGPU('Vocab Layer: Tensor', () => {
 });
 
 
-describeMathCPUAndGPU('Vocab Layer: fit', () => {
-  it('Call with known tokens', () => {
+describeMathCPU('Vocab Layer: fitUnsupervised', () => {
+  it('Call with known tokens 1d', () => {
     const vocabLayer = tfl.layers.vocab({
-      knownVocabSize: 100,
-      hashVocabSize: 0,
+      knownVocabSize: 3,
+      hashVocabSize: 1,
       optimizer: new VocabLayerOptimizer()
     }) as VocabLayer;
-    console.log(vocabLayer);
-    // vocabLayer.fit();
-
-    // DOING DOING DOING
-    // Extend .fit() to take inputStrings as input
-    // Extend VocabLayerOptimzier to count the strings and set the vocab
-    // DOING DOING DOING y18m07d02
-
-    // from training.ts 1681
-    // async fit(
-    //   x: Tensor|Tensor[]|{[inputName: string]: Tensor},
-    //   y: Tensor|Tensor[]|{[inputName: string]: Tensor},
-    //   config: ModelFitConfig = {}): Promise<History>
-
-
-    /*
-      const inputStrings =
-        tfl.preprocessing.stringTensor2d([['hello'], ['world']], [2, 1]);
-      const expectedOutput = tensor2d([[0], [1]], [2, 1], 'int32');
-      expectTensorsClose(
-        vocabLayer.apply(inputStrings, null) as Tensor, expectedOutput);
-    });*/
+    const x = tfl.preprocessing.stringTensor2d(
+        [['aa', 'aa'], ['bb', 'bb'], ['not', 'used'], ['dd', 'dd']]);
+    // 'a', 'b', and 'd' should be retained, since they each appear twice.
+    vocabLayer.fitUnsupervised(x);
+    const xTest =
+        tfl.preprocessing.stringTensor2d([['aa'], ['bb'], ['cc'], ['dd']]);
+    const expectedOutput = tensor2d([[0], [1], [3], [2]], [4, 1], 'int32');
+    expectTensorsClose(vocabLayer.apply(xTest) as Tensor, expectedOutput);
   });
 });

@@ -1,12 +1,12 @@
 // Show off VocabLayer when  you get to this point.
 
 
-import {Tensor, tensor2d, test_util} from '@tensorflow/tfjs-core';
+import {Tensor, tensor2d} from '@tensorflow/tfjs-core';
 import {expectValuesInRange} from '@tensorflow/tfjs-core/dist/test_util';
 
 import * as tfl from '../index';
 import {initializers} from '../index';
-import {describeMathCPU, describeMathCPUAndGPU} from '../utils/test_utils';
+import {describeMathCPUAndGPU} from '../utils/test_utils';
 import {expectTensorsClose} from '../utils/test_utils';
 
 describeMathCPUAndGPU('String preproc : Model.predict', () => {
@@ -78,6 +78,11 @@ describeMathCPUAndGPU('String preproc : Model.predict', () => {
 
 //  ORIGINAL SKETCH
 // describeMathCPUAndGPU('String Preproc Model.fit', () => {
+
+// DO NOT SUBMIT UNTIL THIS WORKS.
+// 7/19/ 1. Test individual layer's 'fitUnsupervised'.
+//       2. Update model.fit to call PreProcessingLayer's 'fitUnsupervised'
+/*
 describeMathCPU('String Preproc Model.fit', () => {
   fit('no need to compile', async done => {
     // Define the vocabulary initializer
@@ -115,3 +120,4 @@ describeMathCPU('String Preproc Model.fit', () => {
     done();
   });
 });
+*/

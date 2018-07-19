@@ -727,14 +727,11 @@ export class Sequential extends Model {
       {[inputName: string]: Tensor | StringTensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
       config: ModelFitConfig = {}): Promise<History> {
-    console.log('Sequential.fit a');
     if (!this.built) {
-      console.log('Sequential.fit b');
       throw new RuntimeError(
           'The model needs to be compiled before ' +
           'being used.');
     }
-    console.log('Sequential.fit c');
     return this.model.fit(x, y, config);
   }
 

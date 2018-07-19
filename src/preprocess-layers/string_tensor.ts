@@ -147,7 +147,7 @@ export class StringTensor<R extends Rank = Rank> {
    */
   get(...locs: number[]) {
     util.assert(
-        locs.length === this.rank,
+        locs.length === this.rank || locs.length === 1,
         'Number of coordinates in get() must match the rank of the tensor');
     if (locs.length === 0) {
       locs = [0];
@@ -184,10 +184,15 @@ export class StringTensor<R extends Rank = Rank> {
       locs = [0];
     }
     util.assert(
-        locs.length === this.rank,
+        locs.length === this.rank || locs.length === 1,
         `The number of provided coordinates (${locs.length}) must ` +
             `match the rank (${this.rank})`);
-    const index = this.locToIndex(locs);
+    let index: number;
+    if (locs.length === 1) {
+      index = locs[0];
+    } else {
+      index = this.locToIndex(locs);
+    }
     this.stringValues[index] = value;
   }
 
