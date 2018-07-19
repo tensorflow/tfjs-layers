@@ -162,7 +162,7 @@ describeMathCPUAndGPU('Vocab Layer: Tensor', () => {
 
 
 describeMathCPU('Vocab Layer: fitUnsupervised', () => {
-  it('Call with known tokens 1d', () => {
+  it('Call with known tokens', () => {
     const vocabLayer = tfl.layers.vocab({
       knownVocabSize: 3,
       hashVocabSize: 1,
@@ -175,6 +175,40 @@ describeMathCPU('Vocab Layer: fitUnsupervised', () => {
     const xTest =
         tfl.preprocessing.stringTensor2d([['aa'], ['bb'], ['cc'], ['dd']]);
     const expectedOutput = tensor2d([[0], [1], [3], [2]], [4, 1], 'int32');
+    expectTensorsClose(vocabLayer.apply(xTest) as Tensor, expectedOutput);
+  });
+
+  it('Call without explicit optimzier throws error', () => {
+    const vocabLayer = tfl.layers.vocab({
+      knownVocabSize: 3,
+      hashVocabSize: 1,
+    }) as VocabLayer;
+    const x = tfl.preprocessing.stringTensor2d(
+        [['aa', 'aa'], ['bb', 'bb'], ['not', 'used'], ['dd', 'dd']]);
+    // 'a', 'b', and 'd' should be retained, since they each appear twice.
+    expect(() => vocabLayer.fitUnsupervised(x)).toThrowError(/no optimizer/);
+  });
+
+  it('Multiple calls accumulate correct counts', () => {
+    const vocabLayer = tfl.layers.vocab({
+      knownVocabSize: 2,
+      hashVocabSize: 1,
+      optimizer: new VocabLayerOptimizer()
+    }) as VocabLayer;
+    // one fit with '1x'
+    vocabLayer.fitUnsupervised(tfl.preprocessing.stringTensor2d([['1x']]));
+    // two fits with '2x'
+    vocabLayer.fitUnsupervised(tfl.preprocessing.stringTensor2d([['2x']]));
+    vocabLayer.fitUnsupervised(tfl.preprocessing.stringTensor2d([['2x']]));
+    // three fits with '3x'
+    vocabLayer.fitUnsupervised(tfl.preprocessing.stringTensor2d([['3x']]));
+    vocabLayer.fitUnsupervised(tfl.preprocessing.stringTensor2d([['3x']]));
+    vocabLayer.fitUnsupervised(tfl.preprocessing.stringTensor2d([['3x']]));
+    const xTest =
+        tfl.preprocessing.stringTensor2d([['3x'], ['2x'], ['1x'], ['0x']]);
+    // '3x' should be in the 0 spot, '2x'.  Everything else should map to the
+    // hash bucket.
+    const expectedOutput = tensor2d([[0], [1], [2], [2]], [4, 1], 'int32');
     expectTensorsClose(vocabLayer.apply(xTest) as Tensor, expectedOutput);
   });
 });

@@ -84,15 +84,6 @@ export class OneHot extends PreprocessingLayer {
 }
 serialization.SerializationMap.register(OneHot);
 
-// TODO(bileschi): delete this helper function
-function _mapToStr(map: Map<string, number>): string {
-  const retval: Array<[string, number]> = [];
-  // tslint:disable-next-line:no-any
-  map.forEach((v, k) => retval.push([k, v]));
-  return JSON.stringify(retval);
-}
-
-
 export class VocabLayerOptimizer extends Serializable {
   static className = 'VocabLayerOptimizer';
   public wordCount: Map<string, number>;
@@ -235,20 +226,13 @@ export class VocabLayer extends PreprocessingLayer {
       if (!(this.built)) {
         this.build(x.shape);
       }
-      console.log('fitUnsupervised A-----------');
-      console.log(`this.knownVocab ${_mapToStr(this.knownVocab)}`);
-      console.log(`this.knownVocabSize ${this.knownVocabSize}`);
       this.optimizer.updateCounts(x);
       this.optimizer.updateVocab(this.knownVocab, this.knownVocabSize);
-      console.log('fitUnsupervised B');
-      console.log(`this.knownVocab ${_mapToStr(this.knownVocab)}`);
-      console.log(`this.knownVocabSize ${this.knownVocabSize}`);
     } else {
       throw new ValueError(
-          '.fit() called on VocabLayer with no optimizer' +
-          'VocabLayer must be configured with an optimizer to be fittable');
+          '.fit() called on VocabLayer with no optimizer.' +
+          '  VocabLayer must be configured with an optimizer to be fittable');
     }
-    console.log('fitUnsupervised DONE =============');
   }
 
   strToIntFn(key: string): number {
