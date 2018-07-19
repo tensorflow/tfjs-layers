@@ -1776,8 +1776,8 @@ export class Model extends Container {
     // Creat a function that performs the following actions:
     //   1) computes the losses,
     //   2) add them to get the total loss,
-    //   3) call the optimizer computes the gradients of the Model's trainable
-    //      weights w.r.t. the total loss and update the variables.
+    //   3) call the optimizer which computes the gradients of the Model's
+    //      trainable weights w.r.t. the total loss and updates the variables.
     //   4) calculate the metrics
     //   5) return the values of the losses and metrics.
     const trainFunction = (data: Tensor[]) => {

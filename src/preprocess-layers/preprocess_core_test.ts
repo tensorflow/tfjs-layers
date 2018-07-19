@@ -13,11 +13,14 @@
  */
 
 // tslint:disable:max-line-length
-import {eye, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+import {eye, Tensor, tensor1d, tensor2d, tensor3d, zeros} from '@tensorflow/tfjs-core';
 import {expectArraysEqual, expectValuesInRange} from '@tensorflow/tfjs-core/dist/test_util';
 
+import {sequential} from '../exports';
+import {stringTensor2d} from '../exports_preprocessing';
 import * as tfl from '../index';
-import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
+import {getInitializer} from '../initializers';
+import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {VocabLayer, VocabLayerOptimizer} from './preprocess_core';
 
@@ -40,8 +43,8 @@ describe('OneHot Layer: Symbolic', () => {
 
 
 // TODO(bileschi): Replace with describeMathCPUandGPU when #443 is resolved.
-describeMathGPU('OneHot Layer: Tensor', () => {
-  it('handles in-range integer inputs', () => {
+describeMathCPUAndGPU('OneHot Layer: Tensor', () => {
+  it('1d handles in-range integer inputs', () => {
     const units = 5;
     const x = tensor1d([0, 1, 2, 3, 4], 'int32');
     const oneHotLayer = tfl.layers.oneHot({units});
@@ -50,7 +53,26 @@ describeMathGPU('OneHot Layer: Tensor', () => {
     const expectedOutput = eye(units);
     expectTensorsClose(y, expectedOutput);
   });
-  it('handles out-of-range integer inputs', () => {
+
+  it('2d handles in-range integer inputs', () => {
+    const units = 5;
+    const x = tensor2d([[0], [1], [2], [3], [4]], [5, 1], 'int32');
+    const oneHotLayer = tfl.layers.oneHot({units});
+    const y = oneHotLayer.apply(x) as Tensor;
+    expect([5, 5]).toEqual(y.shape);
+    const expectedOutput = eye(units);
+    expectTensorsClose(y, expectedOutput);
+  });
+
+  it('3d throws legible error', () => {
+    const units = 5;
+    const x = tensor3d([[[0]]], [1, 1, 1], 'int32');
+    const oneHotLayer = tfl.layers.oneHot({units});
+    expect(() => oneHotLayer.apply(x))
+        .toThrowError(/OneHot.*expects.*rank.*but got/);
+  });
+
+  it('1d handles out-of-range integer inputs', () => {
     const units = 10;
     // TODO(bileschi): Add a test here for NaN support after #442 is resolved.
     const sampleInput = [-1, 29999, units, 30000, 30001];
@@ -63,7 +85,7 @@ describeMathGPU('OneHot Layer: Tensor', () => {
   });
 });
 
-describeMathCPU('Vocab Layer: Symbolic', () => {
+describeMathCPUAndGPU('Vocab Layer: Symbolic', () => {
   const symbolicInputs = [
     new tfl.SymbolicTensor('string', [10, 4], null, [], null),
     new tfl.SymbolicTensor('string', [12, 10, 4], null, [], null),
@@ -114,6 +136,8 @@ describeMathCPUAndGPU('Vocab Layer: Tensor', () => {
     const vocabLayer =
         tfl.layers.vocab({knownVocabSize, hashVocabSize: 0}) as VocabLayer;
     const myVocab = new Map<string, number>([['hello', 0], ['world', 1]]);
+    // TODO(bileschi): Use knownVocabularyInitializer here rather than hard
+    // setting the vocab.
     vocabLayer.setVocab(myVocab);
     const expectedOutput = tensor2d([[0], [1]], [2, 1], 'int32');
     expectTensorsClose(
@@ -161,7 +185,7 @@ describeMathCPUAndGPU('Vocab Layer: Tensor', () => {
 });
 
 
-describeMathCPU('Vocab Layer: fitUnsupervised', () => {
+describeMathCPUAndGPU('Vocab Layer: fitUnsupervised', () => {
   it('Call with known tokens', () => {
     const vocabLayer = tfl.layers.vocab({
       knownVocabSize: 3,
@@ -210,5 +234,48 @@ describeMathCPU('Vocab Layer: fitUnsupervised', () => {
     // hash bucket.
     const expectedOutput = tensor2d([[0], [1], [2], [2]], [4, 1], 'int32');
     expectTensorsClose(vocabLayer.apply(xTest) as Tensor, expectedOutput);
+  });
+});
+
+describeMathCPUAndGPU('Multiple preprocessing layers', () => {
+  it('[Vocab, OneHot] .predict()', () => {
+    const knownVocab = ['hello', 'world', 'こんにちは', '世界'];
+    const vocabLayer = tfl.layers.vocab({
+      inputShape: [1],
+      knownVocabSize: 4,
+      hashVocabSize: 1,
+      vocabInitializer: getInitializer(
+          {className: 'KnownVocab', config: {strings: knownVocab}})
+    });
+    const oneHotLayer = tfl.layers.oneHot({units: 5});
+    const model = sequential({layers: [vocabLayer, oneHotLayer]});
+    const input = stringTensor2d([['world'], ['OutOfVocab']]);
+    const output = model.predict(input) as Tensor;
+    const expectedOutput = tensor2d([[0, 1, 0, 0, 0], [0, 0, 0, 0, 1]]);
+    expectTensorsClose(output, expectedOutput);
+  });
+
+  it('[Vocab, OneHot, Dense] .predict()', () => {
+    const knownVocab = ['hello', 'world', 'こんにちは', '世界'];
+    const vocabLayer = tfl.layers.vocab({
+      inputShape: [1],
+      knownVocabSize: 4,
+      hashVocabSize: 1,
+      vocabInitializer: getInitializer(
+          {className: 'KnownVocab', config: {strings: knownVocab}})
+    });
+    const denseLayer = tfl.layers.dense({inputShape: [5], units: 2});
+    const oneHotLayer = tfl.layers.oneHot({units: 5});
+    const justDenseModel = sequential({layers: [denseLayer]});
+    // Compute the output of just the dense layer by itself.
+    const outputDenseModel =
+        justDenseModel.predict(tensor2d([[1, 0, 0, 0, 0]])) as Tensor;
+    const fullModel =
+        sequential({layers: [vocabLayer, oneHotLayer, denseLayer]});
+    const outputFullModel =
+        fullModel.predict(stringTensor2d([['hello']])) as Tensor;
+    // Full model should match the just dense layer model since they share
+    // the same layer.
+    expectTensorsClose(outputDenseModel, outputFullModel);
   });
 });

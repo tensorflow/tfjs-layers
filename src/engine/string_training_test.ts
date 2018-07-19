@@ -78,10 +78,6 @@ describeMathCPUAndGPU('String preproc : Model.predict', () => {
 
 //  ORIGINAL SKETCH
 // describeMathCPUAndGPU('String Preproc Model.fit', () => {
-
-// DO NOT SUBMIT UNTIL THIS WORKS.
-// 7/19/ 1. Test individual layer's 'fitUnsupervised'.
-//       2. Update model.fit to call PreProcessingLayer's 'fitUnsupervised'
 /*
 describeMathCPU('String Preproc Model.fit', () => {
   fit('no need to compile', async done => {
@@ -97,6 +93,8 @@ describeMathCPU('String Preproc Model.fit', () => {
         knownVocabSize,
         hashVocabSize,
         vocabInitializer,
+        // TODO(bileschi): Load this from tfl instead of directly.
+        optimizer: new VocabLayerOptimizer(),
         inputShape: [2]  // two words per example
       })]
     });

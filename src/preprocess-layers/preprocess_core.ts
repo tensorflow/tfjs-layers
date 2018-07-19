@@ -13,7 +13,7 @@
  */
 
 // tslint:disable:max-line-length
-import {oneHot, serialization, Tensor, tensor, Tensor1D, tidy,} from '@tensorflow/tfjs-core';
+import {oneHot, serialization, Tensor, tensor, tidy,} from '@tensorflow/tfjs-core';
 import {ConfigDict, Serializable} from '@tensorflow/tfjs-core/dist/serialization';
 
 import {Layer, LayerConfig} from '../engine/topology';
@@ -37,7 +37,8 @@ export interface OneHotLayerConfig extends LayerConfig {
 export abstract class PreprocessingLayer extends Layer {}
 
 /**
- * Requires input of shape [batch].  Produces output of shape [batch, units]
+ * Requires input of shape [batch] or [batch, 1].  Produces output of shape
+ * [batch, units]
  */
 export class OneHot extends PreprocessingLayer {
   static className = 'OneHot';
@@ -66,7 +67,17 @@ export class OneHot extends PreprocessingLayer {
       this.invokeCallHook(inputs, kwargs);
 
       const input = type_utils.getExactlyOneTensor(inputs);
-      const output = oneHot(input as Tensor1D, this.units);
+      if ((input.rank !== 1) && (input.rank !== 2)) {
+        throw new ValueError(
+            `OneHot expects input of either rank-1, or rank-2` +
+            ` but got input tensor with shape ${input.shape}`);
+      }
+      if ((input.rank === 2) && (input.shape[1] !== 1)) {
+        throw new ValueError(
+            `OneHot expects rank-2 inputs to have shape ` +
+            ` [?, 1] but got input tensor with shape ${input.shape}`);
+      }
+      const output = oneHot(input.as1D(), this.units);
       // TODO(bileschi) remove type fix once oneHot is consistent.
       // https://github.com/tensorflow/tfjs/issues/435
       return output.asType('float32');
