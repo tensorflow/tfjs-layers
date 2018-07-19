@@ -7,9 +7,22 @@
  * https://opensource.org/licenses/MIT.
  * =============================================================================
  */
-// tslint:disable-next-line:max-line-length
-import {PreprocessingExports, StringTensor1D, StringTensor2D, StringTensor3D, StringTensor4D, StringTensor5D, StringTensor6D} from './preprocess-layers/string_tensor';
+import {Rank, ShapeMap} from '@tensorflow/tfjs-core';
 
+// tslint:disable-next-line:max-line-length
+import {PreprocessingExports, StringArray, StringTensor, StringTensor1D, StringTensor2D, StringTensor3D, StringTensor4D, StringTensor5D, StringTensor6D} from './preprocess-layers/string_tensor';
+
+
+/**
+ * @doc {
+ *   heading: 'Tensors',
+ *   subheading: 'Creation'
+ * }
+ */
+export function stringTensor<R extends Rank>(
+    values: string|StringArray, shape?: ShapeMap[R]): StringTensor<R> {
+  return PreprocessingExports.stringTensor(values, shape);
+}
 
 /**
  * @doc {

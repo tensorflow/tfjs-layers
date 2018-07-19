@@ -371,19 +371,18 @@ function sliceArrays(
 export function sliceArraysByIndices(
     arrays: Tensor|StringTensor|Array<Tensor|StringTensor>,
     indices: Tensor1D): Tensor|StringTensor|Array<Tensor|StringTensor> {
-  return tfc.tidy(() => {
-    if (arrays == null) {
-      return null;
-    } else if (Array.isArray(arrays)) {
-      return arrays.map(
-          array => (sliceArraysByIndices(array, indices) as Tensor));
-    } else {
-      // TODO(cais): indices should be a pre-constructed Tensor1D to avoid
-      //   tensor1d() calls.
-      return K.gather(
-          arrays, indices.dtype === 'int32' ? indices : indices.toInt());
-    }
-  });
+  if (arrays == null) {
+    return null;
+  } else if (Array.isArray(arrays)) {
+    return arrays.map(
+        array =>
+            (sliceArraysByIndices(array, indices) as Tensor | StringTensor));
+  } else {
+    // TODO(cais): indices should be a pre-constructed Tensor1D to avoid
+    //   tensor1d() calls.
+    return K.gather(
+        arrays, indices.dtype === 'int32' ? indices : indices.toInt());
+  }
 }
 
 /**

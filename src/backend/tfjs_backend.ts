@@ -24,6 +24,7 @@ import {HasShape, Shape} from '../types';
 import * as math_utils from '../utils/math_utils';
 
 import {imageDataFormat} from './common';
+import {stringTensor} from '../exports_preprocessing';
 
 // tslint:enable
 
@@ -463,39 +464,42 @@ export function oneHot(indices: Tensor, numClasses: number): Tensor {
  */
 export function gather(
     reference: Tensor|StringTensor, indices: number[]|Tensor1D,
-    axis?: number): Tensor {
+    axis?: number): Tensor|StringTensor {
+  if (reference instanceof StringTensor) {
+    return stringGather(reference as StringTensor, indices, axis);
+  }
   return tidy(() => {
     if (Array.isArray(indices)) {
       indices = tensor1d(indices, 'int32');
     } else {
       indices = indices.toInt();
     }
-    if (reference instanceof Tensor) {
-      return tfc.gather(reference, indices, axis);
-    } else {
-      return stringGather(reference, indicies, axis);
-    }
+    return tfc.gather(reference, indices, axis);
   });
 }
 
+//TODO(bileschi): Add tests for gather on  a string type tensor.
 function stringGather<T extends StringTensor>(
-    x: T, indices: Tensor1D, axis: number): T {
+    x: T, indices: number[]|Tensor1D, axis: number): T {
   const newShape: number[] = x.shape.slice();
-  const indicesValues = indices.dataSync();
+  let indicesValues: number[] | Float32Array | Int32Array | Uint8Array;
+  if (Array.isArray(indices)) {
+    indicesValues = indices;
+  } else {
+    indicesValues = indices.dataSync();
+  }
+
   newShape[axis] = indicesValues.length;
-  const result = buffer(newShape, x.dtype);
-  const xBuf = x.buffer();
+  const result = stringTensor(null, newShape);
 
   for (let i = 0; i < result.size; ++i) {
     const newLoc = result.indexToLoc(i);
-
     const originalLoc: number[] = newLoc.slice();
     originalLoc[axis] = indicesValues[newLoc[axis]];
-
-    const originalIndex = xBuf.locToIndex(originalLoc);
-    result.values[i] = xBuf.values[originalIndex];
+    const originalIndex = x.locToIndex(originalLoc);
+    result.set(x.get(originalIndex), i);
   }
-  return result.toTensor() as T;
+  return result as T;
 }
 
 /**

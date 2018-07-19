@@ -618,30 +618,33 @@ describeMathCPUAndGPU('OneHot', () => {
 describeMathCPUAndGPU('Gather', () => {
   it('1D, Array of numbers with repeats', () => {
     expectTensorsClose(
-        K.gather(tensor1d([0, 10, 20, 30]), [2, 2, 3, 1]),
+        K.gather(tensor1d([0, 10, 20, 30]), [2, 2, 3, 1]) as tfc.Tensor,
         tensor1d([20, 20, 30, 10]));
   });
   it('2D, Array of numbers', () => {
     expectTensorsClose(
-        K.gather(tensor2d([[10, 20], [30, 40], [50, 60]], [3, 2]), [2, 0]),
+        K.gather(tensor2d([[10, 20], [30, 40], [50, 60]], [3, 2]), [2, 0]) as
+            tfc.Tensor,
         tensor2d([[50, 60], [10, 20]], [2, 2]));
   });
   it('2D, Tensor1D', () => {
     expectTensorsClose(
         K.gather(
-            tensor2d([[10, 20], [30, 40], [50, 60]], [3, 2]), tensor1d([2, 1])),
+            tensor2d([[10, 20], [30, 40], [50, 60]], [3, 2]),
+            tensor1d([2, 1])) as tfc.Tensor,
         tensor2d([[50, 60], [30, 40]], [2, 2]));
   });
   it('3D, Tensor1D', () => {
     expectTensorsClose(
         K.gather(
             tensor3d([[[10, 20], [30, 40]], [[50, 60], [70, 80]]], [2, 2, 2]),
-            tensor1d([1, 0])),
+            tensor1d([1, 0])) as tfc.Tensor,
         tensor3d([[[50, 60], [70, 80]], [[10, 20], [30, 40]]], [2, 2, 2]));
   });
   it('2D, Non-default axis', () => {
     expectTensorsClose(
-        K.gather(tensor2d([[10, 20], [30, 40], [50, 60]], [3, 2]), [1], 1),
+        K.gather(tensor2d([[10, 20], [30, 40], [50, 60]], [3, 2]), [1], 1) as
+            tfc.Tensor,
         tensor2d([[20], [40], [60]], [3, 1]));
   });
 });

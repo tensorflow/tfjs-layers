@@ -118,7 +118,7 @@ export class StringTensor<R extends Rank = Rank> {
               `length of stringValues (${stringValues.length})`);
       this.stringValues = stringValues;
     } else {
-      // Initialize stringValues to an emtpy array.
+      // Initialize stringValues to an empty array.
       this.stringValues = [];
     }
     this.shape = shape.slice();
@@ -513,8 +513,9 @@ export class PreprocessingExports {
         inferredShape as [number, number, number, number, number, number];
     return PreprocessingExports.stringTensor(values, shape);
   }
+
   /**
-   * Creates a `StringTensor` with the provided values, shape and dtype.
+   * Creates a `StringTensor` with the provided values and shape.
    *
    * ```js
    * // Pass an array of values to create a vector.

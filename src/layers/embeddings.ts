@@ -190,7 +190,7 @@ export class Embedding extends Layer {
       if (input.dtype !== 'int32') {
         input = K.cast(input, 'int32');
       }
-      const output = K.gather(this.embeddings.read(), input.as1D());
+      const output = K.gather(this.embeddings.read(), input.as1D()) as Tensor;
       return output.reshape(
           getExactlyOneShape(this.computeOutputShape(input.shape)));
     });
