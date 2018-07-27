@@ -10,12 +10,13 @@
 
 /* Original source: keras/callbacks.py */
 
-import {add, div, keep, mul, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
+import {add, div, keep, mul, nextFrame, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {getScalar} from './backend/state';
 import {Container} from './engine/container';
 import {Logs, resolveScalarsInLogs, UnresolvedLogs} from './logs';
 import * as generic_utils from './utils/generic_utils';
+import {mean} from './utils/math_utils';
 
 
 export type Params = {
@@ -203,6 +204,81 @@ export class CallbackList {
   }
 }
 
+/**
+ * A class that manages when to yield the thread during model training.
+ *
+ *
+ */
+export class ModelTrainingYielder {
+  readonly AUTO_YIELD_THRESHOLD_MILLIS = 16;
+  readonly AUTO_YIELD_DECISION_BATCH_COUNT = 2;
+
+  private batchCount: number;
+  private lastYieldBatchCount: number;
+  private batchStartMillis: number;
+  private batchDurationsMillis: number[];
+  private autoYieldEveryBatches: number;
+
+  constructor() {
+    this.batchCount = 0;
+    this.batchDurationsMillis = [];
+    this.autoYieldEveryBatches = null;
+    this.batchStartMillis = Date.now();
+  }
+
+  /**
+   * Find the first Scalar tensor in `logs` and await data() on it.
+   */
+  private async resolveOneTensorInLogs(logs: UnresolvedLogs) {
+    for (const key in logs) {
+      const value = logs[key];
+      if (typeof value !== 'number') {
+        await (value as Scalar).data();
+        break;
+      }
+    }
+  }
+
+  /**
+   * The action taken at the end of every batch.
+   *
+   * @param logs The logs from the batch.
+   */
+  async maybeYieldOnBatch(logs: UnresolvedLogs) {
+    this.batchCount++;
+    if (this.autoYieldEveryBatches == null) {
+      await this.resolveOneTensorInLogs(logs);
+      await nextFrame();
+      const t = Date.now();
+      console.log(
+          `AutoYielder: onBatchEnd: batch #${this.batchCount} ` +
+          `took ${t - this.batchStartMillis} ms.`);  // DEBUG
+      if (this.batchCount > 1) {
+        this.batchDurationsMillis.push(t - this.batchStartMillis);
+        console.log(this.batchDurationsMillis);
+        if (this.batchDurationsMillis.length >=
+            this.AUTO_YIELD_DECISION_BATCH_COUNT) {
+          this.autoYieldEveryBatches = Math.floor(
+              this.AUTO_YIELD_THRESHOLD_MILLIS /
+              mean(this.batchDurationsMillis));
+          if (this.autoYieldEveryBatches < 1) {
+            this.autoYieldEveryBatches = 1;
+          }
+          console.log('autoYieldEveryBatches:', this.autoYieldEveryBatches);
+        }
+      }
+      this.batchStartMillis = t;
+      this.lastYieldBatchCount = this.batchCount;
+    } else {
+      if (this.batchCount - this.lastYieldBatchCount >=
+          this.autoYieldEveryBatches) {
+        await this.resolveOneTensorInLogs(logs);
+        await nextFrame();
+        this.lastYieldBatchCount = this.batchCount;
+      }
+    }
+  }
+}
 
 /**
  * Callback that accumulates epoch averages of metrics.
@@ -212,17 +288,25 @@ export class CallbackList {
 export class BaseLogger extends BaseCallback {
   private seen: number;
   private totals: UnresolvedLogs;
+  private autoYielder: ModelTrainingYielder;
 
   constructor() {
     super();
   }
 
-  async onEpochBegin(epoch: number, logs?: UnresolvedLogs) {
+  async onTrainBegin(logs?: UnresolvedLogs) {
+    this.autoYielder = new ModelTrainingYielder();
+  }
+
+  async onEpochBegin(epoch: number) {
     this.seen = 0;
     this.totals = {};
   }
 
   async onBatchEnd(batch: number, logs?: UnresolvedLogs) {
+    // TODO(cais): Use `if` statement for yieldEvery === 'auto';
+    await this.autoYielder.maybeYieldOnBatch(logs);
+
     if (logs == null) {
       logs = {};
     }

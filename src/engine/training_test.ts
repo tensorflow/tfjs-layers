@@ -13,7 +13,9 @@
  */
 
 // tslint:disable:max-line-length
+import * as tfc from '@tensorflow/tfjs-core';
 import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
+
 
 import * as K from '../backend/tfjs_backend';
 import {CustomCallback, CustomCallbackConfig} from '../base_callbacks';
@@ -22,7 +24,7 @@ import {Logs, UnresolvedLogs} from '../logs';
 import {Regularizer} from '../regularizers';
 import {Kwargs} from '../types';
 import {pyListRepeat, stringsEqual, unique} from '../utils/generic_utils';
-import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
+import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
 // TODO(bileschi): Use external version of Layer.
 import {Layer, SymbolicTensor} from './topology';
@@ -1655,6 +1657,47 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
        }
        done();
      });
+});
+
+describeMathGPU('Model.fit: yieldEvery', () => {
+  // TODO(cais): Rename test.
+  it('Foo', async done => {
+    const presetBatchTimestamps = [0, 2, 4, 6, 8, 10];
+    let counter = 0;
+    spyOn(Date, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
+    let nextFrameCallCount = 0;
+    spyOn(tfc, 'nextFrame').and.callFake(async () => {
+      nextFrameCallCount++;
+    });
+    console.log('=== BEGIN ==');  // DEBUG
+    const model = tfl.sequential();
+    const inputSize = 10;
+    const layerSize = 10;
+    model.add(tfl.layers.dense(
+        {units: layerSize, inputShape: [inputSize], activation: 'relu'}));
+    model.add(tfl.layers.dense({units: 1}));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const numExamples = 100;
+    const epochs = 20;
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+    try {
+      const history = await model.fit(xs, ys, {epochs, batchSize: 50});
+      console.log('history.history.loss:', history.history.loss);  // DEBUG
+      expect(history.history.loss.length).toEqual(epochs);
+      // There are 20 * 2 = 40 batches in total. The first 3 batch are for
+      // measurement, during each of which nextFrame() is called. The remaining
+      // 37 batches consists of 4 full collections of 8 batches. So nextFrame()
+      // is expected to have been called 3 + 4 = 7 times in total.
+      expect(nextFrameCallCount).toEqual(7);
+    } catch (err) {
+      console.log(err.message);
+      done.fail(err.message);
+    }
+    done();
+    console.log('=== DONE ==');  // DEBUG
+  });
 });
 
 describeMathCPUAndGPU('Model.evaluate', () => {
