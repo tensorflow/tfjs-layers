@@ -233,6 +233,11 @@ export class ModelTrainingYielder {
   private batchDurationsMillis: number[];
   private autoYieldEveryBatches: number;
 
+  /**
+   * Constructor of ModelTrainingYielder
+   *
+   * @param yieldEvery The configuration for how often the yielding will occur.
+   */
   constructor(yieldEvery: YieldEveryOptions) {
     this.yieldEvery = yieldEvery;
     this.batchCount = 0;
@@ -243,6 +248,9 @@ export class ModelTrainingYielder {
 
   /**
    * Find the first Scalar tensor in `logs` and await data() on it.
+   *
+   * This causes a data download (e.g., from GPU) and therefore clears the
+   * queued operations.
    */
   private async resolveOneTensorInLogs(logs: UnresolvedLogs) {
     for (const key in logs) {
@@ -255,7 +263,20 @@ export class ModelTrainingYielder {
   }
 
   /**
-   * The action taken at the end of every batch.
+   * The action taken when a batch ends.
+   *
+   * The action taken depends on the `yieldEvery` configuration.
+   *
+   * * In the case of `auto`, during the first several batches, this method
+   *   will estimate the average duration of each batch. It will then decide
+   *   how often the yielding will occur based on the estimation. The yielding
+   *   is achieved through
+   *   - Awaiting `data()` on one of the Tensors in `logs`, causing the queued
+   *     operations to clear.
+   *   - Calling `await nextFrame()`.
+   * * In the case of `batch` or `epoch`, the yielding will occur on the end of
+   *   every batch or every epoch, respectively.
+   * * In the case of `never`, the yielding will never occur.
    *
    * @param logs The logs from the batch.
    */
@@ -291,6 +312,7 @@ export class ModelTrainingYielder {
         // accordingly.
         if (this.batchCount - this.lastYieldBatchCount >=
             this.autoYieldEveryBatches) {
+          await this.resolveOneTensorInLogs(logs);
           await nextFrame();
           this.lastYieldBatchCount = this.batchCount;
         }
