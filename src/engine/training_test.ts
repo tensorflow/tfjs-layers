@@ -1679,8 +1679,8 @@ describeMathGPU('Model.fit: yieldEvery', () => {
       nextFrameCallCount++;
     });
 
-    const inputSize = 5;
-    const numExamples = 100;
+    const inputSize = 2;
+    const numExamples = 10;
     const epochs = 20;
     const model = createDummyModel(inputSize);
     const xs = ones([numExamples, inputSize]);
@@ -1705,18 +1705,18 @@ describeMathGPU('Model.fit: yieldEvery', () => {
 
     const inputSize = 5;
     const numExamples = 100;
-    const epochs = 20;
+    const epochs = 10;
     const model = createDummyModel(inputSize);
     const xs = ones([numExamples, inputSize]);
     const ys = ones([numExamples, 1]);
     const history =
         await model.fit(xs, ys, {epochs, batchSize: numExamples / 2});
     expect(history.history.loss.length).toEqual(epochs);
-    // There are 20 * 2 = 40 batches in total. The first 3 batch are for
+    // There are 10 * 2 = 20 batches in total. The first 3 batch are for
     // measurement, during each of which nextFrame() is called. The
-    // remaining 37 batches consists of 4 full collections of 8 batches. So
-    // nextFrame() is expected to have been called 3 + 4 = 7 times in total.
-    expect(nextFrameCallCount).toEqual(7);
+    // remaining 17 batches consists of 2 full collections of 8 batches. So
+    // nextFrame() is expected to have been called 3 + 2 = 7 times in total.
+    expect(nextFrameCallCount).toEqual(5);
   });
 
   it('auto: 1 batches per epoch; 20 epochs; long batches', async () => {
@@ -1730,7 +1730,7 @@ describeMathGPU('Model.fit: yieldEvery', () => {
 
     const inputSize = 5;
     const numExamples = 10;
-    const epochs = 20;
+    const epochs = 4;
     const model = createDummyModel(inputSize);
     const xs = ones([numExamples, inputSize]);
     const ys = ones([numExamples, 1]);
@@ -1752,7 +1752,7 @@ describeMathGPU('Model.fit: yieldEvery', () => {
 
     const inputSize = 5;
     const numExamples = 10;
-    const epochs = 20;
+    const epochs = 4;
     const model = createDummyModel(inputSize);
     const xs = ones([numExamples, inputSize]);
     const ys = ones([numExamples, 1]);
@@ -1770,16 +1770,17 @@ describeMathGPU('Model.fit: yieldEvery', () => {
       nextFrameCallCount++;
     });
 
-    const inputSize = 3;
-    const numExamples = 100;
+    const inputSize = 1;
+    const numExamples = 10;
     const epochs = 2;
     const model = createDummyModel(inputSize);
     const xs = ones([numExamples, inputSize]);
     const ys = ones([numExamples, 1]);
     const history =
-        await model.fit(xs, ys, {epochs, batchSize: 12, yieldEvery: 'batch'});
+        await model.fit(xs, ys, {epochs, batchSize: 4, yieldEvery: 'batch'});
     expect(history.history.loss.length).toEqual(epochs);
-    expect(nextFrameCallCount).toEqual(9 * epochs);
+    // There are `ceil(10 / 4)` batches per epoch.
+    expect(nextFrameCallCount).toEqual(3 * epochs);
   });
 
   it('epoch: 10 batches per epoch; 2 epochs', async () => {
@@ -1808,7 +1809,7 @@ describeMathGPU('Model.fit: yieldEvery', () => {
 
     const inputSize = 5;
     const numExamples = 10;
-    const epochs = 20;
+    const epochs = 4;
     const model = createDummyModel(inputSize);
     const xs = ones([numExamples, inputSize]);
     const ys = ones([numExamples, 1]);

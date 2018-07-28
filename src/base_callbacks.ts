@@ -207,7 +207,7 @@ export class CallbackList {
 }
 
 /**
- * A class that manages when to yield the thread during model training.
+ * A class that manages thread yielding during model training.
  *
  * The lifetime of an instance of `ModelTrainingYielder` is that of a
  * `Model.fit()` call. In other words, each `Model.fit()` call must create
