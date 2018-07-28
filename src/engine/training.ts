@@ -582,11 +582,12 @@ export interface ModelFitConfig {
    * Configures the frequency of yielding the main thread to other tasks.
    *
    * - The value can also be a string from the closed set of:
-   *   - 'auto': automatically determine how frequently yielding happens
-   *       by measuring the duration of each batch of training (default).
+   *   - 'auto': automatically determine how frequently the yielding happens
+   *     by measuring the duration of each batch of training (default).
    *   - 'batch': yield every batch.
    *   - 'epoch': yield every epoch.
-   *   - 'never': never yield.
+   *   - 'never': never yield. (Yielding can still happen by `await nextFrame()`
+   *     calls in custom callbacks.)
    */
   yieldEvery?: YieldEveryOptions;
 }
@@ -1328,7 +1329,7 @@ export class Model extends Container implements tfc.InferenceModel {
       callbacks?: BaseCallback[], valF?: (data: Tensor[]) => Scalar[],
       valIns?: Tensor[], shuffle?: boolean|string, callbackMetrics?: string[],
       initialEpoch?: number, stepsPerEpoch?: number, validationSteps?: number,
-      yieldEvery?: 'auto'|'batch'|'epoch'|'never'): Promise<History> {
+      yieldEvery?: YieldEveryOptions): Promise<History> {
     if (batchSize == null) {
       batchSize = 32;
     }

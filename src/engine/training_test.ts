@@ -1787,6 +1787,80 @@ describeMathGPU('Model.fit: yieldEvery', () => {
     }
     done();
   });
+
+  it('batch: uneven 9 batches per epoch; 2 epochs', async done => {
+    let nextFrameCallCount = 0;
+    spyOn(tfc, 'nextFrame').and.callFake(async () => {
+      nextFrameCallCount++;
+    });
+
+    const inputSize = 3;
+    const numExamples = 100;
+    const epochs = 2;
+    const model = createDummyModel(inputSize);
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+    try {
+      const history =
+          await model.fit(xs, ys, {epochs, batchSize: 12, yieldEvery: 'batch'});
+      expect(history.history.loss.length).toEqual(epochs);
+      expect(nextFrameCallCount).toEqual(9 * epochs);
+    } catch (err) {
+      console.log(err.message);
+      done.fail(err.message);
+    }
+    done();
+  });
+
+  it('epoch: 10 batches per epoch; 2 epochs', async done => {
+    let nextFrameCallCount = 0;
+    spyOn(tfc, 'nextFrame').and.callFake(async () => {
+      nextFrameCallCount++;
+    });
+
+    const inputSize = 5;
+    const numExamples = 100;
+    const epochs = 2;
+    const model = createDummyModel(inputSize);
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+    try {
+      const history = await model.fit(
+          xs, ys, {epochs, batchSize: numExamples / 10, yieldEvery: 'epoch'});
+      expect(history.history.loss.length).toEqual(epochs);
+      expect(nextFrameCallCount).toEqual(epochs);
+    } catch (err) {
+      console.log(err.message);
+      done.fail(err.message);
+    }
+    done();
+  });
+
+  it('never: 2 batches per epoch; 20 epochs', async done => {
+    let nextFrameCallCount = 0;
+    spyOn(tfc, 'nextFrame').and.callFake(async () => {
+      nextFrameCallCount++;
+    });
+
+    const inputSize = 5;
+    const numExamples = 100;
+    const epochs = 20;
+    const model = createDummyModel(inputSize);
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+    try {
+      const history = await model.fit(
+          xs, ys, {epochs, batchSize: numExamples / 2, yieldEvery: 'never'});
+      expect(history.history.loss.length).toEqual(epochs);
+      // Due to yieldEvery = 'never', no `await nextFrame()` call should have
+      // happened.
+      expect(nextFrameCallCount).toEqual(0);
+    } catch (err) {
+      console.log(err.message);
+      done.fail(err.message);
+    }
+    done();
+  });
 });
 
 describeMathCPUAndGPU('Model.evaluate', () => {
