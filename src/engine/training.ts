@@ -16,7 +16,7 @@ import {io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {BaseCallback, BaseLogger, CallbackList, CustomCallbackConfig, History, standardizeCallbacks} from '../base_callbacks';
+import {BaseCallback, BaseLogger, CallbackList, CustomCallbackConfig, History, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
@@ -579,9 +579,16 @@ export interface ModelFitConfig {
   validationSteps?: number;
 
   /**
+   * Configures the frequency of yielding the main thread to other tasks.
    *
+   * - The value can also be a string from the closed set of:
+   *   - 'auto': automatically determine how frequently yielding happens
+   *       by measuring the duration of each batch of training (default).
+   *   - 'batch': yield every batch.
+   *   - 'epoch': yield every epoch.
+   *   - 'never': never yield.
    */
-  yieldEvery?: 'batch'|'epoch'|'never';
+  yieldEvery?: YieldEveryOptions;
 }
 
 /**
@@ -1320,8 +1327,8 @@ export class Model extends Container implements tfc.InferenceModel {
       batchSize?: number, epochs?: number, verbose?: number,
       callbacks?: BaseCallback[], valF?: (data: Tensor[]) => Scalar[],
       valIns?: Tensor[], shuffle?: boolean|string, callbackMetrics?: string[],
-      initialEpoch?: number, stepsPerEpoch?: number,
-      validationSteps?: number): Promise<History> {
+      initialEpoch?: number, stepsPerEpoch?: number, validationSteps?: number,
+      yieldEvery?: 'auto'|'batch'|'epoch'|'never'): Promise<History> {
     if (batchSize == null) {
       batchSize = 32;
     }
@@ -1358,10 +1365,11 @@ export class Model extends Container implements tfc.InferenceModel {
     }
 
     this.history = new History();
+    const baseLogger = new BaseLogger(yieldEvery);
     if (callbacks == null) {
-      callbacks = [new BaseLogger()];
+      callbacks = [baseLogger];
     } else {
-      callbacks = ([new BaseLogger()] as BaseCallback[]).concat(callbacks);
+      callbacks = ([baseLogger] as BaseCallback[]).concat(callbacks);
     }
     callbacks = callbacks.concat([this.history]);
 
@@ -1805,7 +1813,7 @@ export class Model extends Container implements tfc.InferenceModel {
     const out = await this.fitLoop(
         trainFunction, ins, outLabels, batchSize, config.epochs, config.verbose,
         callbacks, valFunction, valIns, config.shuffle, callbackMetrics,
-        config.initialEpoch, null, null);
+        config.initialEpoch, null, null, config.yieldEvery);
     if (needValidationDisposal) {
       valIns.forEach(tensor => tensor.dispose());
       inputs.forEach(tensor => tensor.dispose());
