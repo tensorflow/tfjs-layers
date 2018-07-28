@@ -586,8 +586,8 @@ export interface ModelFitConfig {
    *     by measuring the duration of each batch of training (default).
    *   - 'batch': yield every batch.
    *   - 'epoch': yield every epoch.
-   *   - 'never': never yield. (Yielding can still happen by `await nextFrame()`
-   *     calls in custom callbacks.)
+   *   - 'never': never yield. (But yielding can still happen through `await
+   *      nextFrame()` calls in custom callbacks.)
    */
   yieldEvery?: YieldEveryOptions;
 }
