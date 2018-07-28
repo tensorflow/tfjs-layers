@@ -226,7 +226,6 @@ export class ModelTrainingYielder {
   // How many milliseconds to wait before yielding again.
   readonly AUTO_YIELD_THRESHOLD_MILLIS = 16;
 
-  // TODO(cais): Deduplicate type definition.
   private yieldEvery: YieldEveryOptions;
   private batchCount: number;
   private lastYieldBatchCount: number;

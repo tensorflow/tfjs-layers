@@ -1687,7 +1687,7 @@ describeMathGPU('Model.fit: yieldEvery', () => {
     const ys = ones([numExamples, 1]);
     const history = await model.fit(xs, ys, {epochs, batchSize: numExamples});
     expect(history.history.loss.length).toEqual(epochs);
-    // There are 20 = 40 batches in total. The first 3 batch are for
+    // There are 20 batches in total. The first 3 batch are for
     // measurement, during each of which nextFrame() is called. The remaining
     // 17 batches consists of 2 full collections of 8 batches. So nextFrame()
     // is expected to have been called 3 + 2 = 7 times in total.
