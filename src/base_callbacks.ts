@@ -11,7 +11,7 @@
 /* Original source: keras/callbacks.py */
 
 // tslint:disable:max-line-length
-import {add, div, keep, mul, nextFrame, Scalar, Tensor, tidy} from '@tensorflow/tfjs-core';
+import {add, div, keep, mul, nextFrame, Scalar, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import {getScalar} from './backend/state';
 import {Container} from './engine/container';
@@ -243,14 +243,14 @@ export class ModelTrainingYielder {
     this.batchCount = 0;
     this.batchDurationsMillis = [];
     this.autoYieldEveryBatches = null;
-    this.batchStartMillis = Date.now();
+    this.batchStartMillis = util.now();
   }
 
   /**
    * Find the first Scalar tensor in `logs` and await data() on it.
    *
    * This causes a data download (e.g., from GPU) and therefore clears the
-   * queued operations.
+   * queued operations (e.g., on the GPU).
    */
   private async resolveOneTensorInLogs(logs: UnresolvedLogs) {
     for (const key in logs) {
@@ -287,7 +287,7 @@ export class ModelTrainingYielder {
         // autoYieldEveryBatches has not been determined yet. We are still in
         // the measurement phase.
         await this.resolveOneTensorInLogs(logs);
-        const t = Date.now();
+        const t = util.now();
         await nextFrame();
         // We skip the first few batches for timing, because they usually
         // involve some warm-up time.
@@ -305,7 +305,7 @@ export class ModelTrainingYielder {
             }
           }
         }
-        this.batchStartMillis = Date.now();
+        this.batchStartMillis = util.now();
         this.lastYieldBatchCount = this.batchCount;
       } else {
         // autoYieldEveryBatch has been determined. We perform yielding

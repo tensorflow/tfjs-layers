@@ -14,7 +14,7 @@
 
 // tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, zeros} from '@tensorflow/tfjs-core';
+import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import {CustomCallback, CustomCallbackConfig, ModelTrainingYielder} from '../base_callbacks';
@@ -1672,7 +1672,7 @@ describeMathGPU('Model.fit: yieldEvery', () => {
   it('auto: 1 batches per epoch; 20 epochs; short batches', async () => {
     const presetBatchTimestamps = [0, 2, 4, 6, 8, 10];
     let counter = 0;
-    spyOn(Date, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
+    spyOn(util, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
     let nextFrameCallCount = 0;
     spyOn(tfc, 'nextFrame').and.callFake(async () => {
       nextFrameCallCount++;
@@ -1702,7 +1702,7 @@ describeMathGPU('Model.fit: yieldEvery', () => {
   it('auto: 2 batches per epoch; 20 epochs; short batches', async () => {
     const presetBatchTimestamps = [0, 2, 4, 6, 8, 10];
     let counter = 0;
-    spyOn(Date, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
+    spyOn(util, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
     let nextFrameCallCount = 0;
     spyOn(tfc, 'nextFrame').and.callFake(async () => {
       nextFrameCallCount++;
@@ -1733,7 +1733,7 @@ describeMathGPU('Model.fit: yieldEvery', () => {
   it('auto: 1 batches per epoch; 20 epochs; long batches', async () => {
     const presetBatchTimestamps = [0, 20, 40, 60, 80, 100];
     let counter = 0;
-    spyOn(Date, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
+    spyOn(util, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
     let nextFrameCallCount = 0;
     spyOn(tfc, 'nextFrame').and.callFake(async () => {
       nextFrameCallCount++;
@@ -1755,7 +1755,7 @@ describeMathGPU('Model.fit: yieldEvery', () => {
   it('auto: 2 batches per epoch; 20 epochs; long batches', async () => {
     const presetBatchTimestamps = [0, 20, 40, 60, 80, 100];
     let counter = 0;
-    spyOn(Date, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
+    spyOn(util, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
     let nextFrameCallCount = 0;
     spyOn(tfc, 'nextFrame').and.callFake(async () => {
       nextFrameCallCount++;
@@ -1776,6 +1776,9 @@ describeMathGPU('Model.fit: yieldEvery', () => {
   });
 
   it('batch: uneven 9 batches per epoch; 2 epochs', async () => {
+    const presetBatchTimestamps = [0, 2, 4, 6, 8, 10];
+    let counter = 0;
+    spyOn(util, 'now').and.callFake(() => presetBatchTimestamps[counter++]);
     let nextFrameCallCount = 0;
     spyOn(tfc, 'nextFrame').and.callFake(async () => {
       nextFrameCallCount++;
