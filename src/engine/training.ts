@@ -586,7 +586,7 @@ export interface ModelFitConfig {
    * it can ensure tasks queued in the event loop can be handled in a timely
    * manner.
    *
-   * - The value can also be a string from the closed set of:
+   * - The value is a string from the closed set of:
    *   - 'auto': automatically determine how frequently the yielding happens
    *     by measuring the duration of each batch of training (default).
    *   - 'batch': yield every batch.

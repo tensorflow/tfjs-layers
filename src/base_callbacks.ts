@@ -217,14 +217,14 @@ export class ModelTrainingYielder {
   // How many batches to skip at the beginning of a `Model.fit` call.
   // The first batches usually are longer than the rest, because they may
   // involve warm-up time.
-  readonly SKIP_FIRST_BATCHES = 1;
+  static readonly SKIP_FIRST_BATCHES = 1;
 
   // How many batches to average over when calculating the average batch
   // duration.
-  readonly AUTO_YIELD_DECISION_BATCH_COUNT = 2;
+  static readonly DECISION_BATCH_COUNT = 2;
 
   // How many milliseconds to wait before yielding again.
-  readonly AUTO_YIELD_THRESHOLD_MILLIS = 16;
+  static readonly THRESHOLD_MILLIS = 16;
 
   private yieldEvery: YieldEveryOptions;
   private batchCount: number;
@@ -291,15 +291,15 @@ export class ModelTrainingYielder {
         await nextFrame();
         // We skip the first few batches for timing, because they usually
         // involve some warm-up time.
-        if (this.batchCount > this.SKIP_FIRST_BATCHES) {
+        if (this.batchCount > ModelTrainingYielder.SKIP_FIRST_BATCHES) {
           this.batchDurationsMillis.push(t - this.batchStartMillis);
           if (this.batchDurationsMillis.length >=
-              this.AUTO_YIELD_DECISION_BATCH_COUNT) {
+              ModelTrainingYielder.DECISION_BATCH_COUNT) {
             const meanBatchDuration =
                 this.batchDurationsMillis.reduce((dur, prev) => dur + prev) /
                 this.batchDurationsMillis.length;
             this.autoYieldEveryBatches = Math.round(
-                this.AUTO_YIELD_THRESHOLD_MILLIS / meanBatchDuration);
+                ModelTrainingYielder.THRESHOLD_MILLIS / meanBatchDuration);
             if (this.autoYieldEveryBatches < 1) {
               this.autoYieldEveryBatches = 1;
             }
