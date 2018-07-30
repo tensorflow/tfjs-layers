@@ -215,7 +215,7 @@ export class CallbackList {
  */
 export class ModelTrainingYielder {
   // How many batches to skip at the beginning of a `Model.fit` call.
-  // The first batches usually are longer than usual because they
+  // The first batches usually are longer than the rest, because they may
   // involve warm-up time.
   readonly SKIP_FIRST_BATCHES = 1;
 
@@ -312,8 +312,8 @@ export class ModelTrainingYielder {
         // accordingly.
         if (this.batchCount - this.lastYieldBatchCount >=
             this.autoYieldEveryBatches) {
-          await this.resolveOneTensorInLogs(logs);
           await nextFrame();
+          await this.resolveOneTensorInLogs(logs);
           this.lastYieldBatchCount = this.batchCount;
         }
       }

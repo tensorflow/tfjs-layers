@@ -581,6 +581,11 @@ export interface ModelFitConfig {
   /**
    * Configures the frequency of yielding the main thread to other tasks.
    *
+   * In the browser environment, yielding the main thread can improve the
+   * responsiveness of the page during training. In the Node.js environment,
+   * it can ensure tasks queued in the event loop can be handled in a timely
+   * manner.
+   *
    * - The value can also be a string from the closed set of:
    *   - 'auto': automatically determine how frequently the yielding happens
    *     by measuring the duration of each batch of training (default).
