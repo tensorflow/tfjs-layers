@@ -39,9 +39,10 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
     _call_command(['yarn', 'link'])
 
     os.chdir(cwd)
+    # TODO(cais): Restore once tfn.io.NodeFileSystem is exposed.
     # _call_command(['yarn', 'link', '@tensorflow/tfjs-layers'])
     _call_command(['yarn'])
-    _call_command(['yarn', 'build'])  # TODO(cais): Decide.
+    _call_command(['yarn', 'build'])
     _call_command(['node', 'dist/tfjs_save.js', cls._tmp_dir])
 
   @classmethod
@@ -61,28 +62,42 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
       model_path: Path to the model JSON file.
     """
     xs_shape_path = os.path.join(
-        self._tmp_dir, model_path + '.xs-shape.json')
+        self._tmp_dir, model_path + '.xs-shapes.json')
     xs_data_path = os.path.join(
         self._tmp_dir, model_path + '.xs-data.json')
-    with open(xs_shape_path, 'rt') as shape_f, open(xs_data_path, 'rt') as data_f:
-      xs = np.array(
-          json.load(data_f), dtype=np.float32).reshape(json.load(shape_f))
+    with open(xs_shape_path, 'rt') as f:
+      xs_shapes = json.load(f)
+    with open(xs_data_path, 'rt') as f:
+      xs_values = json.load(f)
+    xs = [np.array(value, dtype=np.float32).reshape(shape)
+          for value, shape in zip(xs_values, xs_shapes)]
+    if len(xs) == 1:
+      xs = xs[0]
 
     ys_shape_path = os.path.join(
-        self._tmp_dir, model_path + '.ys-shape.json')
+        self._tmp_dir, model_path + '.ys-shapes.json')
     ys_data_path = os.path.join(
         self._tmp_dir, model_path + '.ys-data.json')
-    with open(ys_shape_path, 'rt') as shape_f, open(ys_data_path, 'rt') as data_f:
-      ys = np.array(
-          json.load(data_f), dtype=np.float32).reshape(json.load(shape_f))
+    with open(ys_shape_path, 'rt') as f:
+      ys_shapes = json.load(f)
+    with open(ys_data_path, 'rt') as f:
+      ys_values = json.load(f)
+    ys = [np.array(value, dtype=np.float32).reshape(shape)
+          for value, shape in zip(ys_values, ys_shapes)]
+    if len(ys) == 1:
+      ys = ys[0]
 
     with tf.Graph().as_default(), tf.Session():
       model_json_path = os.path.join(self._tmp_dir, model_path, 'model.json')
       print('Loading model from path %s' % model_json_path)
       model = tfjs.converters.load_keras_model(model_json_path)
       ys_new = model.predict(xs)
-      print(ys - ys_new)  # DEBUG
-      self.assertAllClose(ys, ys_new)
+      if isinstance(ys, list):
+        self.assertEqual(len(ys), len(ys_new))
+        for i, y in enumerate(ys):
+          self.assertAllClose(y, ys_new[i])
+      else:
+        self.assertAllClose(ys, ys_new)
 
   def testMLP(self):
     self._loadAndTestModel('mlp')
@@ -114,4 +129,3 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
 
 if __name__ == '__main__':
   tf.test.main()
-

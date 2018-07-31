@@ -14,38 +14,50 @@ import * as tfjsNode from '@tensorflow/tfjs-node';
 import * as fs from 'fs';
 import {join} from 'path';
 
+// TODO(cais): Restore once tfn.io.NodeFileSystem is exposed.
 // import * as tfl from '@tensorflow/tfjs-layers';
 
 const tfl = tf;
 
-// TODO(cais): Doc string.
-function runAndSaveRandomInputAndOutput(
-    model: tf.Model, exportPath: string, inputIntegerMax?: number) {
-  // Create a random input and get its predict() output.
-  if (model.inputs.length !== 1) {
-    throw new Error(
-        `Expects model to have exactly 1 input, ` +
-        `but got ${model.inputs.length}.`)
+/**
+ * Generate random input(s) get predict() output(s) and save them.
+ *
+ * @param model The `tf.Model` instance in question. It may have one or more
+ *   inputs and one or more outputs. It is assume that for each input, only
+ *   the first dimension (i.e., the batch dimension) is undetermined.
+ * @param exportPathprefix The path prefix to which the input and output tensors
+ *   will be saved
+ * @param inputIntegerMax (Optional) Maximum integer value for the input
+ *   tensors. Used for models that take integer tensors as inputs.
+ */
+function runAndSaveRandomInputsAndOutputs(
+    model: tf.Model, exportPathprefix: string, inputIntegerMax?: number) {
+  const xs: tf.Tensor[] = [];
+  const xsData: number[][] = [];
+  const xsShapes: number[][] = [];
+  for (const inputTensor of model.inputs) {
+    const inputShape = inputTensor.shape;
+    inputShape[0] = 1;
+    const xTensor = inputIntegerMax == null ?
+        tf.randomNormal(inputShape) :
+        tf.floor(tf.randomUniform(inputShape, 0, inputIntegerMax));
+    xs.push(xTensor);
+    xsData.push(Array.from(xTensor.dataSync()));
+    xsShapes.push(xTensor.shape);
   }
-  const inputShape = model.inputs[0].shape;
-  console.log(`1. inputShape = ${JSON.stringify(inputShape)}`);  // DEBUG
-  inputShape[0] = 1;
-  console.log(`2. inputShape = ${JSON.stringify(inputShape)}`);  // DEBUG
+  fs.writeFileSync(exportPathprefix + '.xs-data.json', JSON.stringify(xsData));
+  fs.writeFileSync(
+      exportPathprefix + '.xs-shapes.json', JSON.stringify(xsShapes));
 
-  const xs = inputIntegerMax == null ?
-      tf.randomNormal(inputShape) :
-      tf.floor(tf.randomUniform(inputShape, 0, inputIntegerMax));
-  if (inputIntegerMax != null) {
-    console.log('xs:');  // DEBUG
-    xs.print();          // DEBUG
-  }
-  const ys = model.predict(xs) as tf.Tensor;
+  const ys: tf.Tensor[] = model.outputs.length === 1 ?
+      [model.predict(xs) as tf.Tensor] :
+      model.predict(xs) as tf.Tensor[];
   fs.writeFileSync(
-      exportPath + '.xs-data.json', JSON.stringify(Array.from(xs.dataSync())));
-  fs.writeFileSync(exportPath + '.xs-shape.json', JSON.stringify(xs.shape));
+      exportPathprefix + '.ys-data.json',
+      JSON.stringify((ys.map(y => Array.from(y.dataSync())))));
   fs.writeFileSync(
-      exportPath + '.ys-data.json', JSON.stringify(Array.from(ys.dataSync())));
-  fs.writeFileSync(exportPath + '.ys-shape.json', JSON.stringify(ys.shape));
+      exportPathprefix + '.ys-shapes.json',
+      JSON.stringify(ys.map(y => y.shape)));
 }
 
 // Multi-layer perceptron (MLP).
@@ -61,7 +73,7 @@ async function exportMLPModel(exportPath: string) {
   model.add(tfl.layers.dense({units: 8, activation: 'softmax'}));
   await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputAndOutput(model, exportPath);
+  runAndSaveRandomInputsAndOutputs(model, exportPath);
 }
 
 // Convolutional neural network (CNN).
@@ -94,7 +106,7 @@ async function exportCNNModel(exportPath: string) {
   model.add(tfl.layers.dense({units: 100, activation: 'softmax'}));
   await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputAndOutput(model, exportPath);
+  runAndSaveRandomInputsAndOutputs(model, exportPath);
 }
 
 async function exportDepthwiseCNNModel(exportPath: string) {
@@ -116,7 +128,7 @@ async function exportDepthwiseCNNModel(exportPath: string) {
   model.add(tfl.layers.dense({units: 100, activation: 'softmax'}));
   await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputAndOutput(model, exportPath);
+  runAndSaveRandomInputsAndOutputs(model, exportPath);
 }
 
 // SimpleRNN with embedding.
@@ -127,7 +139,7 @@ async function exportSimpleRNNModel(exportPath: string) {
   model.add(tfl.layers.simpleRNN({units: 4}));
   await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputAndOutput(model, exportPath, inputDim);
+  runAndSaveRandomInputsAndOutputs(model, exportPath, inputDim);
 }
 
 // GRU with embedding.
@@ -138,7 +150,7 @@ async function exportGRUModel(exportPath: string) {
   model.add(tfl.layers.gru({units: 4, goBackwards: true}));
   await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputAndOutput(model, exportPath, inputDim);
+  runAndSaveRandomInputsAndOutputs(model, exportPath, inputDim);
 }
 
 // Bidirecitonal LSTM with embedding.
@@ -152,7 +164,7 @@ async function exportBidirectionalLSTMModel(exportPath: string) {
   model.add(tfl.layers.bidirectional({layer: lstm, mergeMode: 'concat'}));
   await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputAndOutput(model, exportPath, inputDim);
+  runAndSaveRandomInputsAndOutputs(model, exportPath, inputDim);
 }
 
 // LSTM + time-distributed layer with embedding.
@@ -166,7 +178,7 @@ async function exportTimeDistributedLSTMModel(exportPath: string) {
   }));
   await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputAndOutput(model, exportPath, inputDim);
+  runAndSaveRandomInputsAndOutputs(model, exportPath, inputDim);
 }
 
 // Model with Conv1D and Pooling1D layers.
@@ -181,33 +193,34 @@ async function exportOneDimensionalModel(exportPath: string) {
   model.add(tfl.layers.flatten());
   await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputAndOutput(model, exportPath);
+  runAndSaveRandomInputsAndOutputs(model, exportPath);
 }
 
 // Functional model with two Merge layers.
-// function exportFunctionalMergeModel(exportPath: string): void {
-//   const input1 = tfl.input({shape: [2, 5]});
-//   const input2 = tfl.input({shape: [4, 5]});
-//   const input3 = tfl.input({shape: [30]});
-//   const reshaped1 = tfl.layers.reshape({targetShape: [10]}).apply(input1) as
-//       tf.SymbolicTensor;
-//   const reshaped2 = tfl.layers.reshape({targetShape: [20]}).apply(input2) as
-//       tf.SymbolicTensor;
-//   const dense1 =
-//       tfl.layers.dense({units: 5}).apply(reshaped1) as tf.SymbolicTensor;
-//   const dense2 =
-//       tfl.layers.dense({units: 5}).apply(reshaped2) as tf.SymbolicTensor;
-//   const dense3 =
-//       tfl.layers.dense({units: 5}).apply(input3) as tf.SymbolicTensor;
-//   const avg =
-//       tfl.layers.average().apply([dense1, dense2]) as tf.SymbolicTensor;
-//   const concat = tfl.layers.concatenate({axis: -1}).apply([avg, dense3]) as
-//       tf.SymbolicTensor;
-//   const output =
-//       tfl.layers.dense({units: 1}).apply(concat) as tf.SymbolicTensor;
-//   const model = tfl.model({inputs: [input1, input2, input3], outputs:
-//   output}); fs.writeFileSync(exportPath, model.toJSON());
-// }
+async function exportFunctionalMergeModel(exportPath: string) {
+  const input1 = tfl.input({shape: [2, 5]});
+  const input2 = tfl.input({shape: [4, 5]});
+  const input3 = tfl.input({shape: [30]});
+  const reshaped1 = tfl.layers.reshape({targetShape: [10]}).apply(input1) as
+      tf.SymbolicTensor;
+  const reshaped2 = tfl.layers.reshape({targetShape: [20]}).apply(input2) as
+      tf.SymbolicTensor;
+  const dense1 =
+      tfl.layers.dense({units: 5}).apply(reshaped1) as tf.SymbolicTensor;
+  const dense2 =
+      tfl.layers.dense({units: 5}).apply(reshaped2) as tf.SymbolicTensor;
+  const dense3 =
+      tfl.layers.dense({units: 5}).apply(input3) as tf.SymbolicTensor;
+  const avg = tfl.layers.average().apply([dense1, dense2]) as tf.SymbolicTensor;
+  const concat = tfl.layers.concatenate({axis: -1}).apply([avg, dense3]) as
+      tf.SymbolicTensor;
+  const output =
+      tfl.layers.dense({units: 1}).apply(concat) as tf.SymbolicTensor;
+  const model = tfl.model({inputs: [input1, input2, input3], outputs: output});
+  await model.save(`file://${exportPath}`);
+
+  runAndSaveRandomInputsAndOutputs(model, exportPath);
+}
 
 // console.log(`Using tfjs-layers version: ${tfl.version_layers}`);
 console.log(`Using tfjs version: ${JSON.stringify(tf.version)}`);
@@ -228,6 +241,5 @@ const testDataDir = process.argv[2];
   await exportTimeDistributedLSTMModel(
       join(testDataDir, 'time_distributed_lstm'));
   await exportOneDimensionalModel(join(testDataDir, 'one_dimensional'));
-  // exportFunctionalMergeModel(join(testDataDir,
-  // 'functional_merge.json'));
+  await exportFunctionalMergeModel(join(testDataDir, 'functional_merge.json'));
 })();
