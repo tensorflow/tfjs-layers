@@ -39,8 +39,8 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
     _call_command(['yarn', 'link'])
 
     os.chdir(cwd)
-    _call_command(['yarn'])
     # _call_command(['yarn', 'link', '@tensorflow/tfjs-layers'])
+    _call_command(['yarn'])
     _call_command(['yarn', 'build'])  # TODO(cais): Decide.
     _call_command(['node', 'dist/tfjs_save.js', cls._tmp_dir])
 
@@ -67,7 +67,6 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
     with open(xs_shape_path, 'rt') as shape_f, open(xs_data_path, 'rt') as data_f:
       xs = np.array(
           json.load(data_f), dtype=np.float32).reshape(json.load(shape_f))
-      print('xs = %s' % xs)  # DEBUG
 
     ys_shape_path = os.path.join(
         self._tmp_dir, model_path + '.ys-shape.json')
@@ -76,43 +75,41 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
     with open(ys_shape_path, 'rt') as shape_f, open(ys_data_path, 'rt') as data_f:
       ys = np.array(
           json.load(data_f), dtype=np.float32).reshape(json.load(shape_f))
-      print('ys = %s' % ys)  # DEBUG
 
-    print('Loading model from path %s' % model_path)  # DEBUG
     with tf.Graph().as_default(), tf.Session():
       model_json_path = os.path.join(self._tmp_dir, model_path, 'model.json')
-      print('Loading %s' % model_json_path)
+      print('Loading model from path %s' % model_json_path)
       model = tfjs.converters.load_keras_model(model_json_path)
       ys_new = model.predict(xs)
-      print('ys_new = %s' % ys_new)
+      print(ys - ys_new)  # DEBUG
       self.assertAllClose(ys, ys_new)
 
-  # def testMLP(self):
-  #   self._loadAndTestModel('mlp.json')
+  def testMLP(self):
+    self._loadAndTestModel('mlp')
 
   def testCNN(self):
     self._loadAndTestModel('cnn')
 
-  # def testDepthwiseCNN(self):
-  #   self._loadAndTestModel('depthwise_cnn.json')
+  def testDepthwiseCNN(self):
+    self._loadAndTestModel('depthwise_cnn')
 
-  # def testSimpleRNN(self):
-  #   self._loadAndTestModel('simple_rnn.json')
+  def testSimpleRNN(self):
+    self._loadAndTestModel('simple_rnn')
 
-  # def testGRU(self):
-  #   self._loadAndTestModel('gru.json')
+  def testGRU(self):
+    self._loadAndTestModel('gru')
 
-  # def testBidirectionalLSTM(self):
-  #   self._loadAndTestModel('bidirectional_lstm.json')
+  def testBidirectionalLSTM(self):
+    self._loadAndTestModel('bidirectional_lstm')
 
-  # def testTimeDistributedLSTM(self):
-  #   self._loadAndTestModel('time_distributed_lstm.json')
+  def testTimeDistributedLSTM(self):
+    self._loadAndTestModel('time_distributed_lstm')
 
-  # def testOneDimensional(self):
-  #   self._loadAndTestModel('one_dimensional.json')
+  def testOneDimensional(self):
+    self._loadAndTestModel('one_dimensional')
 
-  # def testFunctionalMerge(self):
-  #   self._loadAndTestModel('functional_merge.json')
+  def testFunctionalMerge(self):
+    self._loadAndTestModel('functional_merge.json')
 
 
 if __name__ == '__main__':
