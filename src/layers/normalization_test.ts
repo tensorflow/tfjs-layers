@@ -12,7 +12,6 @@
  * Unit tests for normalization layers.
  */
 
-// tslint:disable:max-line-length
 import {onesLike, Tensor, tensor1d, tensor2d, tensor3d, tensor4d, train, zeros, zerosLike} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';

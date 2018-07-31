@@ -8,7 +8,6 @@
  * =============================================================================
  */
 
-// tslint:disable:max-line-length
 import {DataType, eye, linalg, mul, ones, randomUniform, scalar, Scalar, serialization, Tensor, Tensor2D, tidy, truncatedNormal, zeros} from '@tensorflow/tfjs-core';
 
 import {getScalar} from './backend/state';

@@ -12,7 +12,6 @@
  * Unit tests for convolutional_depthwise.ts.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor, tensor4d, Tensor4D} from '@tensorflow/tfjs-core';
 

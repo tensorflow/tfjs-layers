@@ -12,7 +12,6 @@
  * Unit tests for optimizers.ts.
  */
 
-// tslint:disable:max-line-length
 import {AdagradOptimizer, AdadeltaOptimizer, AdamOptimizer, AdamaxOptimizer, RMSPropOptimizer, SGDOptimizer} from '@tensorflow/tfjs-core';
 
 import {getOptimizer} from './optimizers';

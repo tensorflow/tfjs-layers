@@ -12,7 +12,6 @@
  * TensorFlow.js Layers: Pooling Layers.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, Tensor3D, Tensor4D, tidy} from '@tensorflow/tfjs-core';
 

@@ -10,7 +10,6 @@
 
 // This file lists all exports of TensorFlow.js Layers
 
-// tslint:disable:max-line-length
 import * as constraints from './exports_constraints';
 import * as initializers from './exports_initializers';
 import * as layers from './exports_layers';

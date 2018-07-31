@@ -12,7 +12,6 @@
  * Unit tests for recurrent.ts.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {randomNormal, Scalar, scalar, Tensor, tensor2d, tensor3d, tensor4d} from '@tensorflow/tfjs-core';
 

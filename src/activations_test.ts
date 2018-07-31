@@ -11,7 +11,6 @@
 /**
  * Unit tests for activations.ts.
  */
-// tslint:disable:max-line-length
 import {scalar, tensor1d, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 
 import {Elu, HardSigmoid, Linear, Relu, Relu6, Selu, Sigmoid, Softmax, Softplus, Softsign, Tanh} from './activations';

@@ -12,7 +12,6 @@
  * Unit tests for the TF.js core backend of TF.js Layers.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {DataType, scalar, tensor1d, tensor2d, tensor3d, tensor4d, zeros} from '@tensorflow/tfjs-core';
 

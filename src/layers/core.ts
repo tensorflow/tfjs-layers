@@ -14,7 +14,6 @@
 
 import {Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
-// tslint:disable:max-line-length
 import {Activation as ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';

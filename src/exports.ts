@@ -12,7 +12,6 @@
  * Exported functions.
  */
 
-// tslint:disable:max-line-length
 import {io} from '@tensorflow/tfjs-core';
 
 import {ContainerConfig} from './engine/container';

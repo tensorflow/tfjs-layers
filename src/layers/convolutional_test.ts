@@ -12,7 +12,6 @@
  * Unit tests for convolutional.ts.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {scalar, Tensor, tensor1d, tensor3d, Tensor4D, tensor4d, util} from '@tensorflow/tfjs-core';
 

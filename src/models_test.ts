@@ -8,7 +8,6 @@
  * =============================================================================
  */
 
-// tslint:disable:max-line-length
 import {DataType, io, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 
 import {Model} from './engine/training';

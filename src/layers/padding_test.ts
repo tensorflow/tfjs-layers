@@ -12,7 +12,6 @@
  * Unit Tests for Padding Layers.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor, tensor3d} from '@tensorflow/tfjs-core';
 

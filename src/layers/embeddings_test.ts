@@ -12,7 +12,6 @@
  * Unit tests for embedding.ts.
  */
 
-// tslint:disable:max-line-length
 import {DataType, Tensor, tensor2d, tensor3d, test_util} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';

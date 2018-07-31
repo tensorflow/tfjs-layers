@@ -12,12 +12,10 @@
  * TensorFlow.js Layers: Depthwise Convolutional Layers
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, Tensor4D, tidy} from '@tensorflow/tfjs-core';
 
 import {imageDataFormat} from '../backend/common';
-// tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from '../common';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';

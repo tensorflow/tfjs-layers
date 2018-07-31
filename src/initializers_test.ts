@@ -12,7 +12,6 @@
  * Unit tests for initializers.
  */
 
-// tslint:disable:max-line-length
 import {eye, serialization, Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as tfl from './index';

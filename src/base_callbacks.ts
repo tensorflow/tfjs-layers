@@ -10,7 +10,6 @@
 
 /* Original source: keras/callbacks.py */
 
-// tslint:disable:max-line-length
 import {add, div, keep, mul, nextFrame, Scalar, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import {getScalar} from './backend/state';

@@ -7,7 +7,6 @@
  * https://opensource.org/licenses/MIT.
  * =============================================================================
  */
-// tslint:disable:max-line-length
 
 import {InputLayer, InputLayerConfig} from './engine/input_layer';
 import {Layer, LayerConfig} from './engine/topology';

@@ -12,7 +12,6 @@
  * Optimizers.
  */
 
-// tslint:disable:max-line-length
 import {Optimizer, train} from '@tensorflow/tfjs-core';
 
 import {epsilon} from './backend/common';

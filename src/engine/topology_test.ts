@@ -8,7 +8,6 @@
  * =============================================================================
  */
 
-// tslint:disable:max-line-length
 import {eye, ones, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 import * as tfl from '../index';
 import * as initializers from '../initializers';

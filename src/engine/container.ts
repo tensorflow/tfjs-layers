@@ -10,7 +10,6 @@
 
 /* Original source: keras/engine/topology.py */
 
-// tslint:disable:max-line-length
 import {Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import {getUid} from '../backend/state';

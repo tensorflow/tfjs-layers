@@ -12,7 +12,6 @@
  * Unit tests for core.ts.
  */
 
-// tslint:disable:max-line-length
 import {ones, serialization, Tensor, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 
 import {Layer} from '../engine/topology';

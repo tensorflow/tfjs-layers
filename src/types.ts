@@ -10,7 +10,6 @@
 
 /** Defines allowable data types for tensors. */
 
-// tslint:disable:max-line-length
 import {Scalar, Tensor} from '@tensorflow/tfjs-core';
 // tslint:enable:max-line-length
 

@@ -10,7 +10,6 @@
 
 /* Original source keras/models.py */
 
-// tslint:disable:max-line-length
 import {io, Scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {getUid} from './backend/state';
@@ -118,7 +117,6 @@ export interface ModelPredictConfig {
   verbose?: boolean;
 }
 
-// tslint:disable:max-line-length
 /**
  * Load a model, including its topology and optionally weights.  See the
  * Tutorial named "How to import a Keras Model" for usage examples.

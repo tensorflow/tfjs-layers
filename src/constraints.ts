@@ -10,7 +10,6 @@
 
 /* Original source: keras/contraints.py */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 

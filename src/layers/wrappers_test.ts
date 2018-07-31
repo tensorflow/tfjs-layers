@@ -12,7 +12,6 @@
  * Unit tests for wrapper layers.
  */
 
-// tslint:disable:max-line-length
 import {ones, scalar, serialization, Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
 
 import {Layer, SymbolicTensor} from '../engine/topology';

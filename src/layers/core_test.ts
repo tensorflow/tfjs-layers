@@ -12,7 +12,6 @@
  * Unit tests for core.ts.
  */
 
-// tslint:disable:max-line-length
 import {mul, ones, scalar, Tensor, tensor2d, tensor3d, tensor4d, zeros} from '@tensorflow/tfjs-core';
 
 import {ActivationIdentifier} from '../activations';

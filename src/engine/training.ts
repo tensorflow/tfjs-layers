@@ -10,7 +10,6 @@
 
 /* Original Source: engine/training.py */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
 
@@ -1854,7 +1853,6 @@ export class Model extends Container implements tfc.InferenceModel {
     return namedWeights;
   }
 
-  // tslint:disable:max-line-length
   /**
    * Save the configuration and/or weights of the Model.
    *

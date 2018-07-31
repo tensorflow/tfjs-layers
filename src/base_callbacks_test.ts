@@ -12,7 +12,6 @@
  * Unit tests for callbacks.
  */
 
-// tslint:disable:max-line-length
 import {scalar} from '@tensorflow/tfjs-core';
 
 import {BaseLogger, CallbackList, History} from './base_callbacks';

@@ -12,7 +12,6 @@
  * Unit tests for pooling.ts.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor, tensor2d, Tensor2D, tensor3d, tensor4d, Tensor4D, util} from '@tensorflow/tfjs-core';
 

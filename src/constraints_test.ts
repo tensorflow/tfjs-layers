@@ -10,7 +10,6 @@
 
 /* Unit tests for constraints */
 
-// tslint:disable:max-line-length
 import {serialization, Tensor1D, tensor1d} from '@tensorflow/tfjs-core';
 
 import {ConstraintIdentifier, deserializeConstraint, getConstraint, serializeConstraint} from './constraints';

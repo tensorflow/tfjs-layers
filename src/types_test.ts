@@ -12,7 +12,6 @@
  * Unit tests for -specific types.
  */
 
-// tslint:disable:max-line-length
 
 import {SymbolicTensor} from './engine/topology';
 

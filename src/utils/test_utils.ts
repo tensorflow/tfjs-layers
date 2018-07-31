@@ -12,7 +12,6 @@
  * Testing utilities.
  */
 
-// tslint:disable:max-line-length
 import {memory, Tensor, test_util} from '@tensorflow/tfjs-core';
 import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 

@@ -12,7 +12,6 @@
  * TensorFlow.js Layers: Recurrent Neural Network Layers.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {DataType, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 

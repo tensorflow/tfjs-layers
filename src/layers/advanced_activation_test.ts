@@ -12,7 +12,6 @@
  * Unit Tests for Advanced Activation Layers.
  */
 
-// tslint:disable:max-line-length
 import {Tensor, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';
