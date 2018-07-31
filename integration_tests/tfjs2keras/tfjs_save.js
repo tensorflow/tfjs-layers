@@ -8,12 +8,12 @@
  * =============================================================================
  */
 
-import * as fs from 'fs';
-import {join} from 'path';
+const fs = require('fs');
+const path = require('path');
 
 // import * as tfc from '@tensorflow/tfjs-core';
-import * as tf from '@tensorflow/tfjs';
-const tfjsNode = require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs');
+const tfjsNode = require('@tensorflow/tfjs-node');  // TODO(cais): Decide.
 // import * as tfl from '@tensorflow/tfjs-layers';
 
 // Multi-layer perceptron (MLP).
@@ -31,7 +31,7 @@ const tfjsNode = require('@tensorflow/tfjs-node');
 // }
 
 // Convolutional neural network (CNN).
-async function exportCNNModel(exportPath: string) {
+async function exportCNNModel(exportPath) {
   const model = tf.sequential();
 
   // Cover separable and non-separable convoluational layers.
@@ -63,7 +63,7 @@ async function exportCNNModel(exportPath: string) {
 
   // Create a random input and get its predict() output.
   const xs = tf.randomNormal([1].concat(inputShape));
-  const ys = model.predict(xs) as tf.Tensor;
+  const ys = model.predict(xs);
   fs.writeFileSync(
       exportPath + '.xs-data.json', JSON.stringify(Array.from(xs.dataSync())));
   fs.writeFileSync(
@@ -182,7 +182,8 @@ const testDataDir = process.argv[2];
 
 (async function () {
   // exportMLPModel(join(testDataDir, 'mlp.json'));
-  await exportCNNModel(join(testDataDir, 'cnn'));
+  fs.mkdirSync(testDataDir);
+  await exportCNNModel(path.join(testDataDir, 'cnn'));
   // exportDepthwiseCNNModel(join(testDataDir, 'depthwise_cnn.json'));
   // exportSimpleRNNModel(join(testDataDir, 'simple_rnn.json'));
   // exportGRUModel(join(testDataDir, 'gru.json'));
