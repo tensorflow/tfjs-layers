@@ -23,7 +23,7 @@ const tfl = tf;
  * Generate random input(s) get predict() output(s) and save them.
  *
  * @param model The `tf.Model` instance in question. It may have one or more
- *   inputs and one or more outputs. It is assume that for each input, only
+ *   inputs and one or more outputs. It is assumed that for each input, only
  *   the first dimension (i.e., the batch dimension) is undetermined.
  * @param exportPathprefix The path prefix to which the input and output tensors
  *   will be saved
@@ -38,6 +38,12 @@ function runAndSaveRandomInputsAndOutputs(
   for (const inputTensor of model.inputs) {
     const inputShape = inputTensor.shape;
     inputShape[0] = 1;
+    if (inputShape.indexOf(null) !== -1) {
+      throw new Error(
+          `It is assume that the only the first dimension of the tensor ` +
+          `is undetermined, but the assumption is not satisfied for ` +
+          `input shape ${JSON.stringify(inputTensor.shape)}`);
+    }
     const xTensor = inputIntegerMax == null ?
         tf.randomNormal(inputShape) :
         tf.floor(tf.randomUniform(inputShape, 0, inputIntegerMax));
