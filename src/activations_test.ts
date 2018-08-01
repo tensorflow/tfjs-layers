@@ -16,7 +16,6 @@ import {scalar, tensor1d, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 import {Elu, HardSigmoid, Linear, Relu, Relu6, Selu, Sigmoid, Softmax, Softplus, Softsign, Tanh} from './activations';
 import {describeMathCPUAndGPU, expectNoLeakedTensors, expectTensorsClose} from './utils/test_utils';
 
-// tslint:enable
 
 describeMathCPUAndGPU('linear activation', () => {
   const initVals = new Float32Array([-1, 2, 0, 4, -5, 6]);
