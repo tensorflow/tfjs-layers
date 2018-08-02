@@ -19,7 +19,6 @@ import {SymbolicTensor} from '../engine/topology';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 import {batchNormalization, normalizeBatchInTraining} from './normalization';
 
-// tslint:enable:max-line-length
 
 describeMathCPUAndGPU('normalizeBatchInTraining', () => {
   // The reference values for assertion below can be obtained with Python code

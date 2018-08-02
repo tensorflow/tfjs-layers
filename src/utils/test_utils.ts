@@ -18,7 +18,6 @@ import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
 import {disposeScalarCache} from '../backend/state';
 import {ValueError} from '../errors';
 
-// tslint:enable:max-line-length
 
 /**
  * Expect values are close between an Tensor or number array.

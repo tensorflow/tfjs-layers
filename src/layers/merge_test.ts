@@ -23,7 +23,6 @@ import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../uti
 
 import {Add, Average, Concatenate, Maximum, Minimum, Multiply} from './merge';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
   const layers = [Add, Average, Multiply, Maximum, Minimum];

@@ -32,7 +32,6 @@ import {Container, ContainerConfig} from './container';
 import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
 
-// tslint:enable:max-line-length
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
@@ -1931,7 +1930,6 @@ export class Model extends Container implements tfc.InferenceModel {
   /**
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
    */
-  // tslint:enable:max-line-length
   async save(handlerOrURL: io.IOHandler|string, config?: io.SaveConfig):
       Promise<io.SaveResult> {
     if (typeof handlerOrURL === 'string') {

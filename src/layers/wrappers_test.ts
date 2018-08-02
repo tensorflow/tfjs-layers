@@ -25,7 +25,6 @@ import {RNN, SimpleRNN} from './recurrent';
 import {deserialize} from './serialization';
 import {Bidirectional, BidirectionalMergeMode, checkBidirectionalMergeMode, TimeDistributed, VALID_BIDIRECTIONAL_MERGE_MODES} from './wrappers';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('TimeDistributed Layer: Symbolic', () => {
   it('3D input: Dense', () => {

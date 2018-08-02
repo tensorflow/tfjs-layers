@@ -11,7 +11,6 @@
 /** Defines allowable data types for tensors. */
 
 import {Scalar, Tensor} from '@tensorflow/tfjs-core';
-// tslint:enable:max-line-length
 
 /** @docalias number[] */
 export type Shape = number[];

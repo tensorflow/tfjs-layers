@@ -17,7 +17,6 @@ import {LayerVariable, onesVariable, zerosVariable} from '../variables';
 
 import {loadWeightsFromJson, loadWeightsFromNamedTensorMap} from './container';
 import {InputSpec, Layer, LayerConfig, Node} from './topology';
-// tslint:enable:max-line-length
 
 class LayerForTest extends tfl.layers.Layer {
   static className = 'LayerForTest';

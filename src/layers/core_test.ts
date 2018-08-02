@@ -24,7 +24,6 @@ import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_u
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {Activation, RepeatVector, Reshape} from './core';
-// tslint:enable:max-line-length
 
 describe('Dropout Layer: Symbolic', () => {
   const dropoutRates = [0, 0.5];

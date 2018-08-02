@@ -31,7 +31,6 @@ import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 
 import {deserialize} from './serialization';
 
-// tslint:enable:max-line-length
 
 /**
  * Standardize `apply()` args to a single list of tensor inputs.

@@ -29,7 +29,6 @@ import {convOutputLength, deconvLength, normalizeArray} from '../utils/conv_util
 import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
-// tslint:enable:max-line-length
 
 /**
  * Transpose and cast the input before the conv2d.

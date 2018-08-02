@@ -16,7 +16,6 @@ import {ConstraintIdentifier, deserializeConstraint, getConstraint, serializeCon
 import * as tfl from './index';
 import {describeMathCPU, expectNoLeakedTensors, expectTensorsClose} from './utils/test_utils';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('Built-in Constraints', () => {
   let initVals: Tensor1D;

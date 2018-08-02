@@ -16,7 +16,6 @@ import * as tfl from './index';
 import {deserializeRegularizer, getRegularizer, serializeRegularizer} from './regularizers';
 import {describeMathCPU, expectTensorsClose} from './utils/test_utils';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('Built-in Regularizers', () => {
   it('l1_l2', () => {

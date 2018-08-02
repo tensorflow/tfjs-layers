@@ -16,7 +16,6 @@ import {Tensor, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
-// tslint:enable:max-line-length
 
 describeMathCPU('leakyReLU: Symbolic', () => {
   it('Correct output shape', () => {

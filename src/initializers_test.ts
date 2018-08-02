@@ -19,7 +19,6 @@ import {checkDistribution, checkFanMode, getInitializer, serializeInitializer, V
 import * as math_utils from './utils/math_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectNoLeakedTensors, expectTensorsClose, expectTensorsValuesInRange} from './utils/test_utils';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('Zeros initializer', () => {
   it('1D', () => {

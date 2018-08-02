@@ -18,7 +18,6 @@ import {Shape} from './types';
 import {checkStringTypeUnionValue, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
 
-// tslint:enable:max-line-length
 
 /** @docinline */
 export type FanMode = 'fanIn'|'fanOut'|'fanAvg';

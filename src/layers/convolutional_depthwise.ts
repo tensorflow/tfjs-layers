@@ -29,7 +29,6 @@ import {LayerVariable} from '../variables';
 
 import {BaseConv, BaseConvLayerConfig, ConvLayerConfig, preprocessConv2DInput} from './convolutional';
 
-// tslint:enable:max-line-length
 
 /**
  * 2D convolution with separable filters.

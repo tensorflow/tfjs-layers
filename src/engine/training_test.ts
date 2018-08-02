@@ -28,7 +28,6 @@ import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsCl
 import {Layer, SymbolicTensor} from './topology';
 import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, makeBatches, sliceArraysByIndices, standardizeInputData} from './training';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('isDataTensor', () => {
   it('Positive case', () => {

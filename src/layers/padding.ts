@@ -25,7 +25,6 @@ import {ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 
-// tslint:enable:max-line-length
 
 /**
  * Pads the middle dimension of a 3D tensor.

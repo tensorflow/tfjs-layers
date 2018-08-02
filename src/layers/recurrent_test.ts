@@ -24,7 +24,6 @@ import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_u
 import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {GRU, LSTM, rnn, RNN, RNNCell} from './recurrent';
-// tslint:enable:max-line-length
 
 /**
  * A simplistic RNN step function for testing.

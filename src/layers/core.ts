@@ -27,7 +27,6 @@ import * as math_utils from '../utils/math_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-// tslint:enable:max-line-length
 
 export interface DropoutLayerConfig extends LayerConfig {
   /** Float between 0 and 1. Fraction of the input units to drop. */

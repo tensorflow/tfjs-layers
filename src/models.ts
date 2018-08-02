@@ -24,7 +24,6 @@ import {JsonDict} from './types';
 import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 import {getExactlyOneShape} from './utils/types_utils';
-// tslint:enable:max-line-length
 
 /**
  * Parses a JSON model configuration file and returns a model instance.
@@ -196,7 +195,7 @@ export interface ModelPredictConfig {
  *
  * @returns A `Promise` of `Model`, with the topology and weights loaded.
  */
-// tslint:enable:max-line-length
+
 export async function loadModelInternal(pathOrIOHandler: string|
                                         io.IOHandler): Promise<Model> {
   if (typeof pathOrIOHandler === 'string') {

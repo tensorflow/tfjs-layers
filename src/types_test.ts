@@ -15,7 +15,6 @@
 
 import {SymbolicTensor} from './engine/topology';
 
-// tslint:enable:max-line-length
 
 /**
  * Unit tests for SymbolicTensor.

@@ -22,7 +22,6 @@ import {LayerVariable} from '../variables';
 
 import * as K from './tfjs_backend';
 
-// tslint:enable:max-line-length
 
 describe('TensorMath', () => {
   it('Setting and getting backend', () => {

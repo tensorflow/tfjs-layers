@@ -19,7 +19,6 @@ import {describeMathCPU} from '../utils/test_utils';
 
 const expectArraysClose = test_util.expectArraysClose;
 
-// tslint:enable:max-line-length
 
 describeMathCPU('Embedding Layers: Symbolic 1D, 2D & 3D', () => {
   const inputShapes = [[1], [5], [1, 20], [2, 3, 4]];

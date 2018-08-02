@@ -26,7 +26,6 @@ import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-// tslint:enable:max-line-length
 
 export interface EmbeddingLayerConfig extends LayerConfig {
   /**

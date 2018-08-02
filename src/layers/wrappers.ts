@@ -29,7 +29,6 @@ import {LayerVariable} from '../variables';
 import {rnn, RNN, standardizeArgs} from './recurrent';
 import {deserialize} from './serialization';
 
-// tslint:enable:max-line-length
 
 export interface WrapperLayerConfig extends LayerConfig {
   /**

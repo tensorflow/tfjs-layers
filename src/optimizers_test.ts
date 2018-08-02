@@ -17,7 +17,6 @@ import {AdagradOptimizer, AdadeltaOptimizer, AdamOptimizer, AdamaxOptimizer, RMS
 import {getOptimizer} from './optimizers';
 import {describeMathCPU} from './utils/test_utils';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('getOptimizer', () => {
   // TODO(nsthorat): Assert defaults by getting config from the optimizer.

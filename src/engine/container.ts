@@ -24,7 +24,6 @@ import {version as layersVersion} from '../version';
 
 import {InputLayer} from './input_layer';
 import {Layer, Node, SymbolicTensor} from './topology';
-// tslint:enable:max-line-length
 
 /**
  * Converts layers weights to a format suitable for TensorFlow.js Layers.

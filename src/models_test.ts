@@ -20,7 +20,6 @@ import {convertPythonicToTs} from './utils/serialization_utils';
 import {describeMathCPU, expectTensorsClose, describeMathCPUAndGPU} from './utils/test_utils';
 import {version as layersVersion} from './version';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('Nested model topology', () => {
   it('Nested Sequential model: Sequential as first layer', done => {

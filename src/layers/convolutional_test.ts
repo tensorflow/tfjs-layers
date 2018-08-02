@@ -23,7 +23,6 @@ import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsCl
 
 import {conv1d, conv1dWithBias, conv2d, conv2dWithBias} from './convolutional';
 
-// tslint:enable:max-line-length
 
 describeMathCPUAndGPU('conv1dWithBias', () => {
   const xLength4Data = [10, 20, 40, 80];

@@ -27,7 +27,6 @@ import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 
 import {preprocessConv2DInput} from './convolutional';
 
-// tslint:enable:max-line-length
 
 /**
  * 2D pooling.

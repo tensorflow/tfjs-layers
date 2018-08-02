@@ -16,7 +16,6 @@ import {abs, add, Scalar, serialization, sum, Tensor, tidy, zeros} from '@tensor
 import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
-// tslint:enable:max-line-length
 
 /**
  * Regularizer base class.

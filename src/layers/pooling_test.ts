@@ -23,7 +23,6 @@ import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {pool2d} from './pooling';
 
-// tslint:enable:max-line-length
 describeMathCPUAndGPU('pool2d', () => {
   const x4by4Data = [[[
     [10, 30, 50, 70], [20, 40, 60, 80], [-10, -30, -50, -70],
