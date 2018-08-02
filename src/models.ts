@@ -192,9 +192,12 @@ export interface ModelPredictConfig {
  *      - 'weightsManifest': A TensorFlow.js weights manifest.
  *      See the Python converter function `save_model()` for more details.
  *      It is also assumed that model weights can be accessed from relative
- * paths described by the `paths` fields in weights manifest.
+ *      paths described by the `paths` fields in weights manifest.
  *   2. An `tf.io.IOHandler` object that loads model artifacts with its `load`
  *      method.
+ * @param strict Require that the provided weights exactly match those required
+ *   by the layers.  Default true.  Passing false means that both extra weights
+ *   and missing weights will be silently ignored.
  *
  * @returns A `Promise` of `Model`, with the topology and weights loaded.
  */

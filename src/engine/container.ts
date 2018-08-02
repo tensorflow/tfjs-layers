@@ -164,6 +164,9 @@ export function loadWeightsFromJson(
  *
  * @param weights The named tensor map mapping names of weights to weight
  *   values.
+ * @param strict Require that the provided weights exactly match those required
+ *   by the layers.  Default true.  Passing false means that both extra weights
+ *   and missing weights will be silently ignored.
  * @param layers An array of target layers.
  */
 export function loadWeightsFromNamedTensorMap(
@@ -696,6 +699,9 @@ export abstract class Container extends Layer {
    *   weight (only valid when `by_name`=True).
    * @param isNamedTensorMap Whether the 1st argument (`weightsJSON`) is a
    *   `NamedTensorMap`.
+   * @param strict Require that the provided weights exactly match those
+   *   required by the container.  Default true.  Passing false means that both
+   *   extra weights and missing weights will be silently ignored.
    */
   loadWeights(
       weightsJSON: JsonDict|NamedTensorMap, skipMismatch = false,
