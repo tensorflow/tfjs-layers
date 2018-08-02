@@ -86,7 +86,7 @@ export function printSummary(
   printFn('_'.repeat(lineLength));
 }
 
-export function countTrainableParams(model: Container): number {
+function countTrainableParams(model: Container): number {
   let trainableCount: number;
   // tslint:disable:no-any
   if ((model as any).collectedTrainableWeights != null) {
