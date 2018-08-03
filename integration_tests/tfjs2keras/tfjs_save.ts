@@ -8,18 +8,11 @@
  * =============================================================================
  */
 
-// import * as tfc from '@tensorflow/tfjs-core';
-import * as tf from '@tensorflow/tfjs';
+import * as tfc from '@tensorflow/tfjs-core';
 import * as tfjsNode from '@tensorflow/tfjs-node';
+import * as tfl from '@tensorflow/tfjs-layers';
 import * as fs from 'fs';
 import {join} from 'path';
-
-// TODO(cais): Restore once tfn.io.NodeFileSystem is exposed.
-// import * as tfl from '@tensorflow/tfjs-layers';
-
-const tfl = tf;
-
-console.log(tfjsNode.io.NodeFileSystem);  // DEBUG
 
 /**
  * Generate random input(s) get predict() output(s) and save them, along with
@@ -28,17 +21,17 @@ console.log(tfjsNode.io.NodeFileSystem);  // DEBUG
  * @param model The `tf.Model` instance in question. It may have one or more
  *   inputs and one or more outputs. It is assumed that for each input, only
  *   the first dimension (i.e., the batch dimension) is undetermined.
- * @param exportPathprefix The path prefix to which the input and output tensors
- *   will be saved
+ * @param exportPathprefix The path prefix to which the model, the input and
+ *   output tensors will be saved
  * @param inputIntegerMax (Optional) Maximum integer value for the input
  *   tensors. Used for models that take integer tensors as inputs.
  */
 async function saveModelAndRandomInputsAndOutputs(
-    model: tf.Model, exportPathprefix: string, inputIntegerMax?: number) {
+    model: tfl.Model, exportPathprefix: string, inputIntegerMax?: number) {
 
   await model.save(new tfjsNode.io.NodeFileSystem(`${exportPathprefix}`));
 
-  const xs: tf.Tensor[] = [];
+  const xs: tfc.Tensor[] = [];
   const xsData: number[][] = [];
   const xsShapes: number[][] = [];
   for (const inputTensor of model.inputs) {
@@ -51,8 +44,8 @@ async function saveModelAndRandomInputsAndOutputs(
           `input shape ${JSON.stringify(inputTensor.shape)}`);
     }
     const xTensor = inputIntegerMax == null ?
-        tf.randomNormal(inputShape) :
-        tf.floor(tf.randomUniform(inputShape, 0, inputIntegerMax));
+        tfc.randomNormal(inputShape) :
+        tfc.floor(tfc.randomUniform(inputShape, 0, inputIntegerMax));
     xs.push(xTensor);
     xsData.push(Array.from(xTensor.dataSync()));
     xsShapes.push(xTensor.shape);
@@ -61,9 +54,9 @@ async function saveModelAndRandomInputsAndOutputs(
   fs.writeFileSync(
       exportPathprefix + '.xs-shapes.json', JSON.stringify(xsShapes));
 
-  const ys: tf.Tensor[] = model.outputs.length === 1 ?
-      [model.predict(xs) as tf.Tensor] :
-      model.predict(xs) as tf.Tensor[];
+  const ys: tfc.Tensor[] = model.outputs.length === 1 ?
+      [model.predict(xs) as tfc.Tensor] :
+      model.predict(xs) as tfc.Tensor[];
   fs.writeFileSync(
       exportPathprefix + '.ys-data.json',
       JSON.stringify((ys.map(y => Array.from(y.dataSync())))));
@@ -123,7 +116,7 @@ async function exportDepthwiseCNNModel(exportPath: string) {
   const model = tfl.sequential();
 
   // Cover depthwise 2D convoluational layer.
-  model.add(tf.layers.depthwiseConv2d({
+  model.add(tfl.layers.depthwiseConv2d({
     depthMultiplier: 2,
     kernelSize: [3, 3],
     strides: [2, 2],
@@ -206,27 +199,27 @@ async function exportFunctionalMergeModel(exportPath: string) {
   const input2 = tfl.input({shape: [4, 5]});
   const input3 = tfl.input({shape: [30]});
   const reshaped1 = tfl.layers.reshape({targetShape: [10]}).apply(input1) as
-      tf.SymbolicTensor;
+      tfl.SymbolicTensor;
   const reshaped2 = tfl.layers.reshape({targetShape: [20]}).apply(input2) as
-      tf.SymbolicTensor;
+      tfl.SymbolicTensor;
   const dense1 =
-      tfl.layers.dense({units: 5}).apply(reshaped1) as tf.SymbolicTensor;
+      tfl.layers.dense({units: 5}).apply(reshaped1) as tfl.SymbolicTensor;
   const dense2 =
-      tfl.layers.dense({units: 5}).apply(reshaped2) as tf.SymbolicTensor;
+      tfl.layers.dense({units: 5}).apply(reshaped2) as tfl.SymbolicTensor;
   const dense3 =
-      tfl.layers.dense({units: 5}).apply(input3) as tf.SymbolicTensor;
-  const avg = tfl.layers.average().apply([dense1, dense2]) as tf.SymbolicTensor;
+      tfl.layers.dense({units: 5}).apply(input3) as tfl.SymbolicTensor;
+  const avg = tfl.layers.average().apply([dense1, dense2]) as tfl.SymbolicTensor;
   const concat = tfl.layers.concatenate({axis: -1}).apply([avg, dense3]) as
-      tf.SymbolicTensor;
+      tfl.SymbolicTensor;
   const output =
-      tfl.layers.dense({units: 1}).apply(concat) as tf.SymbolicTensor;
+      tfl.layers.dense({units: 1}).apply(concat) as tfl.SymbolicTensor;
   const model = tfl.model({inputs: [input1, input2, input3], outputs: output});
 
   await saveModelAndRandomInputsAndOutputs(model, exportPath);
 }
 
-// console.log(`Using tfjs-layers version: ${tfl.version_layers}`);
-console.log(`Using tfjs version: ${JSON.stringify(tf.version)}`);
+console.log(`Using tfjs-core version: ${tfc.version_core}`);
+console.log(`Using tfjs-layers version: ${tfl.version_layers}`);
 console.log(`Using tfjs-node version: ${tfjsNode.version}`);
 
 if (process.argv.length !== 3) {
