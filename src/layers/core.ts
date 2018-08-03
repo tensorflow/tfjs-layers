@@ -12,18 +12,18 @@
  * TensorFlow.js Layers: Basic Layers.
  */
 
-import {Scalar, serialization, Tensor, transpose, tidy, util} from '@tensorflow/tfjs-core';
+import {Scalar, serialization, Tensor, tidy, transpose, util} from '@tensorflow/tfjs-core';
 
 import {Activation as ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
+import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {Layer, LayerConfig, InputSpec} from '../engine/topology';
-import {getScalar} from '../backend/state';
+import {InputSpec, Layer, LayerConfig} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Kwargs, Shape} from '../types';
-import * as math_utils from '../utils/math_utils';
+import {arrayProd, range} from '../utils/math_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
@@ -352,7 +352,7 @@ export class Flatten extends Layer {
             `layer in your model.`);
       }
     }
-    return [inputShape[0], math_utils.arrayProd(inputShape, 1)];
+    return [inputShape[0], arrayProd(inputShape, 1)];
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
@@ -556,7 +556,7 @@ export class Reshape extends Layer {
       }
     }
 
-    const originalSize = math_utils.arrayProd(inputShape);
+    const originalSize = arrayProd(inputShape);
     if (unknown !== null) {
       if (known === 0 || originalSize % known !== 0) {
         throw new ValueError(errorMsg);
@@ -615,7 +615,7 @@ export interface PermuteLayerConfig extends LayerConfig {
    * For instance, `[2, 1]` permutes the first and second dimensions
    * of the input.
    */
-  dims: number[]
+  dims: number[];
 }
 
 /**
@@ -646,6 +646,7 @@ export interface PermuteLayerConfig extends LayerConfig {
 export class Permute extends Layer {
   static className = 'Permute';
   readonly dims: number[];
+  private readonly dimsIncludingBatch: number[];
 
   constructor(config: PermuteLayerConfig) {
     super(config);
@@ -656,12 +657,21 @@ export class Permute extends Layer {
     }
     if (!Array.isArray(config.dims)) {
       throw new Error(
-          'Permute constructor requires `dims` to be an array, but received ' +
+          'Permute constructor requires `dims` to be an Array, but received ' +
           `${config.dims} instead.`);
     }
 
+    // Check the validity of the permutation indices.
+    const expectedSortedIndices = range(1, config.dims.length + 1);
+    if (!util.arraysEqual(config.dims.slice().sort(), expectedSortedIndices)) {
+      throw new Error(
+          'Invalid permutation `dims`: ' + JSON.stringify(config.dims) +
+          ' `dims` must contain consecutive integers starting from 1.');
+    }
+
     this.dims = config.dims;
-    this.inputSpec = [new InputSpec({ndim: this.dims.length})];
+    this.dimsIncludingBatch = [0].concat(this.dims);
+    this.inputSpec = [new InputSpec({ndim: this.dims.length + 1})];
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
@@ -674,7 +684,7 @@ export class Permute extends Layer {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    return transpose(getExactlyOneTensor(inputs), this.dims);
+    return transpose(getExactlyOneTensor(inputs), this.dimsIncludingBatch);
   }
 
   getConfig(): serialization.ConfigDict {
