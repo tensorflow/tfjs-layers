@@ -5,7 +5,7 @@
   "private": false,
   "dependencies": {
     "@tensorflow/tfjs": "~0.12.4",
-    "@tensorflow/tfjs-node": "~0.1.9",
+    "@tensorflow/tfjs-node": "~0.1.11",
     "clang-format": "~1.2.2",
     "tsify": "~3.0.1",
     "tslint": "~5.6.0",

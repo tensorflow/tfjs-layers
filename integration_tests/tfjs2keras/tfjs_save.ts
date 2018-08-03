@@ -19,8 +19,11 @@ import {join} from 'path';
 
 const tfl = tf;
 
+console.log(tfjsNode.io.NodeFileSystem);  // DEBUG
+
 /**
- * Generate random input(s) get predict() output(s) and save them.
+ * Generate random input(s) get predict() output(s) and save them, along with
+ * the model.
  *
  * @param model The `tf.Model` instance in question. It may have one or more
  *   inputs and one or more outputs. It is assumed that for each input, only
@@ -30,8 +33,11 @@ const tfl = tf;
  * @param inputIntegerMax (Optional) Maximum integer value for the input
  *   tensors. Used for models that take integer tensors as inputs.
  */
-function runAndSaveRandomInputsAndOutputs(
+async function saveModelAndRandomInputsAndOutputs(
     model: tf.Model, exportPathprefix: string, inputIntegerMax?: number) {
+
+  await model.save(new tfjsNode.io.NodeFileSystem(`${exportPathprefix}`));
+
   const xs: tf.Tensor[] = [];
   const xsData: number[][] = [];
   const xsShapes: number[][] = [];
@@ -77,9 +83,8 @@ async function exportMLPModel(exportPath: string) {
   model.add(tfl.layers.dense({units: 24}));
   model.add(tfl.layers.activation({activation: 'elu'}));
   model.add(tfl.layers.dense({units: 8, activation: 'softmax'}));
-  await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputsAndOutputs(model, exportPath);
+  await saveModelAndRandomInputsAndOutputs(model, exportPath);
 }
 
 // Convolutional neural network (CNN).
@@ -110,9 +115,8 @@ async function exportCNNModel(exportPath: string) {
   model.add(tfl.layers.avgPooling2d({poolSize: [2, 2]}));
   model.add(tfl.layers.flatten({}));
   model.add(tfl.layers.dense({units: 100, activation: 'softmax'}));
-  await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputsAndOutputs(model, exportPath);
+  await saveModelAndRandomInputsAndOutputs(model, exportPath);
 }
 
 async function exportDepthwiseCNNModel(exportPath: string) {
@@ -132,9 +136,8 @@ async function exportDepthwiseCNNModel(exportPath: string) {
   model.add(tfl.layers.maxPooling2d({poolSize: 2}));
   model.add(tfl.layers.flatten({}));
   model.add(tfl.layers.dense({units: 100, activation: 'softmax'}));
-  await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputsAndOutputs(model, exportPath);
+  await saveModelAndRandomInputsAndOutputs(model, exportPath);
 }
 
 // SimpleRNN with embedding.
@@ -143,9 +146,8 @@ async function exportSimpleRNNModel(exportPath: string) {
   const inputDim = 100;
   model.add(tfl.layers.embedding({inputDim, outputDim: 20, inputShape: [10]}));
   model.add(tfl.layers.simpleRNN({units: 4}));
-  await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputsAndOutputs(model, exportPath, inputDim);
+  await saveModelAndRandomInputsAndOutputs(model, exportPath, inputDim);
 }
 
 // GRU with embedding.
@@ -154,9 +156,8 @@ async function exportGRUModel(exportPath: string) {
   const inputDim = 100;
   model.add(tfl.layers.embedding({inputDim, outputDim: 20, inputShape: [10]}));
   model.add(tfl.layers.gru({units: 4, goBackwards: true}));
-  await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputsAndOutputs(model, exportPath, inputDim);
+  await saveModelAndRandomInputsAndOutputs(model, exportPath, inputDim);
 }
 
 // Bidirecitonal LSTM with embedding.
@@ -168,9 +169,8 @@ async function exportBidirectionalLSTMModel(exportPath: string) {
   // tslint:disable-next-line:no-any
   const lstm = tfl.layers.lstm({units: 4, goBackwards: true}) as any;
   model.add(tfl.layers.bidirectional({layer: lstm, mergeMode: 'concat'}));
-  await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputsAndOutputs(model, exportPath, inputDim);
+  await saveModelAndRandomInputsAndOutputs(model, exportPath, inputDim);
 }
 
 // LSTM + time-distributed layer with embedding.
@@ -182,9 +182,8 @@ async function exportTimeDistributedLSTMModel(exportPath: string) {
   model.add(tfl.layers.timeDistributed({
     layer: tfl.layers.dense({units: 2, useBias: false, activation: 'softmax'})
   }));
-  await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputsAndOutputs(model, exportPath, inputDim);
+  await saveModelAndRandomInputsAndOutputs(model, exportPath, inputDim);
 }
 
 // Model with Conv1D and Pooling1D layers.
@@ -197,9 +196,8 @@ async function exportOneDimensionalModel(exportPath: string) {
       tfl.layers.conv1d({filters: 8, kernelSize: [3], activation: 'relu'}));
   model.add(tfl.layers.avgPooling1d({poolSize: 5}));
   model.add(tfl.layers.flatten());
-  await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputsAndOutputs(model, exportPath);
+  await saveModelAndRandomInputsAndOutputs(model, exportPath);
 }
 
 // Functional model with two Merge layers.
@@ -223,9 +221,8 @@ async function exportFunctionalMergeModel(exportPath: string) {
   const output =
       tfl.layers.dense({units: 1}).apply(concat) as tf.SymbolicTensor;
   const model = tfl.model({inputs: [input1, input2, input3], outputs: output});
-  await model.save(`file://${exportPath}`);
 
-  runAndSaveRandomInputsAndOutputs(model, exportPath);
+  await saveModelAndRandomInputsAndOutputs(model, exportPath);
 }
 
 // console.log(`Using tfjs-layers version: ${tfl.version_layers}`);
