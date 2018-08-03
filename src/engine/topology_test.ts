@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {eye, ones, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+import {eye, memory, ones, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 import * as tfl from '../index';
 import * as initializers from '../initializers';
 import {NamedTensorMap, Shape} from '../types';
@@ -894,6 +894,91 @@ describeMathCPU('Layer', () => {
           .toThrowError(/Asked to get output at node 1, but/);
     });
   });
+});
+
+describeMathCPUAndGPU('Layer-decRef', () => {
+  it('Dispose Dense Layer before build leads to Error', () => {
+    const dense = tfl.layers.dense({units: 1, inputShape: [4]});
+    expect(() => dense.decRef()).toThrowError(/has not been built/);
+  });
+
+  it('Dispose Dense Layer after one tensor call frees memory', () => {
+    const dense = tfl.layers.dense({units: 1, inputShape: [4]});
+    dense.apply(zeros([2, 4]));
+    const numTensors0 = memory().numTensors;
+    dense.decRef();
+
+    // Two variables should have been freed: the kernel and the bias.
+    expect(memory().numTensors).toEqual(numTensors0 - 2);
+  });
+
+  it('Symbolic apply() call after Dense disposal leads to Error', () => {
+    const dense = tfl.layers.dense({units: 1, inputShape: [4]});
+    dense.apply(zeros([2, 4]));
+    dense.decRef();  // This decRef() call should dispose the layer.
+
+    expect(
+        () => dense.apply(
+            new tfl.SymbolicTensor('float32', [2, 4], null, [], {})))
+        .toThrowError(/Layer .* is already disposed/);
+  });
+
+  it('Non-symbolic apply() call after Dense disposal leads to Error', () => {
+    const dense = tfl.layers.dense({units: 1, inputShape: [4]});
+    dense.apply(zeros([2, 4]));
+    dense.decRef();  // This decRef() call should dispose the layer.
+
+    expect(() => dense.apply(ones([2, 4])))
+        .toThrowError(/Layer .* is already disposed/);
+  });
+
+  it('Calling defRec() repeatedly for two-Node Layer frees memory', () => {
+    const dense = tfl.layers.dense({units: 1, inputShape: [4]});
+    dense.apply(new tfl.SymbolicTensor('float32', [2, 4], null, [], {}));
+    dense.apply(new tfl.SymbolicTensor('float32', [2, 4], null, [], {}));
+    const numTensors0 = memory().numTensors;
+
+    dense.decRef();
+    // After the first decRef call, no memory should have been freed.
+    expect(memory().numTensors).toEqual(numTensors0);
+
+    dense.decRef();
+    // After the second decRef call, memory for the kernel and the bias should
+    // have been freed.
+    expect(memory().numTensors).toEqual(numTensors0 - 2);
+  });
+
+  it('Calling decRef on already-disposed Layer leads to Error', () => {
+    const dense = tfl.layers.dense({units: 1, inputShape: [4]});
+    dense.apply(zeros([2, 4]));
+    dense.decRef();
+    expect(() => dense.decRef()).toThrowError(/Layer .* is already disposed/);
+  });
+
+  it('Symbolic apply() call after Flatten disposal leads to Error', () => {
+    const dense = tfl.layers.flatten();
+    dense.apply(zeros([2, 3, 4]));
+    dense.decRef();  // This decRef() call should dispose the layer.
+
+    expect(
+        () => dense.apply(
+            new tfl.SymbolicTensor('float32', [2, 4], null, [], {})))
+        .toThrowError(/Layer .* is already disposed/);
+  });
+
+  it('Non-symbolic apply() call after Flatten disposal leads to Error', () => {
+    const dense = tfl.layers.flatten();
+    dense.apply(zeros([2, 3, 4]));
+    dense.decRef();  // This decRef() call should dispose the layer.
+
+    expect(() => dense.apply(zeros([2, 3, 4])))
+        .toThrowError(/Layer .* is already disposed/);
+  });
+
+  it('decRef() call works on Input Layer',
+     () => {
+
+     });
 });
 
 // TODO(cais): Maybe remove this test once loadWeightsFromJson is removed

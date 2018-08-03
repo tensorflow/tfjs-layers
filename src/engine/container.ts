@@ -628,6 +628,35 @@ export abstract class Container extends Layer {
       outputShapes: this.outputs.map(x => x.shape)
     });
     this.built = true;
+    this._refCount = 1;  // The ref count of a container always start at 1.
+  }
+
+  protected assertNotDisposed() {
+    if (this._refCount === 0) {
+      throw new Error(`Container '${this.name}' is already disposed.`);
+    }
+  }
+
+  /**
+   * Decrease the reference count of the Container object by 1.
+   *
+   * A Container is reference-counted. Its reference count is incremented by 1
+   * when it is first constructed and when it is used as a Layer of another
+   * Container.
+   *
+   * If the reference count of a Container becomes 0, the `decRef` method of
+   * all its constituent Layer will be called.
+   *
+   * After a Container is disposed, it cannot be used in calls such as
+   * 'predict`, `evaluate` or `fit` anymore.
+   */
+  decRef(): void {
+    this.assertNotDisposed();
+    if (--this._refCount === 0) {
+      for (const layer of this.layers) {
+        layer.decRef();
+      }
+    }
   }
 
   get trainableWeights(): LayerVariable[] {

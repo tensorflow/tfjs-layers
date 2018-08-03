@@ -426,6 +426,8 @@ export abstract class Layer extends serialization.Serializable {
   //   base class.
   protected _stateful = false;
 
+  protected _refCount: number|null;
+
   constructor(config: LayerConfig) {
     super();
     this.id = _nextLayerID++;
@@ -492,6 +494,10 @@ export abstract class Layer extends serialization.Serializable {
     } else {
       this.initialWeights = null;
     }
+
+    // The value of `_refCount` is initialized to null. When the layer is used
+    // in a symbolic way for the first time, it will be set to 1.
+    this._refCount = null;
   }
 
   /**
@@ -891,6 +897,8 @@ export abstract class Layer extends serialization.Serializable {
       kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
     kwargs = kwargs || {};
 
+    this.assertNotDisposed();
+
     // Ensure inputs are all the same type.
     const inputsList = generic_utils.toList(inputs);
 
@@ -936,6 +944,13 @@ export abstract class Layer extends serialization.Serializable {
         // Load weights that were specified at layer instantiation.
         if (this.initialWeights) {
           this.setWeights(this.initialWeights);
+        }
+
+        if (this._refCount === null && noneAreSymbolic) {
+          // The first use of this layer is a non-symbolic call, set ref count
+          // to 1 so the Layer can be properly disposed if its decRef() method
+          // is called.
+          this._refCount = 1;
         }
       }
 
@@ -1009,6 +1024,7 @@ export abstract class Layer extends serialization.Serializable {
         this.addInboundNode(
             inputs as SymbolicTensor | SymbolicTensor[], output, null, null,
             inputShape, outputShape, kwargs);
+        this._refCount++;
 
         if (this.activityRegularizer != null) {
           throw new NotImplementedError(
@@ -1386,6 +1402,50 @@ export abstract class Layer extends serialization.Serializable {
       config['dtype'] = this.dtype;
     }
     return config;
+  }
+
+  protected disposeWeights() {
+    this.weights.forEach(weight => weight.dispose());
+  }
+
+  protected assertNotDisposed() {
+    if (this._refCount === 0) {
+      throw new Error(`Layer '${this.name}' is already disposed.`);
+    }
+  }
+
+  /**
+   * Decrease the reference count of the Layer object by 1.
+   *
+   * A Layer is reference-counted. Its reference count is incremented by 1
+   * the first item its `apply()` method is called and when it becomes a part
+   * of a new `Node` (through calling the `apply()`) method on a
+   * `tf.SymbolicTensor`).
+   *
+   * If the reference count of a Layer becomes 0, all the weights will be
+   * disposed and the underlying memory (e.g., the textures allocated in WebGL)
+   * will be freed.
+   *
+   * After a Layer is disposed, it cannot be used in calls such as `apply()`,
+   * `getWeights()` or `setWeights()` anymore.
+   */
+  decRef(): void {
+    if (!this.built) {
+      throw new Error(
+          `Cannot decRef Layer ${this.name} because it has not been ` +
+          `built yet.`);
+    }
+
+    if (this._refCount === null) {
+      throw new Error(
+          `Cannot decRef Layer ${this.name} because it has not been used yet.`);
+    }
+
+    this.assertNotDisposed();
+
+    if (--this._refCount === 0) {
+      this.disposeWeights();
+    }
   }
 }
 

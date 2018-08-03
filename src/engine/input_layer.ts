@@ -138,6 +138,11 @@ export class InputLayer extends Layer {
         `InputLayer's apply() method. InputLayer name: ${this.name}`);
   }
 
+  decRef(): void {
+    // decRef() for InputLayer is overridden as no-op.
+    return;
+  }
+
   getConfig(): serialization.ConfigDict {
     return {
       batchInputShape: this.batchInputShape,
