@@ -631,6 +631,7 @@ export interface PermuteLayerConfig extends LayerConfig {
  *   dims: [2, 1],
  *   inputShape: [10, 64]
  * }));
+ * console.log(model.outputShape);
  * // Now model's output shape is [null, 64, 10], where null is the
  * // unpermuted sample (batch) dimension.
  * ```
