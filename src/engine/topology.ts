@@ -184,6 +184,9 @@ export interface NodeConfig {
   outputShapes: Shape|Shape[];
 }
 
+/**
+ * The type of the return value of Layer.dispose() and Container.dispose().
+ */
 export interface DisposeResult {
   /**
    * Reference count after the dispose call.
