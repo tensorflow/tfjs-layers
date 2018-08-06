@@ -468,7 +468,7 @@ describe('getSourceInputs()', () => {
   });
 });
 
-describeMathCPUAndGPU('Model-decRef', () => {
+describeMathCPUAndGPU('Model-dispose', () => {
   it('Dispose Sequential model frees memory', () => {
     const model = tfl.sequential();
     model.add(
@@ -477,7 +477,10 @@ describeMathCPUAndGPU('Model-decRef', () => {
     model.build([3, 3]);
 
     const numTensors0 = memory().numTensors;
-    model.decRef();
+    const result = model.dispose();
+
+    expect(result.refCountAfterDispose).toEqual(0);
+    expect(result.numDisposedVariables).toEqual(4);
     // The four weight variables of the two layers should have been disposed.
     expect(memory().numTensors).toEqual(numTensors0 - 4);
   });
@@ -489,8 +492,8 @@ describeMathCPUAndGPU('Model-decRef', () => {
     model.add(tfl.layers.dense({units: 1}));
     model.build([3, 3]);
 
-    model.decRef();
-    expect(() => model.decRef()).toThrowError(/Container .* already disposed/);
+    model.dispose();
+    expect(() => model.dispose()).toThrowError(/Container .* already disposed/);
   });
 
   it('Using disposed Sequential model leads to Error', async () => {
@@ -500,7 +503,7 @@ describeMathCPUAndGPU('Model-decRef', () => {
     model.add(tfl.layers.dense({units: 1, activation: 'sigmoid'}));
     model.build([3, 3]);
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
-    model.decRef();
+    model.dispose();
 
     const xs = zeros([3, 3]);
     const ys = zeros([3, 1]);
@@ -526,8 +529,10 @@ describeMathCPUAndGPU('Model-decRef', () => {
     model.predict(zeros([2, 4]));
 
     const numTensors0 = memory().numTensors;
-    model.decRef();
+    const result = model.dispose();
 
+    expect(result.refCountAfterDispose).toEqual(0);
+    expect(result.numDisposedVariables).toEqual(3);
     // The 2 + 1 = 3 weight variables of the two layers should have been
     // disposed.
     expect(memory().numTensors).toEqual(numTensors0 - 3);
@@ -543,8 +548,8 @@ describeMathCPUAndGPU('Model-decRef', () => {
     // Call predict once to make sure that the model's weights are  initialized.
     model.predict(zeros([2, 4]));
 
-    model.decRef();
-    expect(() => model.decRef()).toThrowError(/Container .* already disposed/);
+    model.dispose();
+    expect(() => model.dispose()).toThrowError(/Container .* already disposed/);
   });
 
   it('Layer shared between two functional models is not disposed', () => {
@@ -567,9 +572,11 @@ describeMathCPUAndGPU('Model-decRef', () => {
     const xs = zeros([2, 4]);
 
     const numTensors0 = memory().numTensors;
-    model1.decRef();
+    const result1 = model1.dispose();
 
-    // After model1 is decRef'ed, only the single weight of
+    expect(result1.refCountAfterDispose).toEqual(0);
+    expect(result1.numDisposedVariables).toEqual(1);
+    // After model1 is disposed, only the single weight of
     // `nonSharedDenseLayer1` should have been freed.
     expect(memory().numTensors).toEqual(numTensors0 - 1);
 
@@ -580,9 +587,11 @@ describeMathCPUAndGPU('Model-decRef', () => {
     expect(ys.shape).toEqual([2, 1]);
     ys.dispose();
 
-    model2.decRef();
+    const result2 = model2.dispose();
 
-    // After model2 is decRef'ed, the single weight of `nonSharedDenseLayer2`
+    expect(result2.refCountAfterDispose).toEqual(0);
+    expect(result2.numDisposedVariables).toEqual(3) ;
+    // After model2 is disposed, the single weight of `nonSharedDenseLayer2`
     // and the two weights o `sharedDenseLayer` should be freed.
     expect(memory().numTensors).toEqual(numTensors0 - 4);
 
@@ -608,14 +617,16 @@ describeMathCPUAndGPU('Model-decRef', () => {
     outerModel.predict(xsOuter);  // Call predict() to initialize the weights.
     const numTensors0 = memory().numTensors;
 
-    outerModel.decRef();
+    const result1 = outerModel.dispose();
 
-    // Calling decRef on the outer model should have freed the two weights that
+    expect(result1.refCountAfterDispose).toEqual(0);
+    expect(result1.numDisposedVariables).toEqual(2);
+    // Calling dispose on the outer model should have freed the two weights that
     // belong to only the outer model and not to the inner model.
     expect(memory().numTensors).toEqual(numTensors0 - 2);
 
-    // Calling decRef on the outer model again should lead to Error.
-    expect(() => outerModel.decRef())
+    // Calling dispose on the outer model again should lead to Error.
+    expect(() => outerModel.dispose())
         .toThrowError(/Container .* already disposed/);
     // Calling predict on the outer model should fail.
     expect(() => outerModel.predict(xsOuter)).toThrowError(/already disposed/);
@@ -625,8 +636,11 @@ describeMathCPUAndGPU('Model-decRef', () => {
     expect(ysInner.shape).toEqual([1, 4]);
     ysInner.dispose();
 
-    // Calling decRef on innerModel should finally freed all the weights.
-    innerModel.decRef();
+    // Calling dispose on innerModel should finally freed all the weights.
+    const result2 = innerModel.dispose();
+
+    expect(result2.refCountAfterDispose).toEqual(0);
+    expect(result2.numDisposedVariables).toEqual(4);
     expect(memory().numTensors).toEqual(numTensors0 - 6);
 
     // At this point, the inner model should have become unusable.

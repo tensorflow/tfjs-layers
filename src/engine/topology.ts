@@ -184,6 +184,18 @@ export interface NodeConfig {
   outputShapes: Shape|Shape[];
 }
 
+export interface DisposeResult {
+  /**
+   * Reference count after the dispose call.
+   */
+  refCountAfterDispose: number;
+
+  /**
+   * Number of variables dispose in this dispose call.
+   */
+  numDisposedVariables: number;
+}
+
 let _nextNodeID = 0;
 
 /**
@@ -948,7 +960,7 @@ export abstract class Layer extends serialization.Serializable {
 
         if (this._refCount === null && noneAreSymbolic) {
           // The first use of this layer is a non-symbolic call, set ref count
-          // to 1 so the Layer can be properly disposed if its decRef() method
+          // to 1 so the Layer can be properly disposed if its dispose() method
           // is called.
           this._refCount = 1;
         }
@@ -1404,8 +1416,14 @@ export abstract class Layer extends serialization.Serializable {
     return config;
   }
 
-  protected disposeWeights() {
+  /**
+   * Dispose the weight variables that this Layer instance holds.
+   *
+   * @returns {number} Number of disposed variables.
+   */
+  protected disposeWeights(): number {
     this.weights.forEach(weight => weight.dispose());
+    return this.weights.length;
   }
 
   protected assertNotDisposed() {
@@ -1415,7 +1433,9 @@ export abstract class Layer extends serialization.Serializable {
   }
 
   /**
-   * Decrease the reference count of the Layer object by 1.
+   * Attempt to dispose layer's weights.
+   *
+   * This method decrease the reference count of the Layer object by 1.
    *
    * A Layer is reference-counted. Its reference count is incremented by 1
    * the first item its `apply()` method is called and when it becomes a part
@@ -1426,26 +1446,44 @@ export abstract class Layer extends serialization.Serializable {
    * disposed and the underlying memory (e.g., the textures allocated in WebGL)
    * will be freed.
    *
+   * Note: If the reference count is greater than 0 after the decrement, the
+   * weights of the Layer will *not* be disposed.
+   *
    * After a Layer is disposed, it cannot be used in calls such as `apply()`,
    * `getWeights()` or `setWeights()` anymore.
+   *
+   * @returns A DisposeResult Object with the following fields:
+   *   - refCountAfterDispose: The reference count of the Container after this
+   *     `dispose()` call.
+   *   - numDisposedVariables: Number of `tf.Variable`s (i.e., weights) disposed
+   *     during this `dispose()` call.
+   * @throws {Error} If the layer is not built yet, or if the layer has already
+   *   been disposed.
    */
-  decRef(): void {
+  dispose(): DisposeResult {
     if (!this.built) {
       throw new Error(
-          `Cannot decRef Layer ${this.name} because it has not been ` +
+          `Cannot dispose Layer ${this.name} because it has not been ` +
           `built yet.`);
     }
 
     if (this._refCount === null) {
       throw new Error(
-          `Cannot decRef Layer ${this.name} because it has not been used yet.`);
+          `Cannot dispose Layer ${this.name} because it has not been used ` +
+          `yet.`);
     }
 
     this.assertNotDisposed();
 
+    let numDisposedVariables = 0;
     if (--this._refCount === 0) {
-      this.disposeWeights();
+      numDisposedVariables = this.disposeWeights();
     }
+
+    return {
+      refCountAfterDispose: this._refCount,
+      numDisposedVariables
+    };
   }
 }
 

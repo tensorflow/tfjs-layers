@@ -14,7 +14,7 @@ import {getUid} from '../backend/state';
 import {ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
 
-import {Layer, Node, SymbolicTensor} from './topology';
+import {Layer, Node, SymbolicTensor, DisposeResult} from './topology';
 
 /**
  * Constructor arguments for InputLayer.
@@ -138,9 +138,12 @@ export class InputLayer extends Layer {
         `InputLayer's apply() method. InputLayer name: ${this.name}`);
   }
 
-  decRef(): void {
-    // decRef() for InputLayer is overridden as no-op.
-    return;
+  dispose(): DisposeResult {
+    // dispose() for InputLayer is overridden as no-op.
+    return {
+      refCountAfterDispose: this._refCount,
+      numDisposedVariables: 0
+    };
   }
 
   getConfig(): serialization.ConfigDict {
