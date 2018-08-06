@@ -975,10 +975,16 @@ describeMathCPUAndGPU('Layer-decRef', () => {
         .toThrowError(/Layer .* is already disposed/);
   });
 
-  it('decRef() call works on Input Layer',
-     () => {
+  it('decRef() call works on Input Layer', () => {
+    const input = tfl.layers.input({shape: [2, 3]}) as tfl.SymbolicTensor;
+    const output = tfl.layers.reshape({targetShape: [3, 2]}).apply(input) as
+        tfl.SymbolicTensor;
+    const model = tfl.model({inputs: [input], outputs: [output]});
 
-     });
+    model.decRef();
+    expect(() => model.predict(zeros([1, 2, 3])))
+        .toThrowError(/already disposed/);
+  });
 });
 
 // TODO(cais): Maybe remove this test once loadWeightsFromJson is removed
