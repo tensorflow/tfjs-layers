@@ -1100,6 +1100,48 @@ describeMathCPUAndGPU('loadWeightsFromNamedTensorMap', () => {
     expectTensorsClose(denseLayer.weights[1].read(), tensor1d([10, 20]));
   });
 
+  it('Mismatching shape throws an error even in non-strict mode', () => {
+    const denseLayer =
+        tfl.layers.dense({units: 2, useBias: true, name: 'dense_layer'});
+    denseLayer.apply(inputTensor);
+    const namedWeightsMap: NamedTensorMap = {};
+    namedWeightsMap[denseLayer.weights[0].originalName] =
+        tensor2d([1, 2, 3, 4, 5, 6, 7, 8], [4, 2]);
+    namedWeightsMap[denseLayer.weights[1].originalName] = tensor1d([10, 20]);
+    expect(
+        () =>
+            loadWeightsFromNamedTensorMap(namedWeightsMap, [denseLayer], false))
+        .toThrowError('Shape mismatch: [3,2] vs. [4,2]');
+  });
+
+  it('Extra weights leads to error', () => {
+    const denseLayer =
+        tfl.layers.dense({units: 2, useBias: true, name: 'dense_layer'});
+    denseLayer.apply(inputTensor);
+    const namedWeightsMap: NamedTensorMap = {};
+    namedWeightsMap[denseLayer.weights[0].originalName] =
+        tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
+    namedWeightsMap[denseLayer.weights[1].originalName] = tensor1d([10, 20]);
+    namedWeightsMap['extra'] = tensor1d([10, 20]);
+    expect(() => loadWeightsFromNamedTensorMap(namedWeightsMap, [denseLayer]))
+        .toThrowError(/Provided weight data has no target variable: extra/);
+  });
+
+  it('Extra weights are allowed in non-strict mode', () => {
+    const denseLayer =
+        tfl.layers.dense({units: 2, useBias: true, name: 'dense_layer'});
+    denseLayer.apply(inputTensor);
+    const namedWeightsMap: NamedTensorMap = {};
+    namedWeightsMap[denseLayer.weights[0].originalName] =
+        tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
+    namedWeightsMap[denseLayer.weights[1].originalName] = tensor1d([10, 20]);
+    namedWeightsMap['extra'] = tensor1d([10, 20]);
+    loadWeightsFromNamedTensorMap(namedWeightsMap, [denseLayer], false);
+    expectTensorsClose(
+        denseLayer.weights[0].read(), tensor2d([1, 2, 3, 4, 5, 6], [3, 2]));
+    expectTensorsClose(denseLayer.weights[1].read(), tensor1d([10, 20]));
+  });
+
   it('Unset weights leads to error', () => {
     const denseLayer =
         tfl.layers.dense({units: 2, useBias: true, name: 'dense_layer'});
@@ -1109,5 +1151,16 @@ describeMathCPUAndGPU('loadWeightsFromNamedTensorMap', () => {
         tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
     expect(() => loadWeightsFromNamedTensorMap(namedWeightsMap, [denseLayer]))
         .toThrowError(/1 of 2 weights are not set: .*bias.*/);
+  });
+
+  it('Unset weights are allowed in non-strict mode', () => {
+    const denseLayer =
+        tfl.layers.dense({units: 2, useBias: true, name: 'dense_layer'});
+    denseLayer.apply(inputTensor);
+    const namedWeightsMap: NamedTensorMap = {};
+    namedWeightsMap[denseLayer.weights[0].originalName] =
+        tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
+    loadWeightsFromNamedTensorMap(namedWeightsMap, [denseLayer], false);
+    // no exception thrown
   });
 });
