@@ -15,7 +15,7 @@ import * as fs from 'fs';
 import {join} from 'path';
 
 /**
- * Generate random input(s) get predict() output(s) and save them, along with
+ * Generate random input(s), get predict() output(s), and save them along with
  * the model.
  *
  * @param model The `tf.Model` instance in question. It may have one or more
@@ -39,7 +39,7 @@ async function saveModelAndRandomInputsAndOutputs(
     inputShape[0] = 1;
     if (inputShape.indexOf(null) !== -1) {
       throw new Error(
-          `It is assume that the only the first dimension of the tensor ` +
+          `It is assumed that the only the first dimension of the tensor ` +
           `is undetermined, but the assumption is not satisfied for ` +
           `input shape ${JSON.stringify(inputTensor.shape)}`);
     }
