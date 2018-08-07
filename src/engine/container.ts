@@ -638,29 +638,29 @@ export abstract class Container extends Layer {
   }
 
   /**
-   * Attempt to dispose a Container's weights.
+   * Attempt to dispose a Model's weights.
    *
-   * This method decrease the reference count of the Container object by 1.
+   * This method decrease the reference count of the Model object by 1.
    *
-   * A Container is reference-counted. Its reference count is incremented by 1
+   * A Model is reference-counted. Its reference count is incremented by 1
    * when it is first constructed and when it is used as a Layer of another
-   * Container.
+   * Model.
    *
-   * If the reference count of a Container becomes 0, the `dispose` method of
+   * If the reference count of a Model becomes 0, the `dispose` method of
    * all its constituent `Layer`s will be called.
    *
    * Note: If the reference count is greater than 0 after the decrement, the
    * `dispose` method of its constituent `Layer`s will *not* be called.
    *
-   * After a Container is disposed, it cannot be used in calls such as
+   * After a Model is disposed, it cannot be used in calls such as
    * 'predict`, `evaluate` or `fit` anymore.
    *
    * @returns A DisposeResult Object with the following fields:
-   *   - refCountAfterDispose: The reference count of the Container after this
+   *   - refCountAfterDispose: The reference count of the Model after this
    *     `dispose()` call.
    *   - numDisposedVariables: Number of `tf.Variable`s (i.e., weights) disposed
    *     during this `dispose()` call.
-   * @throws {Error} If the layer is not built yet, or if the Container has
+   * @throws {Error} If the layer is not built yet, or if the Model has
    *   already been disposed.
    */
   dispose(): DisposeResult {
