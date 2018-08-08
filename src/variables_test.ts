@@ -12,7 +12,6 @@
  * Unit tests for LayerVariables.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {randomUniform, scalar, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
 
@@ -21,7 +20,6 @@ import {nameScope} from './common';
 import * as tfl from './index';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 import * as V from './variables';
-// tslint:enable:max-line-length
 
 
 /**
@@ -140,6 +138,32 @@ describeMathCPU('Variable', () => {
     const v1 = scalar(1);
     const v2 = new V.LayerVariable(scalar(1), null, 'foo');
     expect(v1.id).not.toEqual(v2.id);
+  });
+
+  it('dispose() frees memory', () => {
+    const v = new V.LayerVariable(tensor1d([10, -10]), null, 'gralk');
+    const numTensors0 = tfc.memory().numTensors;
+    v.dispose();
+    expect(tfc.memory().numTensors).toEqual(numTensors0 - 1);
+  });
+
+  it('Disposing LayersVariable twices leads to Error', () => {
+    const v = new V.LayerVariable(tensor1d([10, -10]), null, 'gralk');
+    v.dispose();
+    expect(() => v.dispose()).toThrowError(/LayersVariable .*gralk.* disposed/);
+  });
+
+  it('read() after dispose() leads to Error', () => {
+    const v = new V.LayerVariable(tensor1d([10, -10]), null, 'gralk');
+    v.dispose();
+    expect(() => v.read()).toThrowError(/LayersVariable .*gralk.* disposed/);
+  });
+
+  it('write() after dispose() leads to Error', () => {
+    const v = new V.LayerVariable(tensor1d([10, -10]), null, 'gralk');
+    v.dispose();
+    expect(() => v.write(tensor1d([20, -20])))
+        .toThrowError(/LayersVariable .*gralk.* disposed/);
   });
 });
 
