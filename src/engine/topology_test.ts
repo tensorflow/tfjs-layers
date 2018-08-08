@@ -1262,6 +1262,6 @@ describeMathCPUAndGPU('loadWeightsFromNamedTensorMap', () => {
     namedWeightsMap[denseLayer.weights[0].originalName] =
         tensor2d([1, 2, 3, 4, 5, 6], [3, 2]);
     loadWeightsFromNamedTensorMap(namedWeightsMap, [denseLayer], false);
-    // no exception thrown
+    // No exception thrown.
   });
 });
