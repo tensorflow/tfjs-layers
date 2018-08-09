@@ -97,9 +97,9 @@ export class LayerVariable {
     // Skip updating if this is the exact same tensor.
     if (this.val.id !== newVal.id) {
       this.val.assign(newVal);
-    }
-    if (this.constraint != null) {
-      this.val.assign(this.constraint.apply(this.val));
+      if (this.constraint != null) {
+        this.val.assign(this.constraint.apply(this.val));
+      }
     }
     return this;
   }
