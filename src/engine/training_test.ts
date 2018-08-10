@@ -541,7 +541,7 @@ describeMathCPUAndGPU('Model.fit', () => {
     });
   });
 
-  it('Calling fit twice in a row leads to Error', async done => {
+  it('Calling fit twice in a row leads to Error', async () => {
     createDenseModelAndData();
     model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
     // Do not use `await` in the following `model.fit` call, so that
@@ -556,9 +556,7 @@ describeMathCPUAndGPU('Model.fit', () => {
     expect(errorCaught.message)
         .toEqual(
             'Cannot start training because another fit() call is ongoing.');
-    done();
   });
-
 
   const validationSplits = [0.2, 0.01];
   for (const validationSplit of validationSplits) {
@@ -1203,6 +1201,31 @@ describeMathCPUAndGPU('Model.fit', () => {
         .catch(err => done.fail(err.stack));
   });
 
+  fit('Stop training using non-class object callback function', async () => {
+    console.log('==== BEGIN ====');  // DEBUG
+    createDenseModelAndData();
+
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    // Use batchSize === numSamples to get exactly one batch.
+
+    let numEpochsDone = 0;
+    await model.fit(inputs, targets, {
+      epochs: 8,
+      callbacks: {
+        onEpochEnd: async (epoch, logs) => {
+          console.log(`epoch: ${epoch}`);  // DEBUG
+          numEpochsDone++;
+          console.log(`numEpochsDone = ${numEpochsDone}`);  // DEBUG
+          if (epoch === 3) {
+            model.stopTraining = true;
+          }
+        }
+      }
+    });
+    expect(numEpochsDone).toEqual(3);
+    console.log('==== END ====');  // DEBUG
+  });
+
   it('Invalid dict loss: nonexistent output name', () => {
     createDenseModelAndData();
     expect(() => model.compile({
@@ -1663,14 +1686,14 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
            }
          });
          for (let epochIndex = 0; epochIndex < epochs; ++epochIndex) {
-           // Get the tensor counts within an epoch (i.e., from the first batch
-           // till the penultimate one.) Assert that the counts are constant,
-           // i.e., no increase in the tensor count within the epoch.
-           // N.B.: Even though the tensor count is expected to be constant
-           // across batches, across epochs, the count will increase, due to the
-           // per-epoch loss and metric values stored for the returned history
-           // object, which are currently downloaded via data() calls only at
-           // the end of the fit() call.
+           // Get the tensor counts within an epoch (i.e., from the first
+           // batch till the penultimate one.) Assert that the counts are
+           // constant, i.e., no increase in the tensor count within the
+           // epoch. N.B.: Even though the tensor count is expected to be
+           // constant across batches, across epochs, the count will increase,
+           // due to the per-epoch loss and metric values stored for the
+           // returned history object, which are currently downloaded via
+           // data() calls only at the end of the fit() call.
            const beginBatch = batchesPerEpoch * epochIndex;
            const endBatch = batchesPerEpoch * (epochIndex + 1);
            const inEpochTensorCounts =

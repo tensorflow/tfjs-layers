@@ -656,7 +656,7 @@ export class Model extends Container implements tfc.InferenceModel {
 
   // A public property that can be set by Callbacks to order early stopping
   // during `fit()` calls.
-  stopTraining: boolean;
+  private stopTraining_: boolean;
   private isTraining: boolean;
 
   metrics: string[]|{[outputName: string]: string};
@@ -1397,7 +1397,7 @@ export class Model extends Container implements tfc.InferenceModel {
       metrics: callbackMetrics,
     });
     await callbackList.onTrainBegin();
-    this.stopTraining = false;
+    this.stopTraining_ = false;
     // TODO(cais): Take care of callbacks.validation_data as in PyKeras.
 
     // TODO(cais): Pre-convert feeds for performance as in PyKeras.
@@ -1463,7 +1463,7 @@ export class Model extends Container implements tfc.InferenceModel {
           await callbackList.onBatchEnd(batchIndex, batchLogs);
           disposeTensorsInLogs(batchLogs);
 
-          if (this.stopTraining) {
+          if (this.stopTraining_) {
             break;
           }
           // TODO(cais): return outs as list of Tensor.
@@ -1473,7 +1473,8 @@ export class Model extends Container implements tfc.InferenceModel {
       }
       // TODO(cais): Run validation at the end of the epoch.
       await callbackList.onEpochEnd(epoch, epochLogs);
-      if (this.stopTraining) {
+      console.log(`Checking: stopTraining = ${this.stopTraining_}`);  // DEBUG
+      if (this.stopTraining_) {
         break;
       }
     }
@@ -1859,6 +1860,11 @@ export class Model extends Container implements tfc.InferenceModel {
       namedWeights[weights[i].originalName] = weightValues[i];
     }
     return namedWeights;
+  }
+
+  set stopTraining(stop: boolean) {
+    this.stopTraining_ = stop;
+    console.log(`Setting stopTraining_ to ${this.stopTraining_}`);  // DEBUG
   }
 
   /**
