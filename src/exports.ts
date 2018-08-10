@@ -39,7 +39,7 @@ import {loadModelInternal, Sequential, SequentialConfig} from './models';
  * are used to wire input(s) to output(s).
  *
  * For example, the following code snippet defines a model consisting of
- * two `dense` layers, with 10 and 4 units, respectively.
+ * two `dense` layers, with 10 and 2 units, respectively.
  *
  * ```js
  * // Define input, which has a size of 5 (not including batch dimension).
