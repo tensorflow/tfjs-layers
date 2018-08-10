@@ -653,9 +653,11 @@ export class Model extends Container implements tfc.InferenceModel {
   private testFunction: (data: Tensor[]) => Scalar[];
   history: History;
 
+
   // A public property that can be set by Callbacks to order early stopping
   // during `fit()` calls.
   stopTraining: boolean;
+  private isTraining: boolean;
 
   metrics: string[]|{[outputName: string]: string};
   metricsNames: string[];
@@ -671,6 +673,7 @@ export class Model extends Container implements tfc.InferenceModel {
 
   constructor(config: ContainerConfig) {
     super(config);
+    this.isTraining = false;
   }
 
   /**
@@ -1634,6 +1637,11 @@ export class Model extends Container implements tfc.InferenceModel {
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
       config: ModelFitConfig = {}): Promise<History> {
+    if (this.isTraining) {
+      throw new Error(
+          'Cannot start training because another fit() call is ongoing.');
+    }
+    this.isTraining = true;
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
 
     // Validate user data.
@@ -1823,6 +1831,7 @@ export class Model extends Container implements tfc.InferenceModel {
       inputs.forEach(tensor => tensor.dispose());
       targets.forEach(tensor => tensor.dispose());
     }
+    this.isTraining = false;
     return out;
     // TODO(cais): Add value to outLabels.
   }

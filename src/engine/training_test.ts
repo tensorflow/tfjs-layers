@@ -541,6 +541,25 @@ describeMathCPUAndGPU('Model.fit', () => {
     });
   });
 
+  it('Calling fit twice in a row leads to Error', async done => {
+    createDenseModelAndData();
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    // Do not use `await` in the following `model.fit` call, so that
+    // the two model.fit() calls may interleave.
+    model.fit(inputs, targets, {batchSize: numSamples, epochs: 8});
+    let errorCaught: Error;
+    try {
+      await model.fit(inputs, targets);
+    } catch (err) {
+      errorCaught = err;
+    }
+    expect(errorCaught.message)
+        .toEqual(
+            'Cannot start training because another fit() call is ongoing.');
+    done();
+  });
+
+
   const validationSplits = [0.2, 0.01];
   for (const validationSplit of validationSplits) {
     const testTitle =
@@ -593,8 +612,7 @@ describeMathCPUAndGPU('Model.fit', () => {
            .fit(inputs, targets, {
              batchSize: numSamples,
              epochs: 2,
-             validationData:
-                 [zeros(inputs.shape as [number, number]), targets]
+             validationData: [zeros(inputs.shape as [number, number]), targets]
            })
            .then(history => {
              expect(history.epoch).toEqual([0, 1]);
