@@ -653,7 +653,6 @@ export class Model extends Container implements tfc.InferenceModel {
   private testFunction: (data: Tensor[]) => Scalar[];
   history: History;
 
-
   // A public property that can be set by Callbacks to order early stopping
   // during `fit()` calls.
   private stopTraining_: boolean;
