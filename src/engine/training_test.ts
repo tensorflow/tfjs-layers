@@ -1201,29 +1201,27 @@ describeMathCPUAndGPU('Model.fit', () => {
         .catch(err => done.fail(err.stack));
   });
 
-  fit('Stop training using non-class object callback function', async () => {
-    console.log('==== BEGIN ====');  // DEBUG
+  it('Stop Model.fit() using non-class object callback function', async () => {
     createDenseModelAndData();
 
     model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
-    // Use batchSize === numSamples to get exactly one batch.
 
     let numEpochsDone = 0;
-    await model.fit(inputs, targets, {
-      epochs: 8,
+    const epochs = 8;
+    const stopAfterEpoch = 3;
+    const history = await model.fit(inputs, targets, {
+      epochs,
       callbacks: {
         onEpochEnd: async (epoch, logs) => {
-          console.log(`epoch: ${epoch}`);  // DEBUG
           numEpochsDone++;
-          console.log(`numEpochsDone = ${numEpochsDone}`);  // DEBUG
-          if (epoch === 3) {
+          if (epoch === stopAfterEpoch) {
             model.stopTraining = true;
           }
         }
       }
     });
-    expect(numEpochsDone).toEqual(3);
-    console.log('==== END ====');  // DEBUG
+    expect(numEpochsDone).toEqual(stopAfterEpoch + 1);
+    expect(history.history.loss.length).toEqual(stopAfterEpoch + 1);
   });
 
   it('Invalid dict loss: nonexistent output name', () => {
