@@ -1228,6 +1228,44 @@ describeMathCPUAndGPU('Sequential', () => {
             'Cannot start training because another fit() call is ongoing.');
   });
 
+  it('Stop Sequential.fit() using non-class callback function', async () => {
+    const batchSize = 5;
+    const inputSize = 4;
+    const xs = ones([batchSize, inputSize]);
+    const ys = ones([batchSize, 1]);
+    const denseLayer1 = tfl.layers.dense({
+      units: 3,
+      useBias: false,
+      kernelInitializer: 'ones',
+      inputShape: [inputSize]
+    });
+    const denseLayer2 =
+        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'ones'});
+    const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
+    model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+
+    let numEpochsDone = 0;
+    const epochs = 8;
+    const stopAfterEpoch = 3;
+    let history = await model.fit(xs, ys, {
+      epochs,
+      callbacks: {
+        onEpochEnd: async (epoch, logs) => {
+          numEpochsDone++;
+          if (epoch === stopAfterEpoch) {
+            model.stopTraining = true;
+          }
+        }
+      }
+    });
+    expect(numEpochsDone).toEqual(stopAfterEpoch + 1);
+    expect(history.history.loss.length).toEqual(stopAfterEpoch + 1);
+
+    // Check that model.fit can still be called after force stopping.
+    history = await model.fit(xs, ys, {epochs: 2});
+    expect(history.history.loss.length).toEqual(2);
+  });
+
   it('Calling evaluate before compile leads to error', () => {
     const batchSize = 5;
     const inputSize = 4;

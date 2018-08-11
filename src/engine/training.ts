@@ -1473,7 +1473,6 @@ export class Model extends Container implements tfc.InferenceModel {
       }
       // TODO(cais): Run validation at the end of the epoch.
       await callbackList.onEpochEnd(epoch, epochLogs);
-      console.log(`Checking: stopTraining = ${this.stopTraining_}`);  // DEBUG
       if (this.stopTraining_) {
         break;
       }
@@ -1862,9 +1861,37 @@ export class Model extends Container implements tfc.InferenceModel {
     return namedWeights;
   }
 
+  /**
+   * Setter used for force stopping of Model.fit() (i.e., training).
+   *
+   * Example:
+   *
+   * ```js
+   * const input = tf.input({shape: [10]});
+   * const output = tf.layers.dense({units: 1}).apply(input);
+   * const model = tf.model({inputs: [input], outputs: [output]});
+   * model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+   * const xs = tf.ones([8, 10]);
+   * const ys = tf.zeros([8, 1]);
+   *
+   * const history = await model.fit(xs, ys, {
+   *   epochs: 10,
+   *   callbacks: {
+   *     onEpochEnd: async (epoch, logs) => {
+   *       if (epoch === 2) {
+   *         model.stopTraining = true;
+   *       }
+   *     }
+   *   }
+   * });
+   *
+   * // There should be only 3 values in the loss array, instead of 10 values,
+   * // due to the stopping after 3 epochs.
+   * console.log(history.history.loss);
+   * ```
+   */
   set stopTraining(stop: boolean) {
     this.stopTraining_ = stop;
-    console.log(`Setting stopTraining_ to ${this.stopTraining_}`);  // DEBUG
   }
 
   /**

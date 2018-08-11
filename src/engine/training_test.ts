@@ -1209,7 +1209,7 @@ describeMathCPUAndGPU('Model.fit', () => {
     let numEpochsDone = 0;
     const epochs = 8;
     const stopAfterEpoch = 3;
-    const history = await model.fit(inputs, targets, {
+    let history = await model.fit(inputs, targets, {
       epochs,
       callbacks: {
         onEpochEnd: async (epoch, logs) => {
@@ -1222,6 +1222,10 @@ describeMathCPUAndGPU('Model.fit', () => {
     });
     expect(numEpochsDone).toEqual(stopAfterEpoch + 1);
     expect(history.history.loss.length).toEqual(stopAfterEpoch + 1);
+
+    // Check that model.fit can still be called after force stopping.
+    history = await model.fit(inputs, targets, {epochs: 2});
+    expect(history.history.loss.length).toEqual(2);
   });
 
   it('Invalid dict loss: nonexistent output name', () => {
