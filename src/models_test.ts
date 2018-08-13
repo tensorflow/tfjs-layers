@@ -1204,14 +1204,8 @@ describeMathCPUAndGPU('Sequential', () => {
     const inputSize = 4;
     const xs = ones([batchSize, inputSize]);
     const ys = ones([batchSize, 1]);
-    const denseLayer1 = tfl.layers.dense({
-      units: 3,
-      useBias: false,
-      kernelInitializer: 'ones',
-      inputShape: [inputSize]
-    });
-    const denseLayer2 =
-        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'ones'});
+    const denseLayer1 = tfl.layers.dense({units: 3, inputShape: [inputSize]});
+    const denseLayer2 = tfl.layers.dense({units: 1});
     const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     // Do not call `await` below, so the two fit() calls may interleave.
@@ -1233,14 +1227,8 @@ describeMathCPUAndGPU('Sequential', () => {
     const inputSize = 4;
     const xs = ones([batchSize, inputSize]);
     const ys = ones([batchSize, 1]);
-    const denseLayer1 = tfl.layers.dense({
-      units: 3,
-      useBias: false,
-      kernelInitializer: 'ones',
-      inputShape: [inputSize]
-    });
-    const denseLayer2 =
-        tfl.layers.dense({units: 1, useBias: false, kernelInitializer: 'ones'});
+    const denseLayer1 = tfl.layers.dense({units: 3, inputShape: [inputSize]});
+    const denseLayer2 = tfl.layers.dense({units: 1});
     const model = tfl.sequential({layers: [denseLayer1, denseLayer2]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
 
