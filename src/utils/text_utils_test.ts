@@ -305,6 +305,7 @@ describe('createReverseTypeIndex', () => {
           /*for (const s of generator) {
             integerSequences.push(s);
           }*/
+          let quit = false;
           let retrieve = generator.next();
           do {
             integerSequences.push(retrieve.value);
@@ -352,6 +353,7 @@ describe('createReverseTypeIndex', () => {
           /*for (const s of generator) {
             integerSequences.push(s);
           }*/
+          let quit = false;
           let retrieve = generator.next();
           do {
             integerSequences.push(retrieve.value);
@@ -412,6 +414,7 @@ describe('createReverseTypeIndex', () => {
       /*for (const s of generator) {
         integerSequences.push(s);
       }*/
+      let quit = false;
       let retrieve = generator.next();
       do {
         integerSequences.push(retrieve.value);
@@ -581,6 +584,7 @@ describe('createReverseTypeIndex', () => {
       /*for (const s of generator) {
         integerSequences.push(s);
       }*/
+      let quit = false;
       let retrieve = generator.next();
       do {
         integerSequences.push(retrieve.value);
