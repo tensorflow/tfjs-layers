@@ -927,9 +927,16 @@ export class SequenceTransformation implements Config {
         digitalizer.generateIntegerSequencesFromCounts(typeIndex, this.config,
           corpusTokenSequences);
 
-      for (const s of generator) {
+      /*for (const s of generator) {
         integerSequences.push(s);
-      }
+      }*/
+      let quit = false;
+      let retrieve = generator.next();
+      do {
+        integerSequences.push(retrieve.value);
+        retrieve = generator.next();
+        quit = retrieve.done;
+      } while (quit === false);
 
       const returnValue = transformer.createOccurrenceMatrix(this.config,
         integerSequences, mode, outputArrays);
@@ -1033,9 +1040,16 @@ export class SequenceTransformation implements Config {
         digitalizer.generateIntegerSequencesFromCounts(typeIndex, this.config,
           corpusTokenSequences);
 
-      for (const s of generator) {
+      /*for (const s of generator) {
         integerSequences.push(s);
-      }
+      }*/
+      let quit = false;
+      let retrieve = generator.next();
+      do {
+        integerSequences.push(retrieve.value);
+        retrieve = generator.next();
+        quit = retrieve.done;
+      } while (quit === false);
 
       const result = transformer.createSubsequences(integerSequences,
         windowSize,
