@@ -302,10 +302,17 @@ describe('createReverseTypeIndex', () => {
         () => {
           const integerSequences: number[][] = [];
 
-          for (const s of generator) {
+          /*for (const s of generator) {
             integerSequences.push(s);
-          }
-          expect(integerSequences[0].length).toEqual(3);
+          }*/
+          let retrieve = generator.next();
+          do {
+            integerSequences.push(retrieve.value);
+            retrieve = generator.next();
+            quit = retrieve.done;
+          } while (quit === false);
+
+        expect(integerSequences[0].length).toEqual(3);
           expect(integerSequences[1].length).toEqual(5);
           expect(integerSequences[0][0]).toBeGreaterThanOrEqual(1);
         });
@@ -342,10 +349,17 @@ describe('createReverseTypeIndex', () => {
 
           const integerSequences: number[][] = [];
 
-          for (const s of generator) {
+          /*for (const s of generator) {
             integerSequences.push(s);
-          }
-          expect(integerSequences[0].length).toEqual(3);
+          }*/
+          let retrieve = generator.next();
+          do {
+            integerSequences.push(retrieve.value);
+            retrieve = generator.next();
+            quit = retrieve.done;
+          } while (quit === false);
+
+        expect(integerSequences[0].length).toEqual(3);
           expect(integerSequences[1].length).toEqual(5);
           expect(integerSequences[0][0]).toBeGreaterThanOrEqual(1);
           expect(integerSequences[1][1]).toBeGreaterThanOrEqual(4);
@@ -395,9 +409,16 @@ describe('createReverseTypeIndex', () => {
         digitalizer.generateIntegerSequencesFromCounts(typeIndex, config,
           corpusTokenSequences);
 
-      for (const s of generator) {
+      /*for (const s of generator) {
         integerSequences.push(s);
-      }
+      }*/
+      let retrieve = generator.next();
+      do {
+        integerSequences.push(retrieve.value);
+        retrieve = generator.next();
+        quit = retrieve.done;
+      } while (quit === false);
+
     });
 
     describe('createOccurrenceMatrix', () => {
@@ -557,9 +578,16 @@ describe('createReverseTypeIndex', () => {
         digitalizer.generateIntegerSequencesFromCounts(typeIndex, config,
           corpusTokenSequences);
 
-      for (const s of generator) {
+      /*for (const s of generator) {
         integerSequences.push(s);
-      }
+      }*/
+      let retrieve = generator.next();
+      do {
+        integerSequences.push(retrieve.value);
+        retrieve = generator.next();
+        quit = retrieve.done;
+      } while (quit === false);
+
     });
 
     describe('createOccurrenceMatrixFromStrings with counting', () => {
