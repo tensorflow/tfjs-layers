@@ -383,7 +383,7 @@ describe('text preprocessing utilities', () => {
     let corpusTokenSequences: string[][];
     let integerSequences: number[][];
     let generator: IterableIterator<number[]>;
-    let dataTensor: tfc.Tensor;
+    let dataTensor: tfc.Tensor<tfc.Rank.R2>;
     let mode: string;
     let dataMatrix: number[][];
     let outputArrays: boolean;
@@ -528,8 +528,8 @@ describe('text preprocessing utilities', () => {
             expect(objectInContextCollector[0]).toEqual(1);
           }
           else {
-            const contextTensor = result[0] as tfc.Tensor;
-            const objectInContextTensor = result[1] as tfc.Tensor;
+            const contextTensor = result[0] as tfc.Tensor<tfc.Rank.R2>;
+            const objectInContextTensor = result[1] as tfc.Tensor<tfc.Rank.R1>;
             expectTensorsClose(contextTensor.slice([0, 0], [1, 2]),
               tfc.tensor([[2, 3]]));
             expectTensorsClose(objectInContextTensor.slice([0], [1]),
@@ -553,7 +553,7 @@ describe('text preprocessing utilities', () => {
     let corpusTokenSequences: string[][];
     let integerSequences: number[][];
     let generator: IterableIterator<number[]>;
-    let dataTensor: tfc.Tensor;
+    let dataTensor: tfc.Tensor<tfc.Rank.R2>;
     let mode: string;
     let dataMatrix: number[][];
     let outputArrays: boolean;
@@ -685,7 +685,6 @@ describe('text preprocessing utilities', () => {
     describe('createOccurrenceMatrixFromStrings with hashing', () => {
       const hashingFlag = true;
       const spaceFactor = 20;
-      //let returnValue: number[][] | tfc.Tensor;
       it('should construct an occurrence matrix from an array of strings' +
         ' using absolute frequencies',
         async (done) => {
@@ -797,8 +796,9 @@ describe('text preprocessing utilities', () => {
             const objectInContextCollector = result[1] as number[];
             expect(objectInContextCollector[0]).toEqual(1);
           } else {
-            const contextTensor = result[0] as tfc.Tensor;
-            const objectInContextTensor = result[1] as tfc.Tensor;
+            const contextTensor = result[0] as tfc.Tensor<tfc.Rank.R2>;
+            const objectInContextTensor 
+            = result[1] as tfc.Tensor<tfc.Rank.R1>;
             expectTensorsClose(contextTensor.slice([0, 0], [1, 2]),
               tfc.tensor([[2, 3]]));
             expectTensorsClose(objectInContextTensor.slice([0], [1]),
@@ -832,8 +832,9 @@ describe('text preprocessing utilities', () => {
               expect(objectInContextCollector[0]).toEqual(1);
             }
             else {
-              const contextTensor = result[0] as tfc.Tensor;
-              const objectInContextTensor = result[1] as tfc.Tensor;
+              const contextTensor = result[0] as tfc.Tensor<tfc.Rank.R2>;
+              const objectInContextTensor 
+              = result[1] as tfc.Tensor<tfc.Rank.R1>;
               expectTensorsClose(contextTensor.slice([0, 0], [1, 2]),
                 tfc.tensor([[2, 3]]));
               expectTensorsClose(objectInContextTensor.slice([0], [1]),

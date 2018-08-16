@@ -660,9 +660,9 @@ export class SequenceTransformation implements Config {
     integerSequences: number[][],
     mode: string,
     outputArrays = false
-  ): number[][] | tfc.Tensor {
+  ): number[][] | tfc.Tensor<tfc.Rank.R2> {
     const dataMatrix: number[][] = [];
-    let dataBuffer: tfc.TensorBuffer<tfc.Rank>;
+    let dataBuffer: tfc.TensorBuffer<tfc.Rank.R2>;
 
     /*
     * a loop which takes an array of integer sequences, one for each text, and
@@ -850,7 +850,8 @@ export class SequenceTransformation implements Config {
     windowSize: number,
     panePosition: number,
     outputArrays = false
-  ): [number[][], number[]] | [tfc.Tensor, tfc.Tensor] {
+  ): [number[][], number[]] | [tfc.Tensor<tfc.Rank.R2>,
+    tfc.Tensor<tfc.Rank.R1>] {
 
     /* the breadth of the window frame to the left of the token */
     const leftSideBreadth = panePosition - 1;
@@ -864,8 +865,8 @@ export class SequenceTransformation implements Config {
 
     const contextCollector: number[][] = [];
     const objectInContextCollector: number[] = [];
-    let contextTensor: tfc.Tensor;
-    let objectInContextTensor: tfc.Tensor;
+    let contextTensor: tfc.Tensor<tfc.Rank.R2>;
+    let objectInContextTensor: tfc.Tensor<tfc.Rank.R1>;
 
     let textCounter = 0;
     while (textCounter < this.config.numberOfTexts) {
@@ -958,7 +959,7 @@ export class WorkflowIntegration implements Config {
 
   createOccurrenceMatrixFromStrings(corpus: string[], hashingFlag = false, 
     spaceFactor: number,
-    mode: string, outputArrays: boolean): number[][] | tfc.Tensor {
+    mode: string, outputArrays: boolean): number[][] | tfc.Tensor<tfc.Rank.R2> {
 
     if (!hashingFlag) {
 
@@ -976,7 +977,7 @@ export class WorkflowIntegration implements Config {
       const integerSequences: number[][] = [];
       let generator: IterableIterator<number[]>;
 
-      let dataTensor: tfc.Tensor;
+      let dataTensor: tfc.Tensor<tfc.Rank.R2>;
       let dataMatrix: number[][];
 
       tokenizer = new TextTokenization(corpus, this.config);
@@ -1029,7 +1030,7 @@ export class WorkflowIntegration implements Config {
 
       let integerSequences: number[][] = [];
 
-      let dataTensor: tfc.Tensor;
+      let dataTensor: tfc.Tensor<tfc.Rank.R2>;
       let dataMatrix: number[][];
 
       const digitalizer = new TokenDigitalization(corpus, this.config);
@@ -1074,11 +1075,12 @@ export class WorkflowIntegration implements Config {
     panePosition: number,
     hashingFlag = false,
     outputArrays = false
-  ): [number[][], number[]] | [tfc.Tensor, tfc.Tensor] {
+  ): [number[][], number[]] | [tfc.Tensor<tfc.Rank.R2>,
+    tfc.Tensor<tfc.Rank.R1>] {
     let contextCollector: number[][];
     let objectInContextCollector: number[];
-    let contextTensor: tfc.Tensor;
-    let objectInContextTensor: tfc.Tensor;
+    let contextTensor: tfc.Tensor<tfc.Rank.R2>;
+    let objectInContextTensor: tfc.Tensor<tfc.Rank.R1>;
 
     if (!hashingFlag) {
 
@@ -1132,8 +1134,8 @@ export class WorkflowIntegration implements Config {
         objectInContextCollector = result[1] as number[];
       }
       else {
-        contextTensor = result[0] as tfc.Tensor;
-        objectInContextTensor = result[1] as tfc.Tensor;
+        contextTensor = result[0] as tfc.Tensor<tfc.Rank.R2>;
+        objectInContextTensor = result[1] as tfc.Tensor<tfc.Rank.R1>;
       }
 
     }
@@ -1160,8 +1162,8 @@ export class WorkflowIntegration implements Config {
           objectInContextCollector = result1[1] as number[];
         }
         else {
-          contextTensor = result1[0] as tfc.Tensor;
-          objectInContextTensor = result1[1] as tfc.Tensor;
+          contextTensor = result1[0] as tfc.Tensor<tfc.Rank.R2>;
+          objectInContextTensor = result1[1] as tfc.Tensor<tfc.Rank.R1>;
         }
 
         if (outputArrays) {
