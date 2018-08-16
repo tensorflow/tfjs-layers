@@ -12,7 +12,7 @@
  * Unit Tests for Advanced Activation Layers.
  */
 
-import {Tensor, tensor2d} from '@tensorflow/tfjs-core';
+import {Tensor, tensor1d, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
@@ -47,9 +47,9 @@ describeMathCPUAndGPU('ReLU: Tensor', () => {
 
   it('Finite maxValue', () => {
     const layer = tfl.layers.reLU({maxValue: 250});
-    const x = tensor2d([[-100, -200], [0, 300], [200, 200]]);
+    const x = tensor1d([-100, -200, 0, 300, 200, 200]);
     const y = layer.apply(x) as Tensor;
-    expectTensorsClose(y, tensor2d([[0, 0], [0, 250], [200, 200]]));
+    expectTensorsClose(y, tensor1d([0, 0, 0, 250, 200, 200]));
   });
 });
 
