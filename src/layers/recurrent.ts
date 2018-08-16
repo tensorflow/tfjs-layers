@@ -254,6 +254,26 @@ export interface BaseRNNLayerConfig extends LayerConfig {
    * If `true`, the last state for each sample at index i in a batch will be
    * used as initial state of the sample of index i in the following batch
    * (default: `false`).
+   *
+   * You can set RNN layers to be "stateful", which means that the states
+   * computed for the samples in one batch will be reused as initial states
+   * for the samples in the next batch. This assumes a one-to-one mapping
+   * between samples in difference successive batches.
+   *
+   * To enable "statefulness":
+   *   - specify `stateful: true` in the layer constructor.
+   *   - specify a fixed batch size for your model, by passing
+   *     - if sequential model:
+   *       `batchInputShape: [...]` to the first layer in your model.
+   *     - else for functional model with 1 or more Input layers:
+   *       `batchShape: [...]` to all the first layers in your model.
+   *     This is the expected shape of your inputs
+   *     *including the batch size*.
+   *     It should be a tuple of integers, e.g., `[32, 10, 100]`.
+   *   - specify `shuffle: false` whe n calling `Model.fit()`.
+   *
+   * To reset the state of your model, call `resetState()` on either the
+   * specific layer or on the entire model.
    */
   stateful?: boolean;
 
@@ -503,11 +523,7 @@ export class RNN extends Layer {
           stateSize.map(dim => new InputSpec({shape: [null, dim]}));
     }
     if (this.stateful) {
-      throw new NotImplementedError(
-          'stateful RNN layer is not implemented yet');
-      // TODO(cais): Uncomment the following line once stateful = true is
-      //   implemented.
-      // this.resetStates();
+      this.resetStates();
     }
   }
 
