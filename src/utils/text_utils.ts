@@ -1,6 +1,4 @@
 import * as tfc from '@tensorflow/tfjs-core';
-import * as md5 from 'md5';
-import { SHA256 } from 'crypto-js';
 
 /**
  * Collection of classes with methods largely modelled after the Keras utilities
@@ -427,14 +425,13 @@ export class TokenDigitalization implements Config {
   /**
    * @param corpus Array of texts as strings.
    * @param spaceFactor Maximum limit of hashing region.
-   * @param hashFunction Optionally specified hashing function.
    * @param config Class configuration.
    * @returns Array of arrays of integers less than or equal to a magnitude
    * given as a parameter and such that each integer corresponds to a word type
    * in a text.
    */
   hashWordsToIntegers = async (corpus: string[], spaceFactor: number,
-    hashFunction: string, config: Config): Promise<number[][]> => {
+     config: Config): Promise<number[][]> => {
 
     const tokenizer = new TextTokenization(corpus, config);
 
@@ -461,22 +458,96 @@ export class TokenDigitalization implements Config {
       totalSequence = totalSequence.concat(partialSequence);
     }
 
-    let hashFunctionChosen: Function;
-    if (hashFunction === undefined) {
-      hashFunctionChosen = SHA256;
+    // function from polyfill at
+    // https://developer.mozilla.org/en-US/docs/Web/API/TextEncoder
+    function encode(str: string) {
+      const lLen = str.length;
+      let resPos = -1;
+      let resArr = new Uint8Array(lLen * 3);
+      for (let point = 0, nextcode = 0, i = 0; i !== lLen;) {
+        point = str.charCodeAt(i), i += 1;
+        if (point >= 0xD800 && point <= 0xDBFF) {
+          if (i === lLen) {
+            resArr[resPos += 1] = 0xef/*0b11101111*/;
+            resArr[resPos += 1] = 0xbf/*0b10111111*/;
+            resArr[resPos += 1] = 0xbd/*0b10111101*/;
+            break;
+          }
+          // https://mathiasbynens.be/notes/
+          // javascript-encoding#surrogate-formulae
+          nextcode = str.charCodeAt(i);
+          if (nextcode >= 0xDC00 && nextcode <= 0xDFFF) {
+            point = (point - 0xD800) * 0x400 + nextcode - 0xDC00 + 0x10000;
+            i += 1;
+            if (point > 0xffff) {
+              const encoder = new TextEncoder();
+              encoder.encode();
+
+              resArr[resPos += 1] = (0x1e/*0b11110*/ << 3) |
+                (point >>> 18);
+              resArr[resPos += 1] = (0x2/*0b10*/ << 6) |
+                ((point >>> 12) & 0x3f/*0b00111111*/);
+              resArr[resPos += 1] = (0x2/*0b10*/ << 6) |
+                ((point >>> 6) & 0x3f/*0b00111111*/);
+              resArr[resPos += 1] = (0x2/*0b10*/ << 6) |
+                (point & 0x3f/*0b00111111*/);
+              continue;
+            }
+          } else {
+            resArr[resPos += 1] = 0xef/*0b11101111*/;
+            resArr[resPos += 1] = 0xbf/*0b10111111*/;
+            resArr[resPos += 1] = 0xbd/*0b10111101*/;
+            continue;
+          }
+        }
+        if (point <= 0x007f) {
+          resArr[resPos += 1] = (0x0/*0b0*/ << 7) |
+            point;
+        } else if (point <= 0x07ff) {
+          resArr[resPos += 1] = (0x6/*0b110*/ << 5) |
+            (point >>> 6);
+          resArr[resPos += 1] = (0x2/*0b10*/ << 6) |
+            (point & 0x3f/*0b00111111*/);
+        } else {
+          resArr[resPos += 1] = (0xe/*0b1110*/ << 4) |
+            (point >>> 12);
+          resArr[resPos += 1] = (0x2/*0b10*/ << 6) |
+            ((point >>> 6) & 0x3f/*0b00111111*/);
+          resArr[resPos += 1] = (0x2/*0b10*/ << 6) |
+            (point & 0x3f/*0b00111111*/);
+        }
+      }
+      resArr = new Uint8Array(resArr.buffer.slice(0, resPos + 1));
+      return resArr;
     }
-    else if (hashFunction === 'md5') {
-      hashFunctionChosen = md5;
+
+    // from example at
+    //https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+    async function sha(message: string) {
+
+      // encode as UTF-8
+      ///const msgBuffer = new TextEncoder().encode(message, 'utf-8');
+      const msgBuffer = encode(message);
+
+      // hash the message
+      const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
+
+      //convert ArrayBuffer to Array
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b =>
+        ('00' + b.toString(16)).slice(-2)).join('');
+      return hashHex;
     }
 
     const integerSequence: number[] = [];
     /* apply the hash function to each word in the corpus */
     for (let m = 0; m < totalSequence.length; m++) {
       const value =
-        parseInt(await hashFunctionChosen(
+        parseInt(await sha(
           totalSequence[m]), 16) % (spaceFactor - 1) + 1;
       integerSequence.push(value);
     }
+
     /*
      * an array of arrays of integers for the sequences in the texts of the
      * corpus
@@ -844,12 +915,12 @@ export class SequenceTransformation implements Config {
   }
 }
 
-  /**
-   * Methods which chain the methods provided by the classes TextTokenization,
-   * TypeEnumeration, TokenDigitalization, and SequenceTransformation into
-   * workflows from a corpus of texts as strings to tensors.
-   */
-  export class WorkflowIntegration implements Config {
+/**
+ * Methods which chain the methods provided by the classes TextTokenization,
+ * TypeEnumeration, TokenDigitalization, and SequenceTransformation into
+ * workflows from a corpus of texts as strings to tensors.
+ */
+export class WorkflowIntegration implements Config {
 
   config: Config;
   corpus: string[];
@@ -885,7 +956,8 @@ export class SequenceTransformation implements Config {
    * with rows corresponding to texts and columns corresponding to features.
    */
 
-  createOccurrenceMatrixFromStrings(corpus: string[], hashingFlag = false,
+  createOccurrenceMatrixFromStrings(corpus: string[], hashingFlag = false, 
+    spaceFactor: number,
     mode: string, outputArrays: boolean): number[][] | tfc.Tensor {
 
     if (!hashingFlag) {
@@ -906,7 +978,7 @@ export class SequenceTransformation implements Config {
 
       let dataTensor: tfc.Tensor;
       let dataMatrix: number[][];
-      
+
       tokenizer = new TextTokenization(corpus, this.config);
       enumerator = new TypeEnumeration(corpus, this.config);
       digitalizer = new TokenDigitalization(corpus, this.config);
@@ -959,14 +1031,13 @@ export class SequenceTransformation implements Config {
 
       let dataTensor: tfc.Tensor;
       let dataMatrix: number[][];
-      
+
       const digitalizer = new TokenDigitalization(corpus, this.config);
       const transformer = new SequenceTransformation(this.config);
 
-      const spaceFactor = 20;
       const hashAwaiter = async () => {
         integerSequences = await digitalizer.hashWordsToIntegers(
-          corpus, spaceFactor, undefined, this.config);
+          corpus, spaceFactor, this.config);
 
         const returnValue = transformer.createOccurrenceMatrix(this.config,
           integerSequences, mode, outputArrays);
@@ -1076,7 +1147,7 @@ export class SequenceTransformation implements Config {
       const spaceFactor = 20;
       const hashAwaiter = async () => {
         integerSequences = await digitalizer.hashWordsToIntegers(
-          this.corpus, spaceFactor, undefined, this.config);
+          this.corpus, spaceFactor, this.config);
 
         const result1 = transformer.createSubsequences(integerSequences,
           windowSize,

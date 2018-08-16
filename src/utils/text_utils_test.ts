@@ -137,113 +137,113 @@ describe('text preprocessing utilities', () => {
     });
 
     describe('countTypesInText', () => {
-    it('should generate a map from each type in the corpus'
-      + 'to its absolute frequency in a text', () => {
-        const typeCountsInText: Map<string, number> =
-          enumerator.countTypesInText(textTokens[0], corpusTypes);
-        expect(typeCountsInText.get('word0')).toEqual(1);
-        expect(typeCountsInText.get('word1')).toEqual(1);
-        expect(typeCountsInText.get('word4')).toEqual(0);
-      });
+      it('should generate a map from each type in the corpus'
+        + 'to its absolute frequency in a text', () => {
+          const typeCountsInText: Map<string, number> =
+            enumerator.countTypesInText(textTokens[0], corpusTypes);
+          expect(typeCountsInText.get('word0')).toEqual(1);
+          expect(typeCountsInText.get('word1')).toEqual(1);
+          expect(typeCountsInText.get('word4')).toEqual(0);
+        });
     });
 
     describe('countTypesByText', () => {
-    it('should generate an array of maps, one for each text' +
-      'and such that each map is from word types in the text to' +
-      'their absolute frequencies in the text',
-      () => {
-        const typeCountsByText: Array<Map<string, number>> =
-          enumerator.countTypesByText(textTokens, corpusTypes);
-        expect(typeCountsByText[0].get('word1')).toEqual(1);
-        expect(typeCountsByText[1].get('word1')).toEqual(1);
-        expect(typeCountsByText[0].get('word0')).toEqual(1);
-        expect(typeCountsByText[1].get('word0')).toEqual(0);
-      });
+      it('should generate an array of maps, one for each text' +
+        'and such that each map is from word types in the text to' +
+        'their absolute frequencies in the text',
+        () => {
+          const typeCountsByText: Array<Map<string, number>> =
+            enumerator.countTypesByText(textTokens, corpusTypes);
+          expect(typeCountsByText[0].get('word1')).toEqual(1);
+          expect(typeCountsByText[1].get('word1')).toEqual(1);
+          expect(typeCountsByText[0].get('word0')).toEqual(1);
+          expect(typeCountsByText[1].get('word0')).toEqual(0);
+        });
     });
 
-      describe('countTypesInCorpus', () => {
-        it('should generate a map from a word type to its'
-      + 'absolute frequency in the corpus',
-      () => {
-        const typeCountsInCorpus: Map<string, number>
-          = enumerator.countTypesInCorpus(corpusTokens, corpusTypes);
-        expect(typeCountsInCorpus.get('word0')).toEqual(1);
-        expect(typeCountsInCorpus.get('word1')).toEqual(2);
-        expect(typeCountsInCorpus.get('word4')).toEqual(1);
-      });
+    describe('countTypesInCorpus', () => {
+      it('should generate a map from a word type to its'
+        + 'absolute frequency in the corpus',
+        () => {
+          const typeCountsInCorpus: Map<string, number>
+            = enumerator.countTypesInCorpus(corpusTokens, corpusTypes);
+          expect(typeCountsInCorpus.get('word0')).toEqual(1);
+          expect(typeCountsInCorpus.get('word1')).toEqual(2);
+          expect(typeCountsInCorpus.get('word4')).toEqual(1);
+        });
     });
 
-      describe('sortTypesByCount', () => {
-        it('takes a mapping from types to counts in the corpus ' +
-      'and returns a list of the types sorted ' +
-      ' descending by the number of counts', () => {
-        const typeCountsInCorpus: Map<string, number>
-          = enumerator.countTypesInCorpus(corpusTokens, corpusTypes);
-        const typesSortedByCount = enumerator.sortTypesByCount(
-          typeCountsInCorpus);
-        expect(typesSortedByCount).toEqual(['word1', 'word0', 'word2',
-          'word3\'s', 'word4', 'word5', 'word6']);
-      });
+    describe('sortTypesByCount', () => {
+      it('takes a mapping from types to counts in the corpus ' +
+        'and returns a list of the types sorted ' +
+        ' descending by the number of counts', () => {
+          const typeCountsInCorpus: Map<string, number>
+            = enumerator.countTypesInCorpus(corpusTokens, corpusTypes);
+          const typesSortedByCount = enumerator.sortTypesByCount(
+            typeCountsInCorpus);
+          expect(typesSortedByCount).toEqual(['word1', 'word0', 'word2',
+            'word3\'s', 'word4', 'word5', 'word6']);
+        });
     });
 
-      describe('createTypeIndex', () => {
-        it('returns a mapping from a type to an integer such that ' +
-      'the absolute frequency of the type in the corpus determines the '
-      + 'integer, words occurring more frequently being assigned'
-      + ' smaller integers', () => {
+    describe('createTypeIndex', () => {
+      it('returns a mapping from a type to an integer such that ' +
+        'the absolute frequency of the type in the corpus determines the '
+        + 'integer, words occurring more frequently being assigned'
+        + ' smaller integers', () => {
+          const typeCountsInCorpus: Map<string, number>
+            = enumerator.countTypesInCorpus(corpusTokens, corpusTypes);
+          const typesSortedByCount = enumerator.sortTypesByCount(
+            typeCountsInCorpus);
+          const typeIndex = enumerator.createTypeIndex(
+            typeCountsInCorpus, typesSortedByCount, config.defaultToken);
+          expect(typeIndex.get('word1')).toEqual(1);
+          expect(typeIndex.get('word0')).toEqual(2);
+        });
+    });
+
+    describe('createTypeIndex with a maximum number of words', () => {
+      it('returns a mapping from a type to an integer such that ' +
+        'the absolute frequency of the type in the corpus determines the '
+        + 'integer, words occurring more frequently being assigned'
+        + ' smaller integers, in this configuration with infrequent' +
+        'words being replaced by a conventional token', () => {
+          config.maximumNumberOfWords = 3;
+          config.defaultToken = 'UNK';
+          enumerator = new TypeEnumeration(corpus, config);
+          tokenizer = new text_utils.TextTokenization(corpus, config);
+          const result0 = tokenizer.collectTokens(corpus);
+          textTokens = result0[0] as string[][];
+          corpusTokens = result0[1] as string[];
+          const result1 = tokenizer.collectTypes(textTokens, corpusTokens);
+          corpusTypes = result1[1] as string[];
+          const typeCountsInCorpus: Map<string, number>
+            = enumerator.countTypesInCorpus(corpusTokens, corpusTypes);
+          const typesSortedByCount = enumerator.sortTypesByCount(
+            typeCountsInCorpus);
+          const typeIndex = enumerator.createTypeIndex(
+            typeCountsInCorpus, typesSortedByCount, config.defaultToken);
+          expect(typeIndex.get('word1')).toEqual(1);
+          expect(typeIndex.get('word0')).toEqual(2);
+          expect(typeIndex.get('UNK')).toEqual(4);
+
+        });
+    });
+
+    describe('createReverseTypeIndex', () => {
+      it('reverses the injective mapping provided by the type index', () => {
         const typeCountsInCorpus: Map<string, number>
           = enumerator.countTypesInCorpus(corpusTokens, corpusTypes);
         const typesSortedByCount = enumerator.sortTypesByCount(
           typeCountsInCorpus);
         const typeIndex = enumerator.createTypeIndex(
           typeCountsInCorpus, typesSortedByCount, config.defaultToken);
-        expect(typeIndex.get('word1')).toEqual(1);
-        expect(typeIndex.get('word0')).toEqual(2);
+        const reverseTypeIndex = enumerator.createReverseTypeIndex(typeIndex);
+        expect(reverseTypeIndex.get(1)).toEqual('word1');
+        expect(reverseTypeIndex.get(2)).toEqual('word0');
       });
-    });
-
-      describe('createTypeIndex with a maximum number of words', () => {
-        it('returns a mapping from a type to an integer such that ' +
-      'the absolute frequency of the type in the corpus determines the '
-      + 'integer, words occurring more frequently being assigned'
-      + ' smaller integers, in this configuration with infrequent' +
-      'words being replaced by a conventional token', () => {
-        config.maximumNumberOfWords=3;
-        config.defaultToken='UNK';
-        enumerator = new TypeEnumeration(corpus, config);
-        tokenizer = new text_utils.TextTokenization(corpus, config);
-        const result0 = tokenizer.collectTokens(corpus);
-        textTokens = result0[0] as string[][];
-        corpusTokens = result0[1] as string[];
-        const result1 = tokenizer.collectTypes(textTokens, corpusTokens);
-        corpusTypes = result1[1] as string[];
-        const typeCountsInCorpus: Map<string, number>
-          = enumerator.countTypesInCorpus(corpusTokens, corpusTypes);
-        const typesSortedByCount = enumerator.sortTypesByCount(
-          typeCountsInCorpus);
-        const typeIndex = enumerator.createTypeIndex(
-          typeCountsInCorpus, typesSortedByCount, config.defaultToken);
-        expect(typeIndex.get('word1')).toEqual(1);
-        expect(typeIndex.get('word0')).toEqual(2);
-        expect(typeIndex.get('UNK')).toEqual(4);
-        
-});
-});
-
-describe('createReverseTypeIndex', () => {
-  it('reverses the injective mapping provided by the type index', () => {
-      const typeCountsInCorpus: Map<string, number>
-        = enumerator.countTypesInCorpus(corpusTokens, corpusTypes);
-      const typesSortedByCount = enumerator.sortTypesByCount(
-        typeCountsInCorpus);
-      const typeIndex = enumerator.createTypeIndex(
-        typeCountsInCorpus, typesSortedByCount, config.defaultToken);
-      const reverseTypeIndex = enumerator.createReverseTypeIndex(typeIndex);
-      expect(reverseTypeIndex.get(1)).toEqual('word1');
-      expect(reverseTypeIndex.get(2)).toEqual('word0');
     });
   });
-});
 
   describe('TokenDigitalization', () => {
     let tokenizer: TextTokenization;
@@ -288,10 +288,10 @@ describe('createReverseTypeIndex', () => {
         'each less than or equal to a specified integer',
         async (done) => {
           integerSequences = await digitalizer.hashWordsToIntegers(
-            corpus, spaceFactor, undefined, config);
+            corpus, spaceFactor, config);
           for (let i = 0; i < corpus.length; i++) {
           }
-          done();          expect(integerSequences.length).toBeGreaterThan(0);
+          done(); expect(integerSequences.length).toBeGreaterThan(0);
           expect(integerSequences[0][0]).toBeGreaterThanOrEqual(1);
           expect(integerSequences[0][0]).toBeLessThanOrEqual(spaceFactor);
         });
@@ -312,8 +312,7 @@ describe('createReverseTypeIndex', () => {
             retrieve = generator.next();
             quit = retrieve.done;
           } while (quit === false);
-
-        expect(integerSequences[0].length).toEqual(3);
+          expect(integerSequences[0].length).toEqual(3);
           expect(integerSequences[1].length).toEqual(5);
           expect(integerSequences[0][0]).toBeGreaterThanOrEqual(1);
         });
@@ -322,13 +321,13 @@ describe('createReverseTypeIndex', () => {
 
 
     describe('integerSequenceGenerator', () => {
-      it('should define a generator of integer sequences on demand,'+
-      'in this case with tokens replaced by a conventional token'+
-      'being represented by an integer equal to one plus the maximum'
-      +' number of words configuration property',
+      it('should define a generator of integer sequences on demand,' +
+        'in this case with tokens replaced by a conventional token' +
+        'being represented by an integer equal to one plus the maximum'
+        + ' number of words configuration property',
         () => {
-          config.maximumNumberOfWords=3;
-          config.defaultToken='UNK';
+          config.maximumNumberOfWords = 3;
+          config.defaultToken = 'UNK';
           tokenizer = new text_utils.TextTokenization(corpus, config);
           enumerator = new TypeEnumeration(corpus, config);
           digitalizer = new text_utils.TokenDigitalization(corpus, config);
@@ -346,7 +345,7 @@ describe('createReverseTypeIndex', () => {
             = tokenizer.createCorpusTokenSequences(corpus, config);
           generator =
             digitalizer.generateIntegerSequencesFromCounts(typeIndex, config,
-              corpusTokenSequences);    
+              corpusTokenSequences);
 
           const integerSequences: number[][] = [];
 
@@ -361,7 +360,7 @@ describe('createReverseTypeIndex', () => {
             quit = retrieve.done;
           } while (quit === false);
 
-        expect(integerSequences[0].length).toEqual(3);
+          expect(integerSequences[0].length).toEqual(3);
           expect(integerSequences[1].length).toEqual(5);
           expect(integerSequences[0][0]).toBeGreaterThanOrEqual(1);
           expect(integerSequences[1][1]).toBeGreaterThanOrEqual(4);
@@ -427,7 +426,7 @@ describe('createReverseTypeIndex', () => {
     describe('createOccurrenceMatrix', () => {
       it('should construct an occurrence matrix'
         + 'from an array of integer sequences'
-        +'using absolute frequencies', () => {
+        + 'using absolute frequencies', () => {
           mode = 'count';
           outputArrays = true;
           const returnValue = transformer.createOccurrenceMatrix(config,
@@ -445,9 +444,9 @@ describe('createReverseTypeIndex', () => {
               tfc.tensor([[1]]));
           }
         });
-          it('should construct an occurrence matrix from an array of strings'+
-          ' using relative frequencies',
-            () => {
+      it('should construct an occurrence matrix from an array of strings' +
+        ' using relative frequencies',
+        () => {
           mode = 'freq';
           const returnValue = transformer.createOccurrenceMatrix(config,
             integerSequences, mode, outputArrays);
@@ -466,9 +465,9 @@ describe('createReverseTypeIndex', () => {
               , 0.01);
           }
         });
-        it('should construct an occurrence matrix from an array of strings'+
-          ' using binary frequencies',
-            () => {
+      it('should construct an occurrence matrix from an array of strings' +
+        ' using binary frequencies',
+        () => {
           mode = 'binary';
           const returnValue = transformer.createOccurrenceMatrix(config,
             integerSequences, mode, outputArrays);
@@ -485,10 +484,10 @@ describe('createReverseTypeIndex', () => {
               tfc.tensor([[1]]));
           }
         });
-        it('should construct an occurrence matrix from an array of strings'+
-          ' using tfidf values',
-            () => {
-              mode = 'tfidf';
+      it('should construct an occurrence matrix from an array of strings' +
+        ' using tfidf values',
+        () => {
+          mode = 'tfidf';
           const returnValue = transformer.createOccurrenceMatrix(config,
             integerSequences, mode, outputArrays);
           if (returnValue instanceof Array) {
@@ -506,7 +505,7 @@ describe('createReverseTypeIndex', () => {
               , 0.01);
           }
         });
-      });
+    });
 
     describe('createDataSubsequences', () => {
 
@@ -582,7 +581,7 @@ describe('createReverseTypeIndex', () => {
           corpusTokenSequences);
 
       /*for (const s of generator) {
-        integerSequences.push(s);
+       integerSequences.push(s);
       }*/
       let quit = false;
       let retrieve = generator.next();
@@ -594,16 +593,19 @@ describe('createReverseTypeIndex', () => {
 
     });
 
+
+
     describe('createOccurrenceMatrixFromStrings with counting', () => {
       const hashingFlag = false;
+      const spaceFactor:number = undefined;
       //let returnValue;
       it('should construct an occurrence matrix from an array of strings'
-      +' using absolute frequencies',
+        + ' using absolute frequencies',
         () => {
           mode = 'count';
           outputArrays = true;
           const returnValue = integrator.createOccurrenceMatrixFromStrings(
-            corpus, hashingFlag, mode, outputArrays);
+            corpus, hashingFlag, spaceFactor, mode, outputArrays);
           if (returnValue instanceof Array) {
             dataMatrix = returnValue as number[][];
             expect(dataMatrix[0][0]).toEqual(1);
@@ -617,12 +619,12 @@ describe('createReverseTypeIndex', () => {
               tfc.tensor([[1]]));
           }
         });
-          it('should construct an occurrence matrix from an array of strings'
-          +' using relative frequencies',
-            () => {
-              mode = 'freq';
+      it('should construct an occurrence matrix from an array of strings'
+        + ' using relative frequencies',
+        () => {
+          mode = 'freq';
           const returnValue = integrator.createOccurrenceMatrixFromStrings(
-            corpus, hashingFlag, mode, outputArrays);
+            corpus, hashingFlag, spaceFactor, mode, outputArrays);
           if (returnValue instanceof Array) {
             dataMatrix = returnValue as number[][];
             expect(dataMatrix[0][0]).toBeCloseTo(0.33);
@@ -638,12 +640,12 @@ describe('createReverseTypeIndex', () => {
               , 0.01);
           }
         });
-        it('should construct an occurrence matrix from an array of strings'
-          +' using binary frequencies',
-            () => {
-              mode = 'binary';
+      it('should construct an occurrence matrix from an array of strings'
+        + ' using binary frequencies',
+        () => {
+          mode = 'binary';
           const returnValue = integrator.createOccurrenceMatrixFromStrings(
-            corpus, hashingFlag, mode, outputArrays);
+            corpus, hashingFlag, spaceFactor, mode, outputArrays);
           if (returnValue instanceof Array) {
             dataMatrix = returnValue as number[][];
             expect(dataMatrix[0][0]).toEqual(1);
@@ -657,12 +659,12 @@ describe('createReverseTypeIndex', () => {
               tfc.tensor([[1]]));
           }
         });
-        it('should construct an occurrence matrix from an array of strings'
-          +' using tfidf values',
-            () => {
-              mode = 'tfidf';
+      it('should construct an occurrence matrix from an array of strings'
+        + ' using tfidf values',
+        () => {
+          mode = 'tfidf';
           const returnValue = integrator.createOccurrenceMatrixFromStrings(
-            corpus, hashingFlag, mode, outputArrays);
+            corpus, hashingFlag, spaceFactor, mode, outputArrays);
           if (returnValue instanceof Array) {
             dataMatrix = returnValue as number[][];
             expect(dataMatrix[0][0]).toEqual(0);
@@ -682,14 +684,15 @@ describe('createReverseTypeIndex', () => {
 
     describe('createOccurrenceMatrixFromStrings with hashing', () => {
       const hashingFlag = true;
+      const spaceFactor = 20;
       //let returnValue: number[][] | tfc.Tensor;
-      it('should construct an occurrence matrix from an array of strings'+
-      ' using absolute frequencies',
+      it('should construct an occurrence matrix from an array of strings' +
+        ' using absolute frequencies',
         async (done) => {
           mode = 'count';
           const returnValue = await
             integrator.createOccurrenceMatrixFromStrings(
-              corpus, hashingFlag, mode, outputArrays);
+              corpus, hashingFlag, spaceFactor, mode, outputArrays);
           done();
           if (returnValue instanceof Array) {
             dataMatrix = returnValue as number[][];
@@ -704,13 +707,13 @@ describe('createReverseTypeIndex', () => {
               tfc.tensor([[1]]));
           }
         });
-      it('should construct an occurrence matrix from an array of strings'+
-      ' using relative frequencies',
+      it('should construct an occurrence matrix from an array of strings' +
+        ' using relative frequencies',
         async (done) => {
           mode = 'freq';
           const returnValue = await
             integrator.createOccurrenceMatrixFromStrings(
-              corpus, hashingFlag, mode, outputArrays);
+              corpus, hashingFlag, spaceFactor, mode, outputArrays);
           done();
           if (returnValue instanceof Array) {
             dataMatrix = returnValue as number[][];
@@ -727,13 +730,13 @@ describe('createReverseTypeIndex', () => {
               , 0.01);
           }
         });
-      it('should construct an occurrence matrix from an array of strings'+
-      ' using binary frequencies',
+      it('should construct an occurrence matrix from an array of strings' +
+        ' using binary frequencies',
         async (done) => {
           mode = 'binary';
           const returnValue = await
             integrator.createOccurrenceMatrixFromStrings(
-              corpus, hashingFlag, mode, outputArrays);
+              corpus, hashingFlag, spaceFactor, mode, outputArrays);
           done();
           if (returnValue instanceof Array) {
             dataMatrix = returnValue as number[][];
@@ -748,13 +751,13 @@ describe('createReverseTypeIndex', () => {
               tfc.tensor([[1]]));
           }
         });
-      it('should construct an occurrence matrix from an array of strings'+
-      ' using tfidf values',
+      it('should construct an occurrence matrix from an array of strings' +
+        ' using tfidf values',
         async (done) => {
           mode = 'tfidf';
           const returnValue = await
             integrator.createOccurrenceMatrixFromStrings(
-              corpus, hashingFlag, mode, outputArrays);
+              corpus, hashingFlag, spaceFactor, mode, outputArrays);
           done();
           if (returnValue instanceof Array) {
             dataMatrix = returnValue as number[][];
