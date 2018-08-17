@@ -1,3 +1,11 @@
+/**
+ * @license
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ * =============================================================================
+ */
+
 import * as tfc from '@tensorflow/tfjs-core';
 import * as text_utils from './text_utils';
 import {
