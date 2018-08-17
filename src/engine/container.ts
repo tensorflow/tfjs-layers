@@ -23,7 +23,7 @@ import {batchSetValue, LayerVariable} from '../variables';
 import {version as layersVersion} from '../version';
 
 import {InputLayer} from './input_layer';
-import {Layer, Node, SymbolicTensor, DisposeResult} from './topology';
+import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
 
 /**
  * Converts layers weights to a format suitable for TensorFlow.js Layers.
@@ -675,10 +675,8 @@ export abstract class Container extends Layer {
    */
   dispose(): DisposeResult {
     this.assertNotDisposed();
-    const result: DisposeResult = {
-      refCountAfterDispose: null,
-      numDisposedVariables: 0
-    };
+    const result:
+        DisposeResult = {refCountAfterDispose: null, numDisposedVariables: 0};
     if (--this._refCount === 0) {
       for (const layer of this.layers) {
         result.numDisposedVariables += layer.dispose().numDisposedVariables;
@@ -1421,5 +1419,15 @@ export abstract class Container extends Layer {
       }
     }
     return false;
+  }
+
+  resetStates() {
+    this.layers.forEach(layer => {
+      // tslint:disable:no-any
+      if (layer.stateful && (layer as any).resetStates instanceof Function) {
+        (layer as any).resetStates();
+      }
+      // tslint:enable:no-any
+    });
   }
 }

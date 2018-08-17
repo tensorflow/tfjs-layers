@@ -559,6 +559,9 @@ export class RNN extends Layer {
           this.states[0] = tfc.zeros([batchSize, this.cell.stateSize]);
         }
       } else {
+        // Dispose old state tensors.
+        tfc.dispose(this.states);
+
         if (!Array.isArray(states)) {
           states = [states];
         }
@@ -583,6 +586,8 @@ export class RNN extends Layer {
           this.states[index] = value;
         }
       }
+      // TODO(cais): Ensure no leak. DO NOT SUBMIT.
+      this.states.forEach(state => tfc.keep(state));
     });
   }
 
@@ -660,8 +665,11 @@ export class RNN extends Layer {
       inputs = getExactlyOneTensor(inputs);
       if (initialState == null) {
         if (this.stateful) {
-          console.log('Stateful RNN: Re-using state');  // DEBUG
+          // console.log('Stateful RNN: Re-using state');  // DEBUG
           initialState = this.states;
+          // console.log('initialState:');  // DEBUG
+          // initialState.forEach(state => state.print());
+          // console.log(initialState[0].isDisposed);  // DEBUG
         } else {
           initialState = this.getInitialState(inputs);
         }
@@ -706,8 +714,10 @@ export class RNN extends Layer {
       const lastOutput = rnnOutputs[0];
       const outputs = rnnOutputs[1];
       const states = rnnOutputs[2];
-      // NOTE(cais): No need to call the equivalent of PyKeras' addUpdates()
-      // here, because TensorFlow.js is eager.
+
+      if (this.stateful) {
+        this.resetStates(states);
+      }
 
       const output = this.returnSequences ? outputs : lastOutput;
 
