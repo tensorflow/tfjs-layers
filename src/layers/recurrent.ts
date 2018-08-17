@@ -660,8 +660,8 @@ export class RNN extends Layer {
       inputs = getExactlyOneTensor(inputs);
       if (initialState == null) {
         if (this.stateful) {
-          throw new NotImplementedError(
-              'stateful RNN layer is not implemented yet.');
+          console.log('Stateful RNN: Re-using state');  // DEBUG
+          initialState = this.states;
         } else {
           initialState = this.getInitialState(inputs);
         }
@@ -706,11 +706,8 @@ export class RNN extends Layer {
       const lastOutput = rnnOutputs[0];
       const outputs = rnnOutputs[1];
       const states = rnnOutputs[2];
-
-      if (this.stateful) {
-        throw new NotImplementedError(
-            'stateful RNN layer is not implemented yet');
-      }
+      // NOTE(cais): No need to call the equivalent of PyKeras' addUpdates()
+      // here, because TensorFlow.js is eager.
 
       const output = this.returnSequences ? outputs : lastOutput;
 
