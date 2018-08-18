@@ -1154,7 +1154,6 @@ export class WorkflowIntegration implements Config {
       const digitalizer = new TokenDigitalization(this.corpus, this.config);
       const transformer = new SequenceTransformation(this.config);
 
-      const spaceFactor = 20;
       const hashAwaiter = async () => {
         integerSequences = await digitalizer.hashWordsToIntegers(
           this.corpus, spaceFactor, this.config);
