@@ -1,11 +1,3 @@
-/**
- * @license
- * Use of this source code is governed by an MIT-style
- * license that can be found in the LICENSE file or at
- * https://opensource.org/licenses/MIT.
- * =============================================================================
- */
-
 import * as tfc from '@tensorflow/tfjs-core';
 import * as text_utils from './text_utils';
 import {
@@ -291,6 +283,7 @@ describe('text preprocessing utilities', () => {
 
 
     describe('hashWordsToIntegers', () => {
+      const spaceFactor = 20;
       it('should return an array of arrays of integers' +
         'each less than or equal to a specified integer',
         async (done) => {
@@ -788,6 +781,7 @@ describe('text preprocessing utilities', () => {
         + 'an array of arrays of context integers and'
         + 'an array of integers contextualized', () => {
           const hashingFlag = false;
+          const spaceFactor = 20;
           const windowSize = 3;
           const panePosition = 2;
           const outputArrays = true;
@@ -795,6 +789,7 @@ describe('text preprocessing utilities', () => {
             windowSize,
             panePosition,
             hashingFlag,
+            spaceFactor,
             outputArrays
           );
           if (outputArrays) {
@@ -821,6 +816,7 @@ describe('text preprocessing utilities', () => {
         'and an array of integers contextualized', () => {
 
           const hashingFlag = true;
+          const spaceFactor = 20;
           const windowSize = 3;
           const panePosition = 2;
           const outputArrays = true;
@@ -830,6 +826,7 @@ describe('text preprocessing utilities', () => {
                 windowSize,
                 panePosition,
                 hashingFlag,
+                spaceFactor,
                 outputArrays
               );
             if (outputArrays) {

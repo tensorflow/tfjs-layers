@@ -1,11 +1,3 @@
-/**
- * @license
- * Use of this source code is governed by an MIT-style
- * license that can be found in the LICENSE file or at
- * https://opensource.org/licenses/MIT.
- * =============================================================================
- */
-
 import * as tfc from '@tensorflow/tfjs-core';
 
 /**
@@ -1082,6 +1074,7 @@ export class WorkflowIntegration implements Config {
     windowSize: number,
     panePosition: number,
     hashingFlag = false,
+    spaceFactor: number,
     outputArrays = false
   ): [number[][], number[]] | [tfc.Tensor<tfc.Rank.R2>,
     tfc.Tensor<tfc.Rank.R1>] {
@@ -1154,6 +1147,7 @@ export class WorkflowIntegration implements Config {
       const digitalizer = new TokenDigitalization(this.corpus, this.config);
       const transformer = new SequenceTransformation(this.config);
 
+//      const spaceFactor = 20;
       const hashAwaiter = async () => {
         integerSequences = await digitalizer.hashWordsToIntegers(
           this.corpus, spaceFactor, this.config);
