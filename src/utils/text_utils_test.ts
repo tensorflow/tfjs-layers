@@ -291,7 +291,6 @@ describe('text preprocessing utilities', () => {
 
 
     describe('hashWordsToIntegers', () => {
-      const spaceFactor = 20;
       it('should return an array of arrays of integers' +
         'each less than or equal to a specified integer',
         async (done) => {
