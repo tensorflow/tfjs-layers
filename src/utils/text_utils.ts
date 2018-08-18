@@ -1067,6 +1067,7 @@ export class WorkflowIntegration implements Config {
    * @param panePosition Position in the window of the token the context of
    * which is to be extracted.
    * @param hashingFlag Boolean which indicates whether hashing should be used.
+   * @param spaceFactor Maximum limit of hashing region.
    * @returns Array of arrays of integers which are the contexts of integers in
    * sequences and an array of those corresponding integers
    */
