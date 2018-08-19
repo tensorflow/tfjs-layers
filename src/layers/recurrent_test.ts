@@ -761,7 +761,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
         y2 = model.predict(x) as Tensor;
         expectArraysClose(y2, tfc.ones([batchSize, units]).mul(scalar2));
       });
-      const numTensors0 = tfc.memory().numTensors;;
+      const numTensors0 = tfc.memory().numTensors;
 
       model.resetStates();
       tfc.tidy(() => {
@@ -1499,9 +1499,8 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
     //
     // rnn = keras.layers.LSTM(units,
     //                         kernel_initializer='ones',
-    //                         recurrent_initializer='zeros',
-    //                         bias_initializer='zeros',
-    //                         activation='tanh',
+    //                         recurrent_initializer='ones',
+    //                         bias_initializer='ones',
     //                         stateful=True,
     //                         batch_input_shape=[batch_size,
     //                                            sequence_length,
@@ -1522,9 +1521,8 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
       const rnn = tfl.layers.lstm({
         units,
         kernelInitializer: 'ones',
-        recurrentInitializer: 'zeros',
-        biasInitializer: 'zeros',
-        activation: 'tanh',
+        recurrentInitializer: 'ones',
+        biasInitializer: 'ones',
         stateful: true,
         batchInputShape: [batchSize, sequenceLength, inputSize]
       });
@@ -1532,19 +1530,11 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
       model.add(rnn);
       const x = tfc.ones([batchSize, sequenceLength, inputSize]);
       const y1 = model.predict(x) as Tensor;
-      // Python: 0.89018095
-      // expectArraysClose(y1, tfc.ones([batchSize, units]).mul(tfc.scalar(4.86)));
-      y1.print();
+      expectArraysClose(
+          y1, tfc.ones([batchSize, units]).mul(tfc.scalar(0.995)));
       const y2 = model.predict(x) as Tensor;
-      // Python: 0.8994586
-      // expectArraysClose(y2, tfc.ones([batchSize, units]).mul(tfc.scalar(9.72)));
-      y2.print();
-
-      // model.resetStates();
-      // const y3 = model.predict(x) as Tensor;
-      // expectArraysClose(y3, tfc.ones([batchSize, units]).mul(tfc.scalar(4.86)));
-      // const y4 = model.predict(x) as Tensor;
-      // expectArraysClose(y4, tfc.ones([batchSize, units]).mul(tfc.scalar(9.72)));
+      expectArraysClose(
+          y2, tfc.ones([batchSize, units]).mul(tfc.scalar(0.99998766)));
     });
 
     it('BPTT', () => {
