@@ -384,6 +384,12 @@ export class RNN extends Layer {
   public stateSpec: InputSpec[];
   public states: Tensor[];
 
+  // NOTE(cais): For stateful RNNs, the old states cannot be disposed right
+  // away when new states are set, because the old stats may need to be used
+  // later for BPTT and other purposes. So we keep them here for final disposal
+  // when the state is reset completely, through no-arg call to resetStates().
+  private keptStates: Tensor[][];
+
   private numConstants: number;
 
   constructor(config: RNNLayerConfig) {
@@ -418,6 +424,8 @@ export class RNN extends Layer {
     this.numConstants = null;
     // TODO(cais): Look into the use of initial_state in the kwargs of the
     //   constructor.
+
+    this.keptStates = [];
   }
 
   // Porting Note: This is the equivalent of `RNN.states` property getter in
@@ -552,6 +560,14 @@ export class RNN extends Layer {
           this.states = [tfc.zeros([batchSize, this.cell.stateSize])];
         }
       } else if (states == null) {
+        // Dispose old state tensors.
+        tfc.dispose(this.states);
+        // For stateful RNNs, fully dispose kept old states.
+        if (this.keptStates != null) {
+          tfc.dispose(this.keptStates);
+          this.keptStates = [];
+        }
+
         if (Array.isArray(this.cell.stateSize)) {
           this.states =
               this.cell.stateSize.map(dim => tfc.zeros([batchSize, dim]));
@@ -559,8 +575,11 @@ export class RNN extends Layer {
           this.states[0] = tfc.zeros([batchSize, this.cell.stateSize]);
         }
       } else {
-        // Dispose old state tensors.
-        tfc.dispose(this.states);
+        // Store old state tensors for complete disposal later, i.e., during
+        // the next no-arg call to this method. We do not dispose the old
+        // states immediately because that BPTT (among other things) require
+        // them.
+        this.keptStates.push(this.states.slice());
 
         if (!Array.isArray(states)) {
           states = [states];
@@ -586,7 +605,6 @@ export class RNN extends Layer {
           this.states[index] = value;
         }
       }
-      // TODO(cais): Ensure no leak. DO NOT SUBMIT.
       this.states.forEach(state => tfc.keep(state));
     });
   }
@@ -665,11 +683,7 @@ export class RNN extends Layer {
       inputs = getExactlyOneTensor(inputs);
       if (initialState == null) {
         if (this.stateful) {
-          // console.log('Stateful RNN: Re-using state');  // DEBUG
           initialState = this.states;
-          // console.log('initialState:');  // DEBUG
-          // initialState.forEach(state => state.print());
-          // console.log(initialState[0].isDisposed);  // DEBUG
         } else {
           initialState = this.getInitialState(inputs);
         }

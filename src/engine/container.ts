@@ -675,8 +675,10 @@ export abstract class Container extends Layer {
    */
   dispose(): DisposeResult {
     this.assertNotDisposed();
-    const result:
-        DisposeResult = {refCountAfterDispose: null, numDisposedVariables: 0};
+    const result: DisposeResult = {
+      refCountAfterDispose: null,
+      numDisposedVariables: 0
+    };
     if (--this._refCount === 0) {
       for (const layer of this.layers) {
         result.numDisposedVariables += layer.dispose().numDisposedVariables;
@@ -1422,12 +1424,14 @@ export abstract class Container extends Layer {
   }
 
   resetStates() {
-    this.layers.forEach(layer => {
-      // tslint:disable:no-any
-      if (layer.stateful && (layer as any).resetStates instanceof Function) {
-        (layer as any).resetStates();
-      }
-      // tslint:enable:no-any
+    tidy(() => {
+      this.layers.forEach(layer => {
+        // tslint:disable:no-any
+        if (layer.stateful && (layer as any).resetStates instanceof Function) {
+          (layer as any).resetStates();
+        }
+        // tslint:enable:no-any
+      });
     });
   }
 }
