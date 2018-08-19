@@ -705,8 +705,6 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
           /needs to know its batch size/);
     });
 
-
-
     // The reference values below can be obtained with PyKeras code:
     // ```python
     // import keras
