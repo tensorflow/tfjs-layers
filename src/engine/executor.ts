@@ -176,72 +176,37 @@ export function execute(
 }
 
 function executeInternal(
-    fetch: SymbolicTensor, feedDict: FeedDict, kwargs?: Kwargs): Tensor {
-  if (feedDict.hasKey(fetch)) {
-    return feedDict.getValue(fetch);
+    fetch: SymbolicTensor, internalFeedDict: FeedDict,
+    kwargs?: Kwargs): Tensor {
+  if (internalFeedDict.hasKey(fetch)) {
+    return internalFeedDict.getValue(fetch);
   }
-  const queue: SymbolicTensor[] = [fetch];
-  // The queue only holds unseen tensors.
-  const seen = new Set<number>();
-  let idx = 0;
-
-  const start: SymbolicTensor[] = [];
-  while (idx < queue.length) {
-    const t = queue[idx++];
-    seen.add(t.id);
-    t.inputs.forEach(input => {
-      if (!feedDict.hasKey(input)) {
-        if (input.sourceLayer instanceof InputLayer) {
-          throw new ValueError(
-              `Missing a feed value for SymbolicTensor from InputLayer ` +
-              `'${InputLayer.name}'`);
-        }
-        // Nodes in the queue are guaranteed to be unseen.
-        if (!seen.has(input.id)) {
-          queue.push(input);
-        }
-      } else if (!seen.has(input.id)) {
-        start.push(input);
-      }
-    });
+  if (fetch.sourceLayer instanceof InputLayer) {
+    throw new ValueError(
+        `Missing a feed value for SymbolicTensor from InputLayer ` +
+        `'${InputLayer.name}'`);
   }
 
-  idx = 0;
-  const seenForward = new Set<number>();
-  while (idx < start.length) {
-    const t = start[idx++];
-    seenForward.add(t.id);
-    const outputs: SymbolicTensor[] = [];
-    t.sourceLayer.outboundNodes.forEach(
-        node => outputs.push(...node.outputTensors));
-    outputs.forEach(out => {
-      // Nodes in the queue are guaranteed to be unseen on the forward queue
-      // and seen in the backwards queue.
-      if (seen.has(out.id) && !seenForward.has(out.id)) {
-        start.push(out);
-      }
-    });
+  const inputs = fetch.inputs;
+  const inputValues: Tensor[] = [];
+  for (const input of inputs) {
+    // Recursive call.
+    const inputVal = executeInternal(input, internalFeedDict, kwargs) as Tensor;
+    inputValues.push(inputVal);
   }
 
-  let outVals: Tensor[] = null;
-  for (let i = 0; i < start.length; ++i) {
-    const t = start[i];
-    if (t.sourceLayer instanceof InputLayer) {
-      outVals = [feedDict.getValue(t)];
-      continue;
-    }
-    const inVals = t.inputs.map(input => feedDict.getValue(input));
-    outVals = t.sourceLayer.apply(inVals, kwargs) as Tensor[];
-    if (!Array.isArray(outVals)) {
-      outVals = [outVals];
-    }
-    let outputs = getNodeOutputs(t);
-    if (!Array.isArray(outputs)) {
-      outputs = [outputs];
-    }
-    outputs.forEach((out, i) => feedDict.add(out, outVals[i]));
+  let output =
+      fetch.sourceLayer.apply(inputValues, kwargs) as Tensor | Tensor[];
+  if (!Array.isArray(output)) {
+    output = [output];
   }
-  return outVals.length === 1 ? outVals[0] : outVals[fetch.outputTensorIndex];
+  const layerOutputs = getNodeOutputs(fetch);
+  const outputSymbolicTensors =
+      Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
+  for (let i = 0; i < outputSymbolicTensors.length; ++i) {
+    internalFeedDict.add(outputSymbolicTensors[i], output[i]);
+  }
+  return output.length === 1 ? output[0] : output[fetch.outputTensorIndex];
 }
 
 /**
