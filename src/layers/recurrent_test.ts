@@ -13,7 +13,7 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-import {randomNormal, Scalar, scalar, Tensor, tensor2d, tensor3d, tensor4d} from '@tensorflow/tfjs-core';
+import {randomNormal, Scalar, scalar, Tensor, tensor2d, tensor3d, tensor4d, test_util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
@@ -24,7 +24,8 @@ import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_u
 import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {GRU, LSTM, rnn, RNN, RNNCell} from './recurrent';
-import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
+
+const expectArraysClose = test_util.expectArraysClose;
 
 /**
  * A simplistic RNN step function for testing.
