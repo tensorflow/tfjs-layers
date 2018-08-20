@@ -385,9 +385,10 @@ export class RNN extends Layer {
   public states: Tensor[];
 
   // NOTE(cais): For stateful RNNs, the old states cannot be disposed right
-  // away when new states are set, because the old stats may need to be used
+  // away when new states are set, because the old states may need to be used
   // later for BPTT and other purposes. So we keep them here for final disposal
-  // when the state is reset completely, through no-arg call to resetStates().
+  // when the state is reset completely (i.e., through no-arg call to
+  // resetStates()).
   private keptStates: Tensor[][];
 
   private numConstants: number;
