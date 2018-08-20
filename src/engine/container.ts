@@ -675,10 +675,8 @@ export abstract class Container extends Layer {
    */
   dispose(): DisposeResult {
     this.assertNotDisposed();
-    const result: DisposeResult = {
-      refCountAfterDispose: null,
-      numDisposedVariables: 0
-    };
+    const result:
+        DisposeResult = {refCountAfterDispose: null, numDisposedVariables: 0};
     if (--this._refCount === 0) {
       for (const layer of this.layers) {
         result.numDisposedVariables += layer.dispose().numDisposedVariables;
@@ -1423,6 +1421,12 @@ export abstract class Container extends Layer {
     return false;
   }
 
+  /**
+   * Reset the state of all stateful constituent layers (if any).
+   *
+   * Exapmles of stateful layers include RNN layers whose `stateful` property
+   * is set as `true`.
+   */
   resetStates() {
     tidy(() => {
       this.layers.forEach(layer => {
