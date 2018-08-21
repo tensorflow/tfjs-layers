@@ -12,11 +12,12 @@
  * Unit tests for metrics.ts.
  */
 
-import {scalar, tensor1d, tensor2d} from '@tensorflow/tfjs-core';
+import {ENV, scalar, tensor1d, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as tfl from './index';
 import {binaryAccuracy, categoricalAccuracy, get} from './metrics';
 import {describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
+import { epsilon } from './backend/common';
 
 describeMathCPUAndGPU('binaryAccuracy', () => {
   it('1D exact', () => {
@@ -66,6 +67,7 @@ describeMathCPUAndGPU('binaryCrossentropy', () => {
     //   sess.run(tf.global_variables_initializer())
     //   print(sess.run(z))
     // ```
+    console.log(epsilon());  // DEBUG
     const x = tensor2d([[0], [0], [0], [1], [1], [1]]);
     const y = tensor2d([[0], [0.5], [1], [0], [0.5], [1]]);
     const accuracy = tfl.metrics.binaryCrossentropy(x, y);

@@ -8,9 +8,10 @@
  * =============================================================================
  */
 
+import * as tfc from '@tensorflow/tfjs-core';
 import {DataFormat} from '../common';
 
-let _epsilon = 1e-7;
+let _epsilon = tfc.ENV.get('EPSILON');
 
 /**
  * Returns the value of the fuzz factor used in numeric expressions.
