@@ -781,13 +781,13 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
   // import numpy as np
   //
   // batch_size = 4
-  // max_len = 3
-  // n_dims = 2
+  // sequence_length = 3
+  // input_size = 2
   //
   // model = keras.Sequential()
   // model.add(keras.layers.SimpleRNN(
-  //     5,
-  //     batch_input_shape=[batch_size, max_len, n_dims],
+  //     units=5,
+  //     batch_input_shape=[batch_size, sequence_length, input_size],
   //     kernel_initializer='ones',
   //     recurrent_initializer='ones',
   //     bias_initializer='zeros',
@@ -797,8 +797,8 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
   //                              use_bias=False))
   // model.compile(loss='mean_squared_error', optimizer='sgd')
   //
-  // xs_1 = np.ones([batch_size, max_len, n_dims])
-  // xs_2 = np.zeros([batch_size, max_len, n_dims])
+  // xs_1 = np.ones([batch_size, sequence_length, input_size])
+  // xs_2 = np.zeros([batch_size, sequence_length, input_size])
   // xs = np.concatenate([xs_1, xs_2], 0)
   // ys = np.array([[-1], [-2], [0], [1], [1], [2], [0], [-1]])
   //
@@ -1216,13 +1216,13 @@ describeMathCPUAndGPU('GRU Tensor', () => {
   // import numpy as np
   //
   // batch_size = 4
-  // max_len = 3
-  // n_dims = 2
+  // sequence_length = 3
+  // input_size = 2
   //
   // model = keras.Sequential()
   // model.add(keras.layers.GRU(
-  //     5,
-  //     batch_input_shape=[batch_size, max_len, n_dims],
+  //     units=5,
+  //     batch_input_shape=[batch_size, sequence_length, input_size],
   //     kernel_initializer='ones',
   //     recurrent_initializer='ones',
   //     bias_initializer='zeros',
@@ -1232,8 +1232,8 @@ describeMathCPUAndGPU('GRU Tensor', () => {
   //                              use_bias=False))
   // model.compile(loss='mean_squared_error', optimizer='sgd')
   //
-  // xs_1 = np.ones([batch_size, max_len, n_dims])
-  // xs_2 = np.zeros([batch_size, max_len, n_dims])
+  // xs_1 = np.ones([batch_size, sequence_length, input_size])
+  // xs_2 = np.zeros([batch_size, sequence_length, input_size])
   // xs = np.concatenate([xs_1, xs_2], 0)
   // ys = np.array([[-1], [-2], [0], [1], [1], [2], [0], [-1]])
   //
@@ -1687,13 +1687,13 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
     // import numpy as np
     //
     // batch_size = 4
-    // max_len = 3
-    // n_dims = 2
+    // sequence_length = 3
+    // input_size = 2
     //
     // model = keras.Sequential()
     // model.add(keras.layers.LSTM(
     //     5,
-    //     batch_input_shape=[batch_size, max_len, n_dims],
+    //     batch_input_shape=[batch_size, sequence_length, input_size],
     //     kernel_initializer='ones',
     //     recurrent_initializer='ones',
     //     bias_initializer='ones',
@@ -1703,8 +1703,8 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
     //                              use_bias=False))
     // model.compile(loss='mean_squared_error', optimizer='sgd')
     //
-    // xs_1 = np.ones([batch_size, max_len, n_dims])
-    // xs_2 = np.ones([batch_size, max_len, n_dims])
+    // xs_1 = np.ones([batch_size, sequence_length, input_size])
+    // xs_2 = np.ones([batch_size, sequence_length, input_size])
     // xs = np.concatenate([xs_1, xs_2], 0)
     // ys = np.array([[1], [2], [3], [4], [5], [6], [7], [8]])
     //

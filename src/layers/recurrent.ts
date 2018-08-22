@@ -258,7 +258,7 @@ export interface BaseRNNLayerConfig extends LayerConfig {
    * You can set RNN layers to be "stateful", which means that the states
    * computed for the samples in one batch will be reused as initial states
    * for the samples in the next batch. This assumes a one-to-one mapping
-   * between samples in difference successive batches.
+   * between samples in different successive batches.
    *
    * To enable "statefulness":
    *   - specify `stateful: true` in the layer constructor.
@@ -272,10 +272,13 @@ export interface BaseRNNLayerConfig extends LayerConfig {
    *     It should be a tuple of integers, e.g., `[32, 10, 100]`.
    *   - specify `shuffle: false` when calling `Model.fit()`.
    *
-   * To reset the state of your model, call `resetState()` on either the
+   * To reset the state of your model, call `resetStates()` on either the
    * specific layer or on the entire model.
    */
   stateful?: boolean;
+  // TODO(cais): Explore whether we can warn users when they fail to set
+  //   `shuffle: false` when training a model consisting of stateful RNNs
+  //   and any stateful Layers in general.
 
   /**
    * If `true`, the network will be unrolled, else a symbolic loop will be
@@ -386,9 +389,9 @@ export class RNN extends Layer {
 
   // NOTE(cais): For stateful RNNs, the old states cannot be disposed right
   // away when new states are set, because the old states may need to be used
-  // later for BPTT and other purposes. So we keep them here for final disposal
-  // when the state is reset completely (i.e., through no-arg call to
-  // resetStates()).
+  // later for backpropagation through time (BPTT) and other purposes. So we
+  // keep them here for final disposal when the state is reset completely
+  // (i.e., through no-arg call to `resetStates()`).
   private keptStates: Tensor[][];
 
   private numConstants: number;
@@ -540,7 +543,7 @@ export class RNN extends Layer {
     tidy(() => {
       if (!this.stateful) {
         throw new AttributeError(
-            'Cannot call resetState() on an RNN Layer that is not stateful.');
+            'Cannot call resetStates() on an RNN Layer that is not stateful.');
       }
       const batchSize = this.inputSpec[0].shape[0];
       if (batchSize == null) {

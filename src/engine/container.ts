@@ -1424,15 +1424,15 @@ export abstract class Container extends Layer {
   /**
    * Reset the state of all stateful constituent layers (if any).
    *
-   * Exapmles of stateful layers include RNN layers whose `stateful` property
+   * Examples of stateful layers include RNN layers whose `stateful` property
    * is set as `true`.
    */
   resetStates() {
     tidy(() => {
       this.layers.forEach(layer => {
         // tslint:disable:no-any
-        if (layer.stateful && (layer as any).resetStates instanceof Function) {
-          (layer as any).resetStates();
+        if (layer.stateful) {
+          layer.resetStates();
         }
         // tslint:enable:no-any
       });
