@@ -172,10 +172,11 @@ export function deserializeKerasObject(
             `This may be due to one of the following reasons:\n` +
             `1. The ${printableModuleName} is defined in Python, in which ` +
             `case it needs to be ported to TensorFlow.js or your JavaScript ` +
-            `code.\n` + 
+            `code.\n` +
             `2. The custom ${printableModuleName} is defined in JavaScript, ` +
             `but is not registered properly with ` +
             `tf.serialization.registerClass().`);
+        // TODO(cais): Add link to tutorial page on custom layers.
       }
     }
     return fn;
@@ -203,10 +204,11 @@ export function deserializeKerasObject(
           `This may be due to one of the following reasons:\n` +
           `1. The ${printableModuleName} is defined in Python, in which ` +
           `case it needs to be ported to TensorFlow.js or your JavaScript ` +
-          `code.\n` + 
+          `code.\n` +
           `2. The custom ${printableModuleName} is defined in JavaScript, ` +
           `but is not registered properly with ` +
           `tf.serialization.registerClass().`);
+      // TODO(cais): Add link to tutorial page on custom layers.
     }
     if (fromConfig != null) {
       // Porting notes: Instead of checking to see whether fromConfig accepts
