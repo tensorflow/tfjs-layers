@@ -16,7 +16,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {CustomCallback, CustomCallbackConfig, ModelTrainingYielder} from '../base_callbacks';
+import {CustomCallback, CustomCallbackConfig, ModelTrainingYielder, Params} from '../base_callbacks';
 import * as tfl from '../index';
 import {Logs, UnresolvedLogs} from '../logs';
 import {Regularizer} from '../regularizers';
@@ -310,6 +310,25 @@ describeMathCPUAndGPU('Model.predict', () => {
 
     expect(() => model.predict(xs1))
         .toThrowError(/.*expected.* shape \[null,3,4\].*but got.*\[2,4,3\]/);
+  });
+
+  it('Invalid batchSize value leads to Error', () => {
+    const model = tfl.sequential(
+        {layers: [tfl.layers.dense({units: 1, inputShape: [2]})]});
+    const xs = tfc.zeros([5, 2]);
+    expect(() => model.predict(xs, {batchSize: 0}))
+        .toThrowError(
+            /batchSize is required to be a positive integer, but got 0/);
+    expect(() => model.predict(xs, {batchSize: -2}))
+        .toThrowError(
+            /batchSize is required to be a positive integer, but got -2/);
+    expect(() => model.predict(xs, {batchSize: 3.14}))
+        .toThrowError(
+            /batchSize is required to be a positive integer, but got 3\.14/);
+    // tslint:disable-next-line:no-any
+    expect(() => model.predict(xs, {batchSize: 'a' as any}))
+        .toThrowError(
+            /batchSize is required to be a positive integer, but got a/);
   });
 });
 
@@ -610,7 +629,8 @@ describeMathCPUAndGPU('Model.fit', () => {
            .fit(inputs, targets, {
              batchSize: numSamples,
              epochs: 2,
-             validationData: [zeros(inputs.shape as [number, number]), targets]
+             validationData:
+                 [zeros(inputs.shape as [number, number]), targets]
            })
            .then(history => {
              expect(history.epoch).toEqual([0, 1]);
@@ -1132,6 +1152,59 @@ describeMathCPUAndGPU('Model.fit', () => {
         });
   });
 
+  class CustomCallbackForTest extends tfl.CustomCallback {
+    constructor(readonly recordedParams: Params[]) {
+      super({
+        onTrainBegin: async () => {
+          recordedParams.push(this.params);
+        }
+      });
+    }
+  }
+
+  it('Custom callback params: no validation', async () => {
+    createDenseModelAndData();
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    const recordedParams: Params[] = [];
+    const epochs = 3;
+    const batchSize = 2;
+    await model.fit(inputs, targets, {
+      epochs,
+      batchSize,
+      callbacks: new CustomCallbackForTest(recordedParams)
+    });
+    expect(recordedParams[0].epochs).toEqual(epochs);
+    expect(recordedParams[0].initialEpoch).toEqual(0);
+    expect(recordedParams[0].samples).toEqual(inputs.shape[0]);
+    expect(recordedParams[0].steps).toEqual(null);
+    expect(recordedParams[0].batchSize).toEqual(batchSize);
+    expect(recordedParams[0].doValidation).toEqual(false);
+    expect(recordedParams[0].metrics).toEqual(['loss']);
+  });
+
+  it('Custom callback params: has validation', async () => {
+    createDenseModelAndData();
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+    const recordedParams: Params[] = [];
+    const epochs = 3;
+    const batchSize = 2;
+    const validationSplit = 0.2;
+    await model.fit(inputs, targets, {
+      epochs,
+      batchSize,
+      validationSplit,
+      callbacks: new CustomCallbackForTest(recordedParams)
+    });
+    expect(recordedParams[0].epochs).toEqual(epochs);
+    expect(recordedParams[0].initialEpoch).toEqual(0);
+    expect(recordedParams[0].samples)
+        .toEqual(Math.round(inputs.shape[0] * (1 - validationSplit)));
+    expect(recordedParams[0].steps).toEqual(null);
+    expect(recordedParams[0].batchSize).toEqual(batchSize);
+    expect(recordedParams[0].doValidation).toEqual(true);
+    expect(recordedParams[0].metrics).toEqual(['loss', 'val_loss']);
+  });
+
   class StopAfterNEpochs extends tfl.Callback {
     private readonly epochsToTrain: number;
     constructor(epochsToTrain: number) {
@@ -1251,6 +1324,23 @@ describeMathCPUAndGPU('Model.fit', () => {
     fitPromise.catch(error => {
       expect(error.message).toContain('You must compile a model before');
     });
+  });
+
+  it('Invalid batchSize leads to Error', async () => {
+    createDenseModelAndData();
+    const badBatchSizeValues: Array<number|string> = [0, -1, 3.14, 'a'];
+    for (const batchSize of badBatchSizeValues) {
+      let errorCaught: Error;
+      try {
+        // tslint:disable-next-line:no-any
+        await model.fit(inputs, targets, {batchSize: batchSize as any});
+      } catch (err) {
+        errorCaught = err;
+      }
+      expect(errorCaught.message)
+          .toEqual(`batchSize is required to be a positive integer, but got ${
+              batchSize}`);
+    }
   });
 });
 
@@ -1956,6 +2046,24 @@ describeMathCPUAndGPU('Model.evaluate', () => {
       });
     }
   }
+
+  it('Invalid batchSize value leads to Error', () => {
+    prepModel();
+    prepData();
+    expect(() => model.evaluate(x, y, {batchSize: 0}))
+        .toThrowError(
+            /batchSize is required to be a positive integer, but got 0/);
+    expect(() => model.evaluate(x, y, {batchSize: -2}))
+        .toThrowError(
+            /batchSize is required to be a positive integer, but got -2/);
+    expect(() => model.evaluate(x, y, {batchSize: 3.14}))
+        .toThrowError(
+            /batchSize is required to be a positive integer, but got 3\.14/);
+    // tslint:disable-next-line:no-any
+    expect(() => model.evaluate(x, y, {batchSize: 'a' as any}))
+        .toThrowError(
+            /batchSize is required to be a positive integer, but got a/);
+  });
 });
 
 describeMathCPUAndGPU('Load weights', () => {
