@@ -1156,7 +1156,6 @@ describeMathCPUAndGPU('Model.fit', () => {
     constructor(readonly recordedParams: Params[]) {
       super({
         onTrainBegin: async () => {
-          console.log('this.params:', this.params);
           recordedParams.push(this.params);
         }
       });
