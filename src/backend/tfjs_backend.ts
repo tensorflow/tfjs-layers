@@ -399,12 +399,11 @@ export function dot(x: Tensor, y: Tensor): Tensor {
   if ((x.rank === 2) && (y.rank === 2)) {
     return tfc.matMul(x as Tensor2D, y as Tensor2D);
   } else {
-    // Reshape x and into the analogous 2D Tensor.
+    // Reshape x into the analogous 2D Tensor.
     const xShape = x.shape;
     const xFirstDims = xShape.slice(0, -1);  //  All but the last dim of x
-    const xFirstDimsProd = xFirstDims.reduce((x, y) => x * y);
     const xLastDim = xShape[xShape.length - 1];
-    x = x.reshape([xFirstDimsProd, xLastDim]);
+    x = x.reshape([-1, xLastDim]);
 
     // Reshape y into the analogous 2D Tensor, and keep track of the
     // required dimensions to reproduce the output shape.
@@ -412,7 +411,6 @@ export function dot(x: Tensor, y: Tensor): Tensor {
     const yLastDim = yShape.pop();
     const ySecondLastDim = yShape.pop();
     const yOtherDims = [...yShape, yLastDim];
-    const yOtherDimsProd = yOtherDims.reduce((x, y) => x * y);
     // permutation should be like [r-2, 0, 1, 2, ... r-4, r-3, r-1]
     // where r is the rank of y.
     const perm = Array.from({length: y.rank}, (_, i) => {
@@ -423,7 +421,7 @@ export function dot(x: Tensor, y: Tensor): Tensor {
       }
       return i;
     });
-    y = y.transpose(perm).reshape([ySecondLastDim, yOtherDimsProd]);
+    y = y.transpose(perm).reshape([ySecondLastDim, -1]);
 
     // Multiply x and y as 2D Tensors, and then reshape back to original.
     const outputShape = [...xFirstDims, ...yOtherDims];
