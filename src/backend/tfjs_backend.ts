@@ -400,9 +400,8 @@ export function dot(x: Tensor, y: Tensor): Tensor {
     return tfc.matMul(x as Tensor2D, y as Tensor2D);
   } else {
     // Reshape x into the analogous 2D Tensor.
-    const xShape = x.shape;
-    const xFirstDims = xShape.slice(0, -1);  //  All but the last dim of x
-    const xLastDim = xShape[xShape.length - 1];
+    const xFirstDims = x.shape.slice();  // Holds all but the last dim of x.
+    const xLastDim = xFirstDims.pop();
     x = x.reshape([-1, xLastDim]);
 
     // Reshape y into the analogous 2D Tensor, and keep track of the
