@@ -185,10 +185,12 @@ export class RandomNormal extends Initializer {
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    if (dtype === 'bool') {
+    dtype = dtype || 'float32';
+    if (dtype !== 'float32' && dtype !== 'int32') {
       throw new NotImplementedError(
-          `randomNormal does not support dType bool.`);
+          `randomNormal does not support dType ${dtype}.`);
     }
+
     return K.randomNormal(shape, this.mean, this.stddev, dtype, this.seed);
   }
 
@@ -232,9 +234,10 @@ export class TruncatedNormal extends Initializer {
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    if (dtype === 'bool') {
+    dtype = dtype || 'float32';
+    if (dtype !== 'float32' && dtype !== 'int32') {
       throw new NotImplementedError(
-          `truncatedNormal does not support dType bool.`);
+          `truncatedNormal does not support dType ${dtype}.`);
     }
     return truncatedNormal(shape, this.mean, this.stddev, dtype, this.seed);
   }
@@ -383,9 +386,10 @@ export class VarianceScaling extends Initializer {
 
     if (this.distribution === 'normal') {
       const stddev = Math.sqrt(scale);
-      if (dtype === 'bool') {
+      dtype = dtype || 'float32';
+      if (dtype !== 'float32' && dtype !== 'int32') {
         throw new NotImplementedError(
-            `${this.getClassName()} does not support dType bool.`);
+            `${this.getClassName()} does not support dType ${dtype}.`);
       }
       return truncatedNormal(shape, 0, stddev, dtype, this.seed);
     } else {
