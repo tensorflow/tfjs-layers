@@ -66,7 +66,7 @@ export class Zeros extends Initializer {
     return zeros(shape, dtype);
   }
 }
-serialization.SerializationMap.register(Zeros);
+serialization.registerClass(Zeros);
 
 /**
  * Initializer that generates tensors initialized to 1.
@@ -78,7 +78,7 @@ export class Ones extends Initializer {
     return ones(shape, dtype);
   }
 }
-serialization.SerializationMap.register(Ones);
+serialization.registerClass(Ones);
 
 export interface ConstantConfig {
   /** The value for each element in the variable. */
@@ -113,7 +113,7 @@ export class Constant extends Initializer {
     };
   }
 }
-serialization.SerializationMap.register(Constant);
+serialization.registerClass(Constant);
 
 export interface RandomUniformConfig {
   /** Lower bound of the range of random values to generate. */
@@ -154,7 +154,7 @@ export class RandomUniform extends Initializer {
     return {minval: this.minval, maxval: this.maxval, seed: this.seed};
   }
 }
-serialization.SerializationMap.register(RandomUniform);
+serialization.registerClass(RandomUniform);
 
 export interface RandomNormalConfig {
   /** Mean of the random values to generate. */
@@ -198,7 +198,7 @@ export class RandomNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-serialization.SerializationMap.register(RandomNormal);
+serialization.registerClass(RandomNormal);
 
 export interface TruncatedNormalConfig {
   /** Mean of the random values to generate. */
@@ -246,7 +246,7 @@ export class TruncatedNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-serialization.SerializationMap.register(TruncatedNormal);
+serialization.registerClass(TruncatedNormal);
 
 export interface IdentityConfig {
   /**
@@ -283,7 +283,7 @@ export class Identity extends Initializer {
     return {gain: this.gain.get()};
   }
 }
-serialization.SerializationMap.register(Identity);
+serialization.registerClass(Identity);
 
 /**
  * Computes the number of input and output units for a weight shape.
@@ -407,7 +407,7 @@ export class VarianceScaling extends Initializer {
     };
   }
 }
-serialization.SerializationMap.register(VarianceScaling);
+serialization.registerClass(VarianceScaling);
 
 export interface SeedOnlyInitializerConfig {
   /** Random number generator seed. */
@@ -605,7 +605,7 @@ export class Orthogonal extends Initializer {
     };
   }
 }
-serialization.SerializationMap.register(Orthogonal);
+serialization.registerClass(Orthogonal);
 
 /** @docinline */
 export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
