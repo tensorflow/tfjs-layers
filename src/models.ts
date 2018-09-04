@@ -397,6 +397,14 @@ export class Sequential extends Model {
               'For multi-output layers, ' +
               'use the functional API.');
         }
+        if (layer.inboundNodes[0].outputTensors[0].shape.some(
+                x => (x !== null && x <= 0))) {
+          throw new ValueError(
+              'Negative dimension size caused by adding layer ' +
+              `${layer.name} with input shape [` +
+              `${layer.inboundNodes[0].inputTensors[0].shape}]`);
+        }
+
         this.outputs = [layer.inboundNodes[0].outputTensors[0]];
         this.inputs = getSourceInputs(this.outputs[0]);
       }
@@ -427,6 +435,11 @@ export class Sequential extends Model {
             'should have a single output tensor. ' +
             'For multi-output layers, ' +
             'use the functional API.');
+      }
+      if (outputTensor.shape.some(x => (x !== null && x <= 0))) {
+        throw new ValueError(
+            'Negative dimension size caused by adding layer ' +
+            `${layer.name} with input shape ${this.inputs[0].shape}`);
       }
       this.outputs = [outputTensor as SymbolicTensor];
       // update self.inbound_nodes
