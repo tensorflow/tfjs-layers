@@ -438,6 +438,40 @@ describeMathCPUAndGPU('1D Global Pooling Layers: Tensor', () => {
       expectTensorsClose(output, expectedOutput);
     });
   }
+
+  it('globalMaxPooling1d backprop', async () => {
+    const inputShape = [10];
+    const input1 = tfl.input({shape: inputShape});
+    const embedding1 =
+        tfl.layers.embedding({inputDim: 20, outputDim: 8, inputLength: 10})
+            .apply(input1);
+    const dropout1 = tfl.layers.dropout({rate: 0.2}).apply(embedding1);
+    const conv1 = tfl.layers
+                      .conv1d({
+                        kernelSize: 3,
+                        filters: 2,
+                        activation: 'relu',
+                        padding: 'valid'
+                      })
+                      .apply(dropout1);
+    const globalPooling1 = tfl.layers.globalAveragePooling1d({}).apply(conv1);
+    const dense1 = tfl.layers.dense({units: 25}).apply(globalPooling1);
+    const dropout2 = tfl.layers.dropout({rate: 0.2}).apply(dense1);
+    const activ1 = tfl.layers.activation({activation: 'relu'}).apply(dropout2);
+    const dense2 = tfl.layers.dense({units: 1}).apply(activ1);
+    const activ2 =
+        tfl.layers.activation({activation: 'sigmoid'}).apply(dense2) as
+        tfl.SymbolicTensor;
+    const model = tfl.model({inputs: [input1], outputs: [activ2]});
+    model.summary();  // DEBUG
+
+    const xs = tfc.zeros([10, 10]);
+    const ys = tfc.zeros([10, 1]);
+    (model.predict(xs) as tfc.Tensor).print();
+    model.compile({optimizer: 'sgd', loss: 'binaryCrossentropy'});
+    const history = await model.fit(xs, ys, {epochs: 10});
+    console.log(history.history);  // DEBUG
+  });
 });
 
 
