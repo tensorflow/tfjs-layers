@@ -20,3 +20,4 @@ matrix:
         - yarn test-integ
       git:
         depth: 5
+      enabled: false
