@@ -12,7 +12,7 @@
  * Unit tests for wrapper layers.
  */
 
-import {ones, scalar, serialization, Tensor, tensor2d, Tensor3D, tensor3d, zeros} from '@tensorflow/tfjs-core';
+import {ones, scalar, serialization, Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
 
 import {Layer, SymbolicTensor} from '../engine/topology';
 import {Model} from '../engine/training';
@@ -82,16 +82,11 @@ describeMathCPUAndGPU('TimeDistributed Layer: Tensor', () => {
 
   it('Model as constituent layer', () => {
     const layer = tfl.sequential();
-    layer.add(tfl.layers.dense({
-      activation: 'softmax', units: 3, inputShape: [2, 5]
-    }));
-    const td = tfl.layers.timeDistributed({
-      layer,
-      inputShape: [2, 5]
-    });
+    layer.add(tfl.layers.dense(
+        {activation: 'softmax', units: 3, inputShape: [2, 5]}));
+    const td = tfl.layers.timeDistributed({layer, inputShape: [2, 5]});
     const model = tfl.sequential({layers: [td]});
-    const xs = zeros([1, 2, 5]);
-    const ys = model.predict(xs) as Tensor;
+    const ys = model.predict(ones([1, 2, 5])) as Tensor;
     expect(ys.shape).toEqual([1, 2, 3]);
   });
 });
