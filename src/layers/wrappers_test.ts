@@ -81,10 +81,12 @@ describeMathCPUAndGPU('TimeDistributed Layer: Tensor', () => {
   });
 
   it('Model as constituent layer', () => {
-    const layer = tfl.sequential();
-    layer.add(tfl.layers.dense(
-        {activation: 'softmax', units: 3, inputShape: [2, 5]}));
-    const td = tfl.layers.timeDistributed({layer, inputShape: [2, 5]});
+    const modelAsLayer = tfl.sequential({
+      layers: [tfl.layers.dense(
+          {activation: 'softmax', units: 3, inputShape: [2, 5]})]
+    });
+    const td =
+        tfl.layers.timeDistributed({layer: modelAsLayer, inputShape: [2, 5]});
     const model = tfl.sequential({layers: [td]});
     const ys = model.predict(ones([1, 2, 5])) as Tensor;
     expect(ys.shape).toEqual([1, 2, 3]);
