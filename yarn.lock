@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@tensorflow/tfjs-core@~0.12.18":
+"@tensorflow/tfjs-core@0.12.18":
   version "0.12.18"
   resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-core/-/tfjs-core-0.12.18.tgz#659f59d36134cdbc454eaacc245bb5aad5168a09"
   dependencies:
