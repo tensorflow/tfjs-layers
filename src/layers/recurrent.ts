@@ -191,7 +191,7 @@ export function rnn(
     if (t === 0) {
       outputs = lastOutput;
     } else {
-      const newOutputs = tfc.concat([outputs, lastOutput]);
+      const newOutputs = tfc.concat([outputs, lastOutput], 1);
       outputs.dispose();
       outputs = newOutputs;
     }
