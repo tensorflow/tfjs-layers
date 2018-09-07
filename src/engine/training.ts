@@ -32,7 +32,6 @@ import {Container, ContainerConfig} from './container';
 import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
 
-
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
  */
