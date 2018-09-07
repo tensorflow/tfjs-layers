@@ -187,12 +187,13 @@ export function rnn(
     let currentInput = K.sliceAlongFirstAxis(inputs, t, 1);
     currentInput = currentInput.reshape(currentInput.shape.slice(1));
     const stepOutputs = stepFunction(currentInput, states);
-    lastOutput = stepOutputs[0];
+    lastOutput = stepOutputs[0].expandDims(1);
     if (t === 0) {
-      outputs = lastOutput.reshape([1].concat(lastOutput.shape));
+      outputs = lastOutput;
     } else {
-      outputs = K.concatAlongFirstAxis(
-          outputs, lastOutput.reshape([1].concat(lastOutput.shape)));
+      const newOutputs = tfc.concat([outputs, lastOutput]);
+      outputs.dispose();
+      outputs = newOutputs;
     }
     // TODO(soergel): Call K.concatenate() to perform only one concatenation
     // at the end, once the backend function is available.
@@ -201,8 +202,7 @@ export function rnn(
 
   return [
     lastOutput,
-    tfc.transpose(
-        outputs, [1, 0].concat(math_utils.range(2, outputs.shape.length))),
+    outputs,
     states
   ];
 }
