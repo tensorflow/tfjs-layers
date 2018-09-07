@@ -187,11 +187,11 @@ export function rnn(
     let currentInput = K.sliceAlongFirstAxis(inputs, t, 1);
     currentInput = currentInput.reshape(currentInput.shape.slice(1));
     const stepOutputs = stepFunction(currentInput, states);
-    lastOutput = stepOutputs[0].expandDims(1);
+    lastOutput = stepOutputs[0];
     if (t === 0) {
-      outputs = lastOutput;
+      outputs = lastOutput.expandDims(1);
     } else {
-      const newOutputs = tfc.concat([outputs, lastOutput], 1);
+      const newOutputs = tfc.concat([outputs, lastOutput.expandDims(1)], 1);
       outputs.dispose();
       outputs = newOutputs;
     }
