@@ -82,19 +82,21 @@ export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
 
 function truePositives(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
-    const one = tfc.scalar(1);
-    return K.cast(
-        tfc.logicalAnd(yTrue.equal(one), yPred.equal(one)).sum(), 'float32');
+    const one = getScalar(1);
+    return tfc.logicalAnd(yTrue.equal(one), yPred.equal(one))
+        .sum()
+        .cast('float32');
   });
 }
 
 
 function falsePositives(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
-    const one = tfc.scalar(1);
-    const zero = tfc.scalar(0);
-    return K.cast(
-        tfc.logicalAnd(yTrue.equal(zero), yPred.equal(one)).sum(), 'float32');
+    const one = getScalar(1);
+    const zero = getScalar(0);
+    return tfc.logicalAnd(yTrue.equal(zero), yPred.equal(one))
+        .sum()
+        .cast('float32');
   });
 }
 
@@ -128,22 +130,21 @@ function falsePositives(yTrue: Tensor, yPred: Tensor): Tensor {
  * ```
  *
  * @param yTrue Binary Tensor of truth: one-hot encoding of categories.
- * @param yPred Binary Tensor of prediction: probabilities or logits for the
- *   same categories as in `yTrue`.
+ * @param yPred Binary Tensor of prediction: one-hot encoding for the same
+ *   categories as in `yTrue`.
  * @return Precision Tensor.
  */
 export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
-    const zero = tfc.scalar(0);
+    const zero = getScalar(0);
 
     const tp = truePositives(yTrue, yPred);
     const fp = falsePositives(yTrue, yPred);
 
     const denominator = tp.add(fp);
 
-    return K.cast(
-        tfc.where(tfc.greater(denominator, zero), tp.div(denominator), zero),
-        'float32');
+    return tfc.where(tfc.greater(denominator, zero), tp.div(denominator), zero)
+        .cast('float32');
   });
 }
 
