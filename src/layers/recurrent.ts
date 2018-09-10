@@ -118,12 +118,16 @@ export function standardizeArgs(
  * @param constants An Array of constant values passed at each step.
  * @param unroll Whether to unroll the RNN or to use a symbolic loop. *Not*
  *   applicable to this imperative deeplearn.js backend. Its value is ignored.
- * @param inputLength Not relevant in this deeplearn.js backend.
+ * @param needPerStepOutputs Whether the per-step outputs are to be
+ *   concatenated into a single tensor and returned (as the second return
+ *   value). Default: `false`.
  * @returns An Array: `[lastOutput, outputs, newStates]`.
  *   lastOutput: the lastest output of the RNN, of shape `[samples, ...]`.
  *   outputs: tensor with shape `[samples, time, ...]` where each entry
  *     `output[s, t]` is the output of the step function at time `t` for sample
- *     `s`.
+ *     `s`. This return value is provided if and only if the
+ *     `needPerStepOutputs` is set as `true`. If it is set as `false`, this
+ *     return value will be `undefined`.
  *   newStates: Array of tensors, latest states returned by the step function,
  *      of shape `(samples, ...)`.
  * @throws ValueError If input dimension is less than 3.
