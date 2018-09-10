@@ -79,6 +79,74 @@ export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
           tfc.equal(tfc.argMax(yTrue, -1), tfc.argMax(yPred, -1)), 'float32'));
 }
 
+
+function truePositives(yTrue: Tensor, yPred: Tensor): Tensor {
+  return tidy(() => {
+    const one = tfc.scalar(1);
+    return K.cast(
+        tfc.logicalAnd(yTrue.equal(one), yPred.equal(one)).sum(), 'float32')
+  });
+}
+
+
+function falsePositives(yTrue: Tensor, yPred: Tensor): Tensor {
+  return tidy(() => {
+    const one = tfc.scalar(1);
+    const zero = tfc.scalar(0);
+    return K.cast(
+        tfc.logicalAnd(yTrue.equal(zero), yPred.equal(one)).sum(), 'float32');
+  });
+}
+
+/**
+ * Computes the precision of the predictions with respect to the labels.
+ *
+ * Example:
+ * ```js
+ * const x = tensor2d(
+ *    [
+ *      [0, 0, 0, 1],
+ *      [0, 1, 0, 0],
+ *      [0, 0, 0, 1].
+ *      [1, 0, 0, 0],
+ *      [0, 0, 1, 0]
+ *    ]
+ * );
+ *
+ * const y = tensor2d(
+ *    [
+ *      [0, 0, 1, 0],
+ *      [0, 1, 0, 0],
+ *      [0, 0, 0, 1].
+ *      [0, 1, 0, 0],
+ *      [0, 1, 0, 0]
+ *    ]
+ * );
+ *
+ * const precision = tf.metrics.precision(x, y);
+ * precision.print();
+ * ```
+ *
+ * @param yTrue Binary Tensor of truth: one-hot encoding of categories.
+ * @param yPred Binary Tensor of prediction: probabilities or logits for the
+ *   same categories as in `yTrue`.
+ * @return Precision Tensor.
+ */
+export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
+  return tidy(() => {
+    const zero = tfc.scalar(0);
+
+    const tp = truePositives(yTrue, yPred);
+    const fp = falsePositives(yTrue, yPred);
+
+    const denominator = tp.add(fp);
+
+    return K.cast(
+        tfc.where(tfc.greater(denominator, zero), tp.div(denominator), zero),
+        'float32');
+  });
+}
+
 /**
  * Binary crossentropy metric function.
  *
@@ -129,6 +197,7 @@ export function get(identifier: string|LossOrMetricFn): LossOrMetricFn {
   const metricsMap: {[functionName: string]: LossOrMetricFn} = {
     binaryAccuracy,
     categoricalAccuracy,
+    precision,
     categoricalCrossentropy,
     sparseCategoricalCrossentropy,
     mse,
