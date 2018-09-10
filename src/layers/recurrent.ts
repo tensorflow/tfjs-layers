@@ -186,7 +186,7 @@ export function rnn(
   for (let t = 0; t < timeSteps; ++t) {
     let currentInput = K.sliceAlongFirstAxis(inputs, t, 1);
     currentInput = currentInput.reshape(currentInput.shape.slice(1));
-    const stepOutputs = stepFunction(currentInput, states);
+    const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
     lastOutput = stepOutputs[0];
     if (t === 0) {
       outputs = lastOutput.expandDims(1);
@@ -199,12 +199,7 @@ export function rnn(
     // at the end, once the backend function is available.
     states = stepOutputs[1];
   }
-
-  return [
-    lastOutput,
-    outputs,
-    states
-  ];
+  return [lastOutput, outputs, states];
 }
 
 
