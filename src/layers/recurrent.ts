@@ -120,7 +120,10 @@ export function standardizeArgs(
  *   applicable to this imperative deeplearn.js backend. Its value is ignored.
  * @param needPerStepOutputs Whether the per-step outputs are to be
  *   concatenated into a single tensor and returned (as the second return
- *   value). Default: `false`.
+ *   value). Default: `false`. This arg is included so that the relatively
+ *   expensive concatenation of the stepwise outputs can be omitted unless
+ *   the stepwise outputs need to be kept (e.g., for an LSTM layer of which
+ *   `returnSequence` is `true`.)
  * @returns An Array: `[lastOutput, outputs, newStates]`.
  *   lastOutput: the lastest output of the RNN, of shape `[samples, ...]`.
  *   outputs: tensor with shape `[samples, time, ...]` where each entry
