@@ -133,7 +133,7 @@ export function standardizeArgs(
 export function rnn(
     stepFunction: RnnStepFunction, inputs: Tensor, initialStates: Tensor[],
     goBackwards = false, mask?: Tensor, constants?: Tensor[], unroll = false,
-    inputLength?: number): [Tensor, Tensor, Tensor[]] {
+    needPerStepOutputs = false): [Tensor, Tensor, Tensor[]] {
   const ndim = inputs.shape.length;
   if (ndim < 3) {
     throw new ValueError(`Input should be at least 3D, but is ${ndim}D.`);
@@ -188,12 +188,14 @@ export function rnn(
     currentInput = currentInput.reshape(currentInput.shape.slice(1));
     const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
     lastOutput = stepOutputs[0];
-    if (t === 0) {
-      outputs = lastOutput.expandDims(1);
-    } else {
-      const newOutputs = tfc.concat([outputs, lastOutput.expandDims(1)], 1);
-      outputs.dispose();
-      outputs = newOutputs;
+    if (needPerStepOutputs) {
+      if (t === 0) {
+        outputs = lastOutput.expandDims(1);
+      } else {
+        const newOutputs = tfc.concat([outputs, lastOutput.expandDims(1)], 1);
+        outputs.dispose();
+        outputs = newOutputs;
+      }
     }
     // TODO(soergel): Call K.concatenate() to perform only one concatenation
     // at the end, once the backend function is available.
@@ -699,8 +701,6 @@ export class RNN extends Layer {
             `RNN Layer has ${numStates} state(s) but was passed ` +
             `${initialState.length} initial state(s).`);
       }
-      const inputShape = inputs.shape;
-      const timesteps = inputShape[1];
       if (this.unroll) {
         console.warn(
             'Ignoring unroll = true for RNN layer, due to imperative backend.');
@@ -723,7 +723,7 @@ export class RNN extends Layer {
 
       const rnnOutputs =
           rnn(step, inputs, initialState, this.goBackwards, null, null,
-              this.unroll, timesteps);
+              this.unroll, this.returnSequences);
       const lastOutput = rnnOutputs[0];
       const outputs = rnnOutputs[1];
       const states = rnnOutputs[2];
