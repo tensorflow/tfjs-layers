@@ -129,14 +129,16 @@ function falsePositives(yTrue: Tensor, yPred: Tensor): Tensor {
  * precision.print();
  * ```
  *
- * @param yTrue Binary Tensor of truth: one-hot encoding of categories.
- * @param yPred Binary Tensor of prediction: one-hot encoding for the same
- *   categories as in `yTrue`.
+ * @param yTrue The ground truth values. Will be casted to `bool`.
+ * @param yPred The predicted values. Will be casted to `bool`.
  * @return Precision Tensor.
  */
 export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const zero = getScalar(0);
+
+    yTrue = yTrue.cast('bool');
+    yPred = yPred.cast('bool');
 
     const tp = truePositives(yTrue, yPred);
     const fp = falsePositives(yTrue, yPred);
