@@ -84,7 +84,7 @@ function truePositives(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const one = tfc.scalar(1);
     return K.cast(
-        tfc.logicalAnd(yTrue.equal(one), yPred.equal(one)).sum(), 'float32')
+        tfc.logicalAnd(yTrue.equal(one), yPred.equal(one)).sum(), 'float32');
   });
 }
 
