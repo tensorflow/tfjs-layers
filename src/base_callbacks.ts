@@ -16,6 +16,7 @@ import {getScalar} from './backend/state';
 import {Container} from './engine/container';
 import {Logs, resolveScalarsInLogs, UnresolvedLogs} from './logs';
 import * as generic_utils from './utils/generic_utils';
+import { ValueError } from './errors';
 
 export type Params = {
   [key: string]: number|string|boolean|number[]|string[]|boolean[];
@@ -600,11 +601,24 @@ export class CallbackConstructorRegistry {
         verbosityLevel >= 0 && Number.isInteger(verbosityLevel),
         `Verbosity level is expected to be an integer >= 0, ` +
             `but got ${verbosityLevel}`);
+    CallbackConstructorRegistry.checkForDuplicate(callbackConstructor);
     const instance = CallbackConstructorRegistry.getInstance();
     if (instance.callbackConstructors[verbosityLevel] == null) {
       instance.callbackConstructors[verbosityLevel] = [];
     }
     instance.callbackConstructors[verbosityLevel].push(callbackConstructor);
+  }
+
+  private static checkForDuplicate(callbackConstructor: BaseCallbackConstructor) {
+    const instance = CallbackConstructorRegistry.getInstance();
+    for (let levelName in instance.callbackConstructors) {
+      const constructors = instance.callbackConstructors[+levelName];
+      constructors.forEach(ctor => {
+        if (ctor === callbackConstructor) {
+          throw new ValueError('Duplicate callback constructor.');
+        }
+      });
+    }
   }
 
   /**
