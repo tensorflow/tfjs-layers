@@ -129,16 +129,13 @@ function falsePositives(yTrue: Tensor, yPred: Tensor): Tensor {
  * precision.print();
  * ```
  *
- * @param yTrue The ground truth values. Will be casted to `bool`.
- * @param yPred The predicted values. Will be casted to `bool`.
+ * @param yTrue The ground truth values. Expected to be contain only 0-1 values.
+ * @param yPred The predicted values. Expected to be contain only 0-1 values.
  * @return Precision Tensor.
  */
 export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const zero = getScalar(0);
-
-    yTrue = yTrue.cast('bool');
-    yPred = yPred.cast('bool');
 
     const tp = truePositives(yTrue, yPred);
     const fp = falsePositives(yTrue, yPred);
