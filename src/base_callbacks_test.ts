@@ -14,7 +14,7 @@
 
 import {scalar} from '@tensorflow/tfjs-core';
 
-import {BaseLogger, CallbackList, History} from './base_callbacks';
+import {BaseLogger, CallbackList, History, CallbackConstructorRegistry, BaseCallback} from './base_callbacks';
 import {Callback} from './callbacks';
 import {Model} from './engine/training';
 import {disposeTensorsInLogs, resolveScalarsInLogs, UnresolvedLogs} from './logs';
@@ -217,5 +217,62 @@ describe('CallbackList', () => {
     callbackList.setModel(model);
     expect(mockCallback1.model).toEqual(model);
     expect(mockCallback2.model).toEqual(model);
+  });
+});
+
+describe('CallbackConstructorRegistry', () => {
+  class FakeCallback1 extends BaseCallback {
+    constructor() {
+      super();
+    }
+  }
+
+  class FakeCallback2 extends BaseCallback {
+    constructor() {
+      super();
+    }
+  }
+
+  beforeEach(() => {
+    // tslint:disable-next-line:no-any
+    (CallbackConstructorRegistry as any).clear();
+  });
+
+  it('Empty registry creates empty list of callbacks', () => {
+    expect(CallbackConstructorRegistry.createCallbacks(0)).toEqual([]);
+    expect(CallbackConstructorRegistry.createCallbacks(1)).toEqual([]);
+    expect(CallbackConstructorRegistry.createCallbacks(2)).toEqual([]);
+  });
+
+  it('Registry with one element', () => {
+    CallbackConstructorRegistry.registerCallbackConstructor(1, FakeCallback1);
+
+    let callbacks = CallbackConstructorRegistry.createCallbacks(0);
+    expect(callbacks.length).toEqual(0);
+
+    callbacks = CallbackConstructorRegistry.createCallbacks(1);
+    expect(callbacks.length).toEqual(1);
+    expect(callbacks[0] instanceof FakeCallback1).toEqual(true);
+
+    callbacks = CallbackConstructorRegistry.createCallbacks(2);
+    expect(callbacks.length).toEqual(1);
+    expect(callbacks[0] instanceof FakeCallback1).toEqual(true);
+  });
+ 
+  it('Registry with two elements', () => {
+    CallbackConstructorRegistry.registerCallbackConstructor(1, FakeCallback1);
+    CallbackConstructorRegistry.registerCallbackConstructor(2, FakeCallback1);
+
+    let callbacks = CallbackConstructorRegistry.createCallbacks(0);
+    expect(callbacks.length).toEqual(0);
+
+    callbacks = CallbackConstructorRegistry.createCallbacks(1);
+    expect(callbacks.length).toEqual(1);
+    expect(callbacks[0] instanceof FakeCallback1).toEqual(true);
+
+    callbacks = CallbackConstructorRegistry.createCallbacks(2);
+    expect(callbacks.length).toEqual(2);
+    expect(callbacks[0] instanceof FakeCallback1).toEqual(true);
+    expect(callbacks[1] instanceof FakeCallback2).toEqual(true);
   });
 });

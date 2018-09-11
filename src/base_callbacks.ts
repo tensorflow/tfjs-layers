@@ -557,3 +557,80 @@ export function standardizeCallbacks(callbacks: BaseCallback|BaseCallback[]|
   return callbackConfigs.map(
       callbackConfig => new CustomCallback(callbackConfig));
 }
+
+export declare type BaseCallbackConstructor = {
+  new (): BaseCallback
+};
+
+export class CallbackConstructorRegistry {
+  // Singleton instance.
+  private static instance: CallbackConstructorRegistry;
+
+  private callbackConstructors:
+      {[verbosityLevel: number]: BaseCallbackConstructor[]};
+
+  /**
+   * Blocks public access to constructor for singleton pattern.
+   */
+  private constructor() {
+    this.callbackConstructors = {};
+  }
+
+  /**
+   * Singleton access method.
+   */
+  private static getInstance() {
+    if (CallbackConstructorRegistry.instance == null) {
+      CallbackConstructorRegistry.instance = new CallbackConstructorRegistry();
+    }
+    return CallbackConstructorRegistry.instance;
+  }
+
+  /**
+   * Register a tf.Model.fit() callback constructor.
+   *
+   * The registered callback constructor will be used to instantiate
+   * callbacks for every tf.Model.fit() call afterwards.
+   *
+   * @param callback A no-arg constructor for `tf.Callback`.
+   */
+  static registerCallbackConstructor(
+      verbosityLevel: number, callbackConstructor: BaseCallbackConstructor) {
+    util.assert(
+        verbosityLevel >= 0 && Number.isInteger(verbosityLevel),
+        `Verbosity level is expected to be an integer >= 0, ` +
+            `but got ${verbosityLevel}`);
+    const instance = CallbackConstructorRegistry.getInstance();
+    if (instance.callbackConstructors[verbosityLevel] == null) {
+      instance.callbackConstructors[verbosityLevel] = [];
+    }
+    instance.callbackConstructors[verbosityLevel].push(callbackConstructor);
+  }
+
+  /**
+   * Clear all registered callback constructors.
+   */
+  protected static clear() {
+    CallbackConstructorRegistry.getInstance().callbackConstructors = {};
+  }
+
+  /**
+   * Create callbacks using the registered callback constructors.
+   *
+   * Given `verbosityLevel`, all constructors registered at that level or above
+   * will be called and the instantiated callbacks will be used.
+   *
+   * @param verbosityLevel: Level of verbosity.
+   */
+  static createCallbacks(verbosityLevel: number): BaseCallback[] {
+    const constructors: BaseCallbackConstructor[] = [];
+    const instance = CallbackConstructorRegistry.getInstance();
+    for (const levelName in instance.callbackConstructors) {
+      const level = +levelName;
+      if (verbosityLevel >= level) {
+        constructors.push(...instance.callbackConstructors[level]);
+      }
+    }
+    return constructors.map(ctor => new ctor());
+  }
+}

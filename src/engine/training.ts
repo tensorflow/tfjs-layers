@@ -15,7 +15,7 @@ import {io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {BaseCallback, BaseLogger, CallbackList, CustomCallbackConfig, History, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
+import {BaseCallback, BaseLogger, CallbackList, CallbackConstructorRegistry, CustomCallbackConfig, History, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
@@ -1379,18 +1379,14 @@ export class Model extends Container implements tfc.InferenceModel {
     }
 
     this.history = new History();
-    const baseLogger = new BaseLogger(yieldEvery);
-    if (callbacks == null) {
-      callbacks = [baseLogger];
-    } else {
-      callbacks = ([baseLogger] as BaseCallback[]).concat(callbacks);
+    const usedCallbacks: BaseCallback[] =
+        [new BaseLogger(yieldEvery) as BaseCallback,
+         ...CallbackConstructorRegistry.createCallbacks(verbose)];
+    if (callbacks != null) {
+      usedCallbacks.push(...callbacks);
     }
-    callbacks = callbacks.concat([this.history]);
-
-    if (verbose > 0) {
-      throw new NotImplementedError('Verbose mode is not implemented yet.');
-    }
-    const callbackList = new CallbackList(callbacks);
+    usedCallbacks.push(this.history);
+    const callbackList = new CallbackList(usedCallbacks);
 
     // TODO(cais): Figure out when this Model instance can have a dynamically
     //   set property called 'callback_model' as in PyKeras.
