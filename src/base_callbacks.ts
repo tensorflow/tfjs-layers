@@ -581,7 +581,11 @@ export class CallbackConstructorRegistry {
    * The registered callback constructor will be used to instantiate
    * callbacks for every tf.Model.fit() call afterwards.
    *
-   * @param callback A no-arg constructor for `tf.Callback`.
+   * @param verbosityLevel Level of verbosity at which the `callbackConstructor`
+   *   is to be reigstered.
+   * @param callbackConstructor A no-arg constructor for `tf.Callback`.
+   * @throws Error, if the same callbackConstructor has been registered before,
+   *   either at the same or a different `verbosityLevel`.
    */
   static registerCallbackConstructor(
       verbosityLevel: number, callbackConstructor: BaseCallbackConstructor) {

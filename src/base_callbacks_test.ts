@@ -303,16 +303,25 @@ describe('CallbackConstructorRegistry', () => {
     expect(callbacks[1] instanceof FakeCallback2).toEqual(true);
   });
 
-  it('Duplicate registration on same level leads to error', () => {
+  it('Duplicate registration on same level leads to Error', () => {
     tfl.registerCallbackConstructor(1, FakeCallback1);
     expect(() => tfl.registerCallbackConstructor(1, FakeCallback1))
         .toThrowError(/Duplicate callback constructor/);
   });
 
-  it('Duplicate registration on different level leads to error', () => {
+  it('Duplicate registration on different level leads to Error', () => {
     tfl.registerCallbackConstructor(1, FakeCallback1);
     expect(() => tfl.registerCallbackConstructor(2, FakeCallback1))
         .toThrowError(/Duplicate callback constructor/);
+  });
+
+  it('Invalid verbosityLevel leads to Error', () => {
+    expect(() => tfl.registerCallbackConstructor(-1, FakeCallback1))
+        .toThrowError(/is expected to be an integer >= 0/);
+    expect(() => tfl.registerCallbackConstructor(0.5, FakeCallback1))
+        .toThrowError(/is expected to be an integer >= 0/);
+    expect(() => tfl.registerCallbackConstructor(NaN, FakeCallback1))
+        .toThrowError(/is expected to be an integer >= 0/);
   });
 });
 
