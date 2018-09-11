@@ -19,7 +19,7 @@ import {Input, InputConfig,} from './engine/input_layer';
 import {SymbolicTensor} from './engine/topology';
 import {Model} from './engine/training';
 import {loadModelInternal, Sequential, SequentialConfig} from './models';
-import { BaseCallbackConstructor, CallbackConstructorRegistry } from './base_callbacks';
+import {BaseCallbackConstructor, CallbackConstructorRegistry} from './base_callbacks';
 
 
 // TODO(cais): Add doc string to all the public static functions in this
