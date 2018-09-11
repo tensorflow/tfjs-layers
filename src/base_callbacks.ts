@@ -14,9 +14,9 @@ import {add, div, keep, mul, nextFrame, Scalar, Tensor, tidy, util} from '@tenso
 
 import {getScalar} from './backend/state';
 import {Container} from './engine/container';
+import {ValueError} from './errors';
 import {Logs, resolveScalarsInLogs, UnresolvedLogs} from './logs';
 import * as generic_utils from './utils/generic_utils';
-import { ValueError } from './errors';
 
 export type Params = {
   [key: string]: number|string|boolean|number[]|string[]|boolean[];
@@ -563,29 +563,17 @@ export declare type BaseCallbackConstructor = {
   new (): BaseCallback
 };
 
+/**
+ * A global registry for callback constructors to be used during Model.fit().
+ */
 export class CallbackConstructorRegistry {
-  // Singleton instance.
-  private static instance: CallbackConstructorRegistry;
-
-  private callbackConstructors:
+  private static constructors:
       {[verbosityLevel: number]: BaseCallbackConstructor[]};
 
   /**
-   * Blocks public access to constructor for singleton pattern.
+   * Blocks public access to constructor.
    */
-  private constructor() {
-    this.callbackConstructors = {};
-  }
-
-  /**
-   * Singleton access method.
-   */
-  private static getInstance() {
-    if (CallbackConstructorRegistry.instance == null) {
-      CallbackConstructorRegistry.instance = new CallbackConstructorRegistry();
-    }
-    return CallbackConstructorRegistry.instance;
-  }
+  private constructor() {}
 
   /**
    * Register a tf.Model.fit() callback constructor.
@@ -602,17 +590,17 @@ export class CallbackConstructorRegistry {
         `Verbosity level is expected to be an integer >= 0, ` +
             `but got ${verbosityLevel}`);
     CallbackConstructorRegistry.checkForDuplicate(callbackConstructor);
-    const instance = CallbackConstructorRegistry.getInstance();
-    if (instance.callbackConstructors[verbosityLevel] == null) {
-      instance.callbackConstructors[verbosityLevel] = [];
+    if (CallbackConstructorRegistry.constructors[verbosityLevel] == null) {
+      CallbackConstructorRegistry.constructors[verbosityLevel] = [];
     }
-    instance.callbackConstructors[verbosityLevel].push(callbackConstructor);
+    CallbackConstructorRegistry.constructors[verbosityLevel].push(
+        callbackConstructor);
   }
 
-  private static checkForDuplicate(callbackConstructor: BaseCallbackConstructor) {
-    const instance = CallbackConstructorRegistry.getInstance();
-    for (let levelName in instance.callbackConstructors) {
-      const constructors = instance.callbackConstructors[+levelName];
+  private static checkForDuplicate(callbackConstructor:
+                                       BaseCallbackConstructor) {
+    for (const levelName in CallbackConstructorRegistry.constructors) {
+      const constructors = CallbackConstructorRegistry.constructors[+levelName];
       constructors.forEach(ctor => {
         if (ctor === callbackConstructor) {
           throw new ValueError('Duplicate callback constructor.');
@@ -625,7 +613,7 @@ export class CallbackConstructorRegistry {
    * Clear all registered callback constructors.
    */
   protected static clear() {
-    CallbackConstructorRegistry.getInstance().callbackConstructors = {};
+    CallbackConstructorRegistry.constructors = {};
   }
 
   /**
@@ -638,11 +626,10 @@ export class CallbackConstructorRegistry {
    */
   static createCallbacks(verbosityLevel: number): BaseCallback[] {
     const constructors: BaseCallbackConstructor[] = [];
-    const instance = CallbackConstructorRegistry.getInstance();
-    for (const levelName in instance.callbackConstructors) {
+    for (const levelName in CallbackConstructorRegistry.constructors) {
       const level = +levelName;
       if (verbosityLevel >= level) {
-        constructors.push(...instance.callbackConstructors[level]);
+        constructors.push(...CallbackConstructorRegistry.constructors[level]);
       }
     }
     return constructors.map(ctor => new ctor());
