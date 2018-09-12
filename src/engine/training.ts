@@ -15,7 +15,7 @@ import {io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {BaseCallback, BaseLogger, CallbackList, CallbackConstructorRegistry, CustomCallbackConfig, History, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
+import {BaseCallback, BaseLogger, CallbackConstructorRegistry, CallbackList, CustomCallbackConfig, History, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
@@ -503,13 +503,13 @@ export interface ModelFitConfig {
 
   /**
    * Verbosity level.
-   * 
-   * Expected to be 0, 1, or 2.
-   * 
+   *
+   * Expected to be 0, 1, or 2. Default: 1.
+   *
    * 0 - No printed message during fit() call.
    * 1 - In Node.js (tfjs-node), prints the progress bar, together with
    *     real-time updates of loss and metric values and training speed.
-   *     In the browser: no action.
+   *     In the browser: no action. This is the default.
    * 2 - Not implemented yet.
    */
   verbose?: ModelLoggingVerbosity;
@@ -1394,9 +1394,10 @@ export class Model extends Container implements tfc.InferenceModel {
     }
 
     this.history = new History();
-    const actualCallbacks: BaseCallback[] =
-        [new BaseLogger(yieldEvery),
-         ...CallbackConstructorRegistry.createCallbacks(verbose)];
+    const actualCallbacks: BaseCallback[] = [
+      new BaseLogger(yieldEvery),
+      ...CallbackConstructorRegistry.createCallbacks(verbose)
+    ];
     if (callbacks != null) {
       actualCallbacks.push(...callbacks);
     }
