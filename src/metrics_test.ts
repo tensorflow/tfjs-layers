@@ -245,8 +245,8 @@ describeMathCPUAndGPU('recall metric', () => {
   });
 
   it('2D edge case', () => {
-    const x = tensor2d([[0, 0, 1], [0, 0, 1], [1, 0, 0], [0, 1, 0]]);
-    const y = tensor2d([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]);
+    const x = tensor2d([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]);
+    const y = tensor2d([[0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]]);
     const recall = tfl.metrics.recall(x, y);
     expect(recall.dtype).toEqual('float32');
     expectTensorsClose(recall, scalar(0));
