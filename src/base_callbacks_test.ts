@@ -326,7 +326,7 @@ describe('CallbackConstructorRegistry', () => {
 });
 
 describeMathCPUAndGPU('CallbackConstructorRegistry initialization', () => {
-  it('CallbackConstructorRegistry is initialized proplery', () => {
+  it('CallbackConstructorRegistry is initialized properly', () => {
     expect(CallbackConstructorRegistry.createCallbacks(1)).toEqual([]);
   });
 });
