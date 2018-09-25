@@ -659,6 +659,30 @@ export interface ModelFitDatasetConfig {
    * Total number of steps (batches of samples) to validate before stopping.
    */
   validationSteps?: number;
+
+  /**
+   * Configures the frequency of yielding the main thread to other tasks.
+   *
+   * In the browser environment, yielding the main thread can improve the
+   * responsiveness of the page during training. In the Node.js environment,
+   * it can ensure tasks queued in the event loop can be handled in a timely
+   * manner.
+   *
+   * - The value can be one of the following strings:
+   *   - 'auto': automatically determine how frequently the yielding happens
+   *     by measuring the duration of each batch of training (default).
+   *   - 'batch': yield every batch.
+   *   - 'epoch': yield every epoch.
+   *   - 'never': never yield. (But yielding can still happen through `await
+   *      nextFrame()` calls in custom callbacks.)
+   */
+  yieldEvery?: YieldEveryOptions;
+
+  /**
+   * Epoch at which to start training (useful for resuming a previous training
+   * run).
+   */
+  initialEpoch?: number;
 }
 
 /**
@@ -1909,10 +1933,20 @@ export class Model extends Container implements tfc.InferenceModel {
     // TODO(cais): Add value to outLabels.
   }
 
+
   async fitDataset<T extends TensorContainer>(
-      dataset: Dataset<T>, y: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      dataset: Dataset<T>,
       config: ModelFitDatasetConfig = {}): Promise<History> {
-    const doValidation = config.validationData != null;
+    tfc.util.assert(
+        config.epochs != null && config.epochs > 0 &&
+            Number.isInteger(config.epochs),
+        `For fitDataset(), config.epochs is expected to be a positive ` +
+            `integer, but got ${config.epochs}`);
+    tfc.util.assert(
+        config.stepsPerEpoch != null && config.stepsPerEpoch > 0 &&
+            Number.isInteger(config.stepsPerEpoch),
+        `For fitDataset(), config.stepsPerEpoch is expected to be a ` +
+            `positive integer, but got ${config.stepsPerEpoch}`);
 
     if (this.isTraining) {
       throw new Error(
@@ -1921,14 +1955,79 @@ export class Model extends Container implements tfc.InferenceModel {
     this.isTraining = true;
 
     try {
+      const doValidation = config.validationData != null;
       if (doValidation) {
         throw new NotImplementedError(
             'Support for validation is not implement for fitDataset yet.');
       }
-      return null;
+
+      const callbacks = standardizeCallbacks(config.callbacks);
+      const {callbackList, history} = configureCallbacks(
+          callbacks,
+          config.yieldEvery,
+          config.verbose,
+          config.epochs,
+          null,
+          null,
+          config.stepsPerEpoch,
+          null,  // Batch size determined by the dataset itself.
+          doValidation,
+          null,  // TODO(cais): Support callbackMetrics
+      );
+      this.history = history;
+
+      const dataIterator = await dataset.iterator();
+
+      callbackList.onTrainBegin();
+      let epoch = config.initialEpoch == null ? 0 : config.initialEpoch;
+      const epochLogs: UnresolvedLogs = {};
+      while (epoch < config.epochs) {
+        callbackList.onEpochBegin(epoch);
+        let stepsDone = 0;
+        let batchIndex = 0;
+        while (stepsDone < config.stepsPerEpoch) {
+          const iteratorOut = await dataIterator.next();
+          const [xs, ys] = this.checkDataIteratorOutput(iteratorOut.value);
+          console.log(ys);  // DEBUG
+
+          const batchLogs: UnresolvedLogs = {};
+          batchLogs['batch'] = batchIndex;
+          batchLogs['size'] = xs.shape[0];
+          callbackList.onBatchBegin(batchIndex, batchLogs);
+
+          // TOOD(cais): Do training on batch.
+
+          callbackList.onBatchEnd(batchIndex, batchLogs);
+
+          batchIndex++;
+          stepsDone++;
+          if (this.stopTraining_) {
+            break;
+          }
+        }
+        callbackList.onEpochEnd(epoch, epochLogs);
+        epoch++;
+        if (this.stopTraining_) {
+          break;
+        }
+      }
+      callbackList.onTrainEnd();
+      return this.history;
     } finally {
       this.isTraining = false;
     }
+  }
+
+  private checkDataIteratorOutput(iteratorOut: TensorContainer):
+      [Tensor, Tensor] {
+    tfc.util.assert(
+        Array.isArray(iteratorOut) && iteratorOut.length === 2,
+        'Dataset iterator for fitDataset() is expected to generate ' +
+            'an Array of length 2: `[xs, ys]`');
+    // TODO(cais): Deal with case of dictionary of tensors.
+    // TODO(cais): If there are multiple inputs or outputs, make sure
+    //   they all have the same batch size.
+    return iteratorOut as [Tensor, Tensor];
   }
 
   /**
