@@ -12,10 +12,11 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {io, ModelPredictConfig, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
+import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {BaseCallback, BaseLogger, CallbackConstructorRegistry, CallbackList, CustomCallbackConfig, History, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
+import {BaseCallback, configureCallbacks, CustomCallbackConfig, History, ModelLoggingVerbosity, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
@@ -29,6 +30,7 @@ import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
 
 import {Container, ContainerConfig} from './container';
+import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
 
@@ -457,12 +459,6 @@ function collectMetrics(
   }
 }
 
-/** Verbosity logging level when fitting a model. */
-export enum ModelLoggingVerbosity {
-  SILENT = 0,
-  VERBOSE = 1
-}
-
 export interface ModelEvaluateConfig {
   /**
    * Batch size (Integer). If unspecified, it will default to 32.
@@ -604,6 +600,65 @@ export interface ModelFitConfig {
    *      nextFrame()` calls in custom callbacks.)
    */
   yieldEvery?: YieldEveryOptions;
+}
+
+export interface ModelFitDatasetConfig {
+  /**
+   * Total number of steps (batches of samples) before
+   * declaring one epoch finished and starting the next epoch. It should
+   * typically be equal to th enumber of samples of your dataset divided by
+   * the batch size, so that fitDataset() call can utilize the entire dataset.
+   */
+  stepsPerEpoch?: number;
+
+  /**
+   * The number of times to iterate over the training dataset.
+   *
+   * An integer.
+   */
+  epochs?: number;
+
+  /**
+   * Verbosity level.
+   *
+   * Expected to be 0, 1, or 2. Default: 1.
+   *
+   * 0 - No printed message during fit() call.
+   * 1 - In Node.js (tfjs-node), prints the progress bar, together with
+   *     real-time updates of loss and metric values and training speed.
+   *     In the browser: no action. This is the default.
+   * 2 - Not implemented yet.
+   */
+  verbose?: ModelLoggingVerbosity;
+
+  /**
+   * List of callbacks to be called during training.
+   * Can consist of one or more of the following fields: `onTrainBegin`,
+   * `onTrainEnd`, `onEpochBegin`, `onEpochEnd`, `onBatchBegin`, `onBatchEnd`.
+   */
+  callbacks?: BaseCallback[]|CustomCallbackConfig|CustomCallbackConfig[];
+
+  /**
+   * Data on which to evaluate the loss and any model
+   * metrics at the end of each epoch. The model will not be trained on this
+   * data. This could be any of the following:
+   *
+   *   - a tuple [xVal, yVal]
+   *   - a tuple [xVal, yVal, valSampleWeights].
+   *   - a dataset object for the validation data.
+   *
+   * The model will not be trained on this data.
+   * `validationData` will override `validationSplit`.
+   */
+  validationData?: [
+    Tensor|Tensor[], Tensor|Tensor[]
+  ]|[Tensor | Tensor[], Tensor|Tensor[], Tensor|Tensor[]];
+
+  /**
+   * Only relevant if `stepsPerEpoch` is specified and is a dataset object.
+   * Total number of steps (batches of samples) to validate before stopping.
+   */
+  validationSteps?: number;
 }
 
 /**
@@ -1393,34 +1448,14 @@ export class Model extends Container implements tfc.InferenceModel {
       verbose = 1;
     }
 
-    this.history = new History();
-    const actualCallbacks: BaseCallback[] = [
-      new BaseLogger(yieldEvery),
-      ...CallbackConstructorRegistry.createCallbacks(verbose)
-    ];
-    if (callbacks != null) {
-      actualCallbacks.push(...callbacks);
-    }
-    actualCallbacks.push(this.history);
-    const callbackList = new CallbackList(actualCallbacks);
-
-    // TODO(cais): Figure out when this Model instance can have a dynamically
-    //   set property called 'callback_model' as in PyKeras.
+    const {callbackList, history} = configureCallbacks(
+        callbacks, yieldEvery, verbose, epochs, initialEpoch, numTrainSamples,
+        stepsPerEpoch, batchSize, doValidation, callbackMetrics);
     callbackList.setModel(this);
-    callbackList.setParams({
-      epochs,
-      initialEpoch,
-      samples: numTrainSamples,
-      steps: stepsPerEpoch,
-      batchSize,
-      verbose,
-      doValidation,
-      metrics: callbackMetrics,
-    });
+    this.history = history;
     await callbackList.onTrainBegin();
     this.stopTraining_ = false;
     // TODO(cais): Take care of callbacks.validation_data as in PyKeras.
-
     // TODO(cais): Pre-convert feeds for performance as in PyKeras.
 
     for (let epoch = initialEpoch; epoch < epochs; ++epoch) {
@@ -1504,14 +1539,20 @@ export class Model extends Container implements tfc.InferenceModel {
     return this.history;
   }
 
+  // TODO(cais): Decide.
+  // protected trainOnBatch(
+  //     f: (data: Tensor[]) => Scalar[], x: Tensor, y: Tensor,
+  //     sampleWeight?: Tensor, classWeight?: {[cls: number]: number}) {}
+
   /**
    * Loop over some test data in batches.
    * @param f A Function returning a list of tensors.
    * @param ins Array of tensors to be fed to `f`.
    * @param batchSize Integer batch size or `null` / `undefined`.
    * @param verbose verbosity mode.
-   * @param steps Total number of steps (batches of samples) before declaring
-   *   test finished. Ignored with the default value of `null` / `undefined`.
+   * @param steps Total number of steps (batches of samples) before
+   * declaring test finished. Ignored with the default value of `null` /
+   * `undefined`.
    * @returns Array of Scalars.
    */
   private testLoop(
@@ -1564,8 +1605,8 @@ export class Model extends Container implements tfc.InferenceModel {
 
   private getDedupedMetricsNames(): string[] {
     const outLabels = this.metricsNames;
-    // Rename duplicated metrics names (can happen with an output layer shared
-    // among multiple dataflows).
+    // Rename duplicated metrics names (can happen with an output layer
+    // shared among multiple dataflows).
     const dedupedOutLabels = [];
     for (let i = 0; i < outLabels.length; ++i) {
       const label = outLabels[i];
@@ -1621,7 +1662,8 @@ export class Model extends Container implements tfc.InferenceModel {
   }
 
   /**
-   * Trains the model for a fixed number of epochs (iterations on a dataset).
+   * Trains the model for a fixed number of epochs (iterations on a
+   * dataset).
    *
    * ```js
    * const model = tf.sequential({
@@ -1637,19 +1679,19 @@ export class Model extends Container implements tfc.InferenceModel {
    * }
    * ```
    *
-   * @param x `Tensor` of training data, or an array of `Tensor`s if the model
-   *   has multiple inputs. If all inputs in the model are named, you can also
-   *   pass a dictionary mapping input names to `Tensor`s.
-   * @param y `Tensor` of target (label) data, or an array of `Tensor`s if the
-   *   model has multiple outputs. If all outputs in the model are named, you
-   *  can also pass a dictionary mapping output names to `Tensor`s.
+   * @param x `Tensor` of training data, or an array of `Tensor`s if the
+   * model has multiple inputs. If all inputs in the model are named, you
+   * can also pass a dictionary mapping input names to `Tensor`s.
+   * @param y `Tensor` of target (label) data, or an array of `Tensor`s if
+   * the model has multiple outputs. If all outputs in the model are named,
+   * you can also pass a dictionary mapping output names to `Tensor`s.
    * @param config A `ModelFitConfig`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
    *   information collected during training.
    *
-   * @exception ValueError In case of mismatch between the provided input data
-   *   and what the model expects.
+   * @exception ValueError In case of mismatch between the provided input
+   * data and what the model expects.
    */
   /**
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
@@ -1680,11 +1722,11 @@ export class Model extends Container implements tfc.InferenceModel {
       let valX: Tensor|Tensor[];
       let valY: Tensor|Tensor[];
       let valIns: Tensor[];
-      // A flag to keep track of whether `valIns`, `inputs` and `targets` need
-      // to be memory-disposed prior to returning from this method. This is the
-      // case if `config.validationSplit` is set to a number between 0 and 1, in
-      // which case the input `x` and `y` tensors will be sliced, leading to
-      // allocation of new tensor memory.
+      // A flag to keep track of whether `valIns`, `inputs` and `targets`
+      // need to be memory-disposed prior to returning from this method.
+      // This is the case if `config.validationSplit` is set to a number
+      // between 0 and 1, in which case the input `x` and `y` tensors will
+      // be sliced, leading to allocation of new tensor memory.
       let needValidationDisposal = false;
       if (config.validationData != null && config.validationData.length > 0) {
         doValidation = true;
@@ -1706,7 +1748,8 @@ export class Model extends Container implements tfc.InferenceModel {
             this.standardizeUserData(valX, valY, true, batchSize);
         valX = valStandardized[0] as Tensor[];
         valY = valStandardized[1] as Tensor[];
-        // TODO(cais): Use validation sample weights in valStandardized[2] once
+        // TODO(cais): Use validation sample weights in valStandardized[2]
+        // once
         //   it becomes available.
         valIns = valX.concat(valY);
         // TODO(cais): Add useLearningPhase data properly.
@@ -1739,20 +1782,22 @@ export class Model extends Container implements tfc.InferenceModel {
 
       // TODO(cais): Handle use_learning_phase and learning_phase?
 
-      // Porting Note: Here we see a key deviation of tfjs-layers from Keras.
+      // Porting Note: Here we see a key deviation of tfjs-layers from
+      // Keras.
       //  Due to the imperative nature of tfjs-layers' backend (tfjs-core),
-      //  we do not construct symbolic computation graphs to embody the training
-      //  process. Instead, we define a function that performs the training
-      //  action.
-      //  In PyKeras, the data (inputs and targets) are fed through graph
-      //  placeholders. In tfjs-layers, the data are fed as function arguments.
-      //  Since the function are defined below in the scope, we don't have
-      //  equivalents of PyKeras's `_make_train_funciton`.
+      //  we do not construct symbolic computation graphs to embody the
+      //  training process. Instead, we define a function that performs the
+      //  training action. In PyKeras, the data (inputs and targets) are fed
+      //  through graph placeholders. In tfjs-layers, the data are fed as
+      //  function arguments. Since the function are defined below in the
+      //  scope, we don't have equivalents of PyKeras's
+      //  `_make_train_funciton`.
 
       // Creat a function that performs the following actions:
       //   1) computes the losses,
       //   2) add them to get the total loss,
-      //   3) call the optimizer computes the gradients of the Model's trainable
+      //   3) call the optimizer computes the gradients of the Model's
+      //   trainable
       //      weights w.r.t. the total loss and update the variables.
       //   4) calculate the metrics
       //   5) return the values of the losses and metrics.
@@ -1766,8 +1811,9 @@ export class Model extends Container implements tfc.InferenceModel {
 
         const metricsValues: Scalar[] = [];
 
-        // Create a function that computes the total loss based on the inputs.
-        // This function is used for obtaining gradients through backprop.
+        // Create a function that computes the total loss based on the
+        // inputs. This function is used for obtaining gradients through
+        // backprop.
         const totalLossFunction = () => {
           const feeds = [];
           for (let i = 0; i < this.inputs.length; ++i) {
@@ -1801,7 +1847,8 @@ export class Model extends Container implements tfc.InferenceModel {
           for (let i = 0; i < this.metricsTensors.length; ++i) {
             const metric = this.metricsTensors[i][0];
             const outputIndex = this.metricsTensors[i][1];
-            // TODO(cais): Replace K.mean() with a proper weighting function.
+            // TODO(cais): Replace K.mean() with a proper weighting
+            // function.
             const meanMetric =
                 tfc.mean(metric(targets[outputIndex], outputs[outputIndex])) as
                 Scalar;
@@ -1862,6 +1909,28 @@ export class Model extends Container implements tfc.InferenceModel {
     // TODO(cais): Add value to outLabels.
   }
 
+  async fitDataset<T extends TensorContainer>(
+      dataset: Dataset<T>, y: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      config: ModelFitDatasetConfig = {}): Promise<History> {
+    const doValidation = config.validationData != null;
+
+    if (this.isTraining) {
+      throw new Error(
+          'Cannot start training because another fit() call is ongoing.');
+    }
+    this.isTraining = true;
+
+    try {
+      if (doValidation) {
+        throw new NotImplementedError(
+            'Support for validation is not implement for fitDataset yet.');
+      }
+      return null;
+    } finally {
+      this.isTraining = false;
+    }
+  }
+
   /**
    * Extract weight values of the model.
    *
@@ -1911,7 +1980,8 @@ export class Model extends Container implements tfc.InferenceModel {
    *   }
    * });
    *
-   * // There should be only 3 values in the loss array, instead of 10 values,
+   * // There should be only 3 values in the loss array, instead of 10
+   * values,
    * // due to the stopping after 3 epochs.
    * console.log(history.history.loss);
    * ```
@@ -1924,16 +1994,18 @@ export class Model extends Container implements tfc.InferenceModel {
    * Save the configuration and/or weights of the Model.
    *
    * An `IOHandler` is an object that has a `save` method of the proper
-   * signature defined. The `save` method manages the storing or transmission
-   * of serialized data ("artifacts") that represent the model's topology and
-   * weights onto or via a specific medium, such as file downloads, local
-   * storage, IndexedDB in the web browser and HTTP requests to a server.
-   * TensorFlow.js provides `IOHandler` implementations for a number of
-   * frequently used saving mediums, such as `tf.io.browserDownloads` and
-   * `tf.io.browserLocalStorage`. See `tf.io` for more details.
+   * signature defined. The `save` method manages the storing or
+   * transmission of serialized data ("artifacts") that represent the
+   * model's topology and weights onto or via a specific medium, such as
+   * file downloads, local storage, IndexedDB in the web browser and HTTP
+   * requests to a server. TensorFlow.js provides `IOHandler`
+   * implementations for a number of frequently used saving mediums, such as
+   * `tf.io.browserDownloads` and `tf.io.browserLocalStorage`. See `tf.io`
+   * for more details.
    *
-   * This method also allows you to refer to certain types of `IOHandler`s as
-   * URL-like string shortcuts, such as 'localstorage://' and 'indexeddb://'.
+   * This method also allows you to refer to certain types of `IOHandler`s
+   * as URL-like string shortcuts, such as 'localstorage://' and
+   * 'indexeddb://'.
    *
    * Example 1: Save `model`'s topology and weights to browser [local
    * storage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage);
@@ -1970,7 +2042,8 @@ export class Model extends Container implements tfc.InferenceModel {
    * ```
    *
    * Example 3. Saving `model`'s topology and weights as two files
-   * (`my-model-1.json` and `my-model-1.weights.bin`) downloaded from browser.
+   * (`my-model-1.json` and `my-model-1.weights.bin`) downloaded from
+   * browser.
    *
    * ```js
    * const model = tf.sequential(
@@ -1980,7 +2053,8 @@ export class Model extends Container implements tfc.InferenceModel {
    *
    * Example 4. Send  `model`'s topology and weights to an HTTP server.
    * See the documentation of `tf.io.browserHTTPRequests` for more details
-   * including specifying request parameters and implementation of the server.
+   * including specifying request parameters and implementation of the
+   * server.
    *
    * ```js
    * const model = tf.sequential(
@@ -1991,8 +2065,8 @@ export class Model extends Container implements tfc.InferenceModel {
    * @param handlerOrURL An instance of `IOHandler` or a URL-like,
    * scheme-based string shortcut for `IOHandler`.
    * @param config Options for saving the model.
-   * @returns A `Promise` of `SaveResult`, which summarizes the result of the
-   *   saving, such as byte sizes of the saved artifacts for the model's
+   * @returns A `Promise` of `SaveResult`, which summarizes the result of
+   * the saving, such as byte sizes of the saved artifacts for the model's
    *   topology and weight values.
    */
   /**
