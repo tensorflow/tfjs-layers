@@ -29,15 +29,14 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       kernelInitializer: 'zeros',
       biasInitializer: 'zeros'
     }));
-    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
     return model;
   }
 
-  // TODO(cais): Test error message for uncompiled models.
   // TODO(cais): Test for memory leaks.
 
-  it('No validation', async () => {
+  it('1 input, 1 output, no metric, no validation', async () => {
     const model = createDenseModel();
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
     const batchSize = 8;
     const numBatches = 3;
@@ -58,12 +57,39 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       presetXTensorsFunc,
       presetYTensorsFunc
     });
+    const numTensors0 = tfc.memory().numTensors;
     const history =
         await model.fitDataset(dataset, {stepsPerEpoch: numBatches, epochs});
+    const numTensors1 = tfc.memory().numTensors;
+    console.log(
+        `numTensors0 = ${numTensors0}; numTensors1 = ${numTensors1}`);  // DEBUG
     expect(history.history.loss.length).toEqual(2);
     expect(history.history.loss[0]).toBeCloseTo(0.923649);
     expect(history.history.loss[1]).toBeCloseTo(0.722993);
     expectArraysClose(model.getWeights()[0], tfc.tensor2d([[0.108621]]));
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+  });
+
+  it('Calling fitDataset() without calling compile() errors', async () => {
+    const model = createDenseModel();
+
+    const batchSize = 8;
+    const numBatches = 3;
+    const epochs = 2;
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches,
+    });
+
+    let errorCaught: Error;
+    try {
+      await model.fitDataset(dataset, {stepsPerEpoch: numBatches, epochs});
+    } catch (err) {
+      errorCaught = err;
+    }
+    expect(errorCaught.message)
+        .toEqual('The model needs to be compiled before being used.');
   });
 });

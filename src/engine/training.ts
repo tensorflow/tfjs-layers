@@ -1526,7 +1526,7 @@ export class Model extends Container implements tfc.InferenceModel {
             for (let i = 0; i < outLabels.length; ++i) {
               const label = outLabels[i];
               const out = outs[i];
-              console.log(`label = ${label}`);  // DEBUG
+              // console.log(`label = ${label}`);  // DEBUG
               batchLogs[label] = out;
               tfc.keep(out);
               // TODO(cais): Use scope() to avoid ownership.
@@ -2005,14 +2005,14 @@ export class Model extends Container implements tfc.InferenceModel {
           null, config.stepsPerEpoch,
           null,  // Batch size determined by the dataset itself.
           doValidation, callbackMetrics);
-      console.log('fitDataset(): callbackList = ', callbackList);  // DEBUG
+      // console.log('fitDataset(): callbackList = ', callbackList);  // DEBUG
       this.history = history;
 
       await callbackList.onTrainBegin();
       let epoch = config.initialEpoch == null ? 0 : config.initialEpoch;
       const epochLogs: UnresolvedLogs = {};
       while (epoch < config.epochs) {
-        console.log(`=== fitDataset(): epoch = ${epoch} ===`);  // DEBUG
+        // console.log(`=== fitDataset(): epoch = ${epoch} ===`);  // DEBUG
         const dataIterator = await dataset.iterator();
         // console.log('*** dataIterator:', dataIterator);  // DEBUG
 
@@ -2024,11 +2024,6 @@ export class Model extends Container implements tfc.InferenceModel {
           // TOOD(cais): Check iteratorOut.done.
           // console.log('*** iteratorOut = ', iteratorOut);  // DEBUG
           const [xs, ys] = this.checkDataIteratorOutput(iteratorOut.value);
-          // console.log('xs:');  // DEBUG
-          // xs.print();          // DEBUG
-          // console.log('ys:');  // DEBUG
-          // ys.print();          // DEBUG
-
           const batchLogs: UnresolvedLogs = {};
           batchLogs['batch'] = batchIndex;
           batchLogs['size'] = xs.shape[0];
@@ -2044,7 +2039,6 @@ export class Model extends Container implements tfc.InferenceModel {
           for (let i = 0; i < outLabels.length; ++i) {
             const label = outLabels[i];
             const out = outs[i];
-            console.log(`label = ${label}`);  // DEBUG
             batchLogs[label] = out;
             tfc.keep(out);
             // TODO(cais): Use scope() to avoid ownership.
@@ -2059,7 +2053,7 @@ export class Model extends Container implements tfc.InferenceModel {
             break;
           }
         }
-        console.log('Calling onEpochEnd: epoch = ', epoch);  // DEBUG
+        // console.log('Calling onEpochEnd: epoch = ', epoch);  // DEBUG
         await callbackList.onEpochEnd(epoch, epochLogs);
         epoch++;
         if (this.stopTraining_) {
