@@ -1644,6 +1644,93 @@ export class Model extends Container implements tfc.InferenceModel {
     return dedupedOutLabels;
   }
 
+  /**
+   * Creates a function that performs the following actions:
+   *
+   * 1. computes the losses
+   * 2. sums them to get the total loss
+   * 3. call the optimizer computes the gradients of the Model's
+   *    trainable weights w.r.t. the total loss and update the variables
+   * 4. calculates the metrics
+   * 5. returns the values of the losses and metrics.
+   */
+  protected makeTrainFunction(): (data: Tensor[]) => Scalar[] {
+    return (data: Tensor[]) => {
+      const losses: Tensor[] = [];
+      const lossValues: Scalar[] = [];
+
+      const inputs = data.slice(0, this.inputs.length);
+      const targets = data.slice(
+          this.inputs.length, this.inputs.length + this.outputs.length);
+
+      const metricsValues: Scalar[] = [];
+
+      // Create a function that computes the total loss based on the
+      // inputs. This function is used for obtaining gradients through
+      // backprop.
+      const totalLossFunction = () => {
+        const feeds = [];
+        for (let i = 0; i < this.inputs.length; ++i) {
+          feeds.push({key: this.inputs[i], value: inputs[i]});
+        }
+        const feedDict = new FeedDict(feeds);
+        const outputs =
+            execute(this.outputs, feedDict, {'training': true}) as Tensor[];
+        // TODO(cais): Take care of the case of multiple outputs from a
+        //   single layer?
+
+        let totalLoss: Tensor;
+        for (let i = 0; i < this.lossFunctions.length; ++i) {
+          const lossFunction = this.lossFunctions[i];
+          const loss = lossFunction(targets[i], outputs[i]);
+          losses.push(loss);
+          // TODO(cais): push Scalar instead.
+          const meanLoss = tfc.mean(loss) as Scalar;
+          // TODO(cais): Use a scope() instead, to avoid ownership.
+          lossValues.push(meanLoss);
+          if (i === 0) {
+            totalLoss = loss;
+          } else {
+            totalLoss = tfc.add(totalLoss, loss);
+          }
+        }
+
+        // Compute the metrics.
+        // TODO(cais): These should probably be calculated outside
+        //   totalLossFunction to benefit speed?
+        for (let i = 0; i < this.metricsTensors.length; ++i) {
+          const metric = this.metricsTensors[i][0];
+          const outputIndex = this.metricsTensors[i][1];
+          // TODO(cais): Replace K.mean() with a proper weighting
+          // function.
+          const meanMetric =
+              tfc.mean(metric(targets[outputIndex], outputs[outputIndex])) as
+              Scalar;
+          tfc.keep(meanMetric);
+          // TODO(cais): Use a scope() instead, to avoid ownership.
+          metricsValues.push(meanMetric);
+        }
+
+        totalLoss = tfc.mean(totalLoss);
+
+        // Add regularizer penalties.
+        this.calculateLosses().forEach(regularizerLoss => {
+          totalLoss = tfc.add(totalLoss, regularizerLoss);
+        });
+
+        return totalLoss as Scalar;
+      };
+
+      const variables = this.collectedTrainableWeights.map(
+          param => param.read() as tfc.Variable);
+      const returnCost = true;
+      const totalLossValue =
+          this.optimizer.minimize(totalLossFunction, returnCost, variables);
+
+      return [totalLossValue].concat(metricsValues);
+    };
+  }
+
   private makeTestFunction() {
     this.testFunction = (data: Tensor[]) => {
       return tfc.tidy(() => {
@@ -1816,90 +1903,7 @@ export class Model extends Container implements tfc.InferenceModel {
       //  function arguments. Since the function are defined below in the
       //  scope, we don't have equivalents of PyKeras's
       //  `_make_train_funciton`.
-
-      // Creat a function that performs the following actions:
-      //   1) computes the losses,
-      //   2) add them to get the total loss,
-      //   3) call the optimizer computes the gradients of the Model's
-      //   trainable
-      //      weights w.r.t. the total loss and update the variables.
-      //   4) calculate the metrics
-      //   5) return the values of the losses and metrics.
-      const trainFunction = (data: Tensor[]) => {
-        const losses: Tensor[] = [];
-        const lossValues: Scalar[] = [];
-
-        const inputs = data.slice(0, this.inputs.length);
-        const targets = data.slice(
-            this.inputs.length, this.inputs.length + this.outputs.length);
-
-        const metricsValues: Scalar[] = [];
-
-        // Create a function that computes the total loss based on the
-        // inputs. This function is used for obtaining gradients through
-        // backprop.
-        const totalLossFunction = () => {
-          const feeds = [];
-          for (let i = 0; i < this.inputs.length; ++i) {
-            feeds.push({key: this.inputs[i], value: inputs[i]});
-          }
-          const feedDict = new FeedDict(feeds);
-          const outputs =
-              execute(this.outputs, feedDict, {'training': true}) as Tensor[];
-          // TODO(cais): Take care of the case of multiple outputs from a
-          //   single layer?
-
-          let totalLoss: Tensor;
-          for (let i = 0; i < this.lossFunctions.length; ++i) {
-            const lossFunction = this.lossFunctions[i];
-            const loss = lossFunction(targets[i], outputs[i]);
-            losses.push(loss);
-            // TODO(cais): push Scalar instead.
-            const meanLoss = tfc.mean(loss) as Scalar;
-            // TODO(cais): Use a scope() instead, to avoid ownership.
-            lossValues.push(meanLoss);
-            if (i === 0) {
-              totalLoss = loss;
-            } else {
-              totalLoss = tfc.add(totalLoss, loss);
-            }
-          }
-
-          // Compute the metrics.
-          // TODO(cais): These should probably be calculated outside
-          //   totalLossFunction to benefit speed?
-          for (let i = 0; i < this.metricsTensors.length; ++i) {
-            const metric = this.metricsTensors[i][0];
-            const outputIndex = this.metricsTensors[i][1];
-            // TODO(cais): Replace K.mean() with a proper weighting
-            // function.
-            const meanMetric =
-                tfc.mean(metric(targets[outputIndex], outputs[outputIndex])) as
-                Scalar;
-            tfc.keep(meanMetric);
-            // TODO(cais): Use a scope() instead, to avoid ownership.
-            metricsValues.push(meanMetric);
-          }
-
-          totalLoss = tfc.mean(totalLoss);
-
-          // Add regularizer penalties.
-          this.calculateLosses().forEach(regularizerLoss => {
-            totalLoss = tfc.add(totalLoss, regularizerLoss);
-          });
-
-          return totalLoss as Scalar;
-        };
-
-        const variables = this.collectedTrainableWeights.map(
-            param => param.read() as tfc.Variable);
-        const returnCost = true;
-        const totalLossValue =
-            this.optimizer.minimize(totalLossFunction, returnCost, variables);
-
-        return [totalLossValue].concat(metricsValues);
-      };
-
+      const trainFunction = this.makeTrainFunction();
       const outLabels = this.getDedupedMetricsNames();
 
       let valFunction: (data: Tensor[]) => Scalar[];
@@ -1932,7 +1936,6 @@ export class Model extends Container implements tfc.InferenceModel {
     }
     // TODO(cais): Add value to outLabels.
   }
-
 
   async fitDataset<T extends TensorContainer>(
       dataset: Dataset<T>,
@@ -1977,6 +1980,7 @@ export class Model extends Container implements tfc.InferenceModel {
       this.history = history;
 
       const dataIterator = await dataset.iterator();
+      const trainFunction = this.makeTrainFunction();
 
       callbackList.onTrainBegin();
       let epoch = config.initialEpoch == null ? 0 : config.initialEpoch;
@@ -1988,17 +1992,20 @@ export class Model extends Container implements tfc.InferenceModel {
         while (stepsDone < config.stepsPerEpoch) {
           const iteratorOut = await dataIterator.next();
           const [xs, ys] = this.checkDataIteratorOutput(iteratorOut.value);
-          console.log(ys);  // DEBUG
 
           const batchLogs: UnresolvedLogs = {};
           batchLogs['batch'] = batchIndex;
           batchLogs['size'] = xs.shape[0];
           callbackList.onBatchBegin(batchIndex, batchLogs);
 
-          // TOOD(cais): Do training on batch.
+          // Train on batch.
+          // TODO(cais): Take care of multiple inputs and multiple outputs.
+          const outs = trainFunction([xs, ys]);
+          for (let i = 0; i < this.metricsNames.length; ++i) {
+            batchLogs[this.metricsNames[i]] = outs[i];
+          }
 
           callbackList.onBatchEnd(batchIndex, batchLogs);
-
           batchIndex++;
           stepsDone++;
           if (this.stopTraining_) {
