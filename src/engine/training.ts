@@ -1480,7 +1480,6 @@ export class Model extends Container implements tfc.InferenceModel {
     const {callbackList, history} = configureCallbacks(
         callbacks, yieldEvery, verbose, epochs, initialEpoch, numTrainSamples,
         stepsPerEpoch, batchSize, doValidation, callbackMetrics);
-    console.log(`fitLoop(): callbackList = `, callbackList);  // DEBUG
     callbackList.setModel(this);
     this.history = history;
     await callbackList.onTrainBegin();
@@ -2011,9 +2010,9 @@ export class Model extends Container implements tfc.InferenceModel {
       await callbackList.onTrainBegin();
       let epoch = config.initialEpoch == null ? 0 : config.initialEpoch;
       const epochLogs: UnresolvedLogs = {};
+      const dataIterator = await dataset.iterator();
       while (epoch < config.epochs) {
         // console.log(`=== fitDataset(): epoch = ${epoch} ===`);  // DEBUG
-        const dataIterator = await dataset.iterator();
         // console.log('*** dataIterator:', dataIterator);  // DEBUG
 
         await callbackList.onEpochBegin(epoch);
