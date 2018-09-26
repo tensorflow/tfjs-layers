@@ -179,8 +179,12 @@ export class CallbackList {
     if (logs == null) {
       logs = {};
     }
+    // // DEBUG
+    // console.log(`this.callbacks.length = ${this.callbacks.length}`);
     for (const callback of this.callbacks) {
+      // console.log('Invoking onBatchEnd of ', callback);  // DEBUG
       await callback.onBatchEnd(batch, logs);
+      // console.log('Done invocation.');  // DEBUG
     }
   }
 
@@ -431,6 +435,7 @@ export class History extends BaseCallback {
   }
 
   async onEpochEnd(epoch: number, logs?: UnresolvedLogs) {
+    // console.log('In History.onEpochEnd()');  // DEBUG
     if (logs == null) {
       logs = {};
     }
@@ -447,10 +452,12 @@ export class History extends BaseCallback {
    * Await the values of all losses and metrics.
    */
   async syncData() {
+    // console.log('In History.syncData()');  // DEBUG
     const promises: Array<Promise<Float32Array|Int32Array|Uint8Array>> = [];
     const keys: string[] = [];
     const indices: number[] = [];
     for (const key in this.history) {
+      // console.log(`history key = ${key}`);  // DEBUG
       const valueArray = this.history[key];
       for (let i = 0; i < valueArray.length; ++i) {
         if (typeof valueArray[i] !== 'number') {

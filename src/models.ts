@@ -11,12 +11,14 @@
 /* Original source keras/models.py */
 
 import {io, Scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
+import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
 
 import {getUid} from './backend/state';
 import {History} from './base_callbacks';
+import {Dataset} from './engine/dataset_stub';
 import {Input} from './engine/input_layer';
 import {getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
-import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
+import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig, ModelFitDatasetConfig} from './engine/training';
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
 import {Kwargs, NamedTensorMap, Shape} from './types';
@@ -745,6 +747,16 @@ export class Sequential extends Model {
           'being used.');
     }
     return this.model.fit(x, y, config);
+  }
+
+  async fitDataset<T extends TensorContainer>(
+      dataset: Dataset<T>, config: ModelFitDatasetConfig): Promise<History> {
+    if (!this.built) {
+      throw new RuntimeError(
+          'The model needs to be compiled before ' +
+          'being used.');
+    }
+    return this.model.fitDataset(dataset, config);
   }
 
   /* See parent class for JsDoc */

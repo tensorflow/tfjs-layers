@@ -609,14 +609,14 @@ export interface ModelFitDatasetConfig {
    * typically be equal to th enumber of samples of your dataset divided by
    * the batch size, so that fitDataset() call can utilize the entire dataset.
    */
-  stepsPerEpoch?: number;
+  stepsPerEpoch: number;
 
   /**
    * The number of times to iterate over the training dataset.
    *
    * An integer.
    */
-  epochs?: number;
+  epochs: number;
 
   /**
    * Verbosity level.
@@ -831,6 +831,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [0]}
    */
   compile(config: ModelCompileConfig): void {
+    // console.log('In compile');  // DEBUG
     if (config.loss == null) {
       config.loss = [];
     }
@@ -1029,6 +1030,10 @@ export class Model extends Container implements tfc.InferenceModel {
     // Porting Notes: Given the imperative backend of tfjs-core,
     //   there is no need for constructing the symbolic graph and placeholders.
     this.collectedTrainableWeights = this.trainableWeights;
+    // DEBUG
+    // console.log(
+    //     'Set this.collectedTrainableWeights:',
+    //     this.collectedTrainableWeights);
   }
 
   /**
@@ -1475,6 +1480,7 @@ export class Model extends Container implements tfc.InferenceModel {
     const {callbackList, history} = configureCallbacks(
         callbacks, yieldEvery, verbose, epochs, initialEpoch, numTrainSamples,
         stepsPerEpoch, batchSize, doValidation, callbackMetrics);
+    console.log(`fitLoop(): callbackList = `, callbackList);  // DEBUG
     callbackList.setModel(this);
     this.history = history;
     await callbackList.onTrainBegin();
@@ -1520,6 +1526,7 @@ export class Model extends Container implements tfc.InferenceModel {
             for (let i = 0; i < outLabels.length; ++i) {
               const label = outLabels[i];
               const out = outs[i];
+              console.log(`label = ${label}`);  // DEBUG
               batchLogs[label] = out;
               tfc.keep(out);
               // TODO(cais): Use scope() to avoid ownership.
@@ -1552,6 +1559,8 @@ export class Model extends Container implements tfc.InferenceModel {
         epochIndexArray1D.dispose();
       }
       // TODO(cais): Run validation at the end of the epoch.
+      console.log(
+          'fitLoop calling onEpochEnd: epochLogs =', epochLogs);  // DEBUG
       await callbackList.onEpochEnd(epoch, epochLogs);
       if (this.stopTraining_) {
         break;
@@ -1721,6 +1730,9 @@ export class Model extends Container implements tfc.InferenceModel {
         return totalLoss as Scalar;
       };
 
+      // console.log(
+      //     'In fitDataset(): this.collectedTrainableWeights:',
+      //     this.collectedTrainableWeights);  // DEBUG
       const variables = this.collectedTrainableWeights.map(
           param => param.read() as tfc.Variable);
       const returnCost = true;
@@ -1938,8 +1950,19 @@ export class Model extends Container implements tfc.InferenceModel {
   }
 
   async fitDataset<T extends TensorContainer>(
-      dataset: Dataset<T>,
-      config: ModelFitDatasetConfig = {}): Promise<History> {
+      dataset: Dataset<T>, config: ModelFitDatasetConfig): Promise<History> {
+    // console.log(
+    //     'Calling this.makeTrainFunction(): this.collectedTrainableWeights:',
+    //     this.collectedTrainableWeights);  // DEBUG
+    tfc.util.assert(
+        this.optimizer != null,
+        'You must compile a model before training/testing. Use ' +
+            'Model.compile(modelCompileConfig).');
+
+    tfc.util.assert(
+        config != null,
+        `For fitDataset(), the 2nd argument (config) is required, ` +
+            `but it is not provided in this call.`);
     tfc.util.assert(
         config.epochs != null && config.epochs > 0 &&
             Number.isInteger(config.epochs),
@@ -1964,34 +1987,47 @@ export class Model extends Container implements tfc.InferenceModel {
             'Support for validation is not implement for fitDataset yet.');
       }
 
+      const trainFunction = this.makeTrainFunction();
+      const outLabels = this.getDedupedMetricsNames();
+
+      let callbackMetrics: string[];
+      if (doValidation) {
+        throw new NotImplementedError('TODO(cais): Implement validatoin');
+      } else {
+        // valFunction = null;
+        // valIns = [];
+        callbackMetrics = outLabels.slice();
+      }
+
       const callbacks = standardizeCallbacks(config.callbacks);
       const {callbackList, history} = configureCallbacks(
-          callbacks,
-          config.yieldEvery,
-          config.verbose,
-          config.epochs,
-          null,
-          null,
-          config.stepsPerEpoch,
+          callbacks, config.yieldEvery, config.verbose, config.epochs, null,
+          null, config.stepsPerEpoch,
           null,  // Batch size determined by the dataset itself.
-          doValidation,
-          null,  // TODO(cais): Support callbackMetrics
-      );
+          doValidation, callbackMetrics);
+      console.log('fitDataset(): callbackList = ', callbackList);  // DEBUG
       this.history = history;
 
-      const dataIterator = await dataset.iterator();
-      const trainFunction = this.makeTrainFunction();
-
-      callbackList.onTrainBegin();
+      await callbackList.onTrainBegin();
       let epoch = config.initialEpoch == null ? 0 : config.initialEpoch;
       const epochLogs: UnresolvedLogs = {};
       while (epoch < config.epochs) {
-        callbackList.onEpochBegin(epoch);
+        console.log(`=== fitDataset(): epoch = ${epoch} ===`);  // DEBUG
+        const dataIterator = await dataset.iterator();
+        // console.log('*** dataIterator:', dataIterator);  // DEBUG
+
+        await callbackList.onEpochBegin(epoch);
         let stepsDone = 0;
         let batchIndex = 0;
         while (stepsDone < config.stepsPerEpoch) {
           const iteratorOut = await dataIterator.next();
+          // TOOD(cais): Check iteratorOut.done.
+          // console.log('*** iteratorOut = ', iteratorOut);  // DEBUG
           const [xs, ys] = this.checkDataIteratorOutput(iteratorOut.value);
+          // console.log('xs:');  // DEBUG
+          // xs.print();          // DEBUG
+          // console.log('ys:');  // DEBUG
+          // ys.print();          // DEBUG
 
           const batchLogs: UnresolvedLogs = {};
           batchLogs['batch'] = batchIndex;
@@ -2001,24 +2037,37 @@ export class Model extends Container implements tfc.InferenceModel {
           // Train on batch.
           // TODO(cais): Take care of multiple inputs and multiple outputs.
           const outs = trainFunction([xs, ys]);
-          for (let i = 0; i < this.metricsNames.length; ++i) {
-            batchLogs[this.metricsNames[i]] = outs[i];
+          tfc.dispose([xs, ys]);
+          // for (let i = 0; i < this.metricsNames.length; ++i) {
+          //   batchLogs[this.metricsNames[i]] = outs[i];
+          // }
+          for (let i = 0; i < outLabels.length; ++i) {
+            const label = outLabels[i];
+            const out = outs[i];
+            console.log(`label = ${label}`);  // DEBUG
+            batchLogs[label] = out;
+            tfc.keep(out);
+            // TODO(cais): Use scope() to avoid ownership.
           }
 
-          callbackList.onBatchEnd(batchIndex, batchLogs);
+          await callbackList.onBatchEnd(batchIndex, batchLogs);
+          disposeTensorsInLogs(batchLogs);
+
           batchIndex++;
           stepsDone++;
           if (this.stopTraining_) {
             break;
           }
         }
-        callbackList.onEpochEnd(epoch, epochLogs);
+        console.log('Calling onEpochEnd: epoch = ', epoch);  // DEBUG
+        await callbackList.onEpochEnd(epoch, epochLogs);
         epoch++;
         if (this.stopTraining_) {
           break;
         }
       }
-      callbackList.onTrainEnd();
+      await callbackList.onTrainEnd();
+      await this.history.syncData();
       return this.history;
     } finally {
       this.isTraining = false;
@@ -2030,7 +2079,8 @@ export class Model extends Container implements tfc.InferenceModel {
     tfc.util.assert(
         Array.isArray(iteratorOut) && iteratorOut.length === 2,
         'Dataset iterator for fitDataset() is expected to generate ' +
-            'an Array of length 2: `[xs, ys]`');
+            'an Array of length 2: `[xs, ys]`, but instead generates ' +
+            iteratorOut);
     // TODO(cais): Deal with case of dictionary of tensors.
     // TODO(cais): If there are multiple inputs or outputs, make sure
     //   they all have the same batch size.
