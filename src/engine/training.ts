@@ -2020,6 +2020,18 @@ export class Model extends Container implements tfc.InferenceModel {
         let batchIndex = 0;
         while (stepsDone < config.stepsPerEpoch) {
           const iteratorOut = await dataIterator.next();
+          if (iteratorOut.done) {
+            console.warn(
+                'You dataset iterator ran out of data; ' +
+                'interrupting training. Make sure that your ' +
+                'dataset can generate at least `stepsPerEpoch * epochs ' +
+                'batches (in this case, ' +
+                `${config.stepsPerEpoch * config.epochs} batches). ` +
+                'You may need to use the repeat() function when building ' +
+                'your dataset');
+            break;
+          }
+
           // TOOD(cais): Check iteratorOut.done.
           // console.log('*** iteratorOut = ', iteratorOut);  // DEBUG
           const xsAndYs = this.checkDataIteratorOutput(iteratorOut.value);

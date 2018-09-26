@@ -145,12 +145,12 @@ class FakeNumericIterator extends
                       ]
       };
     } else {
+      // Use preset tensors.
       if ((this.batchCount - 1) % this.numBatches === 0) {
         this.presetXTensorValues = this.presetXTensors();
         this.presetYTensorValues = this.presetYTensors();
         this.presetTensorIndex = 0;
       }
-      // Use preset tensors.
       const index = this.presetTensorIndex++;
 
       let xs: tfc.Tensor|{[name: string]: tfc.Tensor};

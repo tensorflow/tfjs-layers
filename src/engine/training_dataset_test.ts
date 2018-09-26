@@ -174,6 +174,42 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
   });
 
+  // Reference Python tf.keras code:
+  //
+  // ```js
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // batch_size = 8
+  // num_batches = 3
+  // epochs = 2
+  //
+  // input1 = tf.keras.Input(shape = [1], name = 'x1')
+  // input2 = tf.keras.Input(shape = [1], name = 'x2')
+  // concat = tf.keras.layers.concatenate([input1, input2])
+  // y = tf.keras.layers.Dense(
+  //     1, kernel_initializer = 'zeros', bias_initializer = 'zeros')(concat)
+  // model = tf.keras.Model(inputs = [input1, input2], outputs = y)
+  // model.compile(
+  //     loss = 'mean_squared_error', optimizer = 'sgd', metrics =
+  //     ['accuracy'])
+  // model.summary()
+  // print(input1.name)
+  // print(input2.name)
+  //
+  // xs1 = np.ones([batch_size * num_batches * epochs, 1])
+  // xs2 = np.ones([batch_size * num_batches * epochs, 1])
+  // ys = np.ones([batch_size * num_batches * epochs, 1])
+  // dataset = tf.data.Dataset.from_tensor_slices(
+  //     ({'x1': xs1, 'x2': xs2}, ys)).batch(batch_size)
+  //
+  // history = model.fit(dataset,
+  //                     steps_per_epoch=num_batches,
+  //                     epochs=epochs)
+  // print(history.history)
+  // print(model.get_weights()[0])
+  // print(model.get_weights()[1])
+  // ```
   it('2 input, 1 output, 1 metric, no validation', async () => {
     // Create a functional model with 2 inputs.
     const input1 = tfl.layers.input({shape: [1]});
