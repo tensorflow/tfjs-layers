@@ -129,7 +129,6 @@ class FakeNumericIterator extends
             this.presetXTensors != null && this.presetYTensors != null,
         'presetXTensors and presetYTensors must be both null/undefined ' +
             'or both set.');
-    // TODO(cais): More sanity check. (Shapes etc., batch sizes, etc.)
   }
 
   async next():
@@ -153,14 +152,21 @@ class FakeNumericIterator extends
       }
       // Use preset tensors.
       const index = this.presetTensorIndex++;
-      return {
-        done,
-        value: done ? null :
-                      [
-                        (this.presetXTensorValues as tfc.Tensor[])[index],
-                        (this.presetYTensorValues as tfc.Tensor[])[index],
-                      ]
-      };
+
+      // TODO(cais): Take care of the case of multiple inputs/outputs.
+      const xs =
+          (this.presetXTensorValues as tfc.Tensor[])[index] as tfc.Tensor;
+      const ys =
+          (this.presetYTensorValues as tfc.Tensor[])[index] as tfc.Tensor;
+      tfc.util.assert(
+          tfc.util.arraysEqual(xs.shape, this.xBatchShape as Shape),
+          `Shape mismatch: expected: ${JSON.stringify(this.xBatchShape)}; ` +
+              `actual: ${JSON.stringify(xs.shape)}`);
+      tfc.util.assert(
+          tfc.util.arraysEqual(ys.shape, this.yBatchShape as Shape),
+          `Shape mismatch: expected: ${JSON.stringify(this.yBatchShape)}; ` +
+              `actual: ${JSON.stringify(ys.shape)}`);
+      return {done, value: done ? null : [xs, ys]};
     }
   }
 }

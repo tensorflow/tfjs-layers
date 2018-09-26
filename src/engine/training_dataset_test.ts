@@ -32,7 +32,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     return model;
   }
 
-  // Reference Python Keras code:
+  // Reference Python tf.keras code:
   //
   // ```py
   // import numpy as np
@@ -100,7 +100,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
   });
 
-  // Reference Python Keras code:
+  // Reference Python tf.keras code:
   //
   // ```py
   // import numpy as np
