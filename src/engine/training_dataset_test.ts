@@ -32,8 +32,31 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     return model;
   }
 
-  // TODO(cais): Test for memory leaks.
-
+  // Reference Python keras code:
+  //
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Dense(
+  //     1,
+  //     input_shape=[1],
+  //     kernel_initializer='zeros',
+  //     bias_initializer='zeros'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // batch_size = 8
+  // steps_per_epoch = 3
+  // xs = np.ones([batch_size * steps_per_epoch, 1])
+  // ys = np.ones([batch_size * steps_per_epoch, 1])
+  //
+  // epochs = 2
+  // history = model.fit(xs, ys, epochs=epochs, batch_size=batch_size)
+  // print(history.history)
+  // print(model.get_weights()[0])
+  // print(model.get_weights()[1])
+  // ```
   it('1 input, 1 output, no metric, no validation', async () => {
     const model = createDenseModel();
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
@@ -57,15 +80,67 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       presetXTensorsFunc,
       presetYTensorsFunc
     });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {stepsPerEpoch: numBatches, epochs: 1});
+    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+
     const numTensors0 = tfc.memory().numTensors;
     const history =
         await model.fitDataset(dataset, {stepsPerEpoch: numBatches, epochs});
     const numTensors1 = tfc.memory().numTensors;
-    console.log(
-        `numTensors0 = ${numTensors0}; numTensors1 = ${numTensors1}`);  // DEBUG
+    expect(numTensors1).toEqual(numTensors0);
+    expect(Object.keys(history.history)).toEqual(['loss']);
     expect(history.history.loss.length).toEqual(2);
     expect(history.history.loss[0]).toBeCloseTo(0.923649);
     expect(history.history.loss[1]).toBeCloseTo(0.722993);
+    expectArraysClose(model.getWeights()[0], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+  });
+
+  it('1 input, 1 output, 1 metric, no validation', async () => {
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const numBatches = 3;
+    const epochs = 2;
+    const presetXTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const presetYTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches,
+      presetXTensorsFunc,
+      presetYTensorsFunc
+    });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {stepsPerEpoch: numBatches, epochs: 1});
+    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const history =
+        await model.fitDataset(dataset, {stepsPerEpoch: numBatches, epochs});
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+    expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(0.923649);
+    expect(history.history.loss[1]).toBeCloseTo(0.722993);
+    expect(history.history.acc.length).toEqual(2);
+    expect(history.history.acc[0]).toBeCloseTo(0);
+    expect(history.history.acc[1]).toBeCloseTo(0);
     expectArraysClose(model.getWeights()[0], tfc.tensor2d([[0.108621]]));
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
   });
