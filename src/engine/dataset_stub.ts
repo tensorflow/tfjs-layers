@@ -153,15 +153,28 @@ class FakeNumericIterator extends
       // Use preset tensors.
       const index = this.presetTensorIndex++;
 
-      // TODO(cais): Take care of the case of multiple inputs/outputs.
-      const xs =
-          (this.presetXTensorValues as tfc.Tensor[])[index] as tfc.Tensor;
+      let xs: tfc.Tensor|{[name: string]: tfc.Tensor};
+      if (Array.isArray(this.presetXTensorValues)) {
+        xs = (this.presetXTensorValues as tfc.Tensor[])[index];
+        tfc.util.assert(
+            tfc.util.arraysEqual(xs.shape, this.xBatchShape as Shape),
+            `Shape mismatch: expected: ${JSON.stringify(this.xBatchShape)}; ` +
+                `actual: ${JSON.stringify(xs.shape)}`);
+      } else {
+        xs = {};
+        for (const key in this.presetXTensorValues) {
+          xs[key] = this.presetXTensorValues[key][index];
+          tfc.util.assert(
+              tfc.util.arraysEqual(xs[key].shape, this.xBatchShape as Shape),
+              `Shape mismatch: expected: ${
+                  JSON.stringify(this.xBatchShape)}; ` +
+                  `actual: ${JSON.stringify(xs.shape)}`);
+        }
+      }
+
+      // TODO(cais): Take care of the case of multiple outputs.
       const ys =
           (this.presetYTensorValues as tfc.Tensor[])[index] as tfc.Tensor;
-      tfc.util.assert(
-          tfc.util.arraysEqual(xs.shape, this.xBatchShape as Shape),
-          `Shape mismatch: expected: ${JSON.stringify(this.xBatchShape)}; ` +
-              `actual: ${JSON.stringify(xs.shape)}`);
       tfc.util.assert(
           tfc.util.arraysEqual(ys.shape, this.yBatchShape as Shape),
           `Shape mismatch: expected: ${JSON.stringify(this.yBatchShape)}; ` +
