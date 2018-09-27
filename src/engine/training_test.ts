@@ -26,7 +26,8 @@ import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsCl
 
 // TODO(bileschi): Use external version of Layer.
 import {Layer, SymbolicTensor} from './topology';
-import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, makeBatches, sliceArraysByIndices, standardizeInputData} from './training';
+import {checkArrayLengths, isDataArray, isDataDict, isDataTensor, standardizeInputData} from './training';
+import {makeBatches, sliceArraysByIndices} from './training_tensors';
 
 
 describeMathCPU('isDataTensor', () => {
@@ -1285,7 +1286,7 @@ describeMathCPUAndGPU('Model.fit', () => {
     let history = await model.fit(inputs, targets, {
       epochs,
       callbacks: {
-        onEpochEnd: async (epoch, logs) => {
+        onEpochEnd: async (epoch: number, logs?: UnresolvedLogs) => {
           numEpochsDone++;
           if (epoch === stopAfterEpoch) {
             model.stopTraining = true;

@@ -8,6 +8,10 @@
  * =============================================================================
  */
 
+/**
+ * Interfaces and methods for training models using TensorFlow.js datasets.
+ */
+
 import * as tfc from '@tensorflow/tfjs-core';
 import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
 
@@ -104,8 +108,7 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
 
 
 export async function fitDataset<T extends TensorContainer>(
-    // We type `model` as `any` here to avoid circular dependency with
-    // training.ts.
+    // Type `model` as `any` here to avoid circular dependency w/ training.ts.
     // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>,
     config: ModelFitDatasetConfig<T>): Promise<History> {
