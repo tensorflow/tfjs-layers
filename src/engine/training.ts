@@ -1569,11 +1569,6 @@ export class Model extends Container implements tfc.InferenceModel {
     return this.history;
   }
 
-  // TODO(cais): Decide.
-  // protected trainOnBatch(
-  //     f: (data: Tensor[]) => Scalar[], x: Tensor, y: Tensor,
-  //     sampleWeight?: Tensor, classWeight?: {[cls: number]: number}) {}
-
   /**
    * Loop over some test data in batches.
    * @param f A Function returning a list of tensors.
