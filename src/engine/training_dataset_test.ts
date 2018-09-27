@@ -174,6 +174,79 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
   });
 
+  it('1 input, 1 output, 1 metric, no validation, callback', async () => {
+    console.log('=== BEGIN ===');  // DEBUG
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 2;
+    const stepsPerEpoch = 3;
+    const presetXTensorsFunc = () =>
+        [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+    const presetYTensorsFunc = () =>
+        [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: stepsPerEpoch * epochs,
+      presetXTensorsFunc,
+      presetYTensorsFunc
+    });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {stepsPerEpoch, epochs: 1});
+    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const epochBeginEpochs: number[] = [];
+    const epochEndEpochs: number[] = [];
+    const batchBeginBatches: number[] = [];
+    const batchEndBatches: number[] = [];
+    const history = await model.fitDataset(dataset, {
+      stepsPerEpoch,
+      epochs,
+      callbacks: {
+        onEpochBegin: async (epoch) => {
+          epochBeginEpochs.push(epoch);
+        },
+        onEpochEnd: async (epoch, logs) => {
+          epochEndEpochs.push(epoch);
+        },
+        onBatchBegin: async (batch, logs) => {
+          batchBeginBatches.push(batch);
+        },
+        onBatchEnd: async (batch, logs) => {
+          batchEndBatches.push(batch);
+        },
+      }
+    });
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+    expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(0.923649);
+    expect(history.history.loss[1]).toBeCloseTo(0.722993);
+    expect(history.history.acc.length).toEqual(2);
+    expect(history.history.acc[0]).toBeCloseTo(0);
+    expect(history.history.acc[1]).toBeCloseTo(0);
+    expectArraysClose(model.getWeights()[0], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+
+    console.log(epochBeginEpochs);
+    console.log(epochEndEpochs);
+    console.log(batchBeginBatches);
+    console.log(batchEndBatches);
+    console.log('=== END ===');  // DEBUG
+  });
+
   // Reference Python tf.keras code:
   //
   // ```js
