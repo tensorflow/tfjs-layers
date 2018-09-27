@@ -174,6 +174,45 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
   });
 
+  // Reference Python tf.keras code.
+  //
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // batch_size = 8
+  // num_batches = 3
+  // epochs = 2
+  //
+  // xs = np.ones([batch_size * num_batches * epochs, 1])
+  // ys = np.ones([batch_size * num_batches * epochs, 1])
+  // dataset = tf.data.Dataset.from_tensor_slices((xs, ys)).batch(batch_size)
+  // val_xs = np.zeros([batch_size * 2, 1])
+  // val_ys = np.zeros([batch_size * 2, 1])
+  //
+  // model = tf.keras.Sequential()
+  // model.add(tf.keras.layers.Dense(
+  //     1,
+  //     input_shape=[1],
+  //     kernel_initializer='zeros',
+  //     bias_initializer='zeros'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd',
+  // metrics=['accuracy'])
+  //
+  // class CustomCallback(tf.keras.callbacks.Callback):
+  //   def on_epoch_end(self, epoch, logs):
+  //     print('epoch = %d; logs = %s' % (epoch, logs))
+  //
+  // history = model.fit(dataset,
+  //                     steps_per_epoch=num_batches,
+  //                     epochs=epochs,
+  //                     validation_steps=2,
+  //                     validation_data=(val_xs, val_ys),
+  //                     callbacks=[CustomCallback()])
+  // print(history.history)
+  // print(model.get_weights()[0])
+  // print(model.get_weights()[1])
+  // ```
   it('1 input, 1 output, 1 metric, tensor validation, callback', async () => {
     const model = createDenseModel();
     model.compile(
@@ -207,7 +246,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
         dataset, {stepsPerEpoch, epochs: 1, validationData: [valXs, valYs]});
     model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
-    // const numTensors0 = tfc.memory().numTensors;
+    const numTensors0 = tfc.memory().numTensors;
     const epochEndValLosses: number[] = [];
     const epochEndValAccs: number[] = [];
     const history = await model.fitDataset(dataset, {
@@ -221,8 +260,8 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
         }
       }
     });
-    // const numTensors1 = tfc.memory().numTensors;
-    // expect(numTensors1).toEqual(numTensors0);  // TODO(cais): Restore.
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
     expect(Object.keys(history.history).sort()).toEqual([
       'loss', 'acc', 'val_loss', 'val_acc'
     ].sort());
@@ -247,6 +286,44 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expect(epochEndValAccs.length).toEqual(2);
     expect(epochEndValAccs[0]).toBeCloseTo(1);
     expect(epochEndValAccs[1]).toBeCloseTo(1);
+  });
+
+  fit('Memory leak check with metric and validation', async () => {
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 3;
+    const stepsPerEpoch = 3;
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: stepsPerEpoch * epochs
+    });
+    const valXs = tfc.zeros([batchSize * 2, 1]);
+    const valYs = tfc.zeros([batchSize * 2, 1]);
+
+    // Do a burn-in call to account for initialization of cached
+    // tensors (for the memory-leak check below).
+    await model.fitDataset(
+        dataset, {stepsPerEpoch, epochs: 1, validationData: [valXs, valYs]});
+    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    await model.fitDataset(dataset, {
+      stepsPerEpoch,
+      epochs,
+      validationData: [valXs, valYs],
+      callbacks: {
+        onEpochEnd: async (epoch, logs) => {
+          expect(tfc.memory().numTensors).toEqual(numTensors0);
+        }
+      }
+    });
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
   });
 
   // Refence Python tf.keras code:

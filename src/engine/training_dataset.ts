@@ -239,8 +239,6 @@ export async function fitDataset<T extends TensorContainer>(
       callbackMetrics =
           outLabels.slice().concat(outLabels.map(n => 'val_' + n));
     } else {
-      // valFunction = null;
-      // valIns = [];
       callbackMetrics = outLabels.slice();
     }
 
@@ -282,7 +280,7 @@ export async function fitDataset<T extends TensorContainer>(
         callbackList.onBatchBegin(batchIndex, batchLogs);
 
         // Train on batch.
-        // TODO(cais): Take care of multiple inputs and multiple outputs.
+        // TODO(cais): Take care of models with multiple outputs.
         const outs = trainFunction(xsAndYs);
         tfc.dispose(xsAndYs);
         for (let i = 0; i < outLabels.length; ++i) {
