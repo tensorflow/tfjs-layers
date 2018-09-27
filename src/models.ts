@@ -18,7 +18,8 @@ import {History} from './base_callbacks';
 import {Dataset} from './engine/dataset_stub';
 import {Input} from './engine/input_layer';
 import {getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
-import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig, ModelFitDatasetConfig} from './engine/training';
+import {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
+import {ModelFitDatasetConfig} from './engine/training_dataset';
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
 import {Kwargs, NamedTensorMap, Shape} from './types';
@@ -750,7 +751,7 @@ export class Sequential extends Model {
   }
 
   async fitDataset<T extends TensorContainer>(
-      dataset: Dataset<T>, config: ModelFitDatasetConfig): Promise<History> {
+      dataset: Dataset<T>, config: ModelFitDatasetConfig<T>): Promise<History> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before ' +
