@@ -134,6 +134,9 @@ class FakeNumericIterator extends
   async next():
       Promise<IteratorResult<[TensorOrTensorMap, TensorOrTensorMap]>> {
     const done = ++this.batchCount > this.numBatches;
+    // console.log(
+    //     `this.batchCount = ${this.batchCount}; ` +
+    //     `this.numBatches = ${this.numBatches}; done = ${done}`);  // DEBUG
     if (this.presetXTensors == null) {
       // Generate data randomly.
       return {

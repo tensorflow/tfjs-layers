@@ -1558,8 +1558,6 @@ export class Model extends Container implements tfc.InferenceModel {
         epochIndexArray1D.dispose();
       }
       // TODO(cais): Run validation at the end of the epoch.
-      console.log(
-          'fitLoop calling onEpochEnd: epochLogs =', epochLogs);  // DEBUG
       await callbackList.onEpochEnd(epoch, epochLogs);
       if (this.stopTraining_) {
         break;
@@ -2012,9 +2010,6 @@ export class Model extends Container implements tfc.InferenceModel {
       const epochLogs: UnresolvedLogs = {};
       const dataIterator = await dataset.iterator();
       while (epoch < config.epochs) {
-        // console.log(`=== fitDataset(): epoch = ${epoch} ===`);  // DEBUG
-        // console.log('*** dataIterator:', dataIterator);  // DEBUG
-
         await callbackList.onEpochBegin(epoch);
         let stepsDone = 0;
         let batchIndex = 0;
@@ -2022,13 +2017,13 @@ export class Model extends Container implements tfc.InferenceModel {
           const iteratorOut = await dataIterator.next();
           if (iteratorOut.done) {
             console.warn(
-                'You dataset iterator ran out of data; ' +
+                'Your dataset iterator ran out of data; ' +
                 'interrupting training. Make sure that your ' +
-                'dataset can generate at least `stepsPerEpoch * epochs ' +
+                'dataset can generate at least `stepsPerEpoch * epochs` ' +
                 'batches (in this case, ' +
                 `${config.stepsPerEpoch * config.epochs} batches). ` +
                 'You may need to use the repeat() function when building ' +
-                'your dataset');
+                'your dataset.');
             break;
           }
 
@@ -2053,7 +2048,6 @@ export class Model extends Container implements tfc.InferenceModel {
             const out = outs[i];
             batchLogs[label] = out;
             tfc.keep(out);
-            // TODO(cais): Use scope() to avoid ownership.
           }
 
           await callbackList.onBatchEnd(batchIndex, batchLogs);

@@ -277,8 +277,41 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
   });
 
+  it('Exhausting iterator throws warning', async () => {
+    console.log('===== BEGIN =====');  // DEBUG
+    const model = createDenseModel();
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const batchSize = 8;
+    const stepsPerEpoch = 3;
+    const dataset = new FakeNumericDataset(
+        {xShape: [1], yShape: [1], batchSize, numBatches: stepsPerEpoch});
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {stepsPerEpoch, epochs: 1});
+    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+
+    const warningMessages: string[] = [];
+    spyOn(console, 'warn')
+        .and.callFake((msg: any) => warningMessages.push(msg));
+
+    const numTensors0 = tfc.memory().numTensors;
+    const epochs = 3;
+    const history = await model.fitDataset(dataset, {stepsPerEpoch, epochs});
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+    expect(Object.keys(history.history)).toEqual(['loss']);
+    expect(history.history.loss.length).toEqual(3);
+    expect(warningMessages.length).toEqual(2);
+    expect(warningMessages[0])
+        .toMatch(/Your dataset iterator ran out of data; .* 9 batches/);
+    expect(warningMessages[1])
+        .toMatch(/Your dataset iterator ran out of data; .* 9 batches/);
+    console.log('===== END =====');  // DEBUG
+  });
+
   // TODO(cais): Tests for missing fields for models with multiple inputs.
-  // TODO(cais): Test for dataset exhaustion.
   // TODO(cais): Test callbacks and batch-by-batch logs.
 
   it('Calling fitDataset() without calling compile() errors', async () => {
