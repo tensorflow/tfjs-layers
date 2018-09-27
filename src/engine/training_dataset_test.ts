@@ -174,8 +174,40 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
   });
 
+  // Refence Python tf.keras code:
+  //
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // batch_size = 8
+  // num_batches = 3
+  // epochs = 2
+  //
+  // xs = np.ones([batch_size * num_batches * epochs, 1])
+  // ys = np.ones([batch_size * num_batches * epochs, 1])
+  // dataset = tf.data.Dataset.from_tensor_slices((xs, ys)).batch(batch_size)
+  //
+  // model = tf.keras.Sequential()
+  // model.add(tf.keras.layers.Dense(
+  //     1,
+  //     input_shape=[1],
+  //     kernel_initializer='zeros',
+  //     bias_initializer='zeros'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd',
+  // metrics=['accuracy'])
+  //
+  // class CustomCallback(tf.keras.callbacks.Callback):
+  //   def on_batch_end(self, batch, logs):
+  //     print('batch = %d; logs = %s' % (batch, logs))
+  //
+  // history = model.fit(dataset,
+  //                     steps_per_epoch=num_batches,
+  //                     epochs=epochs,
+  //                     callbacks=[CustomCallback()])
+  // print(history.history)
+  // ```
   it('1 input, 1 output, 1 metric, no validation, callback', async () => {
-    console.log('=== BEGIN ===');  // DEBUG
     const model = createDenseModel();
     model.compile(
         {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
@@ -206,25 +238,41 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
     const numTensors0 = tfc.memory().numTensors;
+    let onTrainBeginCalls = 0;
+    let onTrainEndCalls = 0;
     const epochBeginEpochs: number[] = [];
     const epochEndEpochs: number[] = [];
     const batchBeginBatches: number[] = [];
     const batchEndBatches: number[] = [];
+    const epochEndLosses: number[] = [];
+    const epochEndAccs: number[] = [];
+    const batchEndLosses: number[] = [];
+    const batchEndAccs: number[] = [];
     const history = await model.fitDataset(dataset, {
       stepsPerEpoch,
       epochs,
       callbacks: {
+        onTrainBegin: async () => {
+          onTrainBeginCalls++;
+        },
+        onTrainEnd: async () => {
+          onTrainEndCalls++;
+        },
         onEpochBegin: async (epoch) => {
           epochBeginEpochs.push(epoch);
         },
         onEpochEnd: async (epoch, logs) => {
           epochEndEpochs.push(epoch);
+          epochEndLosses.push(logs.loss);
+          epochEndAccs.push(logs.acc);
         },
         onBatchBegin: async (batch, logs) => {
           batchBeginBatches.push(batch);
         },
         onBatchEnd: async (batch, logs) => {
           batchEndBatches.push(batch);
+          batchEndLosses.push(logs.loss);
+          batchEndAccs.push(logs.acc);
         },
       }
     });
@@ -240,11 +288,21 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[0], tfc.tensor2d([[0.108621]]));
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
 
-    console.log(epochBeginEpochs);
-    console.log(epochEndEpochs);
-    console.log(batchBeginBatches);
-    console.log(batchEndBatches);
-    console.log('=== END ===');  // DEBUG
+    expect(onTrainBeginCalls).toEqual(1);
+    expect(onTrainEndCalls).toEqual(1);
+    expect(epochBeginEpochs).toEqual([0, 1]);
+    expect(epochEndEpochs).toEqual([0, 1]);
+    expect(batchBeginBatches).toEqual([0, 1, 2, 0, 1, 2]);
+    expect(batchEndBatches).toEqual([0, 1, 2, 0, 1, 2]);
+    expect(epochEndLosses.length).toEqual(2);
+    expect(epochEndLosses[0]).toBeCloseTo(0.923649);
+    expect(epochEndLosses[1]).toBeCloseTo(0.722993);
+    expect(epochEndAccs.length).toEqual(2);
+    expect(epochEndAccs[0]).toBeCloseTo(0);
+    expect(epochEndAccs[1]).toBeCloseTo(0);
+    expectArraysClose(
+        batchEndLosses, [1, 0.9216, 0.849347, 0.782758, 0.721390, 0.664832]);
+    expectArraysClose(batchEndAccs, [0, 0, 0, 0, 0, 0]);
   });
 
   // Reference Python tf.keras code:
@@ -434,9 +492,6 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expect(warningMessages[1])
         .toMatch(/Your dataset iterator ran out of data; .* 9 batches/);
   });
-
-  // TODO(cais): Tests for missing fields for models with multiple inputs.
-  // TODO(cais): Test callbacks and batch-by-batch logs.
 
   it('Calling fitDataset() without calling compile() errors', async () => {
     const model = createDenseModel();

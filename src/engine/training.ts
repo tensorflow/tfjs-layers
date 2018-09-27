@@ -1525,7 +1525,6 @@ export class Model extends Container implements tfc.InferenceModel {
             for (let i = 0; i < outLabels.length; ++i) {
               const label = outLabels[i];
               const out = outs[i];
-              // console.log(`label = ${label}`);  // DEBUG
               batchLogs[label] = out;
               tfc.keep(out);
               // TODO(cais): Use scope() to avoid ownership.
@@ -2028,6 +2027,7 @@ export class Model extends Container implements tfc.InferenceModel {
           const batchLogs: UnresolvedLogs = {};
           batchLogs['batch'] = batchIndex;
           batchLogs['size'] = xsAndYs[0].shape[0];
+          console.log(`batchLogs = ${JSON.stringify(batchLogs)}`);  // DEBUG
 
           callbackList.onBatchBegin(batchIndex, batchLogs);
 
@@ -2041,6 +2041,7 @@ export class Model extends Container implements tfc.InferenceModel {
           for (let i = 0; i < outLabels.length; ++i) {
             const label = outLabels[i];
             const out = outs[i];
+            // console.log(`label = ${label}, out = `, out);  // DEBUG
             batchLogs[label] = out;
             tfc.keep(out);
           }
