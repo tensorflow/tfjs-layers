@@ -288,7 +288,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expect(epochEndValAccs[1]).toBeCloseTo(1);
   });
 
-  fit('Memory leak check with metric and validation', async () => {
+  it('Memory leak check with metric and validation', async () => {
     const model = createDenseModel();
     model.compile(
         {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});

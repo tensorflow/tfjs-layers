@@ -179,13 +179,9 @@ export class CallbackList {
     if (logs == null) {
       logs = {};
     }
-    // // DEBUG
-    // console.log(`this.callbacks.length = ${this.callbacks.length}`);
     await resolveScalarsInLogs(logs);
     for (const callback of this.callbacks) {
-      // console.log('Invoking onBatchEnd of ', callback);  // DEBUG
       await callback.onBatchEnd(batch, logs);
-      // console.log('Done invocation.');  // DEBUG
     }
   }
 

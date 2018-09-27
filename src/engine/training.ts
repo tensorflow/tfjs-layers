@@ -545,7 +545,6 @@ export class Model extends Container implements tfc.InferenceModel {
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [0]}
    */
   compile(config: ModelCompileConfig): void {
-    // console.log('In compile');  // DEBUG
     if (config.loss == null) {
       config.loss = [];
     }
@@ -744,10 +743,6 @@ export class Model extends Container implements tfc.InferenceModel {
     // Porting Notes: Given the imperative backend of tfjs-core,
     //   there is no need for constructing the symbolic graph and placeholders.
     this.collectedTrainableWeights = this.trainableWeights;
-    // DEBUG
-    // console.log(
-    //     'Set this.collectedTrainableWeights:',
-    //     this.collectedTrainableWeights);
   }
 
   /**
@@ -1271,9 +1266,6 @@ export class Model extends Container implements tfc.InferenceModel {
         return totalLoss as Scalar;
       };
 
-      // console.log(
-      //     'In fitDataset(): this.collectedTrainableWeights:',
-      //     this.collectedTrainableWeights);  // DEBUG
       const variables = this.collectedTrainableWeights.map(
           param => param.read() as tfc.Variable);
       const returnCost = true;

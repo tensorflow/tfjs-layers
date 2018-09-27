@@ -21,12 +21,15 @@ import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 
 import {Dataset, TensorMap, TensorOrTensorMap} from './dataset_stub';
 
+/**
+ * Interface configuration model training based on data as a dataset object.
+ */
 export interface ModelFitDatasetConfig<T extends TensorContainer> {
   /**
    * Total number of steps (batches of samples) before
    * declaring one epoch finished and starting the next epoch. It should
    * typically be equal to th enumber of samples of your dataset divided by
-   * the batch size, so that fitDataset() call can utilize the entire dataset.
+   * the batch size, so that `fitDataset`() call can utilize the entire dataset.
    */
   stepsPerEpoch: number;
 
@@ -78,13 +81,14 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
   /**
    * Optional batch size for validation.
    *
-   * Used only if validationData is an array of `Tensor` objects, i.e., not
+   * Used only if `validationData` is an array of `Tensor` objects, i.e., not
    * a dataset object.
    */
   batchSize?: number;
 
   /**
    * Only relevant if `stepsPerEpoch` is specified.
+   *
    * Total number of steps (batches of samples) to validate before stopping.
    */
   validationSteps?: number;

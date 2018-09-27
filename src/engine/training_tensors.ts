@@ -22,7 +22,7 @@ import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 import {range} from '../utils/math_utils';
 
 /**
- * Interface for specifying data to fit a model to data.
+ * Interface configuration model training based on data as `Tensor`s.
  */
 export interface ModelFitConfig {
   /**
