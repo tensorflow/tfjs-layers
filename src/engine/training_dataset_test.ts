@@ -174,6 +174,81 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
   });
 
+  it('1 input, 1 output, 1 metric, tensor validation, callback', async () => {
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 2;
+    const stepsPerEpoch = 3;
+    const presetXTensorsFunc = () =>
+        [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+    const presetYTensorsFunc = () =>
+        [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: stepsPerEpoch * epochs,
+      presetXTensorsFunc,
+      presetYTensorsFunc
+    });
+    const valXs = tfc.zeros([batchSize * 2, 1]);
+    const valYs = tfc.zeros([batchSize * 2, 1]);
+
+    // Do a burn-in call to account for initialization of cached
+    // tensors (for the memory-leak check below).
+    await model.fitDataset(
+        dataset, {stepsPerEpoch, epochs: 1, validationData: [valXs, valYs]});
+    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+
+    // const numTensors0 = tfc.memory().numTensors;
+    const epochEndValLosses: number[] = [];
+    const epochEndValAccs: number[] = [];
+    const history = await model.fitDataset(dataset, {
+      stepsPerEpoch,
+      epochs,
+      validationData: [valXs, valYs],
+      callbacks: {
+        onEpochEnd: async (epoch, logs) => {
+          epochEndValLosses.push(logs.val_loss);
+          epochEndValAccs.push(logs.val_acc);
+        }
+      }
+    });
+    // const numTensors1 = tfc.memory().numTensors;
+    // expect(numTensors1).toEqual(numTensors0);  // TODO(cais): Restore.
+    expect(Object.keys(history.history).sort()).toEqual([
+      'loss', 'acc', 'val_loss', 'val_acc'
+    ].sort());
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(0.923649);
+    expect(history.history.loss[1]).toBeCloseTo(0.722993);
+    expect(history.history.acc.length).toEqual(2);
+    expect(history.history.acc[0]).toBeCloseTo(0);
+    expect(history.history.acc[1]).toBeCloseTo(0);
+    expect(history.history.val_loss.length).toEqual(2);
+    expect(history.history.val_loss[0]).toBeCloseTo(0.003321);
+    expect(history.history.val_loss[1]).toBeCloseTo(0.011799);
+    expect(history.history.val_acc.length).toEqual(2);
+    expect(history.history.val_acc[0]).toBeCloseTo(1);
+    expect(history.history.val_acc[1]).toBeCloseTo(1);
+    expectArraysClose(model.getWeights()[0], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+
+    expect(epochEndValLosses.length).toEqual(2);
+    expect(epochEndValLosses[0]).toBeCloseTo(0.003321);
+    expect(epochEndValLosses[1]).toBeCloseTo(0.011799);
+    expect(epochEndValAccs.length).toEqual(2);
+    expect(epochEndValAccs[0]).toBeCloseTo(1);
+    expect(epochEndValAccs[1]).toBeCloseTo(1);
+  });
+
   // Refence Python tf.keras code:
   //
   // ```py
@@ -302,7 +377,6 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expect(epochEndAccs[1]).toBeCloseTo(0);
     expectArraysClose(
         batchEndLosses, [1, 0.9216, 0.849347, 0.782758, 0.721390, 0.664832]);
-    expectArraysClose(batchEndAccs, [0, 0, 0, 0, 0, 0]);
   });
 
   // Reference Python tf.keras code:

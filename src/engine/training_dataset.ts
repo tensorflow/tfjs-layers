@@ -76,7 +76,15 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
          tfc.Tensor|tfc.Tensor[]]|Dataset<T>;
 
   /**
-   * Only relevant if `stepsPerEpoch` is specified and is a dataset object.
+   * Optional batch size for validation.
+   *
+   * Used only if validationData is an array of `Tensor` objects, i.e., not
+   * a dataset object.
+   */
+  batchSize?: number;
+
+  /**
+   * Only relevant if `stepsPerEpoch` is specified.
    * Total number of steps (batches of samples) to validate before stopping.
    */
   validationSteps?: number;
@@ -163,15 +171,30 @@ function standardizeDataIteratorOutput(
   // TODO(cais): Handle case in which ys is a TensorMap.
 }
 
+function standardizeValidationData<T extends TensorContainer>(
+    data:
+        [
+          tfc.Tensor|tfc.Tensor[], tfc.Tensor|tfc.Tensor[]
+        ]|[tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[],
+           tfc.Tensor | tfc.Tensor[]]|
+    Dataset<T>): {xs: tfc.Tensor|tfc.Tensor[], ys: tfc.Tensor|tfc.Tensor[]} {
+  if (!Array.isArray(data)) {
+    throw new NotImplementedError(
+        'Validation with dataset is not implemented yet.');
+  } else {
+    if (data.length === 3) {
+      throw new NotImplementedError(
+          'Validation with sample weights is not implemented yet.');
+    }
+  }
+  return {xs: data[0], ys: data[1]};
+}
+
 export async function fitDataset<T extends TensorContainer>(
     // Type `model` as `any` here to avoid circular dependency w/ training.ts.
     // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>,
     config: ModelFitDatasetConfig<T>): Promise<History> {
-  // console.log(
-  //     'Calling this.makeTrainFunction():
-  //     this.collectedTrainableWeights:', this.collectedTrainableWeights);
-  //     // DEBUG
   tfc.util.assert(
       model.optimizer != null,
       'You must compile a model before training/testing. Use ' +
@@ -200,17 +223,21 @@ export async function fitDataset<T extends TensorContainer>(
 
   try {
     const doValidation = config.validationData != null;
+    let valXs: tfc.Tensor|tfc.Tensor[];
+    let valYs: tfc.Tensor|tfc.Tensor[];
     if (doValidation) {
-      throw new NotImplementedError(
-          'Support for validation is not implement for fitDataset yet.');
+      const validationData = standardizeValidationData(config.validationData);
+      valXs = validationData.xs;
+      valYs = validationData.ys;
     }
 
     const trainFunction = model.makeTrainFunction();
-    const outLabels = model.getDedupedMetricsNames();
+    const outLabels = model.getDedupedMetricsNames() as string[];
 
     let callbackMetrics: string[];
     if (doValidation) {
-      throw new NotImplementedError('TODO(cais): Implement validatoin');
+      callbackMetrics =
+          outLabels.slice().concat(outLabels.map(n => 'val_' + n));
     } else {
       // valFunction = null;
       // valIns = [];
@@ -223,7 +250,6 @@ export async function fitDataset<T extends TensorContainer>(
         config.stepsPerEpoch,
         null,  // Batch size determined by the dataset itself.
         doValidation, callbackMetrics);
-    // console.log('fitDataset(): callbackList = ', callbackList);  // DEBUG
     model.history = history;
 
     await callbackList.onTrainBegin();
@@ -252,7 +278,6 @@ export async function fitDataset<T extends TensorContainer>(
         const batchLogs: UnresolvedLogs = {};
         batchLogs['batch'] = batchIndex;
         batchLogs['size'] = xsAndYs[0].shape[0];
-        // console.log(`batchLogs = ${JSON.stringify(batchLogs)}`);  // DEBUG
 
         callbackList.onBatchBegin(batchIndex, batchLogs);
 
@@ -260,13 +285,9 @@ export async function fitDataset<T extends TensorContainer>(
         // TODO(cais): Take care of multiple inputs and multiple outputs.
         const outs = trainFunction(xsAndYs);
         tfc.dispose(xsAndYs);
-        // for (let i = 0; i < this.metricsNames.length; ++i) {
-        //   batchLogs[this.metricsNames[i]] = outs[i];
-        // }
         for (let i = 0; i < outLabels.length; ++i) {
           const label = outLabels[i];
           const out = outs[i];
-          // console.log(`label = ${label}, out = `, out);  // DEBUG
           batchLogs[label] = out;
           tfc.keep(out);
         }
@@ -276,11 +297,23 @@ export async function fitDataset<T extends TensorContainer>(
 
         batchIndex++;
         stepsDone++;
+
+        // Epoch finished. Perform validation.
+        if (stepsDone >= config.stepsPerEpoch && doValidation) {
+          // TODO(cais): Implement validation based on dataset once
+          //   evaluateDataset is implemented.
+          const valOuts = model.evaluate(valXs, valYs, {
+            batchSize: config.batchSize == null ? 32 : config.batchSize,
+            verbose: 0
+          });
+          for (let i = 0; i < model.metricsNames.length; ++i) {
+            epochLogs[`val_${model.metricsNames[i]}`] = valOuts[i];
+          }
+        }
         if (model.stopTraining_) {
           break;
         }
       }
-      // console.log('Calling onEpochEnd: epoch = ', epoch);  // DEBUG
       await callbackList.onEpochEnd(epoch, epochLogs);
       epoch++;
       if (model.stopTraining_) {
