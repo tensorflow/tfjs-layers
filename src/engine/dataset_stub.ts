@@ -108,8 +108,10 @@ class FakeNumericIterator extends
   private yBatchShape: Shape|{[name: string]: Shape};
   private numBatches: number;
   private batchCount: number;
-  private presetXTensors: () => tfc.Tensor[] | {[name: string]: tfc.Tensor[]};
-  private presetYTensors: () => tfc.Tensor[] | {[name: string]: tfc.Tensor[]};
+  private presetXTensorsFunc: () => tfc.Tensor[] |
+      {[name: string]: tfc.Tensor[]};
+  private presetYTensorsFunc: () => tfc.Tensor[] |
+      {[name: string]: tfc.Tensor[]};
   private presetXTensorValues: tfc.Tensor[]|{[name: string]: tfc.Tensor[]};
   private presetYTensorValues: tfc.Tensor[]|{[name: string]: tfc.Tensor[]};
   private presetTensorIndex = 0;
@@ -120,13 +122,13 @@ class FakeNumericIterator extends
     this.yBatchShape = mergeBatchSizeAndShape(config.batchSize, config.yShape);
     this.numBatches = config.numBatches;
     this.batchCount = 0;
-    this.presetXTensors = config.presetXTensorsFunc;
-    this.presetYTensors = config.presetYTensorsFunc;
+    this.presetXTensorsFunc = config.presetXTensorsFunc;
+    this.presetYTensorsFunc = config.presetYTensorsFunc;
 
     // Sanity check on the preset tensors.
     tfc.util.assert(
-        this.presetXTensors == null && this.presetYTensors == null ||
-            this.presetXTensors != null && this.presetYTensors != null,
+        this.presetXTensorsFunc == null && this.presetYTensorsFunc == null ||
+            this.presetXTensorsFunc != null && this.presetYTensorsFunc != null,
         'presetXTensors and presetYTensors must be both null/undefined ' +
             'or both set.');
   }
@@ -134,7 +136,7 @@ class FakeNumericIterator extends
   async next():
       Promise<IteratorResult<[TensorOrTensorMap, TensorOrTensorMap]>> {
     const done = ++this.batchCount > this.numBatches;
-    if (this.presetXTensors == null) {
+    if (this.presetXTensorsFunc == null) {
       // Generate data randomly.
       return {
         done,
@@ -147,8 +149,8 @@ class FakeNumericIterator extends
     } else {
       // Use preset tensors.
       if ((this.batchCount - 1) % this.numBatches === 0) {
-        this.presetXTensorValues = this.presetXTensors();
-        this.presetYTensorValues = this.presetYTensors();
+        this.presetXTensorValues = this.presetXTensorsFunc();
+        this.presetYTensorValues = this.presetYTensorsFunc();
         this.presetTensorIndex = 0;
       }
       const index = this.presetTensorIndex++;
