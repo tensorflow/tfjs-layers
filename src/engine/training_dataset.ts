@@ -155,8 +155,13 @@ function standardizeDataIteratorOutput(
             `expects the input dataset to generate a dictionary of tensors ` +
             ` (with keys ${JSON.stringify(model.inputNames)}, ` +
             `but received a single tensor.`);
+    tfc.util.assert(
+        xs.shape[0] === ys.shape[0],
+        `Mismatch in batch size between x and y tensors (${xs.shape[0]} vs. ` +
+            `${ys.shape[0]})`);
     return [xs, ys];
   } else {
+    let batchSize: number;
     xs = xs as TensorMap;
     const flattendXs: tfc.Tensor[] = [];
     // Check that all the required keys are available and all the batch sizes
@@ -168,6 +173,14 @@ function standardizeDataIteratorOutput(
             `input key '${inputName}'.`);
       }
       flattendXs.push(xs[inputName]);
+      if (batchSize == null) {
+        batchSize = xs[inputName].shape[0];
+      } else {
+        tfc.util.assert(
+            xs[inputName].shape[0] === batchSize,
+            `Mismatch in batch size between x and y tensors ` +
+                `(${xs[inputName].shape[0]} vs. ${ys.shape[0]})`);
+      }
     }
     return flattendXs.concat(ys);
   }
