@@ -20,6 +20,7 @@ export {CallbackList, CustomCallback, CustomCallbackConfig, History} from './bas
 export {Callback} from './callbacks';
 export {InputSpec, SymbolicTensor} from './engine/topology';
 export {Model, ModelCompileConfig, ModelEvaluateConfig, ModelFitConfig} from './engine/training';
+export {ModelFitDatasetConfig} from './engine/training_dataset';
 
 export {input, loadModel, model, registerCallbackConstructor, sequential} from './exports';
 // tslint:disable-next-line:max-line-length
