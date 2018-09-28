@@ -19,6 +19,7 @@ import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {Layer, LayerConfig, SymbolicTensor} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
+import {l2Normalize} from '../losses';
 import {Kwargs, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as mathUtils from '../utils/math_utils';
@@ -872,6 +873,215 @@ export function concatenate(config?: SymbolicTensor[]|Tensor[]|
   }
 }
 
-// TODO(cais): Add class Dot.
+export interface DotLayerConfig extends LayerConfig {
+  /**
+   * Axis or axes along which the dot product will be taken.
+   *
+   * Integer or an Array of integers.
+   */
+  axes: number|number[];
+
+  /**
+   * Whether to L2-normalize samples along the dot product axis
+   * before taking the dot product.
+   *
+   * If set to `true`, the output of the dot product isthe cosine
+   * proximity between the two samples.
+   */
+  normalize?: boolean;
+}
+
+function normalizeAxis(axis: number, dim: number): number {
+  while (axis < 0) {
+    axis += dim;
+  }
+  return axis;
+}
+
+function batchDot(x: Tensor, y: Tensor, axes: number|number[]): Tensor {
+  if (typeof axes === 'number') {
+    axes = [axes, axes];
+  }
+
+  if (x.dtype === 'complex64' || y.dtype === 'complex64') {
+    throw new NotImplementedError(
+        'batchDot is not implemented for complex64-type Tensors yet.');
+  }
+
+  const xNDim = x.shape.length;
+  const yNDim = y.shape.length;
+  if (axes == null) {
+    axes = [xNDim - 1, yNDim - 2];
+  }
+  let diff: number;
+  if (xNDim > yNDim) {
+    diff = xNDim - yNDim;
+    const diffShape: Shape = [];
+    for (let i = 0; i < diff; ++i) {
+      diffShape.push(1);
+    }
+    y = y.reshape(y.shape.concat(diffShape));
+  } else if (yNDim > xNDim) {
+    diff = yNDim - xNDim;
+    const diffShape: Shape = [];
+    for (let i = 0; i < diff; ++i) {
+      diffShape.push(1);
+    }
+    x = x.reshape(x.shape.concat(diffShape));
+  } else {
+    diff = 0;
+  }
+
+  let out: Tensor;
+  if (x.shape.length === 2 && y.shape.length === 2) {
+    if (axes[0] === axes[1]) {
+      out = x.mulStrict(y).sum(axes[0]);
+    } else {
+      out = x.transpose([1, 0]).mulStrict(y).sum(axes[1]);
+    }
+  } else {
+    const adjX = axes[0] === x.shape.length - 1 ? null : true;
+    const adjY = axes[1] === y.shape.length - 1 ? true : null;
+    out = x.matMul(y, adjX, adjY);
+  }
+
+  if (diff > 0) {
+    let idx: number;
+    if (xNDim > yNDim) {
+      idx = xNDim + yNDim - 3;
+    } else {
+      idx = xNDim - 1;
+    }
+    const squeezeAxes: number[] = [];
+    for (let i = idx; i < idx + diff; ++i) {
+      squeezeAxes.push(i);
+    }
+    out = out.squeeze(squeezeAxes);
+  }
+  if (out.shape.length === 1) {
+    out = out.expandDims(1);
+  }
+  return out;
+}
+
+/**
+ * Layer that computes a dot product between samples in two tensors.
+ *
+ * E.g., if applied to a list of two tensors `a` and `b` both of shape
+ * `[batchSize, n]`, the output will be a tensor of shape `[batchSize, 1]`,
+ * where each entry at index `[i, 0]` will be the dot product between
+ * `a[i, :]` and `b[i, :]`.
+ *
+ * TODO(cais): Add code snippet.
+ *
+ */
+export class Dot extends Merge {
+  static className = 'Add';
+
+  private axes: number|number[];
+  private normalize: boolean;
+
+  constructor(config: DotLayerConfig) {
+    super(config);
+    this.axes = config.axes;
+    this.normalize = config.normalize == null ? false : config.normalize;
+    this.supportsMasking = true;
+    this.reshapeRequired = false;
+  }
+
+  build(inputShape: Shape|Shape[]): void {
+    tfc.util.assert(
+        Array.isArray(inputShape) && inputShape.length === 2 &&
+            Array.isArray(inputShape[0]) && Array.isArray(inputShape[1]),
+        'A `Dot` layer should be called on a list of exactly 2 inputs.');
+    const shape1 = inputShape[0] as Shape;
+    const shape2 = inputShape[1] as Shape;
+    let axes: number[];  // TODO(cais): Refactor into a function?
+    if (!Array.isArray(this.axes)) {
+      // `this.axes` is a single integer.
+      axes = [
+        normalizeAxis(this.axes, shape1.length),
+        normalizeAxis(this.axes, shape2.length)
+      ];
+      // `this.axes` is an Array of integers.
+    } else {
+      axes = this.axes;
+    }
+    if (shape1[axes[0]] !== shape2[axes[1]]) {
+      throw new ValueError(
+          `Dimension incompability: ${shape1[axes[0]]} !== ${shape2[axes[1]]}`);
+    }
+  }
+
+  protected mergeFunction(inputs: Tensor[]): Tensor {
+    if (inputs.length !== 2) {
+      throw new ValueError(
+          'A `Dot` layer must be called on exactly 2 inputs, ' +
+          `but received ${inputs.length} input(s).`);
+    }
+
+    let x1 = inputs[0];
+    let x2 = inputs[1];
+    let axes: number[];
+    if (!Array.isArray(this.axes)) {
+      axes = [
+        normalizeAxis(this.axes, x1.shape.length),
+        normalizeAxis(this.axes, x2.shape.length)
+      ];
+    } else {
+      axes = [];
+      for (let i = 0; i < this.axes.length; ++i) {
+        axes.push(normalizeAxis(this.axes[i], inputs[i].shape.length));
+      }
+    }
+    if (this.normalize) {
+      x1 = l2Normalize(x1, axes[0]);
+      x2 = l2Normalize(x2, axes[1]);
+    }
+    return batchDot(x1, x2, axes);
+  }
+
+  computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
+    tfc.util.assert(
+        Array.isArray(inputShape) && inputShape.length === 2 &&
+            Array.isArray(inputShape[0]) && Array.isArray(inputShape[1]),
+        'A `Dot` layer should be called on a list of exactly 2 inputs.');
+    const shape1 = inputShape[0] as Shape;
+    const shape2 = inputShape[1] as Shape;
+    console.log('shape1:', shape1);  // DEBUG
+    console.log('shape2:', shape2);  // DEBUG
+    let axes: number[];              // TODO(cais): Refactor into a function?
+    if (!Array.isArray(this.axes)) {
+      // `this.axes` is a single integer.
+      axes = [
+        normalizeAxis(this.axes, shape1.length),
+        normalizeAxis(this.axes, shape2.length)
+      ];
+      // `this.axes` is an Array of integers.
+    } else {
+      axes = this.axes;
+    }
+    shape1.splice(axes[0], 1);
+    shape2.splice(axes[1], 1);
+    shape2.splice(0, 1);
+    const outputShape = shape1.concat(shape2);
+    if (outputShape.length === 1) {
+      outputShape.push(1);
+    }
+    return outputShape;
+  }
+
+  // TODO(cais): Implement computeMask();
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
+      'axes': this.axes,
+      'normalize': this.normalize
+    };
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+}
 
 // TODO(cais): Add functional interfaces for the merge layers.

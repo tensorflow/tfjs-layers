@@ -551,3 +551,27 @@ describeMathCPU('Deserialize Merge Layers', () => {
     expect(model.outputs[0].shape).toEqual([null, 8]);
   });
 });
+
+describeMathCPU('Dot-Layer: Symbolic', () => {
+  it('2D x 2D', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 8], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 8], null, [], null);
+    const y1 = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y1.shape).toEqual([null, 1]);
+    const y2 = tfl.layers.dot({axes: 1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 1]);
+  });
+
+  it('3D x 3D', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const y1 = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y1.shape).toEqual([null, 2, 2]);
+    console.log('====');  // DEBUG
+    const y2 = tfl.layers.dot({axes: 2}).apply([x1, x2]) as tfl.SymbolicTensor;
+    console.log('y2.shape:', y2.shape);      // DEBUG
+    expect(y2.shape).toEqual([null, 2, 2]);  // TODO(cais): Fix test.
+  });
+
+  // TODO(cais): Cover incorrect number of inputs.
+});
