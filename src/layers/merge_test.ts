@@ -553,6 +553,21 @@ describeMathCPU('Deserialize Merge Layers', () => {
 });
 
 describeMathCPU('Dot-Layer: Symbolic', () => {
+  // Example refernce Python Keras code:
+  //
+  // ```py
+  // import keras
+  //
+  // x1 = keras.Input(shape=[3, 4])
+  // x2 = keras.Input(shape=[3])
+  // dot_layer = keras.layers.Dot(1)
+  // y = dot_layer([x1, x2])
+  //
+  // print(x1.shape)
+  // print(x2.shape)
+  // print(y.shape)
+  // ```
+
   it('2D x 2D', () => {
     const x1 = new tfl.SymbolicTensor('float32', [null, 8], null, [], null);
     const x2 = new tfl.SymbolicTensor('float32', [null, 8], null, [], null);
@@ -562,16 +577,100 @@ describeMathCPU('Dot-Layer: Symbolic', () => {
     expect(y2.shape).toEqual([null, 1]);
   });
 
-  it('3D x 3D', () => {
+  it('3D x 3D, axes = -1', () => {
     const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
     const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
-    const y1 = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
-    expect(y1.shape).toEqual([null, 2, 2]);
-    console.log('====');  // DEBUG
-    const y2 = tfl.layers.dot({axes: 2}).apply([x1, x2]) as tfl.SymbolicTensor;
-    console.log('y2.shape:', y2.shape);      // DEBUG
-    expect(y2.shape).toEqual([null, 2, 2]);  // TODO(cais): Fix test.
+    const y = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y.shape).toEqual([null, 2, 2]);
   });
 
-  // TODO(cais): Cover incorrect number of inputs.
+  it('3D x 3D, axes = 1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: 1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 3, 3]);
+  });
+
+  it('3D x 3D, axes = 2', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: 2}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 2, 2]);
+  });
+
+  it('2D x 3D, axes = -1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 2]);
+  });
+
+  it('2D x 3D, axes = 1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 3, 4], null, [], null);
+    const y2 = tfl.layers.dot({axes: 1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 4]);
+  });
+
+  it('3D x 2D, axes = -1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 2]);
+  });
+
+  it('3D x 2D, axes = -1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 3, 4], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: 1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 4]);
+  });
+
+  it('4D x 4D, axes = -1', () => {
+    const x1 = new tfl.SymbolicTensor(
+        'float32', [null, 2, 3, 4], null, [], null);
+    const x2 = new tfl.SymbolicTensor(
+        'float32', [null, 2, 3, 4], null, [], null);
+    const y = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y.shape).toEqual([null, 2, 3, 2, 3]);
+  });
+
+  it('Dimension mismatch leads to error', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 4], null, [], null);
+    expect(() =>  tfl.layers.dot({axes: -1}).apply([x1, x2]))
+        .toThrowError('Dimension incompatibility: 3 !== 4');
+  });
+
+  it('Incorrect number of inputs leads to error', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x3 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    expect(() => tfl.layers.dot({axes: -1}).apply([x1]))
+        .toThrowError(/should be called on a list of exactly 2 inputs/);
+    expect(() => tfl.layers.dot({axes: -1}).apply(x1))
+        .toThrowError(/should be called on a list of exactly 2 inputs/);
+    expect(() => tfl.layers.dot({axes: -1}).apply([x1, x2, x3]))
+        .toThrowError(/should be called on a list of exactly 2 inputs/);
+  });
+
+  it('Serialization round trip', () => {
+    const layer = tfl.layers.dot({axes: -1, normalize: true});
+    const pythonicConfig = convertTsToPythonic(layer.getConfig());
+    // tslint:disable-next-line:no-any
+    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+    const layerPrime = tfl.layers.dot(tsConfig);
+    expect(layerPrime.getConfig().axes).toEqual(-1);
+    expect(layerPrime.getConfig().normalize).toEqual(true);
+  });
+});
+
+describeMathCPUAndGPU('Dot-Layer: Tensor', () => {
+  it('2D x 2D, axis = -1', () => {
+    const x1 = tensor2d([[10, 20], [30, 40]]);
+    const x2 = tensor2d([[-1, -2], [-3, -4]]);
+    const addLayer = tfl.layers.dot({axes: -1});
+    const y = addLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-50], [-250]]));
+  });
 });

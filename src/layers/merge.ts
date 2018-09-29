@@ -1009,7 +1009,8 @@ export class Dot extends Merge {
     }
     if (shape1[axes[0]] !== shape2[axes[1]]) {
       throw new ValueError(
-          `Dimension incompability: ${shape1[axes[0]]} !== ${shape2[axes[1]]}`);
+          `Dimension incompatibility: ` +
+          `${shape1[axes[0]]} !== ${shape2[axes[1]]}`);
     }
   }
 
@@ -1048,8 +1049,6 @@ export class Dot extends Merge {
         'A `Dot` layer should be called on a list of exactly 2 inputs.');
     const shape1 = inputShape[0] as Shape;
     const shape2 = inputShape[1] as Shape;
-    console.log('shape1:', shape1);  // DEBUG
-    console.log('shape2:', shape2);  // DEBUG
     let axes: number[];              // TODO(cais): Refactor into a function?
     if (!Array.isArray(this.axes)) {
       // `this.axes` is a single integer.
@@ -1057,8 +1056,8 @@ export class Dot extends Merge {
         normalizeAxis(this.axes, shape1.length),
         normalizeAxis(this.axes, shape2.length)
       ];
-      // `this.axes` is an Array of integers.
     } else {
+      // `this.axes` is an Array of integers.
       axes = this.axes;
     }
     shape1.splice(axes[0], 1);
