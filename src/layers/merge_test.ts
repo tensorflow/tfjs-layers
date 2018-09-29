@@ -666,6 +666,25 @@ describeMathCPU('Dot-Layer: Symbolic', () => {
 });
 
 describeMathCPUAndGPU('Dot-Layer: Tensor', () => {
+  // Example reference Python Keras code:
+  //
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // x1 = keras.Input(shape=[2])
+  // x2 = keras.Input(shape=[2])
+  // dot_layer = keras.layers.Dot(-11)
+  // y = dot_layer([x1, x2])
+  //
+  // model = keras.Model([x1, x2], y)
+  // model.summary()
+  //
+  // xs1 = np.array([[10, 20], [30, 40]], dtype=np.float32)
+  // xs2 = np.array([[-1, -2], [-3, -4]], dtype=np.float32)
+  // print(model.predict([xs1, xs2]))
+  // ```
+
   it('2D x 2D, axis = -1', () => {
     const x1 = tensor2d([[10, 20], [30, 40]]);
     const x2 = tensor2d([[-1, -2], [-3, -4]]);
