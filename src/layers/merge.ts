@@ -228,7 +228,11 @@ export abstract class Merge extends Layer {
     return outputShape;
   }
 
-  // TODO(cais): Implement computeMask();
+  computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
+    // TODO(cais): Implement computeMask();
+    throw new NotImplementedError(
+        'computeMask has not been implemented for Merge yet');
+  }
 }
 
 /**
@@ -800,7 +804,11 @@ export class Concatenate extends Merge {
     return outputShape;
   }
 
-  // TODO(cais): Implement computeMask();
+  computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
+    // TODO(cais): Implement computeMask();
+    throw new NotImplementedError(
+        'computeMask has not been implemented for Concatenate yet');
+  }
 
   getConfig(): serialization.ConfigDict {
     const config: serialization.ConfigDict = {
@@ -1073,7 +1081,11 @@ export class Dot extends Merge {
     return outputShape;
   }
 
-  // TODO(cais): Implement computeMask();
+  computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
+    // TODO(cais): Implement computeMask();
+    throw new NotImplementedError(
+        'computeMask has not been implemented for Dot yet');
+  }
 
   getConfig(): serialization.ConfigDict {
     const config: serialization.ConfigDict = {
