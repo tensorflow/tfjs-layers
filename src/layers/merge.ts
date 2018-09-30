@@ -972,8 +972,16 @@ function batchDot(x: Tensor, y: Tensor, axes: number|number[]): Tensor {
  * where each entry at index `[i, 0]` will be the dot product between
  * `a[i, :]` and `b[i, :]`.
  *
- * TODO(cais): Add code snippet.
+ * Example:
  *
+ * ```js
+ * const dotLayer = tf.layers.dot({axis: -1});
+ * const x1 = tf.tensor2d([[10, 20], [30, 40]]);
+ * const x2 = tf.tensor2d([[-1, -2], [-3, -4]]);
+ *
+ * // Invoke the layer's apply() method in eager (imperative) mode.
+ * const y = dotLayer.apply([x1, x2]);
+ * ```
  */
 export class Dot extends Merge {
   static className = 'Add';
@@ -996,17 +1004,7 @@ export class Dot extends Merge {
         'A `Dot` layer should be called on a list of exactly 2 inputs.');
     const shape1 = inputShape[0] as Shape;
     const shape2 = inputShape[1] as Shape;
-    let axes: number[];  // TODO(cais): Refactor into a function?
-    if (!Array.isArray(this.axes)) {
-      // `this.axes` is a single integer.
-      axes = [
-        normalizeAxis(this.axes, shape1.length),
-        normalizeAxis(this.axes, shape2.length)
-      ];
-      // `this.axes` is an Array of integers.
-    } else {
-      axes = this.axes;
-    }
+    const axes = this.normalizeAxes(shape1, shape2);
     if (shape1[axes[0]] !== shape2[axes[1]]) {
       throw new ValueError(
           `Dimension incompatibility: ` +
@@ -1042,14 +1040,8 @@ export class Dot extends Merge {
     return batchDot(x1, x2, axes);
   }
 
-  computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    tfc.util.assert(
-        Array.isArray(inputShape) && inputShape.length === 2 &&
-            Array.isArray(inputShape[0]) && Array.isArray(inputShape[1]),
-        'A `Dot` layer should be called on a list of exactly 2 inputs.');
-    const shape1 = inputShape[0] as Shape;
-    const shape2 = inputShape[1] as Shape;
-    let axes: number[];              // TODO(cais): Refactor into a function?
+  private normalizeAxes(shape1: Shape, shape2: Shape): number[] {
+    let axes: number[];
     if (!Array.isArray(this.axes)) {
       // `this.axes` is a single integer.
       axes = [
@@ -1060,6 +1052,17 @@ export class Dot extends Merge {
       // `this.axes` is an Array of integers.
       axes = this.axes;
     }
+    return axes;
+  }
+
+  computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
+    tfc.util.assert(
+        Array.isArray(inputShape) && inputShape.length === 2 &&
+            Array.isArray(inputShape[0]) && Array.isArray(inputShape[1]),
+        'A `Dot` layer should be called on a list of exactly 2 inputs.');
+    const shape1 = inputShape[0] as Shape;
+    const shape2 = inputShape[1] as Shape;
+    const axes = this.normalizeAxes(shape1, shape2);
     shape1.splice(axes[0], 1);
     shape2.splice(axes[1], 1);
     shape2.splice(0, 1);

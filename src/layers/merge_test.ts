@@ -688,8 +688,70 @@ describeMathCPUAndGPU('Dot-Layer: Tensor', () => {
   it('2D x 2D, axis = -1', () => {
     const x1 = tensor2d([[10, 20], [30, 40]]);
     const x2 = tensor2d([[-1, -2], [-3, -4]]);
-    const addLayer = tfl.layers.dot({axes: -1});
-    const y = addLayer.apply([x1, x2]) as Tensor;
+    const dotLayer = tfl.layers.dot({axes: -1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
     expectTensorsClose(y, tensor2d([[-50], [-250]]));
+  });
+
+  it('2D x 2D, axis = 1', () => {
+    const x1 = tensor2d([[10, 20], [30, 40]]);
+    const x2 = tensor2d([[-1, -2], [-3, -4]]);
+    const dotLayer = tfl.layers.dot({axes: 1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-50], [-250]]));
+  });
+
+  it('3D x 2D, axis = -1', () => {
+    const x1 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const x2 = tensor2d([[-1, -2], [-3, -4]]);
+    const dotLayer = tfl.layers.dot({axes: -1});
+    const y1 = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y1, tensor2d([[-50, -110], [-24, -10]]));
+    const x3 = tensor2d([[1, 2], [3, 4]]);
+    const y2 = dotLayer.apply([x1, x3]) as Tensor;
+    expectTensorsClose(y2, tensor2d([[50, 110], [24, 10]]));
+  });
+
+  it('2D x 3D, axis = -1', () => {
+    const x1 = tensor2d([[-1, -2], [-3, -4]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: -1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-50, -110], [-24, -10]]));
+  });
+
+  it('2D x 3D, axis = 1', () => {
+    const x1 = tensor2d([[-1, -2], [-3, -4]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: 1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-70, -100], [-20, -13]]));
+  });
+
+  it('3D x 3D, axis = -1', () => {
+    const x1 = tensor3d([[[-1, -2], [-3, -4]], [[5, 6], [7, 8]]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: -1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor3d(
+        [[[-50, -110], [-110, -250]], [[38, 16], [52, 22]]]));
+  });
+
+  it('3D x 3D, axis = 1', () => {
+    const x1 = tensor3d([[[-1, -2], [-3, -4]], [[5, 6], [7, 8]]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: 1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor3d(
+        [[[-100, -140], [-140, -200]], [[34, 22], [40, 26]]]));
+  });
+
+  it('3D x 3D, axis = [1, 2]', () => {
+    const x1 = tensor3d([[[-1, -2], [-3, -4]], [[5, 6], [7, 8]]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: [1, 2]});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor3d(
+        [[[-70, -150], [-100, -220]], [[41, 17], [48, 20]]]));
   });
 });
