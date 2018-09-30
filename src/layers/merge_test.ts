@@ -693,6 +693,14 @@ describeMathCPUAndGPU('Dot-Layer: Tensor', () => {
     expectTensorsClose(y, tensor2d([[-50], [-250]]));
   });
 
+  it('2D x 2D, axis = -1, normalize = true', () => {
+    const x1 = tensor2d([[10, 20], [30, 40]]);
+    const x2 = tensor2d([[-1, -2], [-4, -3]]);
+    const dotLayer = tfl.layers.dot({axes: -1, normalize: true});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-1], [-0.96]]));
+  });
+
   it('2D x 2D, axis = 1', () => {
     const x1 = tensor2d([[10, 20], [30, 40]]);
     const x2 = tensor2d([[-1, -2], [-3, -4]]);

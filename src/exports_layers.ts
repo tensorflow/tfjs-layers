@@ -401,7 +401,7 @@ export function multiply(config?: LayerConfig): Layer {
  *   configParamIndices: [0]
  * }
  */
-export function dot(config?: DotLayerConfig): Layer {
+export function dot(config: DotLayerConfig): Layer {
   return new Dot(config);
 }
 
