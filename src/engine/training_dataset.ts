@@ -28,10 +28,10 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
   /**
    * Total number of steps (batches of samples) before
    * declaring one epoch finished and starting the next epoch. It should
-   * typically be equal to th enumber of samples of your dataset divided by
+   * typically be equal to the number of samples of your dataset divided by
    * the batch size, so that `fitDataset`() call can utilize the entire dataset.
    */
-  stepsPerEpoch: number;
+  batchesPerEpoch: number;
 
   /**
    * The number of times to iterate over the training dataset.
@@ -227,10 +227,10 @@ export async function fitDataset<T extends TensorContainer>(
       `For fitDataset(), config.epochs is expected to be a positive ` +
           `integer, but got ${config.epochs}`);
   tfc.util.assert(
-      config.stepsPerEpoch != null && config.stepsPerEpoch > 0 &&
-          Number.isInteger(config.stepsPerEpoch),
+      config.batchesPerEpoch != null && config.batchesPerEpoch > 0 &&
+          Number.isInteger(config.batchesPerEpoch),
       `For fitDataset(), config.stepsPerEpoch is expected to be a ` +
-          `positive integer, but got ${config.stepsPerEpoch}`);
+          `positive integer, but got ${config.batchesPerEpoch}`);
 
   if (model.isTraining) {
     throw new Error(
@@ -262,7 +262,7 @@ export async function fitDataset<T extends TensorContainer>(
     const callbacks = standardizeCallbacks(config.callbacks);
     const {callbackList, history} = configureCallbacks(
         callbacks, config.yieldEvery, config.verbose, config.epochs, null, null,
-        config.stepsPerEpoch,
+        config.batchesPerEpoch,
         null,  // Batch size determined by the dataset itself.
         doValidation, callbackMetrics);
     model.history = history;
@@ -275,7 +275,7 @@ export async function fitDataset<T extends TensorContainer>(
       await callbackList.onEpochBegin(epoch);
       let stepsDone = 0;
       let batchIndex = 0;
-      while (stepsDone < config.stepsPerEpoch) {
+      while (stepsDone < config.batchesPerEpoch) {
         const iteratorOut = await dataIterator.next();
         if (iteratorOut.done) {
           console.warn(
@@ -283,7 +283,7 @@ export async function fitDataset<T extends TensorContainer>(
               'interrupting training. Make sure that your ' +
               'dataset can generate at least `stepsPerEpoch * epochs` ' +
               'batches (in this case, ' +
-              `${config.stepsPerEpoch * config.epochs} batches). ` +
+              `${config.batchesPerEpoch * config.epochs} batches). ` +
               'You may need to use the repeat() function when building ' +
               'your dataset.');
           break;
@@ -314,7 +314,7 @@ export async function fitDataset<T extends TensorContainer>(
         stepsDone++;
 
         // Epoch finished. Perform validation.
-        if (stepsDone >= config.stepsPerEpoch && doValidation) {
+        if (stepsDone >= config.batchesPerEpoch && doValidation) {
           // TODO(cais): Implement validation based on dataset once
           //   evaluateDataset is implemented.
           const valOuts = model.evaluate(valXs, valYs, {

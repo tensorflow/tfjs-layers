@@ -66,11 +66,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const batchSize = 8;
     const epochs = 2;
     const stepsPerEpoch = 3;
-    const presetXTensorsFunc = () =>
+    const xTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
-    const presetYTensorsFunc = () =>
+    const yTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
@@ -79,17 +79,17 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       yShape: [1],
       batchSize,
       numBatches: stepsPerEpoch * epochs,
-      presetXTensorsFunc,
-      presetYTensorsFunc
+      xTensorsFunc,
+      yTensorsFunc
     });
 
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
-    await model.fitDataset(dataset, {stepsPerEpoch, epochs: 1});
+    await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1});
     model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
     const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {stepsPerEpoch, epochs});
+    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
     const numTensors1 = tfc.memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
     expect(Object.keys(history.history)).toEqual(['loss']);
@@ -137,11 +137,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const batchSize = 8;
     const epochs = 2;
     const stepsPerEpoch = 3;
-    const presetXTensorsFunc = () =>
+    const xTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
-    const presetYTensorsFunc = () =>
+    const yTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
@@ -150,17 +150,17 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       yShape: [1],
       batchSize,
       numBatches: stepsPerEpoch * epochs,
-      presetXTensorsFunc,
-      presetYTensorsFunc
+      xTensorsFunc,
+      yTensorsFunc
     });
 
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
-    await model.fitDataset(dataset, {stepsPerEpoch, epochs: 1});
+    await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1});
     model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
     const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {stepsPerEpoch, epochs});
+    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
     const numTensors1 = tfc.memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
     expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
@@ -221,11 +221,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const batchSize = 8;
     const epochs = 2;
     const stepsPerEpoch = 3;
-    const presetXTensorsFunc = () =>
+    const xTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
-    const presetYTensorsFunc = () =>
+    const yTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
@@ -234,8 +234,8 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       yShape: [1],
       batchSize,
       numBatches: stepsPerEpoch * epochs,
-      presetXTensorsFunc,
-      presetYTensorsFunc
+      xTensorsFunc,
+      yTensorsFunc
     });
     const valXs = tfc.zeros([batchSize * 2, 1]);
     const valYs = tfc.zeros([batchSize * 2, 1]);
@@ -243,14 +243,14 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     // Do a burn-in call to account for initialization of cached
     // tensors (for the memory-leak check below).
     await model.fitDataset(
-        dataset, {stepsPerEpoch, epochs: 1, validationData: [valXs, valYs]});
+        dataset, {batchesPerEpoch, epochs: 1, validationData: [valXs, valYs]});
     model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
     const numTensors0 = tfc.memory().numTensors;
     const epochEndValLosses: number[] = [];
     const epochEndValAccs: number[] = [];
     const history = await model.fitDataset(dataset, {
-      stepsPerEpoch,
+      batchesPerEpoch,
       epochs,
       validationData: [valXs, valYs],
       callbacks: {
@@ -308,12 +308,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     // Do a burn-in call to account for initialization of cached
     // tensors (for the memory-leak check below).
     await model.fitDataset(
-        dataset, {stepsPerEpoch, epochs: 1, validationData: [valXs, valYs]});
+        dataset, {batchesPerEpoch, epochs: 1, validationData: [valXs, valYs]});
     model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
     const numTensors0 = tfc.memory().numTensors;
     await model.fitDataset(dataset, {
-      stepsPerEpoch,
+      batchesPerEpoch,
       epochs,
       validationData: [valXs, valYs],
       callbacks: {
@@ -367,11 +367,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const batchSize = 8;
     const epochs = 2;
     const stepsPerEpoch = 3;
-    const presetXTensorsFunc = () =>
+    const xTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
-    const presetYTensorsFunc = () =>
+    const yTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
@@ -380,13 +380,13 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       yShape: [1],
       batchSize,
       numBatches: stepsPerEpoch * epochs,
-      presetXTensorsFunc,
-      presetYTensorsFunc
+      xTensorsFunc,
+      yTensorsFunc
     });
 
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
-    await model.fitDataset(dataset, {stepsPerEpoch, epochs: 1});
+    await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1});
     model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
     const numTensors0 = tfc.memory().numTensors;
@@ -401,7 +401,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const batchEndLosses: number[] = [];
     const batchEndAccs: number[] = [];
     const history = await model.fitDataset(dataset, {
-      stepsPerEpoch,
+      batchesPerEpoch,
       epochs,
       callbacks: {
         onTrainBegin: async () => {
@@ -511,7 +511,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const batchSize = 8;
     const epochs = 2;
     const stepsPerEpoch = 3;
-    const presetXTensorsFunc = () => {
+    const xTensorsFunc = () => {
       const output: {[name: string]: tfc.Tensor[]} = {};
       output[input1.name] = [
         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
@@ -525,7 +525,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       ];
       return output;
     };
-    const presetYTensorsFunc = () =>
+    const yTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
@@ -534,17 +534,17 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       yShape: [1],
       batchSize,
       numBatches: stepsPerEpoch * epochs,
-      presetXTensorsFunc,
-      presetYTensorsFunc
+      xTensorsFunc,
+      yTensorsFunc
     });
 
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
-    await model.fitDataset(dataset, {stepsPerEpoch, epochs: 1});
+    await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1});
     model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
 
     const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {stepsPerEpoch, epochs});
+    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
     const numTensors1 = tfc.memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
     expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
@@ -577,7 +577,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const batchSize = 8;
     const epochs = 2;
     const stepsPerEpoch = 3;
-    const presetXTensorsFunc = () => {
+    const xTensorsFunc = () => {
       const output: {[name: string]: tfc.Tensor[]} = {};
       output[input1.name] = [
         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
@@ -587,7 +587,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       // Note: input2 is missing from the data, by intention.
       return output;
     };
-    const presetYTensorsFunc = () =>
+    const yTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
@@ -596,13 +596,13 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       yShape: [1],
       batchSize,
       numBatches: stepsPerEpoch * epochs,
-      presetXTensorsFunc,
-      presetYTensorsFunc
+      xTensorsFunc,
+      yTensorsFunc
     });
 
     let errorCaught: Error;
     try {
-      await model.fitDataset(dataset, {stepsPerEpoch, epochs});
+      await model.fitDataset(dataset, {batchesPerEpoch, epochs});
     } catch (err) {
       errorCaught = err;
     }
@@ -623,7 +623,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
-    await model.fitDataset(dataset, {stepsPerEpoch, epochs: 1});
+    await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1});
     model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
     const warningMessages: string[] = [];
@@ -632,7 +632,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     const numTensors0 = tfc.memory().numTensors;
     const epochs = 3;
-    const history = await model.fitDataset(dataset, {stepsPerEpoch, epochs});
+    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
     const numTensors1 = tfc.memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
     expect(Object.keys(history.history)).toEqual(['loss']);
@@ -659,7 +659,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     let errorCaught: Error;
     try {
-      await model.fitDataset(dataset, {stepsPerEpoch: numBatches, epochs});
+      await model.fitDataset(dataset, {batchesPerEpoch: numBatches, epochs});
     } catch (err) {
       errorCaught = err;
     }

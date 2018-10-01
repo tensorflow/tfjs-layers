@@ -751,6 +751,22 @@ export class Sequential extends Model {
     return this.model.fit(x, y, config);
   }
 
+  // TODO(cais): Add code snippet below when it's possible to instantiate
+  //   actual dataset objects.
+  /**
+   * Trains the model using a dataset object.
+   *
+   * @param dataset A dataset object. Its `iterator()` method is expected
+   *   to generate a dataset iterator object, the `next()` method of which
+   *   is expected to produce data batches for training.
+   * @param config A `ModelFitDatasetConfig`, containing optional fields.
+   *
+   * @return A `History` instance. Its `history` attribute contains all
+   *   information collected during training.
+   */
+  /**
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   */
   async fitDataset<T extends TensorContainer>(
       dataset: Dataset<T>, config: ModelFitDatasetConfig<T>): Promise<History> {
     if (!this.built) {
