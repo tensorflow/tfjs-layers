@@ -87,11 +87,11 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
   batchSize?: number;
 
   /**
-   * Only relevant if `stepsPerEpoch` is specified.
+   * Only relevant if `batchesPerEpoch` is specified.
    *
-   * Total number of steps (batches of samples) to validate before stopping.
+   * Total number of batches of samples to validate before stopping.
    */
-  validationSteps?: number;
+  validationBatches?: number;
 
   /**
    * Configures the frequency of yielding the main thread to other tasks.
@@ -229,7 +229,7 @@ export async function fitDataset<T extends TensorContainer>(
   tfc.util.assert(
       config.batchesPerEpoch != null && config.batchesPerEpoch > 0 &&
           Number.isInteger(config.batchesPerEpoch),
-      `For fitDataset(), config.stepsPerEpoch is expected to be a ` +
+      `For fitDataset(), config.batchesPerEpoch is expected to be a ` +
           `positive integer, but got ${config.batchesPerEpoch}`);
 
   if (model.isTraining) {
@@ -243,6 +243,12 @@ export async function fitDataset<T extends TensorContainer>(
     let valXs: tfc.Tensor|tfc.Tensor[];
     let valYs: tfc.Tensor|tfc.Tensor[];
     if (doValidation) {
+      if (config.validationData instanceof Dataset) {
+        // TODO(cais): Implement this when evaluateDataset() is ready.
+        throw new NotImplementedError(
+            `fitDataset() does not support validation based on dataset ` +
+            `objects yet.`);
+      }
       const validationData = standardizeValidationData(config.validationData);
       valXs = validationData.xs;
       valYs = validationData.ys;
@@ -281,7 +287,7 @@ export async function fitDataset<T extends TensorContainer>(
           console.warn(
               'Your dataset iterator ran out of data; ' +
               'interrupting training. Make sure that your ' +
-              'dataset can generate at least `stepsPerEpoch * epochs` ' +
+              'dataset can generate at least `batchesPerEpoch * epochs` ' +
               'batches (in this case, ' +
               `${config.batchesPerEpoch * config.epochs} batches). ` +
               'You may need to use the repeat() function when building ' +

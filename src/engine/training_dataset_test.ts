@@ -65,7 +65,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     const batchSize = 8;
     const epochs = 2;
-    const stepsPerEpoch = 3;
+    const batchesPerEpoch = 3;
     const xTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
@@ -78,7 +78,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       xShape: [1],
       yShape: [1],
       batchSize,
-      numBatches: stepsPerEpoch * epochs,
+      numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
       yTensorsFunc
     });
@@ -136,7 +136,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     const batchSize = 8;
     const epochs = 2;
-    const stepsPerEpoch = 3;
+    const batchesPerEpoch = 3;
     const xTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
@@ -149,7 +149,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       xShape: [1],
       yShape: [1],
       batchSize,
-      numBatches: stepsPerEpoch * epochs,
+      numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
       yTensorsFunc
     });
@@ -220,7 +220,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     const batchSize = 8;
     const epochs = 2;
-    const stepsPerEpoch = 3;
+    const batchesPerEpoch = 3;
     const xTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
@@ -233,7 +233,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       xShape: [1],
       yShape: [1],
       batchSize,
-      numBatches: stepsPerEpoch * epochs,
+      numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
       yTensorsFunc
     });
@@ -295,12 +295,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     const batchSize = 8;
     const epochs = 3;
-    const stepsPerEpoch = 3;
+    const batchesPerEpoch = 3;
     const dataset = new FakeNumericDataset({
       xShape: [1],
       yShape: [1],
       batchSize,
-      numBatches: stepsPerEpoch * epochs
+      numBatches: batchesPerEpoch * epochs
     });
     const valXs = tfc.zeros([batchSize * 2, 1]);
     const valYs = tfc.zeros([batchSize * 2, 1]);
@@ -366,7 +366,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     const batchSize = 8;
     const epochs = 2;
-    const stepsPerEpoch = 3;
+    const batchesPerEpoch = 3;
     const xTensorsFunc = () =>
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
@@ -379,7 +379,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       xShape: [1],
       yShape: [1],
       batchSize,
-      numBatches: stepsPerEpoch * epochs,
+      numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
       yTensorsFunc
     });
@@ -510,7 +510,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     const batchSize = 8;
     const epochs = 2;
-    const stepsPerEpoch = 3;
+    const batchesPerEpoch = 3;
     const xTensorsFunc = () => {
       const output: {[name: string]: tfc.Tensor[]} = {};
       output[input1.name] = [
@@ -533,7 +533,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       xShape: [1],
       yShape: [1],
       batchSize,
-      numBatches: stepsPerEpoch * epochs,
+      numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
       yTensorsFunc
     });
@@ -576,7 +576,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     const batchSize = 8;
     const epochs = 2;
-    const stepsPerEpoch = 3;
+    const batchesPerEpoch = 3;
     const xTensorsFunc = () => {
       const output: {[name: string]: tfc.Tensor[]} = {};
       output[input1.name] = [
@@ -595,7 +595,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       xShape: [1],
       yShape: [1],
       batchSize,
-      numBatches: stepsPerEpoch * epochs,
+      numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
       yTensorsFunc
     });
@@ -617,9 +617,9 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
     const batchSize = 8;
-    const stepsPerEpoch = 3;
+    const batchesPerEpoch = 3;
     const dataset = new FakeNumericDataset(
-        {xShape: [1], yShape: [1], batchSize, numBatches: stepsPerEpoch});
+        {xShape: [1], yShape: [1], batchSize, numBatches: batchesPerEpoch});
 
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
