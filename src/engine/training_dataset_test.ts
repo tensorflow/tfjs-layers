@@ -18,7 +18,7 @@ import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
 import * as tfl from '../index';
 import {describeMathCPUAndGPU} from '../utils/test_utils';
 
-import {FakeNumericDataset} from './dataset_stub';
+import {FakeNumericDataset} from './dataset_fakes';
 
 describeMathCPUAndGPU('Model.fitDataset', () => {
   function createDenseModel(): tfl.Model {
