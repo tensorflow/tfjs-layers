@@ -65,12 +65,21 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
    * metrics at the end of each epoch. The model will not be trained on this
    * data. This could be any of the following:
    *
-   *   - a tuple [xVal, yVal]
-   *   - a tuple [xVal, yVal, valSampleWeights].
-   *   - a dataset object for the validation data.
+   *   - an Array of `Tensor` objects: [xVal, yVal]
+   *   - an Array of `Tensor` objects:
+   *       [xVal, yVal, valSampleWeights] (not implemented yet).
+   *   - a dataset object.
+   *
+   * If `validationData` is an Array of Tensor objects, the `Tensor` will be
+   * sliced into batches during validation, using the parameter
+   * `validationBatchSize` (which defaults to 32). The entirety of the
+   * `Tensor` objects will be used in the validation.
+   *
+   * If `validationData` is a dataset object, the `validationBatches` parameter
+   * must be specified. The validation will use `validationBatches` batches
+   * drawn from the dataset object or when it is exhausted.
    *
    * The model will not be trained on this data.
-   * `validationData` will override `validationSplit`.
    */
   validationData?:
       [
@@ -83,8 +92,10 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
    *
    * Used only if `validationData` is an array of `Tensor` objects, i.e., not
    * a dataset object.
+   *
+   * If not specified, its value defaults to 32.
    */
-  batchSize?: number;
+  validationBatchSize?: number;
 
   /**
    * Only relevant if `batchesPerEpoch` is specified.
@@ -118,8 +129,11 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
   initialEpoch?: number;
 }
 
+// Default batch size used during tensor-based validation.
+const DEFAULT_VALIDATION_BATCH_SIZE = 32;
+
 /**
- * Standardize the output of a dataset iterator of Model.fitDataset() use.
+ * Standardize the output of a dataset iterator for use buy Model.fitDataset().
  *
  * @param model: A `Model` object.
  * @param iteratorOut The output of a dataset iterator. It is required to be
@@ -324,7 +338,9 @@ export async function fitDataset<T extends TensorContainer>(
           // TODO(cais): Implement validation based on dataset once
           //   evaluateDataset is implemented.
           const valOuts = model.evaluate(valXs, valYs, {
-            batchSize: config.batchSize == null ? 32 : config.batchSize,
+            batchSize: config.validationBatchSize == null ?
+                DEFAULT_VALIDATION_BATCH_SIZE :
+                config.validationBatchSize,
             verbose: 0
           });
           for (let i = 0; i < model.metricsNames.length; ++i) {

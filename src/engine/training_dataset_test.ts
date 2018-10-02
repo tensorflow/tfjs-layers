@@ -38,6 +38,8 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // import numpy as np
   // import tensorflow as tf
   //
+  // tf.enable_eager_execution():
+  //
   // batch_size = 8
   // num_batches = 3
   // epochs = 2
@@ -105,6 +107,8 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // ```py
   // import numpy as np
   // import tensorflow as tf
+  //
+  // tf.enable_eager_execution():
   //
   // batch_size = 8
   // num_batches = 3
@@ -179,6 +183,8 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // ```py
   // import numpy as np
   // import tensorflow as tf
+  //
+  // tf.enable_eager_execution():
   //
   // batch_size = 8
   // num_batches = 3
@@ -331,6 +337,8 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // ```py
   // import numpy as np
   // import tensorflow as tf
+  //
+  // tf.enable_eager_execution():
   //
   // batch_size = 8
   // num_batches = 3

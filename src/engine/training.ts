@@ -1276,6 +1276,11 @@ export class Model extends Container implements tfc.InferenceModel {
     };
   }
 
+  /**
+   * Create a function which, when invoked with an array of `Tensor`s as a
+   * batch of inputs, returns the prespecified loss and metrics of the model
+   * under the batch of input data.
+   */
   private makeTestFunction() {
     this.testFunction = (data: Tensor[]) => {
       return tfc.tidy(() => {
