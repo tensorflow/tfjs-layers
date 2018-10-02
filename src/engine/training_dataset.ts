@@ -98,9 +98,10 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
   validationBatchSize?: number;
 
   /**
-   * Only relevant if `batchesPerEpoch` is specified.
+   * Only relevant if `validationData` is specified and is a dataset object.
    *
-   * Total number of batches of samples to validate before stopping.
+   * Total number of batches of samples to draw from `validationData` for
+   * validation purpose before stopping at the end of every epoch.
    */
   validationBatches?: number;
 
@@ -133,7 +134,7 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
 const DEFAULT_VALIDATION_BATCH_SIZE = 32;
 
 /**
- * Standardize the output of a dataset iterator for use buy Model.fitDataset().
+ * Standardize the output of a dataset iterator for use by Model.fitDataset().
  *
  * @param model: A `Model` object.
  * @param iteratorOut The output of a dataset iterator. It is required to be
