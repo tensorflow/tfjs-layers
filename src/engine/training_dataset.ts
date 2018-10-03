@@ -15,14 +15,16 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
 
+import {getScalar} from '../backend/state';
 import {BaseCallback, configureCallbacks, CustomCallbackConfig, History, ModelLoggingVerbosity, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {NotImplementedError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
+import {singletonOrArray} from '../utils/generic_utils';
 
 import {Dataset, TensorMap, TensorOrTensorMap} from './dataset_stub';
 
 /**
- * Interface configuration model training based on data as a dataset object.
+ * Interface for configuring model training based on a dataset object.
  */
 export interface ModelFitDatasetConfig<T extends TensorContainer> {
   /**
@@ -128,6 +130,22 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
    * run).
    */
   initialEpoch?: number;
+}
+
+/**
+ * Interface for configuring model evaluation based on a dataset object.
+ */
+export interface ModelEvaluateDatasetConfig {
+  /**
+   * Number of batches to draw from the dataset object before ending the
+   * evaluation.
+   */
+  batches: number;
+
+  /**
+   * Verbosity mode.
+   */
+  verbose?: ModelLoggingVerbosity;
 }
 
 // Default batch size used during tensor-based validation.
@@ -366,10 +384,66 @@ export async function fitDataset<T extends TensorContainer>(
   }
 }
 
-export function evaluateDataset<T extends TensorContainer>(
+export async function evaluateDataset<T extends TensorContainer>(
     // Type `model` as `any` here to avoid circular dependency w/ training.ts.
     // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>,
-    config: ModelEvaluateDatasetConfig): tfc.Scalar|tfc.Scalar[] {}
+    config: ModelEvaluateDatasetConfig): Promise<tfc.Scalar|tfc.Scalar[]> {
+  // model.makeTestFunction();
+  const f = model.testFunction;
+  const outs: tfc.Scalar[] = [];
+  if (config.verbose > 0) {
+    throw new NotImplementedError('Verbose mode is not implemented yet.');
+  }
+  tfc.util.assert(
+      config.batches > 0 && Number.isInteger(config.batches),
+      'Test loop expects `batches` to be a positive integer, but ' +
+          `received ${JSON.stringify(config.batches)}`);
+  // TODO(cais): Use `indicesForConversionToDense' to prevent slow down.
+  const dataIterator = await dataset.iterator();
+  // Keeps track of number of examples used in this evaluation.
+  let numExamples = 0;
+  for (let batch = 0; batch < config.batches; ++batch) {
+    const iteratorOut = await dataIterator.next();
+    if (iteratorOut.done) {
+      console.warn(
+          'Your dataset iterator ran out of data during evaluate(). ' +
+          'Interrupting evalution. Make sure that your ' +
+          'dataset can generate at least `batches` ' +
+          `batches (in this case, ${config.batches} batches). ` +
+          'You may need to use the repeat() function when building ' +
+          'your dataset.');
+      break;
+    }
+    const xsAndYs = standardizeDataIteratorOutput(model, iteratorOut.value);
+    const batchOuts = tfc.tidy(() => f(xsAndYs));
+    tfc.dispose(xsAndYs);
 
-// TODO(cais): Implement testLoop and use it in evaluateDataset.
+    if (batch === 0) {
+      for (let i = 0; i < batchOuts.length; ++i) {
+        outs.push(getScalar(0));
+      }
+    }
+    const batchSize = xsAndYs[0].shape[0];
+    for (let i = 0; i < batchOuts.length; ++i) {
+      const batchOut = batchOuts[i];
+      const oldScalar = outs[i];
+      outs[i] = tfc.tidy(
+          () => tfc.add(outs[i], tfc.mul(getScalar(batchSize), batchOut)) as
+              tfc.Scalar);
+      if (batch > 0) {
+        tfc.dispose(oldScalar);
+      }
+    }
+    tfc.dispose(batchOuts);
+    numExamples += batchSize;
+  }
+  for (let i = 0; i < outs.length; ++i) {
+    const oldScalar = outs[i];
+    outs[i] =
+        tfc.tidy(() => tfc.div(outs[i], getScalar(numExamples)) as tfc.Scalar);
+    tfc.dispose(oldScalar);
+  }
+
+  return singletonOrArray(outs);
+}

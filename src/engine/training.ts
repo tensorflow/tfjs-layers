@@ -32,7 +32,7 @@ import {Container, ContainerConfig} from './container';
 import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
-import {evaluateDataset, fitDataset, ModelFitDatasetConfig} from './training_dataset';
+import {evaluateDataset, fitDataset, ModelEvaluateDatasetConfig, ModelFitDatasetConfig} from './training_dataset';
 import {checkBatchSize, fitTensors, makeBatches, ModelFitConfig, sliceArrays, sliceArraysByIndices} from './training_tensors';
 
 /**
@@ -403,19 +403,6 @@ export interface ModelEvaluateConfig {
    * value of `undefined`.
    */
   steps?: number;
-}
-
-export interface ModelEvaluateDatasetConfig {
-  /**
-   * Number of batches to draw from the dataset object before ending the
-   * evaluation.
-   */
-  batches: number;
-
-  /**
-   * Verbosity mode.
-   */
-  verbose?: ModelLoggingVerbosity;
 }
 
 /**
@@ -831,9 +818,18 @@ export class Model extends Container implements tfc.InferenceModel {
     return singletonOrArray(testOuts);
   }
 
-  evaluateDataset<T extends TensorContainer>(
-      dataset: Dataset<T>, config: ModelEvaluateDatasetConfig): Scalar
-      |Scalar[] {
+  /**
+   * TODO(cais): Doc string and code snippet.
+   * 
+   * Note: Unlike `evaluate()`, this method is asynchronous (`async`);
+   * 
+   * @param dataset
+   * @param config 
+   */
+  async evaluateDataset<T extends TensorContainer>(
+      dataset: Dataset<T>, config: ModelEvaluateDatasetConfig):
+      Promise<Scalar|Scalar[]> {
+    this.makeTestFunction();
     return evaluateDataset(this, dataset, config);
   }
 
@@ -1149,7 +1145,7 @@ export class Model extends Container implements tfc.InferenceModel {
     return tfc.tidy(() => {
       const numSamples = this.checkNumSamples(ins, batchSize, steps, 'steps');
       const outs: Scalar[] = [];
-      if (verbose === 1) {
+      if (verbose > 0) {
         throw new NotImplementedError('Verbose mode is not implemented yet.');
       }
       // TODO(cais): Use `indicesForConversionToDense' to prevent slow down.

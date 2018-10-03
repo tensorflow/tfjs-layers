@@ -19,7 +19,7 @@ import {Dataset} from './engine/dataset_stub';
 import {Input} from './engine/input_layer';
 import {getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
 import {Model, ModelCompileConfig, ModelEvaluateConfig} from './engine/training';
-import {ModelFitDatasetConfig} from './engine/training_dataset';
+import {ModelFitDatasetConfig, ModelEvaluateDatasetConfig} from './engine/training_dataset';
 import {ModelFitConfig} from './engine/training_tensors';
 import {RuntimeError, ValueError} from './errors';
 import {deserialize} from './layers/serialization';
@@ -637,6 +637,24 @@ export class Sequential extends Model {
           'The model needs to be compiled before being used.');
     }
     return this.model.evaluate(x, y, config);
+  }
+
+  /**
+   * TODO(cais): Doc string and code snippet.
+   * 
+   * Note: Unlike `evaluate()`, this method is asynchronous (`async`);
+   * 
+   * @param dataset
+   * @param config 
+   */
+  async evaluateDataset<T extends TensorContainer>(
+    dataset: Dataset<T>, config: ModelEvaluateDatasetConfig):
+    Promise<Scalar|Scalar[]> {
+    if (!this.built) {
+      throw new RuntimeError(
+          'The model needs to be compiled before being used.');
+    }
+    return this.model.evaluateDataset(dataset, config);
   }
 
   /**
