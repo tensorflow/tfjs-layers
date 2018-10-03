@@ -19,7 +19,7 @@ import {getScalar} from '../backend/state';
 import {BaseCallback, configureCallbacks, CustomCallbackConfig, History, ModelLoggingVerbosity, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {NotImplementedError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
-import {singletonOrArray} from '../utils/generic_utils';
+import {singletonOrArray, toList} from '../utils/generic_utils';
 
 import {Dataset, TensorMap, TensorOrTensorMap} from './dataset_stub';
 
@@ -221,21 +221,16 @@ function standardizeDataIteratorOutput(
   // TODO(cais): Handle case in which ys is a TensorMap.
 }
 
-function standardizeValidationData<T extends TensorContainer>(
+function standardizeTensorValidationData<T extends TensorContainer>(
     data:
         [
           tfc.Tensor|tfc.Tensor[], tfc.Tensor|tfc.Tensor[]
         ]|[tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[],
-           tfc.Tensor | tfc.Tensor[]]|
-    Dataset<T>): {xs: tfc.Tensor|tfc.Tensor[], ys: tfc.Tensor|tfc.Tensor[]} {
-  if (!Array.isArray(data)) {
+           tfc.Tensor | tfc.Tensor[]]):
+    {xs: tfc.Tensor|tfc.Tensor[], ys: tfc.Tensor|tfc.Tensor[]} {
+  if (data.length === 3) {
     throw new NotImplementedError(
-        'Validation with dataset is not implemented yet.');
-  } else {
-    if (data.length === 3) {
-      throw new NotImplementedError(
-          'Validation with sample weights is not implemented yet.');
-    }
+        'Validation with sample weights is not implemented yet.');
   }
   return {xs: data[0], ys: data[1]};
 }
@@ -277,12 +272,20 @@ export async function fitDataset<T extends TensorContainer>(
     let valYs: tfc.Tensor|tfc.Tensor[];
     if (doValidation) {
       if (config.validationData instanceof Dataset) {
-        // TODO(cais): Implement this when evaluateDataset() is ready.
-        throw new NotImplementedError(
-            `fitDataset() does not support validation based on dataset ` +
-            `objects yet.`);
+        tfc.util.assert(
+            config.validationBatches > 0 &&
+                Number.isInteger(config.validationBatches),
+            `For fitDataset() with dataset-based validation, ` +
+                `config.validationBatches is expected to be a ` +
+                `positive integer, but got ${config.validationBatches}`);
       }
-      const validationData = standardizeValidationData(config.validationData);
+      const validationData = standardizeTensorValidationData(
+          config.validationData as
+                  [tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[]] |
+          [
+            tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[],
+            tfc.Tensor | tfc.Tensor[]
+          ]);
       valXs = validationData.xs;
       valYs = validationData.ys;
     }
@@ -356,12 +359,18 @@ export async function fitDataset<T extends TensorContainer>(
         if (stepsDone >= config.batchesPerEpoch && doValidation) {
           // TODO(cais): Implement validation based on dataset once
           //   evaluateDataset is implemented.
-          const valOuts = model.evaluate(valXs, valYs, {
-            batchSize: config.validationBatchSize == null ?
-                DEFAULT_VALIDATION_BATCH_SIZE :
-                config.validationBatchSize,
-            verbose: 0
-          });
+          let valOuts: tfc.Scalar[];
+          if (config.validationData instanceof Dataset) {
+            valOuts = toList(await model.evaluateDataset(
+                config.validationData, {batches: config.validationBatches}));
+          } else {
+            valOuts = toList(model.evaluate(valXs, valYs, {
+              batchSize: config.validationBatchSize == null ?
+                  DEFAULT_VALIDATION_BATCH_SIZE :
+                  config.validationBatchSize,
+              verbose: 0
+            }));
+          }
           for (let i = 0; i < model.metricsNames.length; ++i) {
             epochLogs[`val_${model.metricsNames[i]}`] = valOuts[i];
           }
@@ -407,7 +416,7 @@ export async function evaluateDataset<T extends TensorContainer>(
     const iteratorOut = await dataIterator.next();
     if (iteratorOut.done) {
       console.warn(
-          'Your dataset iterator ran out of data during evaluate(). ' +
+          'Your dataset iterator ran out of data during evaluateDataset(). ' +
           'Interrupting evalution. Make sure that your ' +
           'dataset can generate at least `batches` ' +
           `batches (in this case, ${config.batches} batches). ` +
