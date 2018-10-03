@@ -415,7 +415,6 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       'loss', 'acc', 'val_loss', 'val_acc'
     ].sort());
     expect(history.history.loss.length).toEqual(2);
-    console.log(history.history);
     expect(history.history.loss[0]).toBeCloseTo(0.923649);
     expect(history.history.loss[1]).toBeCloseTo(0.722993);
     expect(history.history.acc.length).toEqual(2);
@@ -857,8 +856,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       errorCaught = err;
     }
     expect(errorCaught.message)
-        .toMatch(
-            /fitDataset.*dataset-based validation.*integer.*undefined/);
+        .toMatch(/fitDataset.*dataset-based validation.*integer.*undefined/);
   });
 });
 
