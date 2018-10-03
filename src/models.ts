@@ -659,6 +659,9 @@ export class Sequential extends Model {
    * @param config A configuration object for the dataset-based evaluation.
    * @returns Loss and metric values as an Array of `Scalar` objects.
    */
+  /**
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   */
   async evaluateDataset<T extends TensorContainer>(
     dataset: Dataset<T>, config: ModelEvaluateDatasetConfig):
     Promise<Scalar|Scalar[]> {
