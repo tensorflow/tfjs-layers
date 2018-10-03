@@ -278,16 +278,19 @@ export async function fitDataset<T extends TensorContainer>(
             `For fitDataset() with dataset-based validation, ` +
                 `config.validationBatches is expected to be a ` +
                 `positive integer, but got ${config.validationBatches}`);
+      } else {
+        console.log(`bbbbb`);  // DEBUG
+        const validationData = standardizeTensorValidationData(
+            config.validationData as
+                    [tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[]] |
+            [
+              tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[],
+              tfc.Tensor | tfc.Tensor[]
+            ]);
+        console.log(validationData);  // DEBUG
+        valXs = validationData.xs;
+        valYs = validationData.ys;
       }
-      const validationData = standardizeTensorValidationData(
-          config.validationData as
-                  [tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[]] |
-          [
-            tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[],
-            tfc.Tensor | tfc.Tensor[]
-          ]);
-      valXs = validationData.xs;
-      valYs = validationData.ys;
     }
 
     const trainFunction = model.makeTrainFunction();
@@ -357,8 +360,6 @@ export async function fitDataset<T extends TensorContainer>(
 
         // Epoch finished. Perform validation.
         if (stepsDone >= config.batchesPerEpoch && doValidation) {
-          // TODO(cais): Implement validation based on dataset once
-          //   evaluateDataset is implemented.
           let valOuts: tfc.Scalar[];
           if (config.validationData instanceof Dataset) {
             valOuts = toList(await model.evaluateDataset(
@@ -398,7 +399,6 @@ export async function evaluateDataset<T extends TensorContainer>(
     // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>,
     config: ModelEvaluateDatasetConfig): Promise<tfc.Scalar|tfc.Scalar[]> {
-  // model.makeTestFunction();
   const f = model.testFunction;
   const outs: tfc.Scalar[] = [];
   if (config.verbose > 0) {
@@ -408,7 +408,6 @@ export async function evaluateDataset<T extends TensorContainer>(
       config.batches > 0 && Number.isInteger(config.batches),
       'Test loop expects `batches` to be a positive integer, but ' +
           `received ${JSON.stringify(config.batches)}`);
-  // TODO(cais): Use `indicesForConversionToDense' to prevent slow down.
   const dataIterator = await dataset.iterator();
   // Keeps track of number of examples used in this evaluation.
   let numExamples = 0;
@@ -424,6 +423,8 @@ export async function evaluateDataset<T extends TensorContainer>(
           'your dataset.');
       break;
     }
+    // TODO(cais): Once real dataset is available, use
+    //   `map(x => standardizeDataIteratorOutput(model, x).map(f)`.
     const xsAndYs = standardizeDataIteratorOutput(model, iteratorOut.value);
     const batchOuts = tfc.tidy(() => f(xsAndYs));
     tfc.dispose(xsAndYs);
