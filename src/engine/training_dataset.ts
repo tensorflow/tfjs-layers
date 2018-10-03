@@ -279,7 +279,6 @@ export async function fitDataset<T extends TensorContainer>(
                 `config.validationBatches is expected to be a ` +
                 `positive integer, but got ${config.validationBatches}`);
       } else {
-        console.log(`bbbbb`);  // DEBUG
         const validationData = standardizeTensorValidationData(
             config.validationData as
                     [tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[]] |
@@ -287,7 +286,6 @@ export async function fitDataset<T extends TensorContainer>(
               tfc.Tensor | tfc.Tensor[], tfc.Tensor | tfc.Tensor[],
               tfc.Tensor | tfc.Tensor[]
             ]);
-        console.log(validationData);  // DEBUG
         valXs = validationData.xs;
         valYs = validationData.ys;
       }
