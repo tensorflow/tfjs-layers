@@ -365,3 +365,11 @@ export async function fitDataset<T extends TensorContainer>(
     model.isTraining = false;
   }
 }
+
+export function evaluateDataset<T extends TensorContainer>(
+    // Type `model` as `any` here to avoid circular dependency w/ training.ts.
+    // tslint:disable-next-line:no-any
+    model: any, dataset: Dataset<T>,
+    config: ModelEvaluateDatasetConfig): tfc.Scalar|tfc.Scalar[] {}
+
+// TODO(cais): Implement testLoop and use it in evaluateDataset.

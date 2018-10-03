@@ -32,7 +32,7 @@ import {Container, ContainerConfig} from './container';
 import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
-import {fitDataset, ModelFitDatasetConfig} from './training_dataset';
+import {evaluateDataset, fitDataset, ModelFitDatasetConfig} from './training_dataset';
 import {checkBatchSize, fitTensors, makeBatches, ModelFitConfig, sliceArrays, sliceArraysByIndices} from './training_tensors';
 
 /**
@@ -403,6 +403,19 @@ export interface ModelEvaluateConfig {
    * value of `undefined`.
    */
   steps?: number;
+}
+
+export interface ModelEvaluateDatasetConfig {
+  /**
+   * Number of batches to draw from the dataset object before ending the
+   * evaluation.
+   */
+  batches: number;
+
+  /**
+   * Verbosity mode.
+   */
+  verbose?: ModelLoggingVerbosity;
 }
 
 /**
@@ -818,13 +831,19 @@ export class Model extends Container implements tfc.InferenceModel {
     return singletonOrArray(testOuts);
   }
 
+  evaluateDataset<T extends TensorContainer>(
+      dataset: Dataset<T>, config: ModelEvaluateDatasetConfig): Scalar
+      |Scalar[] {
+    return evaluateDataset(this, dataset, config);
+  }
+
   /**
    * Get number of samples provided for training, evaluation or prediction.
    *
    * @param ins Input `Tensor`.
    * @param batchSize Integer batch size, optional.
-   * @param steps Total number of steps (batches of samples) before declaring
-   *   loop finished. Optional.
+   * @param steps Total number of steps (batches of samples) before
+   * declaring loop finished. Optional.
    * @param stepsName The public API's parameter name for `steps`.
    * @returns Number of samples provided.
    */
