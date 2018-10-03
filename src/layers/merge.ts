@@ -907,6 +907,11 @@ function normalizeAxis(axis: number, dim: number): number {
 }
 
 function batchDot(x: Tensor, y: Tensor, axes: number|number[]): Tensor {
+  if (x.shape.length > 3 || y.shape.length > 3) {
+    throw new NotImplementedError(
+        'batchDot is not implemented for tensors of 4D or higher rank yet');
+  }
+
   if (typeof axes === 'number') {
     axes = [axes, axes];
   }
@@ -1012,6 +1017,11 @@ export class Dot extends Merge {
         'A `Dot` layer should be called on a list of exactly 2 inputs.');
     const shape1 = inputShape[0] as Shape;
     const shape2 = inputShape[1] as Shape;
+    if (shape1.length > 3 || shape2.length > 3) {
+      throw new NotImplementedError(
+          'Dot layer does not support tensors of 4D or higher rank yet.');
+    }
+
     const axes = this.normalizeAxes(shape1, shape2);
     if (shape1[axes[0]] !== shape2[axes[1]]) {
       throw new ValueError(
@@ -1070,6 +1080,11 @@ export class Dot extends Merge {
         'A `Dot` layer should be called on a list of exactly 2 inputs.');
     const shape1 = inputShape[0] as Shape;
     const shape2 = inputShape[1] as Shape;
+    if (shape1.length > 3 || shape2.length > 3) {
+      throw new NotImplementedError(
+          'Dot layer does not support tensors of 4D or higher rank yet.');
+    }
+
     const axes = this.normalizeAxes(shape1, shape2);
     shape1.splice(axes[0], 1);
     shape2.splice(axes[1], 1);

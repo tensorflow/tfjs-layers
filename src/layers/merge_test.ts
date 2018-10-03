@@ -626,14 +626,17 @@ describeMathCPU('Dot-Layer: Symbolic', () => {
     expect(y2.shape).toEqual([null, 4]);
   });
 
-  it('4D x 4D, axes = -1', () => {
-    const x1 = new tfl.SymbolicTensor(
-        'float32', [null, 2, 3, 4], null, [], null);
-    const x2 = new tfl.SymbolicTensor(
-        'float32', [null, 2, 3, 4], null, [], null);
-    const y = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
-    expect(y.shape).toEqual([null, 2, 3, 2, 3]);
-  });
+  // TODO(cais): Uncomment the follow test case when 4D and higher is supported
+  //   by the Dot layer.
+  // it('4D x 4D, axes = -1', () => {
+  //   const x1 = new tfl.SymbolicTensor(
+  //       'float32', [null, 2, 3, 4], null, [], null);
+  //   const x2 = new tfl.SymbolicTensor(
+  //       'float32', [null, 2, 3, 4], null, [], null);
+  //   const y = tfl.layers.dot({axes: -1}).apply([x1, x2]) as
+  //       tfl.SymbolicTensor;
+  //   expect(y.shape).toEqual([null, 2, 3, 2, 3]);
+  // });
 
   it('Dimension mismatch leads to error', () => {
     const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
