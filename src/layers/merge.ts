@@ -1023,7 +1023,7 @@ function batchDot(
  * ```
  */
 export class Dot extends Merge {
-  static className = 'Add';
+  static className = 'Dot';
 
   private axes: number|[number, number];
   private normalize: boolean;
