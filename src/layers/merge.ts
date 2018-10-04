@@ -1048,7 +1048,7 @@ export class Dot extends Merge {
           'Dot layer does not support tensors of 4D or higher rank yet.');
     }
 
-    const axes = this.normalizeAxes(shape1, shape2);
+    const axes = this.interpretAxes(shape1, shape2);
     if (shape1[axes[0]] !== shape2[axes[1]]) {
       throw new ValueError(
           `Dimension incompatibility: ` +
@@ -1083,7 +1083,7 @@ export class Dot extends Merge {
     return batchDot(x1, x2, axes);
   }
 
-  private normalizeAxes(shape1: Shape, shape2: Shape): number[] {
+  private interpretAxes(shape1: Shape, shape2: Shape): number[] {
     let axes: number[];
     if (!Array.isArray(this.axes)) {
       // `this.axes` is a single integer.
@@ -1110,7 +1110,7 @@ export class Dot extends Merge {
           'Dot layer does not support tensors of 4D or higher rank yet.');
     }
 
-    const axes = this.normalizeAxes(shape1, shape2);
+    const axes = this.interpretAxes(shape1, shape2);
     shape1.splice(axes[0], 1);
     shape2.splice(axes[1], 1);
     shape2.splice(0, 1);
