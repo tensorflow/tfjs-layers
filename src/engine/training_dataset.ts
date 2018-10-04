@@ -85,9 +85,10 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
    */
   validationData?:
       [
-        tfc.Tensor|tfc.Tensor[], tfc.Tensor|tfc.Tensor[]
-      ]|[tfc.Tensor | tfc.Tensor[], tfc.Tensor|tfc.Tensor[],
-         tfc.Tensor|tfc.Tensor[]]|Dataset<T>;
+        tfc.Tensor|tfc.Tensor[]|TensorMap, tfc.Tensor|tfc.Tensor[]|TensorMap
+      ]|[tfc.Tensor | tfc.Tensor[] | TensorMap,
+         tfc.Tensor|tfc.Tensor[]|TensorMap, tfc.Tensor|tfc.Tensor[]|TensorMap]|
+      Dataset<T>;
 
   /**
    * Optional batch size for validation.
