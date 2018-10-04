@@ -1137,5 +1137,6 @@ export class Dot extends Merge {
     return config;
   }
 }
+serialization.registerClass(Dot);
 
 // TODO(cais): Add functional interfaces for the merge layers.
