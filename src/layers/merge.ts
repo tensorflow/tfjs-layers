@@ -887,7 +887,7 @@ export interface DotLayerConfig extends LayerConfig {
    *
    * Integer or an Array of integers.
    */
-  axes: number|number[];
+  axes: number|[number, number];
 
   /**
    * Whether to L2-normalize samples along the dot product axis
@@ -899,21 +899,42 @@ export interface DotLayerConfig extends LayerConfig {
   normalize?: boolean;
 }
 
-function normalizeAxis(axis: number, dim: number): number {
+/**
+ * Interpretable potentially negative axis index.
+ *
+ * For example, given axis = -1, and dim = 3, this function will return 2.
+ *
+ * @param axis The axis index, may be a positive, zero or negative integer.
+ * @param dim Total number of dimensions, a positive integer.
+ * @returns A non-negative axis index equivalent to the input `axis`.
+ */
+function interpretAxis(axis: number, dim: number): number {
   while (axis < 0) {
     axis += dim;
   }
   return axis;
 }
 
-function batchDot(x: Tensor, y: Tensor, axes: number|number[]): Tensor {
+function batchDot(
+    x: Tensor, y: Tensor, axes: number|[number]|[number, number]): Tensor {
   if (x.shape.length > 3 || y.shape.length > 3) {
     throw new NotImplementedError(
         'batchDot is not implemented for tensors of 4D or higher rank yet');
   }
+  tfc.util.assert(
+      x.shape.length >= 2,
+      `batchDot requires the rank of x to be >= 2, ` +
+          `but got ${x.shape.length}`);
+  tfc.util.assert(
+      x.shape.length >= 2,
+      `batchDot requires the rank of y to be >= 2, ` +
+          `but got ${y.shape.length}`);
 
   if (typeof axes === 'number') {
     axes = [axes, axes];
+  }
+  if (Array.isArray(axes) && axes.length === 1) {
+    axes = [axes[0], axes[0]];
   }
 
   if (x.dtype === 'complex64' || y.dtype === 'complex64') {
@@ -924,57 +945,62 @@ function batchDot(x: Tensor, y: Tensor, axes: number|number[]): Tensor {
   const xNDim = x.shape.length;
   const yNDim = y.shape.length;
   if (axes == null) {
+    // Behave like batchMatmul by default.
     axes = [xNDim - 1, yNDim - 2];
   }
-  let diff: number;
-  if (xNDim > yNDim) {
-    diff = xNDim - yNDim;
-    const diffShape: Shape = [];
-    for (let i = 0; i < diff; ++i) {
-      diffShape.push(1);
-    }
-    y = y.reshape(y.shape.concat(diffShape));
-  } else if (yNDim > xNDim) {
-    diff = yNDim - xNDim;
-    const diffShape: Shape = [];
-    for (let i = 0; i < diff; ++i) {
-      diffShape.push(1);
-    }
-    x = x.reshape(x.shape.concat(diffShape));
-  } else {
-    diff = 0;
-  }
+  const axesArray = axes as [number, number];
 
-  let out: Tensor;
-  if (x.shape.length === 2 && y.shape.length === 2) {
-    if (axes[0] === axes[1]) {
-      out = x.mulStrict(y).sum(axes[0]);
-    } else {
-      out = x.transpose([1, 0]).mulStrict(y).sum(axes[1]);
-    }
-  } else {
-    const adjX = axes[0] === x.shape.length - 1 ? null : true;
-    const adjY = axes[1] === y.shape.length - 1 ? true : null;
-    out = x.matMul(y, adjX, adjY);
-  }
-
-  if (diff > 0) {
-    let idx: number;
+  return tfc.tidy(() => {
+    let diff: number;
     if (xNDim > yNDim) {
-      idx = xNDim + yNDim - 3;
+      diff = xNDim - yNDim;
+      const diffShape: Shape = [];
+      for (let i = 0; i < diff; ++i) {
+        diffShape.push(1);
+      }
+      y = y.reshape(y.shape.concat(diffShape));
+    } else if (yNDim > xNDim) {
+      diff = yNDim - xNDim;
+      const diffShape: Shape = [];
+      for (let i = 0; i < diff; ++i) {
+        diffShape.push(1);
+      }
+      x = x.reshape(x.shape.concat(diffShape));
     } else {
-      idx = xNDim - 1;
+      diff = 0;
     }
-    const squeezeAxes: number[] = [];
-    for (let i = idx; i < idx + diff; ++i) {
-      squeezeAxes.push(i);
+
+    let out: Tensor;
+    if (x.shape.length === 2 && y.shape.length === 2) {
+      if (axesArray[0] === axesArray[1]) {
+        out = x.mulStrict(y).sum(axesArray[0]);
+      } else {
+        out = x.transpose([1, 0]).mulStrict(y).sum(axesArray[1]);
+      }
+    } else {
+      const adjX = axesArray[0] === x.shape.length - 1 ? null : true;
+      const adjY = axesArray[1] === y.shape.length - 1 ? true : null;
+      out = x.matMul(y, adjX, adjY);
     }
-    out = out.squeeze(squeezeAxes);
-  }
-  if (out.shape.length === 1) {
-    out = out.expandDims(1);
-  }
-  return out;
+
+    if (diff > 0) {
+      let idx: number;
+      if (xNDim > yNDim) {
+        idx = xNDim + yNDim - 3;
+      } else {
+        idx = xNDim - 1;
+      }
+      const squeezeAxes: number[] = [];
+      for (let i = idx; i < idx + diff; ++i) {
+        squeezeAxes.push(i);
+      }
+      out = out.squeeze(squeezeAxes);
+    }
+    if (out.shape.length === 1) {
+      out = out.expandDims(1);
+    }
+    return out;
+  });
 }
 
 /**
@@ -999,7 +1025,7 @@ function batchDot(x: Tensor, y: Tensor, axes: number|number[]): Tensor {
 export class Dot extends Merge {
   static className = 'Add';
 
-  private axes: number|number[];
+  private axes: number|[number, number];
   private normalize: boolean;
 
   constructor(config: DotLayerConfig) {
@@ -1039,17 +1065,16 @@ export class Dot extends Merge {
 
     let x1 = inputs[0];
     let x2 = inputs[1];
-    let axes: number[];
+    let axes: [number, number];
     if (!Array.isArray(this.axes)) {
       axes = [
-        normalizeAxis(this.axes, x1.shape.length),
-        normalizeAxis(this.axes, x2.shape.length)
+        interpretAxis(this.axes, x1.shape.length),
+        interpretAxis(this.axes, x2.shape.length)
       ];
     } else {
-      axes = [];
-      for (let i = 0; i < this.axes.length; ++i) {
-        axes.push(normalizeAxis(this.axes[i], inputs[i].shape.length));
-      }
+      axes = this.axes.map(
+                 (axis, i) => interpretAxis(
+                     axis, inputs[i].shape.length)) as [number, number];
     }
     if (this.normalize) {
       x1 = l2Normalize(x1, axes[0]);
@@ -1063,8 +1088,8 @@ export class Dot extends Merge {
     if (!Array.isArray(this.axes)) {
       // `this.axes` is a single integer.
       axes = [
-        normalizeAxis(this.axes, shape1.length),
-        normalizeAxis(this.axes, shape2.length)
+        interpretAxis(this.axes, shape1.length),
+        interpretAxis(this.axes, shape2.length)
       ];
     } else {
       // `this.axes` is an Array of integers.
