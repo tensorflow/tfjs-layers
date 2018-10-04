@@ -372,10 +372,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     });
 
     // Validation dataset.
-    const valXTensorsFunc =
-        () => [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
-    const valYTensorsFunc =
-        () => [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
+    const valXTensorsFunc = () =>
+        [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1]),
+         tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
+    const valYTensorsFunc = () =>
+        [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1]),
+         tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
     const valDataset = new FakeNumericDataset({
       xShape: [1],
       yShape: [1],

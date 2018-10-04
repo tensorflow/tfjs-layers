@@ -21,7 +21,7 @@ import {NotImplementedError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 import {singletonOrArray, toList} from '../utils/generic_utils';
 
-import {Dataset, TensorMap, TensorOrTensorMap} from './dataset_stub';
+import {Dataset, LazyIterator, TensorMap, TensorOrTensorMap} from './dataset_stub';
 
 /**
  * Interface for configuring model training based on a dataset object.
@@ -269,6 +269,7 @@ export async function fitDataset<T extends TensorContainer>(
 
   try {
     const doValidation = config.validationData != null;
+    let validationDataIterator: LazyIterator<T>;
     let valXs: tfc.Tensor|tfc.Tensor[];
     let valYs: tfc.Tensor|tfc.Tensor[];
     if (doValidation) {
@@ -279,6 +280,7 @@ export async function fitDataset<T extends TensorContainer>(
             `For fitDataset() with dataset-based validation, ` +
                 `config.validationBatches is expected to be a ` +
                 `positive integer, but got ${config.validationBatches}`);
+        validationDataIterator = await config.validationData.iterator();
       } else {
         const validationData = standardizeTensorValidationData(
             config.validationData as
@@ -362,7 +364,7 @@ export async function fitDataset<T extends TensorContainer>(
           let valOuts: tfc.Scalar[];
           if (config.validationData instanceof Dataset) {
             valOuts = toList(await model.evaluateDataset(
-                config.validationData, {batches: config.validationBatches}));
+                validationDataIterator, {batches: config.validationBatches}));
           } else {
             valOuts = toList(model.evaluate(valXs, valYs, {
               batchSize: config.validationBatchSize == null ?
@@ -396,7 +398,7 @@ export async function fitDataset<T extends TensorContainer>(
 export async function evaluateDataset<T extends TensorContainer>(
     // Type `model` as `any` here to avoid circular dependency w/ training.ts.
     // tslint:disable-next-line:no-any
-    model: any, dataset: Dataset<T>,
+    model: any, dataset: Dataset<T>|LazyIterator<T>,
     config: ModelEvaluateDatasetConfig): Promise<tfc.Scalar|tfc.Scalar[]> {
   const f = model.testFunction;
   const outs: tfc.Scalar[] = [];
@@ -407,7 +409,8 @@ export async function evaluateDataset<T extends TensorContainer>(
       config.batches > 0 && Number.isInteger(config.batches),
       'Test loop expects `batches` to be a positive integer, but ' +
           `received ${JSON.stringify(config.batches)}`);
-  const dataIterator = await dataset.iterator();
+  const dataIterator =
+      dataset instanceof LazyIterator ? dataset : await dataset.iterator();
   // Keeps track of number of examples used in this evaluation.
   let numExamples = 0;
   for (let batch = 0; batch < config.batches; ++batch) {
