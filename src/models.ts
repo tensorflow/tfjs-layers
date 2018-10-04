@@ -21,7 +21,7 @@ import {getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
 import {Model, ModelCompileConfig, ModelEvaluateConfig} from './engine/training';
 import {ModelFitDatasetConfig, ModelEvaluateDatasetConfig} from './engine/training_dataset';
 import {ModelFitConfig} from './engine/training_tensors';
-import {RuntimeError, ValueError} from './errors';
+import {RuntimeError, ValueError, NotImplementedError} from './errors';
 import {deserialize} from './layers/serialization';
 import {Kwargs, NamedTensorMap, Shape} from './types';
 import {JsonDict} from './types';
@@ -823,7 +823,7 @@ export class Sequential extends Model {
       config: serialization.ConfigDict): T {
     const model = new cls({});
     if (!(model instanceof Sequential)) {
-      throw new ValueError(
+      throw new NotImplementedError(
           `Sequential.fromConfig called on non-Sequential input: ${model}`);
     }
     let configArray: serialization.ConfigDictArray;
