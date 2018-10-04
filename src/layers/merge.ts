@@ -915,8 +915,7 @@ function interpretAxis(axis: number, dim: number): number {
   return axis;
 }
 
-function batchDot(
-    x: Tensor, y: Tensor, axes: number|[number]|[number, number]): Tensor {
+function batchDot(x: Tensor, y: Tensor, axes: number|[number, number]): Tensor {
   if (x.shape.length > 3 || y.shape.length > 3) {
     throw new NotImplementedError(
         'batchDot is not implemented for tensors of 4D or higher rank yet');
@@ -932,9 +931,6 @@ function batchDot(
 
   if (typeof axes === 'number') {
     axes = [axes, axes];
-  }
-  if (Array.isArray(axes) && axes.length === 1) {
-    axes = [axes[0], axes[0]];
   }
 
   if (x.dtype === 'complex64' || y.dtype === 'complex64') {

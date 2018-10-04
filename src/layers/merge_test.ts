@@ -641,8 +641,9 @@ describeMathCPU('Dot-Layer: Symbolic', () => {
   it('Dimension mismatch leads to error', () => {
     const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
     const x2 = new tfl.SymbolicTensor('float32', [null, 4], null, [], null);
-    expect(() =>  tfl.layers.dot({axes: -1}).apply([x1, x2]))
-        .toThrowError('Dimension incompatibility: 3 !== 4');
+    expect(() => tfl.layers.dot({axes: -1}).apply([
+      x1, x2
+    ])).toThrowError('Dimension incompatibility: 3 !== 4');
   });
 
   it('Incorrect number of inputs leads to error', () => {
@@ -653,8 +654,9 @@ describeMathCPU('Dot-Layer: Symbolic', () => {
         .toThrowError(/should be called on a list of exactly 2 inputs/);
     expect(() => tfl.layers.dot({axes: -1}).apply(x1))
         .toThrowError(/should be called on a list of exactly 2 inputs/);
-    expect(() => tfl.layers.dot({axes: -1}).apply([x1, x2, x3]))
-        .toThrowError(/should be called on a list of exactly 2 inputs/);
+    expect(() => tfl.layers.dot({axes: -1}).apply([
+      x1, x2, x3
+    ])).toThrowError(/should be called on a list of exactly 2 inputs/);
   });
 
   it('Serialization round trip', () => {
@@ -744,8 +746,8 @@ describeMathCPUAndGPU('Dot-Layer: Tensor', () => {
     const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
     const dotLayer = tfl.layers.dot({axes: -1});
     const y = dotLayer.apply([x1, x2]) as Tensor;
-    expectTensorsClose(y, tensor3d(
-        [[[-50, -110], [-110, -250]], [[38, 16], [52, 22]]]));
+    expectTensorsClose(
+        y, tensor3d([[[-50, -110], [-110, -250]], [[38, 16], [52, 22]]]));
   });
 
   it('3D x 3D, axis = 1', () => {
@@ -753,8 +755,8 @@ describeMathCPUAndGPU('Dot-Layer: Tensor', () => {
     const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
     const dotLayer = tfl.layers.dot({axes: 1});
     const y = dotLayer.apply([x1, x2]) as Tensor;
-    expectTensorsClose(y, tensor3d(
-        [[[-100, -140], [-140, -200]], [[34, 22], [40, 26]]]));
+    expectTensorsClose(
+        y, tensor3d([[[-100, -140], [-140, -200]], [[34, 22], [40, 26]]]));
   });
 
   it('3D x 3D, axis = [1, 2]', () => {
@@ -762,7 +764,7 @@ describeMathCPUAndGPU('Dot-Layer: Tensor', () => {
     const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
     const dotLayer = tfl.layers.dot({axes: [1, 2]});
     const y = dotLayer.apply([x1, x2]) as Tensor;
-    expectTensorsClose(y, tensor3d(
-        [[[-70, -150], [-100, -220]], [[41, 17], [48, 20]]]));
+    expectTensorsClose(
+        y, tensor3d([[[-70, -150], [-100, -220]], [[41, 17], [48, 20]]]));
   });
 });
