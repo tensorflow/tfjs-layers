@@ -822,7 +822,7 @@ export class Sequential extends Model {
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict): T {
     let configArray: serialization.ConfigDictArray;
-    let additionalModelConfig: serialization.ConfigDict = {};
+    let extraModelConfig: serialization.ConfigDict = {};
     if (config instanceof Array) {
       if (!(config[0].className != null) ||
             config[0]['className'] === 'Merge') {
@@ -836,10 +836,10 @@ export class Sequential extends Model {
           `it must be an Object that contains the 'layers' field.`);
       configArray = config['layers'] as serialization.ConfigDictArray;
       delete config['layers'];
-      additionalModelConfig = config;
+      extraModelConfig = config;
     }
 
-    const model = new cls({additionalModelConfig});
+    const model = new cls(extraModelConfig);
     if (!(model instanceof Sequential)) {
       throw new NotImplementedError(
           `Sequential.fromConfig called on non-Sequential input: ${model}`);
