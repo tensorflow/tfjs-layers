@@ -10,7 +10,7 @@
 
 /* Original source keras/models.py */
 
-import {io, Scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
+import {io, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
 
 import {getUid} from './backend/state';
@@ -826,14 +826,22 @@ export class Sequential extends Model {
       throw new ValueError(
           `Sequential.fromConfig called on non-Sequential input: ${model}`);
     }
-    if (!(config instanceof Array)) {
-      throw new ValueError(
-          `Sequential.fromConfig called without an array of configs`);
+    let configArray: serialization.ConfigDictArray;
+    if (config instanceof Array) {
+      if (!(config[0].className != null) ||
+            config[0]['className'] === 'Merge') {
+        throw new ValueError('Legacy serialization format not supported yet.');
+      }
+      configArray = config;
+    } else {
+      util.assert(
+          config['layers'] != null, 
+          `When the config data for a Sequential model is not an Array, ` +
+          `it must be an Object that contains the 'layers' field.`);
+      configArray = config['layers'] as serialization.ConfigDictArray;
     }
-    if (!(config[0].className != null) || config[0]['className'] === 'Merge') {
-      throw new ValueError('Legacy serialization format not supported yet.');
-    }
-    for (const conf of config as serialization.ConfigDictArray) {
+
+    for (const conf of configArray) {
       const layer = deserialize(conf as serialization.ConfigDict) as Layer;
       model.add(layer);
     }
