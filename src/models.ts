@@ -821,12 +821,8 @@ export class Sequential extends Model {
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict): T {
-    const model = new cls({});
-    if (!(model instanceof Sequential)) {
-      throw new NotImplementedError(
-          `Sequential.fromConfig called on non-Sequential input: ${model}`);
-    }
     let configArray: serialization.ConfigDictArray;
+    let additionalModelConfig: serialization.ConfigDict = {};
     if (config instanceof Array) {
       if (!(config[0].className != null) ||
             config[0]['className'] === 'Merge') {
@@ -839,6 +835,14 @@ export class Sequential extends Model {
           `When the config data for a Sequential model is not an Array, ` +
           `it must be an Object that contains the 'layers' field.`);
       configArray = config['layers'] as serialization.ConfigDictArray;
+      delete config['layers'];
+      additionalModelConfig = config;
+    }
+
+    const model = new cls({additionalModelConfig});
+    if (!(model instanceof Sequential)) {
+      throw new NotImplementedError(
+          `Sequential.fromConfig called on non-Sequential input: ${model}`);
     }
 
     for (const conf of configArray) {

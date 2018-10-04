@@ -496,6 +496,7 @@ describeMathCPU('modelFromJSON', () => {
       'class_name': 'Sequential',
       'keras_version': '2.1.6-tf',
       'config': {
+        'name': 'BarSequential123',
         'layers': [{
           'class_name': 'Dense',
           'config': {
@@ -528,6 +529,7 @@ describeMathCPU('modelFromJSON', () => {
     };
     const model =
         deserialize(convertPythonicToTs(modelTopology) as ConfigDict) as Model;
+    expect(model.name.indexOf('BarSequential123')).toEqual(0);
     expect(model.inputs.length).toEqual(1);
     expect(model.inputs[0].shape).toEqual([null, 4]);
     expect(model.outputs.length).toEqual(1);
@@ -772,6 +774,7 @@ describeMathCPU('loadModel from URL', () => {
 
     loadModelInternal('model/model.json')
         .then(model => {
+          expect(model.name.indexOf('Foo123Sequential')).toEqual(0);
           expect(model.layers.length).toEqual(2);
           expect(model.inputs.length).toEqual(1);
           expect(model.inputs[0].shape).toEqual([null, 10]);
@@ -1556,6 +1559,7 @@ const fakeNonArrayConfigSequentialModelFromHDF5: ModelAndWeightsConfig = {
     'model_config': {
       'class_name': 'Sequential',
       'config': {
+        'name': 'Foo123Sequential',
         'layers': [
           {
             'class_name': 'Dense',
