@@ -143,72 +143,57 @@ export function batchFlatten(x: Tensor): Tensor {
 
 /**
  * Do slicing along the first axis.
+ *
  * @param array input `Tensor`.
  * @param start starting index, inclusive.
  * @param size size of the slice along the first axis.
  * @returns result of the slicing.
- * @throws ValueError: If `array` is of an unsupported subtype of `Tensor`.
+ * @throws ValueError: If `array` is of an `Scalar` (rank-0 Tensor`), which
+ *   cannot be sliced.
  */
 export function sliceAlongFirstAxis(
     array: Tensor, start: number, size: number): Tensor {
   return tidy(() => {
-    switch (array.rank) {
-      case 1:
-        return tfc.slice1d(array as Tensor1D, start, size);
-      case 2:
-        return tfc.slice2d(
-            array as Tensor2D, [start, 0], [size, array.shape[1]]);
-      case 3:
-        return tfc.slice3d(
-            array as Tensor3D, [start, 0, 0],
-            [size, array.shape[1], array.shape[2]]);
-      case 4:
-        return tfc.slice4d(
-            array as Tensor4D, [start, 0, 0, 0],
-            [size, array.shape[1], array.shape[2], array.shape[3]]);
-      default:
-        throw new ValueError(
-            `sliceAlongFirstAxis() received an unsupported tensor rank: ` +
-            `${array.rank}`);
+    util.assert(array.rank > 0, 'Cannot slice a Scalar.');
+    const startIndices: number[] = [start];
+    const sizes: number[] = [size];
+    for (let i = 1; i < array.rank; ++i) {
+      startIndices.push(0);
+      sizes.push(array.shape[i]);
     }
+    return array.slice(startIndices, size);
   });
 }
 
 /**
  * Do slicing along the last axis.
+ *
  * @param array input `Tensor`.
  * @param start starting index, inclusive.
  * @param size size of the slice along the last axis.
  * @returns result of the slicing.
- * @throws ValueError: If `array` is of an unsupported subtype of `Tensor`.
+ * @throws ValueError: If `array` is of an `Scalar` (rank-0 Tensor`), which
+ *   cannot be sliced.
  */
 export function sliceAlongLastAxis(
     array: Tensor, start: number, size: number): Tensor {
   return tidy(() => {
-    switch (array.rank) {
-      case 1:
-        return tfc.slice1d(array as Tensor1D, start, size);
-      case 2:
-        return tfc.slice2d(
-            array as Tensor2D, [0, start], [array.shape[0], size]);
-      case 3:
-        return tfc.slice3d(
-            array as Tensor3D, [0, 0, start],
-            [array.shape[0], array.shape[1], size]);
-      case 4:
-        return tfc.slice4d(
-            array as Tensor4D, [0, 0, 0, start],
-            [array.shape[0], array.shape[1], array.shape[2], size]);
-      default:
-        throw new ValueError(
-            `sliceAlongLastAxis() received an unsupported tensor rank: ` +
-            `${array.rank}`);
+    util.assert(array.rank > 0, 'Cannot slice a Scalar.');
+    const startIndices: number[] = [];
+    const sizes: number[] = [];
+    for (let i = 0; i < array.rank - 1; ++i) {
+      startIndices.push(0);
+      sizes.push(array.shape[i]);
     }
+    startIndices.push(start);
+    sizes.push(size);
+    return array.slice(startIndices, sizes);
   });
 }
 
 /**
  * Do slicing along the sepcified axis.
+ *
  * @param array input `Tensor`.
  * @param start starting index, inclusive.
  * @param size of the slice along the chosen axis.
@@ -219,59 +204,21 @@ export function sliceAlongLastAxis(
 export function sliceAlongAxis(
     array: Tensor, start: number, size: number, axis: number): Tensor {
   return tidy(() => {
-    switch (array.rank) {
-      case 1:
-        return tfc.slice1d(array as Tensor1D, start, size);
-      case 2:
-        switch (axis) {
-          case 1:
-            return sliceAlongFirstAxis(array, start, size);
-          case 2:
-            return sliceAlongLastAxis(array, start, size);
-          default:
-            throw new ValueError(
-                `The axis is not within the rank of the tensor ` +
-                `${axis}`);
-        }
-      case 3:
-        switch (axis) {
-          case 1:
-            return sliceAlongFirstAxis(array, start, size);
-          case 2:
-            return tfc.slice3d(
-                array as Tensor3D, [0, start, 0],
-                [array.shape[0], size, array.shape[2]]);
-          case 3:
-            return sliceAlongLastAxis(array, start, size);
-          default:
-            throw new ValueError(
-                `The axis is not within the rank of the tensor ` +
-                `${axis}`);
-        }
-      case 4:
-        switch (axis) {
-          case 1:
-            return sliceAlongFirstAxis(array, start, size);
-          case 2:
-            return tfc.slice4d(
-                array as Tensor4D, [0, start, 0, 0],
-                [array.shape[0], size, array.shape[2], array.shape[3]]);
-          case 3:
-            return tfc.slice4d(
-                array as Tensor4D, [0, 0, start, 0],
-                [array.shape[0], array.shape[1], size, array.shape[3]]);
-          case 4:
-            return sliceAlongLastAxis(array, start, size);
-          default:
-            throw new ValueError(
-                `The axis is not within the rank of the tensor ` +
-                `${axis}`);
-        }
-      default:
-        throw new ValueError(
-            `sliceAlongLastAxis() received an unsupported tensor rank: ` +
-            `${array.rank}`);
+    util.assert(array.rank > 0, 'Cannot slice a Scalar.');
+
+    const startIndices: number[] = [];
+    const sizes: number[] = [];
+    for (let i = 0; i < axis; ++i) {
+      startIndices.push(0);
+      sizes.push(array.shape[i]);
     }
+    startIndices.push(start);
+    sizes.push(size);
+    for (let i = axis + 1; i < array.rank; ++i) {
+      startIndices.push(0);
+      sizes.push(array.shape[i]);
+    }
+    return array.slice(startIndices, sizes);
   });
 }
 

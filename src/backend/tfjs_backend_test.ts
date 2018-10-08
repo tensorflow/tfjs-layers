@@ -318,7 +318,6 @@ describeMathCPUAndGPU('sliceAlongLastAxis', () => {
   });
 });
 
-
 describeMathCPUAndGPU('sliceAlongAxis', () => {
   it('1D', () => {
     const array1DData = [10, 20, 30, 40];
