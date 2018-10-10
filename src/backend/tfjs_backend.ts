@@ -205,6 +205,8 @@ export function sliceAlongAxis(
     array: Tensor, start: number, size: number, axis: number): Tensor {
   return tidy(() => {
     util.assert(array.rank > 0, 'Cannot slice a Scalar.');
+    axis--;
+    util.assert(axis >= 0 && axis < array.rank, `Invalid axis.`);
 
     const startIndices: number[] = [];
     const sizes: number[] = [];
