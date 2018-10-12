@@ -61,9 +61,9 @@
     "@types/webgl2" "~0.0.4"
     seedrandom "~2.4.3"
 
-"@tensorflow/tfjs-core@0.13.5":
-  version "0.13.5"
-  resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-core/-/tfjs-core-0.13.5.tgz#6545aeae300181b25cbe86c3079d63093893c81c"
+"@tensorflow/tfjs-core@0.13.4":
+  version "0.13.4"
+  resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-core/-/tfjs-core-0.13.4.tgz#a32ade8e93fd4dddc23630c827323df1b941fb24"
   dependencies:
     "@types/seedrandom" "~2.4.27"
     "@types/webgl-ext" "~0.0.29"
