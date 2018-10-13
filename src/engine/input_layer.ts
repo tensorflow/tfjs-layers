@@ -14,7 +14,7 @@ import {getUid} from '../backend/state';
 import {ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
 
-import {Layer, Node, SymbolicTensor, DisposeResult} from './topology';
+import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
 
 /**
  * Constructor arguments for InputLayer.
@@ -46,16 +46,24 @@ export interface InputLayerConfig {
  *
  * `InputLayer` is generated automatically for `Sequential` models by specifying
  * the `inputshape` or `batchInputShape` for the first layer.  It should not be
- * specified explicitly.
+ * specified explicitly. However, it can be useful when constructing a
+ * sequential model from another sequential model's layers. Like the code
+ * snippet below shows.
  *
  * ```js
  * // Define a model which simply adds two inputs.
- * const inputA = tf.input({shape: [3]});
- * const inputB = tf.input({shape: [3]});
- * const sum = tf.layers.add().apply([inputA, inputB]);
- * const model = tf.model({inputs: [inputA, inputB], outputs: sum});
- * const batchSize = 2;
- * model.predict([tf.ones([batchSize, 3]), tf.ones([batchSize, 3])]).print();
+ * const model1 = tf.sequential();
+ * model1.add(tf.layers.dense({inputShape: [4], units: 3, activation: 'relu'}));
+ * model1.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
+ * model1.summary();
+ *
+ * // Construct another model, reusing the second layer of `model1`.
+ * const model2 = tf.sequential();
+ * // Use an inputShape that matches the input shape of `model1`'s second
+ * // layer.
+ * model2.add(tf.inputLayer({inputShape: [3]}));
+ * model2.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
+ * model2.summary();
  * ```
  */
 export class InputLayer extends Layer {
@@ -140,10 +148,7 @@ export class InputLayer extends Layer {
 
   dispose(): DisposeResult {
     // dispose() for InputLayer is overridden as no-op.
-    return {
-      refCountAfterDispose: this._refCount,
-      numDisposedVariables: 0
-    };
+    return {refCountAfterDispose: this._refCount, numDisposedVariables: 0};
   }
 
   getConfig(): serialization.ConfigDict {
