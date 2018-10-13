@@ -46,9 +46,9 @@ export interface InputLayerConfig {
  *
  * `InputLayer` is generated automatically for `Sequential` models by specifying
  * the `inputshape` or `batchInputShape` for the first layer.  It should not be
- * specified explicitly. However, it can be useful when constructing a
- * sequential model from another sequential model's layers. Like the code
- * snippet below shows.
+ * specified explicitly. However, it can be useful sometimes, e.g., when
+ * constructing a sequential model from a subset of another sequential model's
+ * layers. Like the code snippet below shows.
  *
  * ```js
  * // Define a model which simply adds two inputs.
@@ -61,7 +61,7 @@ export interface InputLayerConfig {
  * const model2 = tf.sequential();
  * // Use an inputShape that matches the input shape of `model1`'s second
  * // layer.
- * model2.add(tf.inputLayer({inputShape: [3]}));
+ * model2.add(tf.layers.inputLayer({inputShape: [3]}));
  * model2.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
  * model2.summary();
  * ```
