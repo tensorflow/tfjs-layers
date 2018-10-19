@@ -92,5 +92,5 @@ const model = await tf.loadModel('http://foo.bar/tfjs_artifacts/model.json');
 
 ## For more information
 
-- [TensorFlow.js API documentation](https://js.tensorflow.org/api/index.html)
+- [TensorFlow.js API documentation](https://js.tensorflow.org/api/0.13.0/)
 - [TensorFlow.js Tutorials](https://js.tensorflow.org/tutorials/)
