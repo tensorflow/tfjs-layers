@@ -1354,11 +1354,12 @@ export abstract class Container extends Layer {
         const inboundNode = inboundLayer.inboundNodes[inboundNodeIndex];
         if (inboundLayer.name === 'bidirectional_1') {
           console.log(`### Pushing to inputTensors: ` +
-              `${inboundNode.outputTensors[inboundTensorIndex].shape} (` +
-              `inboundLayer.name = ${inboundLayer.name}`);  // DEBUG
+              `${JSON.stringify(inboundNode.outputTensors[inboundTensorIndex].shape)} (` +
+              `inboundLayer.name = ${inboundLayer.name})`);  // DEBUG
           console.log(`###   inboundNodeIndex = ${inboundNodeIndex}`);  // DEBUG
           // DEBUG
           console.log(`###   inboundTensorIndex = ${inboundTensorIndex}`);
+          inboundLayer.printInboundNodes();
         }
         inputTensors.push(inboundNode.outputTensors[inboundTensorIndex]);
       }
@@ -1367,16 +1368,29 @@ export abstract class Container extends Layer {
       // Note: This has Eager vs Graph Implications.
       if (inputTensors.length > 0) {
         console.log(`Calling layer.apply with layer ${layer.name}`);  // DEBUG
-        const inputTensor = inputTensors[0];
-        console.log(`  inputTensors.length = ${inputTensors.length}`);  // DEBUG
-        console.log(`  Source layer name: ${inputTensor.sourceLayer.name}`);  // DEBUG
-        console.log(`  input tensor name: ${inputTensor.name}`);  // DEBUG
-        console.log(
-            `  input tensor shape(s): ` +
-            `${JSON.stringify(inputTensors.map(t => t.shape))}`);  // DEBUG
+        for (let i = 0; i < inputTensors.length; ++i) {
+          const inputTensor = inputTensors[i];
+          console.log(`  inputTensors.length (${i}): ${inputTensors.length}`);  // DEBUG
+          console.log(`  Source layer name (${i}): ${inputTensor.sourceLayer.name}`);  // DEBUG
+          console.log(`  input tensor name (${i}): ${inputTensor.name}`);  // DEBUG
+          console.log(
+              `  input tensor shape (${i}): ${JSON.stringify(inputTensor.shape)}`);  // DEBUG
+          if (inputTensor.sourceLayer.name === 'bidirectional_1') {
+            inputTensor.sourceLayer.printInboundNodes();  // DEBUG
+          }
+        }
+
+        if (layer.name === 'dot_1' && createdLayers['bidirectional_1'] != null) {
+          console.log('============= BEFORE dot_1 apply() =============');  // DEBUG
+          createdLayers['bidirectional_1'].printInboundNodes();
+        }
         const outputTensor = layer.apply(
             generic_utils.singletonOrArray(inputTensors),
             kwargs);  // was ** kwargs
+        if (layer.name === 'dot_1' && createdLayers['bidirectional_1'] != null) {
+          console.log('============= AFTER dot_1 apply() =============');  // DEBUG
+          createdLayers['bidirectional_1'].printInboundNodes();
+        }
         if (!Array.isArray(outputTensor)) {
           console.log(
               '  output tensor shape:',
@@ -1443,7 +1457,10 @@ export abstract class Container extends Layer {
       // console.log(layersFromConfig.map(layerData => layerData.name));  // DEBUG
       for (const layerData of layersFromConfig) {
         // DEBUG
-        console.log(`Calling createLayers: name = ${layerData.name}`);
+        console.log(`=== Requerying createdLayers: name = ${layerData.name}`);
+        if (createdLayers['bidirectional_1'] != null) {
+          createdLayers['bidirectional_1'].printInboundNodes();  // DEBUG
+        }
         const layer = createdLayers[layerData.name as string];
         // console.log(`Done ${layerData.name}`);
         if (layer.name in unprocessedNodes) {
