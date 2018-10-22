@@ -2340,5 +2340,11 @@ describeMathCPU('Functional-model saving and loading', () => {
     }
     expect(convertTsToPythonic(model.getConfig()))
         .toEqual(modelTopology['model_config']['config']);
+
+    const x = randomNormal([2, 30, 38]);
+    const s = randomNormal([2, 64]);
+    const c = randomNormal([2, 64]);
+    const output = model.predict([x, s, c]) as Tensor[];
+    expect(output.length).toEqual(10);
   });
 });
