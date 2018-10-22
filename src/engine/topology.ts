@@ -469,7 +469,7 @@ export abstract class Layer extends serialization.Serializable {
     let name = config.name;
     if (!name) {
       const prefix = this.getClassName();
-      name = generic_utils.toSnakeCase(prefix) + '_' + getUid(prefix);
+      name = getUid(generic_utils.toSnakeCase(prefix));
     }
     this.name = name;
 

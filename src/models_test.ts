@@ -2265,3 +2265,60 @@ const fakeRoundtripModel: ModelAndWeightsConfig = {
     }
   }
 };
+
+describeMathCPU('Functional-model saving and loading', () => {
+  it('Save-load round trip', async () => {
+    const input1 = tfl.input({shape: [2, 3]});
+    const input2 = tfl.input({shape: [3, 2]});
+
+    const reshape = tfl.layers.reshape({targetShape: [6]});
+    const output1 = reshape.apply(input1) as tfl.SymbolicTensor;
+    const output2 = reshape.apply(input2) as tfl.SymbolicTensor;
+
+    const model1 =
+        tfl.model({inputs: [input1, input2], outputs: [output1, output2]});
+
+    const model1JSON = model1.toJSON(null, false) as JsonDict;
+    const model2 =
+        await modelFromJSON({modelTopology: model1JSON}) as tfl.Model;
+
+    expect(model2.inputs.length).toEqual(model1.inputs.length);
+    expect(model2.inputs[0].shape).toEqual(model1.inputs[0].shape);
+    expect(model2.inputs[1].shape).toEqual(model1.inputs[1].shape);
+    expect(model2.outputs.length).toEqual(model1.outputs.length);
+    expect(model2.outputs[0].shape).toEqual(model1.outputs[0].shape);
+    expect(model2.outputs[1].shape).toEqual(model1.outputs[1].shape);
+    expect(model2.toJSON(null, false)).toEqual(model1JSON);
+
+    const x1 = randomNormal([1, 2, 3]);
+    const x2 = randomNormal([1, 3, 2]);
+    const ys1 = model1.apply([x1, x2]) as Tensor[];
+
+    const ys2 = model2.apply([x1, x2]) as Tensor[];
+
+    expectTensorsClose(ys1[0], ys2[0]);
+    expectTensorsClose(ys1[1], ys2[1]);
+  });
+
+  it('Loopy layer invocation', async () => {
+    const input = tfl.layers.input({shape: [1]});
+    const dense = tfl.layers.dense(
+        {units: 1, kernelInitializer: 'ones', biasInitializer: 'ones'});
+    let output = dense.apply(input) as tfl.SymbolicTensor;
+    for (let i = 0; i < 3; ++i) {
+      output = dense.apply(output) as tfl.SymbolicTensor;
+    }
+    const model1 = tfl.model({inputs: input, outputs: output});
+
+    const xs = ones([10, 1]);
+    const ys1 = model1.predict(xs) as Tensor;
+
+    const model1JSON = model1.toJSON(null, false) as JsonDict;
+    const model2 =
+        await modelFromJSON({modelTopology: model1JSON}) as tfl.Model;
+    expect(model2.toJSON(null, false)).toEqual(model1JSON);
+
+    const ys2 = model2.predict(xs) as Tensor;
+    expectTensorsClose(ys1, ys2);
+  });
+});

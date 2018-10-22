@@ -443,7 +443,11 @@ export abstract class Container extends Layer {
           }
 
           // Update containerNodes.
+          // console.log(
+          //     `Adding key to this.containerNodes: ` +
+          //     `${Container.nodeKey(layer, nodeIndex)}`);  // DEBUG
           this.containerNodes.add(Container.nodeKey(layer, nodeIndex));
+          // console.log(this.containerNodes);  // DEBUG
 
           // Store the traversal order for layer sorting.
           if (!(layer.id in layerIndices)) {
@@ -461,6 +465,10 @@ export abstract class Container extends Layer {
             const layer = node.inboundLayers[i];
             const nodeIndex = node.nodeIndices[i];
             const tensorIndex = node.tensorIndices[i];
+            // DEBUG
+            // console.log(
+            //     `Recursively calling buildMapOfGraph: ` +
+            //     `nodeIndex: ${nodeIndex}`);
             buildMapOfGraph(
                 x, finishedNodes, nodesInProgress, layer, nodeIndex,
                 tensorIndex);
@@ -475,8 +483,10 @@ export abstract class Container extends Layer {
     const finishedNodes: Node[] = [];
     const nodesInProgress: Node[] = [];
     for (const x of this.outputs) {
+      // console.log('Calling buildMapOfGraph');  // DEBUG
       buildMapOfGraph(x, finishedNodes, nodesInProgress);
     }
+    // console.log(`Done building graph map: ${this.containerNodes}`);  // DEBUG
 
     const reversedNodesInDecreasingDepth =
         nodesInDecreasingDepth.slice().reverse();
@@ -1064,18 +1074,29 @@ export abstract class Container extends Layer {
   private buildNodeConversionMap(layers: Layer[]): {[nodeKey: string]: number} {
     const nodeConversionMap: {[nodeKey: string]: number} = {};
     let keptNodes: number;
+    // console.log('In buildNodeConversionMap()');  // DEBUG
+    // console.log('  this.containerNodes:',  this.containerNodes);  // DEBUG
     for (const layer of this.layers) {
+      // console.log(`  layer: ${layer.name}`);  // DEBUG
       keptNodes = layer instanceof Container ? 1 : 0;
+      // console.log(`  keptNodes = ${keptNodes}`);  // DEBUG
+      // DEBUG
+      // console.log(
+      //     `  layer.inboundNodes.length = ${layer.inboundNodes.length}`);
       for (let originalNodeIndex = 0;
            originalNodeIndex < layer.inboundNodes.length; originalNodeIndex++) {
         const nodeKey = Container.nodeKey(layer, originalNodeIndex);
-        if (nodeKey in this.containerNodes) {
+        // console.log(`    nodeKey = ${nodeKey}`);  // DEBUG
+        if (this.containerNodes.has(nodeKey)) {
           // i.e. we mark it to be saved
           nodeConversionMap[nodeKey] = keptNodes;
           keptNodes += 1;
         }
       }
     }
+    // console.log(
+    //     `buildNodeConversionMap returning ` +
+    //     `${JSON.stringify(nodeConversionMap)}`);  // DEBUG
     return nodeConversionMap;
   }
 
@@ -1165,12 +1186,17 @@ export abstract class Container extends Layer {
       const filteredInboundNodes = [];
       for (let originalNodeIndex = 0;
            originalNodeIndex < layer.inboundNodes.length; originalNodeIndex++) {
+        // console.log(
+        //     `getConfig(): ${this.name}: ` +
+        //     `inbound node #${originalNodeIndex}: node:`);  // DEBUG
         const node = layer.inboundNodes[originalNodeIndex];
         const nodeKey = Container.nodeKey(layer, originalNodeIndex);
+        // console.log(`  nodeKey: ${nodeKey}`);  // DEBUG
         let kwargs = {};
         if (this.containerNodes.has(nodeKey)) {
           // The node is relevant to the model:
           // add to filteredInboundNodes.
+          // console.log('  containerNode has nodeKey');  // DEBUG
           if (node.callArgs) {
             try {
               JSON.stringify(node.callArgs);
@@ -1185,17 +1211,24 @@ export abstract class Container extends Layer {
               kwargs = {};
             }
           }
+          // DEBUG
+          // console.log(
+          //     `  node.inboundLayers.length = ${node.inboundLayers.length}`);
           if (node.inboundLayers.length > 0) {
             const nodeData = [];
             for (let i = 0; i < node.inboundLayers.length; i++) {
               const inboundLayer = node.inboundLayers[i];
+              // console.log(`    inboundLayer = ${inboundLayer}`);  // DEBUG
               const nodeIndex = node.nodeIndices[i];
               const tensorIndex = node.tensorIndices[i];
               const nodeKey = Container.nodeKey(inboundLayer, nodeIndex);
               let newNodeIndex = nodeConversionMap[nodeKey];
-              if (newNodeIndex === null || newNodeIndex === undefined) {
+              if (newNodeIndex == null) {
                 newNodeIndex = 0;
               }
+              // console.log(
+              //     `    pushing layer name: ${inboundLayer.name}` +
+              //     `; newNodeIndex = ${newNodeIndex}`);  // DEBUG
               nodeData.push(
                   [inboundLayer.name, newNodeIndex, tensorIndex, kwargs]);
             }
