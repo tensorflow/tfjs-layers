@@ -210,7 +210,6 @@ export function deserializeKerasObject(
           `tf.serialization.registerClass().`);
       // TODO(cais): Add link to tutorial page on custom layers.
     }
-    
     if (fromConfig != null) {
       // Porting notes: Instead of checking to see whether fromConfig accepts
       // customObjects, we create a customObjects dictionary and tack it on to

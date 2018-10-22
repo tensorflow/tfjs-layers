@@ -1262,7 +1262,6 @@ export abstract class Container extends Layer {
       config: serialization.ConfigDict): T {
     // Layer instances created during
     // the graph reconstruction process
-
     const createdLayers: {[layerName: string]: Layer} = {};
 
     // Dictionary mapping layer instances to
@@ -1279,7 +1278,7 @@ export abstract class Container extends Layer {
       } else {
         unprocessedNodes[layer.name].push(nodeData);
       }
-    }    
+    }
 
     function processNode(layer: Layer, nodeData: serialization.ConfigDict[]) {
       const inputTensors: SymbolicTensor[] = [];
