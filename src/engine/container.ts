@@ -1372,7 +1372,7 @@ export abstract class Container extends Layer {
         }
       }
     }
-    
+
     const inputTensors: SymbolicTensor[] = [];
     const outputTensors: SymbolicTensor[] = [];
     const inputLayersFromConfig =
