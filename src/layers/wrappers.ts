@@ -383,6 +383,7 @@ export class Bidirectional extends Wrapper {
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
       kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
+    console.log(`%%% In Bidrectional.apply():`);  // DEBUG
     let initialState: Tensor[]|SymbolicTensor[] =
         kwargs == null ? null : kwargs['initialState'];
     let constants: Tensor[]|SymbolicTensor[] =
@@ -403,6 +404,7 @@ export class Bidirectional extends Wrapper {
 
     if ((initialState == null || initialState.length === 0) &&
         constants == null) {
+      console.log(`%%% Bidirectional.apply() returning: 0th branch`);  // DEBUG
       return super.apply(inputs, kwargs);
     }
     const additionalInputs: Array<Tensor|SymbolicTensor> = [];
@@ -456,8 +458,10 @@ export class Bidirectional extends Wrapper {
       const output =
           super.apply(fullInput as Tensor[] | SymbolicTensor[], kwargs);
       this.inputSpec = originalInputSpec;
+      console.log(`%%% Bidirectional.apply() returning: ${output}`);  // DEBUG
       return output;
     } else {
+      console.log(`%%% Bidirectional.apply(): 2nd branch`);  // DEBUG
       return super.apply(inputs, kwargs);
     }
   }

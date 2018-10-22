@@ -925,6 +925,9 @@ export abstract class Layer extends serialization.Serializable {
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
       kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
+    if (this.name === 'bidirectional_1') {
+      console.log('%%% Bidirectional super.apply():');  // DEBUG
+    }
     kwargs = kwargs || {};
 
     this.assertNotDisposed();

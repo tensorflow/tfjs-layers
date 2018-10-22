@@ -157,6 +157,7 @@ export function deserializeKerasObject(
     customObjects = {} as {[objName: string]: any},
     printableModuleName = 'object'): any {
   // tslint:enable
+  console.log('In deserializeKerasObject: identifier=', identifier);  // DEBUG
   if (typeof identifier === 'string') {
     const functionName = identifier;
     let fn;
@@ -190,6 +191,7 @@ export function deserializeKerasObject(
           `'className' and 'config' must set.`);
     }
     const className = config.className as string;
+    console.log(`className = ${className}`);  // DEBUG
     let cls, fromConfig;
     if (className in customObjects) {
       [cls, fromConfig] = customObjects.get(className);
@@ -210,6 +212,9 @@ export function deserializeKerasObject(
           `tf.serialization.registerClass().`);
       // TODO(cais): Add link to tutorial page on custom layers.
     }
+    console.log('cls:', cls);  // DEBUG
+    console.log('fromConfig:', fromConfig);  // DEBUG
+    
     if (fromConfig != null) {
       // Porting notes: Instead of checking to see whether fromConfig accepts
       // customObjects, we create a customObjects dictionary and tack it on to
@@ -232,6 +237,7 @@ export function deserializeKerasObject(
       for (const key of Object.keys(customObjects)) {
         _GLOBAL_CUSTOM_OBJECTS[key] = customObjects[key];
       }
+      console.log(`Calling fromConfig with cls`);  // DEBUG
       const returnObj = fromConfig(cls, config.config);
       _GLOBAL_CUSTOM_OBJECTS = {...backupCustomObjects};
 
