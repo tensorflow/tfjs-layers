@@ -261,7 +261,6 @@ export abstract class Container extends Layer {
     // No args passed to super's constructor.
     super({});
     this.name = config.name;
-    console.log(`In Container ctor, name = ${this.name}`);  // DEBUG
     if (this.name == null) {
       const prefix = this.getClassName().toLowerCase();
       this.name = getUid(prefix);
@@ -444,11 +443,7 @@ export abstract class Container extends Layer {
           }
 
           // Update containerNodes.
-          // console.log(
-          //     `Adding key to this.containerNodes: ` +
-          //     `${Container.nodeKey(layer, nodeIndex)}`);  // DEBUG
           this.containerNodes.add(Container.nodeKey(layer, nodeIndex));
-          // console.log(this.containerNodes);  // DEBUG
 
           // Store the traversal order for layer sorting.
           if (!(layer.id in layerIndices)) {
@@ -466,10 +461,6 @@ export abstract class Container extends Layer {
             const layer = node.inboundLayers[i];
             const nodeIndex = node.nodeIndices[i];
             const tensorIndex = node.tensorIndices[i];
-            // DEBUG
-            // console.log(
-            //     `Recursively calling buildMapOfGraph: ` +
-            //     `nodeIndex: ${nodeIndex}`);
             buildMapOfGraph(
                 x, finishedNodes, nodesInProgress, layer, nodeIndex,
                 tensorIndex);
@@ -484,10 +475,8 @@ export abstract class Container extends Layer {
     const finishedNodes: Node[] = [];
     const nodesInProgress: Node[] = [];
     for (const x of this.outputs) {
-      // console.log('Calling buildMapOfGraph');  // DEBUG
       buildMapOfGraph(x, finishedNodes, nodesInProgress);
     }
-    // console.log(`Done building graph map: ${this.containerNodes}`);  // DEBUG
 
     const reversedNodesInDecreasingDepth =
         nodesInDecreasingDepth.slice().reverse();
@@ -1075,19 +1064,11 @@ export abstract class Container extends Layer {
   private buildNodeConversionMap(layers: Layer[]): {[nodeKey: string]: number} {
     const nodeConversionMap: {[nodeKey: string]: number} = {};
     let keptNodes: number;
-    // console.log('In buildNodeConversionMap()');  // DEBUG
-    // console.log('  this.containerNodes:',  this.containerNodes);  // DEBUG
     for (const layer of this.layers) {
-      // console.log(`  layer: ${layer.name}`);  // DEBUG
       keptNodes = layer instanceof Container ? 1 : 0;
-      // console.log(`  keptNodes = ${keptNodes}`);  // DEBUG
-      // DEBUG
-      // console.log(
-      //     `  layer.inboundNodes.length = ${layer.inboundNodes.length}`);
       for (let originalNodeIndex = 0;
            originalNodeIndex < layer.inboundNodes.length; originalNodeIndex++) {
         const nodeKey = Container.nodeKey(layer, originalNodeIndex);
-        // console.log(`    nodeKey = ${nodeKey}`);  // DEBUG
         if (this.containerNodes.has(nodeKey)) {
           // i.e. we mark it to be saved
           nodeConversionMap[nodeKey] = keptNodes;
@@ -1095,9 +1076,6 @@ export abstract class Container extends Layer {
         }
       }
     }
-    // console.log(
-    //     `buildNodeConversionMap returning ` +
-    //     `${JSON.stringify(nodeConversionMap)}`);  // DEBUG
     return nodeConversionMap;
   }
 
@@ -1187,17 +1165,12 @@ export abstract class Container extends Layer {
       const filteredInboundNodes = [];
       for (let originalNodeIndex = 0;
            originalNodeIndex < layer.inboundNodes.length; originalNodeIndex++) {
-        // console.log(
-        //     `getConfig(): ${this.name}: ` +
-        //     `inbound node #${originalNodeIndex}: node:`);  // DEBUG
         const node = layer.inboundNodes[originalNodeIndex];
         const nodeKey = Container.nodeKey(layer, originalNodeIndex);
-        // console.log(`  nodeKey: ${nodeKey}`);  // DEBUG
         let kwargs = {};
         if (this.containerNodes.has(nodeKey)) {
           // The node is relevant to the model:
           // add to filteredInboundNodes.
-          // console.log('  containerNode has nodeKey');  // DEBUG
           if (node.callArgs) {
             try {
               JSON.stringify(node.callArgs);
@@ -1212,14 +1185,10 @@ export abstract class Container extends Layer {
               kwargs = {};
             }
           }
-          // DEBUG
-          // console.log(
-          //     `  node.inboundLayers.length = ${node.inboundLayers.length}`);
           if (node.inboundLayers.length > 0) {
             const nodeData = [];
             for (let i = 0; i < node.inboundLayers.length; i++) {
               const inboundLayer = node.inboundLayers[i];
-              // console.log(`    inboundLayer = ${inboundLayer}`);  // DEBUG
               const nodeIndex = node.nodeIndices[i];
               const tensorIndex = node.tensorIndices[i];
               const nodeKey = Container.nodeKey(inboundLayer, nodeIndex);
@@ -1227,9 +1196,6 @@ export abstract class Container extends Layer {
               if (newNodeIndex == null) {
                 newNodeIndex = 0;
               }
-              // console.log(
-              //     `    pushing layer name: ${inboundLayer.name}` +
-              //     `; newNodeIndex = ${newNodeIndex}`);  // DEBUG
               nodeData.push(
                   [inboundLayer.name, newNodeIndex, tensorIndex, kwargs]);
             }
@@ -1296,7 +1262,6 @@ export abstract class Container extends Layer {
       config: serialization.ConfigDict): T {
     // Layer instances created during
     // the graph reconstruction process
-    console.log('In Container.fromConfig()');  // DEBUG    
 
     const createdLayers: {[layerName: string]: Layer} = {};
 
@@ -1319,12 +1284,6 @@ export abstract class Container extends Layer {
     function processNode(layer: Layer, nodeData: serialization.ConfigDict[]) {
       const inputTensors: SymbolicTensor[] = [];
       let kwargs;
-      if (layer.name === 'dense_1') {  // DEBUG
-        // DEBUG
-        console.log(`nodeData for dense_1: ${JSON.stringify(nodeData)}`);
-      } else if (layer.name === 'concatenate_1') {
-        console.log(`nodeData for concatenate_1: ${JSON.stringify(nodeData)}`);
-      }
       for (const inputData of nodeData) {
         const inboundLayerName = inputData[0] as string;
         const inboundNodeIndex = inputData[1] as number;
@@ -1337,71 +1296,25 @@ export abstract class Container extends Layer {
           throw new ValueError(`Improperly formatted model config for layer ${
               JSON.stringify(layer)}: ${JSON.stringify(inputData)}`);
         }
-        // console.log('createdLayers keys:', Object.keys(createdLayers));  // DEBUG
         if (!(inboundLayerName in createdLayers)) {
-          // console.log(`Adding ${layer.name}: ${JSON.stringify(nodeData)}`);  // DEBUG
           addUnprocessedNode(layer, nodeData);
           return;
         }
         const inboundLayer = createdLayers[inboundLayerName];
-        // console.log(`inboundLayer.name: ${inboundLayer.name}`);  // DEBUG
-        // console.log(`inboundLayer.inboundNodes.length: ${inboundLayer.inboundNodes.length}`);  // DEBUG
         if (inboundLayer.inboundNodes.length <= inboundNodeIndex) {
-          // console.log(`Adding to unprocessedNode: ${JSON.stringify(nodeData)}`);  // DEBUG
           addUnprocessedNode(layer, nodeData);
           return;
         }
         const inboundNode = inboundLayer.inboundNodes[inboundNodeIndex];
-        if (inboundLayer.name === 'bidirectional_1') {
-          console.log(`### Pushing to inputTensors: ` +
-              `${JSON.stringify(inboundNode.outputTensors[inboundTensorIndex].shape)} (` +
-              `inboundLayer.name = ${inboundLayer.name})`);  // DEBUG
-          console.log(`###   inboundNodeIndex = ${inboundNodeIndex}`);  // DEBUG
-          // DEBUG
-          console.log(`###   inboundTensorIndex = ${inboundTensorIndex}`);
-          inboundLayer.printInboundNodes();
-        }
         inputTensors.push(inboundNode.outputTensors[inboundTensorIndex]);
       }
       // Call layer on its inputs, thus creating the node
       // and building the layer if needed.
       // Note: This has Eager vs Graph Implications.
       if (inputTensors.length > 0) {
-        console.log(`Calling layer.apply with layer ${layer.name}`);  // DEBUG
-        for (let i = 0; i < inputTensors.length; ++i) {
-          const inputTensor = inputTensors[i];
-          console.log(`  inputTensors.length (${i}): ${inputTensors.length}`);  // DEBUG
-          console.log(`  Source layer name (${i}): ${inputTensor.sourceLayer.name}`);  // DEBUG
-          console.log(`  input tensor name (${i}): ${inputTensor.name}`);  // DEBUG
-          console.log(
-              `  input tensor shape (${i}): ${JSON.stringify(inputTensor.shape)}`);  // DEBUG
-          if (inputTensor.sourceLayer.name === 'bidirectional_1') {
-            inputTensor.sourceLayer.printInboundNodes();  // DEBUG
-          }
-        }
-
-        if (layer.name === 'dot_1' && createdLayers['bidirectional_1'] != null) {
-          console.log('============= BEFORE dot_1 apply() =============');  // DEBUG
-          createdLayers['bidirectional_1'].printInboundNodes();
-        }
-        const outputTensor = layer.apply(
+        layer.apply(
             generic_utils.singletonOrArray(inputTensors),
             kwargs);  // was ** kwargs
-        if (layer.name === 'dot_1' && createdLayers['bidirectional_1'] != null) {
-          console.log('============= AFTER dot_1 apply() =============');  // DEBUG
-          createdLayers['bidirectional_1'].printInboundNodes();
-        }
-        if (!Array.isArray(outputTensor)) {
-          console.log(
-              '  output tensor shape:',
-              (outputTensor as SymbolicTensor).shape);  // DEBUG
-        } else {
-          for (const tensor of (outputTensor as SymbolicTensor[])) {
-            console.log(
-                '  output tensor shape (among several):',
-                (tensor as SymbolicTensor).shape);  // DEBUG
-          }
-        }
       }
     }
 
@@ -1444,50 +1357,22 @@ export abstract class Container extends Layer {
       processLayer(layerData);
     }
 
-    console.log(`name = ${name}`);  // DEBUG
-    console.log('unprocessedNodes:', unprocessedNodes);  // DEBUG    
-
     // Then we process nodes in order of layer depth.
     // Nodes that cannot yet be processed(if the inbound node
     // does not yet exist) are re - enqueued, and the process
     // is repeated until all nodes are processed.
     while (!generic_utils.isObjectEmpty(unprocessedNodes)) {
-      // console.log('iteration');  // DEBUG
-      // console.log(`layersFromConfig.length = ${layersFromConfig.length}`);
-      // console.log(layersFromConfig.map(layerData => layerData.name));  // DEBUG
       for (const layerData of layersFromConfig) {
-        // DEBUG
-        console.log(`=== Requerying createdLayers: name = ${layerData.name}`);
-        if (createdLayers['bidirectional_1'] != null) {
-          createdLayers['bidirectional_1'].printInboundNodes();  // DEBUG
-        }
         const layer = createdLayers[layerData.name as string];
-        // console.log(`Done ${layerData.name}`);
         if (layer.name in unprocessedNodes) {
-          let nodeCounter = 0;  // DEBUG
           const currentUnprocessedNodesForLayer = unprocessedNodes[layer.name];
           delete unprocessedNodes[layer.name];
-          console.log(currentUnprocessedNodesForLayer.length);  // DEBUG
           for (const nodeData of currentUnprocessedNodesForLayer) {
             processNode(layer, nodeData);
-            if (layerData.name === 'repeat_vector_1' && nodeCounter === 8) {
-              console.log(JSON.stringify(nodeData, null, 2));  // DEBUG
-              // ('die' as any)();  // DEBUG
-            }
-            nodeCounter++;
-            // DEBUG
-            // console.log(
-            //     `Done processNode: ${layer.name}: ${nodeData[0][0]}, ${nodeData[0][1]}`);
-
           }
-          // if (layerData.name === 'repeat_vector_1') {
-          //   ('die' as any)();  // DEBUG
-          // } 
         }
       }
     }
-
-    console.log(`Done preprocessing nodes.`);  // DEBUG
     
     const inputTensors: SymbolicTensor[] = [];
     const outputTensors: SymbolicTensor[] = [];

@@ -785,9 +785,6 @@ export class Concatenate extends Merge {
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    console.log(
-        `'*** In Concatenate.computeOutputShape(): ` +
-        `inputShape = ${JSON.stringify(inputShape)}`);  // DEBUG
     if (!(Array.isArray(inputShape) && Array.isArray(inputShape[0]))) {
       throw new ValueError(
           'A `Concatenate` layer should be called on a list of inputs.');
@@ -797,8 +794,6 @@ export class Concatenate extends Merge {
     const axis = this.axis < 0 ? outputShape.length + this.axis : this.axis;
     // Porting Note: the line above is because TypeScript doesn't support
     //   negative indices.
-    // DEBUG
-    console.log(`  inputShapes.slice(1) = ${inputShapes.slice(1)}`);
     for (const shape of inputShapes.slice(1)) {
       if (outputShape[axis] == null || shape[axis] == null) {
         outputShape[axis] = null;
@@ -806,9 +801,6 @@ export class Concatenate extends Merge {
       }
       outputShape[axis] += shape[axis];
     }
-    console.log(
-      `'*** In Concatenate.computeOutputShape(): returning ` +
-      `${JSON.stringify(outputShape)}`);  // DEBUG
     return outputShape;
   }
 

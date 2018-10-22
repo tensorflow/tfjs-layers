@@ -55,7 +55,6 @@ export async function modelFromJSON(
   }
   const tsConfig =
       convertPythonicToTs(modelTopology) as serialization.ConfigDict;
-  console.log('Calling deserialize()');  // DEBUG
   const model = deserialize(tsConfig, customObjects) as Model;
 
   if (modelAndWeightsConfig.weightsManifest != null) {

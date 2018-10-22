@@ -925,9 +925,6 @@ export abstract class Layer extends serialization.Serializable {
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
       kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
-    if (this.name === 'bidirectional_1') {
-      console.log('%%% Bidirectional super.apply():');  // DEBUG
-    }
     kwargs = kwargs || {};
 
     this.assertNotDisposed();
@@ -1054,17 +1051,9 @@ export abstract class Layer extends serialization.Serializable {
           If the input tensor(s) had no previous history,
           this does nothing.
         */
-        if (this.name === 'bidirectional_1') { 
-          console.log('%%% %%% bidirectional_1 adding inbound node');  // DEBUG
-          this.printInboundNodes();
-        }
         this.addInboundNode(
             inputs as SymbolicTensor | SymbolicTensor[], output, null, null,
             inputShape, outputShape, kwargs);
-        if (this.name === 'bidirectional_1') {
-          console.log('%%% %%% bidirectional_1 added inbound node');  // DEBUG
-          
-        }
         this._refCount++;
 
         if (this.activityRegularizer != null) {
@@ -1072,23 +1061,10 @@ export abstract class Layer extends serialization.Serializable {
               'Layer invocation in the presence of activity ' +
               'regularizer(s) is not supported yet.');
         }
-        
-        if (this.name === 'bidirectional_1') {
-          // DEBUG
-          console.log('%%% Bidirectional super.apply(): returning shape:',
-                      (output as SymbolicTensor).shape);  // DEBUG
-        }
+
         return output;
       }
     });
-  }
-  
-  printInboundNodes(): void {  // DEBUG
-    for (let i = 0; i < this.inboundNodes.length; ++i) {
-      const node = this.inboundNodes[i];
-      console.log(`@@@ @@@   bidirectional_1 inputShapes: ${JSON.stringify(node.inputShapes)}`);  // DEBUG
-      console.log(`@@@ @@@   bidirectional_1 outputShapes: ${JSON.stringify(node.outputShapes)}`);  // DEBUG
-    }
   }
 
   /**
