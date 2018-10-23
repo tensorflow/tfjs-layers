@@ -28,7 +28,7 @@ import {join} from 'path';
  */
 async function saveModelAndRandomInputsAndOutputs(
     model: tfl.Model, exportPathprefix: string, inputIntegerMax?: number) {
-  await model.save(tfjsNode.io.fileSystem(`${exportPathprefix}`));
+  await model.save(tfjsNode.io.fileSystem(exportPathprefix));
 
   const xs: tfc.Tensor[] = [];
   const xsData: number[][] = [];
