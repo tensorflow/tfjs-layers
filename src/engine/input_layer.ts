@@ -57,7 +57,12 @@ export interface InputLayerConfig {
  * model1.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
  * model1.summary();
  *
- * // Construct another model, reusing the second layer of `model1`.
+ * // Construct another model, reusing the second layer of `model1` while
+ * // not using the first layer of `model1`. Note that you cannot add the second
+ * // layer of `model` directly as the first layer of the new sequential model,
+ * // because doing so will lead to an error that says the layer is not an input
+ * // layer. Instead, you need to create an `inputLayer` and add it to the
+ * // new sequential model before adding the reused layer.
  * const model2 = tf.sequential();
  * // Use an inputShape that matches the input shape of `model1`'s second
  * // layer.
