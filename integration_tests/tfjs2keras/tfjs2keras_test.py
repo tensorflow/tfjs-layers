@@ -26,11 +26,14 @@ def _call_command(command):
   subprocess.check_call(command)
 
 
-def _generate_random_tensor_like(xs):
+def _generate_random_tensor_like(xs, integer_max=None):
   if isinstance(xs, list):
     return [self._generate_random_tensor_like(x) for x in xs]
   else:
-    return np.random.randn(*xs.shape).astype(xs.dtype)
+    if integer_max is None:
+      return np.random.randn(*xs.shape).astype(xs.dtype)
+    else:
+      return np.random.randint(0, integer_max, xs.shape).astype(xs.dtype)
 
 
 class Tfjs2KerasExportTest(tf.test.TestCase):
@@ -81,25 +84,44 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
     """
     xs_shape_path = os.path.join(
         self._tmp_dir, model_path + '.xs-shapes.json')
+    xs_dtype_path = os.path.join(
+        self._tmp_dir, model_path + '.xs-dtypes.json')
     xs_data_path = os.path.join(
         self._tmp_dir, model_path + '.xs-data.json')
     with open(xs_shape_path, 'rt') as f:
       xs_shapes = json.load(f)
+    with open(xs_dtype_path, 'rt') as f:
+      xs_dtypes = json.load(f)
     with open(xs_data_path, 'rt') as f:
       xs_values = json.load(f)
+    # print(xs_dtypes)  # DEBUG
+    # print(xs_values)  # DEBUG
     xs = [np.array(value, dtype=np.float32).reshape(shape)
           for value, shape in zip(xs_values, xs_shapes)]
     if len(xs) == 1:
       xs = xs[0]
 
+    xs_input_integer_max_path = os.path.join(
+        self._tmp_dir, model_path + '.xs-input-integer-max.json')
+    xs_input_integer_max = None
+    if os.path.isfile(xs_input_integer_max_path):
+      with open(xs_input_integer_max_path, 'rt') as f:
+        xs_input_integer_max = json.load(f)
+        # print('xs_input_integer_max = %d' % xs_input_integer_max)  # DEBUG
+
     ys_shape_path = os.path.join(
         self._tmp_dir, model_path + '.ys-shapes.json')
+    ys_dtype_path = os.path.join(
+        self._tmp_dir, model_path + '.ys-dtypes.json')
     ys_data_path = os.path.join(
         self._tmp_dir, model_path + '.ys-data.json')
     with open(ys_shape_path, 'rt') as f:
       ys_shapes = json.load(f)
+    with open(ys_dtype_path, 'rt') as f:
+      ys_dtypes = json.load(f)
     with open(ys_data_path, 'rt') as f:
       ys_values = json.load(f)
+    # print(ys_dtypes)  # DEBUG
     ys = [np.array(value, dtype=np.float32).reshape(shape)
           for value, shape in zip(ys_values, ys_shapes)]
     if len(ys) == 1:
@@ -117,7 +139,12 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
       else:
         self.assertAllClose(ys, ys_new)
 
-      new_xs = _generate_random_tensor_like(xs)
+      new_xs = _generate_random_tensor_like(
+          xs, integer_max=xs_input_integer_max)
+      # print(xs.dtype)
+      # print(xs.shape)
+      # print(xs)  # DEBUG
+      # print(new_xs)  # DEBUG
       new_ys = model.predict(new_xs)
       new_save_path = os.path.join(self._tmp_dir, model_path, 'from_py')
       tfjs.converters.save_keras_model(model, new_save_path)
@@ -131,13 +158,7 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
       with open(new_ys_json_path,'wt') as f:
         json.dump(ys.tolist(), f)
 
-      # import glob
-      # print(glob.glob(os.path.join(new_save_path, '*')))  # DEBUG
-
       _call_command(['node', 'dist/tfjs_load.js', new_save_path ])
-      # import sys
-      # sys.exit(1)
-
 
   def testMLP(self):
     self._loadAndTestModel('mlp')
@@ -154,14 +175,14 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
   def testGRU(self):
     self._loadAndTestModel('gru')
 
-  # def testBidirectionalLSTM(self):
-  #   self._loadAndTestModel('bidirectional_lstm')
+  def testBidirectionalLSTM(self):
+    self._loadAndTestModel('bidirectional_lstm')
 
-  # def testTimeDistributedLSTM(self):
-  #   self._loadAndTestModel('time_distributed_lstm')
+  def testTimeDistributedLSTM(self):
+    self._loadAndTestModel('time_distributed_lstm')
 
-  # def testOneDimensional(self):
-  #   self._loadAndTestModel('one_dimensional')
+  def testOneDimensional(self):
+    self._loadAndTestModel('one_dimensional')
 
   # def testFunctionalMerge(self):
   #   self._loadAndTestModel('functional_merge.json')

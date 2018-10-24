@@ -21,18 +21,19 @@ import {join} from 'path';
  * @param model The `tf.Model` instance in question. It may have one or more
  *   inputs and one or more outputs. It is assumed that for each input, only
  *   the first dimension (i.e., the batch dimension) is undetermined.
- * @param exportPathprefix The path prefix to which the model, the input and
+ * @param exportPathPrefix The path prefix to which the model, the input and
  *   output tensors will be saved
  * @param inputIntegerMax (Optional) Maximum integer value for the input
  *   tensors. Used for models that take integer tensors as inputs.
  */
 async function saveModelAndRandomInputsAndOutputs(
-    model: tfl.Model, exportPathprefix: string, inputIntegerMax?: number) {
-  await model.save(tfjsNode.io.fileSystem(exportPathprefix));
+    model: tfl.Model, exportPathPrefix: string, inputIntegerMax?: number) {
+  await model.save(tfjsNode.io.fileSystem(exportPathPrefix));
 
   const xs: tfc.Tensor[] = [];
   const xsData: number[][] = [];
   const xsShapes: number[][] = [];
+  const xsDTypes: string[] = [];
   for (const inputTensor of model.inputs) {
     const inputShape = inputTensor.shape;
     inputShape[0] = 1;
@@ -48,20 +49,32 @@ async function saveModelAndRandomInputsAndOutputs(
     xs.push(xTensor);
     xsData.push(Array.from(xTensor.dataSync()));
     xsShapes.push(xTensor.shape);
+    xsDTypes.push(xTensor.dtype);
   }
-  fs.writeFileSync(exportPathprefix + '.xs-data.json', JSON.stringify(xsData));
+  fs.writeFileSync(exportPathPrefix + '.xs-data.json', JSON.stringify(xsData));
   fs.writeFileSync(
-      exportPathprefix + '.xs-shapes.json', JSON.stringify(xsShapes));
+      exportPathPrefix + '.xs-shapes.json', JSON.stringify(xsShapes));
+  fs.writeFileSync(
+      exportPathPrefix + '.xs-dtypes.json', JSON.stringify(xsDTypes));
+
+  if (inputIntegerMax != null) {
+    fs.writeFileSync(
+        exportPathPrefix + '.xs-input-integer-max.json',
+        JSON.stringify(inputIntegerMax));
+  }
 
   const ys: tfc.Tensor[] = model.outputs.length === 1 ?
       [model.predict(xs) as tfc.Tensor] :
       model.predict(xs) as tfc.Tensor[];
   fs.writeFileSync(
-      exportPathprefix + '.ys-data.json',
+      exportPathPrefix + '.ys-data.json',
       JSON.stringify((ys.map(y => Array.from(y.dataSync())))));
   fs.writeFileSync(
-      exportPathprefix + '.ys-shapes.json',
+      exportPathPrefix + '.ys-shapes.json',
       JSON.stringify(ys.map(y => y.shape)));
+  fs.writeFileSync(
+      exportPathPrefix + '.ys-dtypes.json',
+      JSON.stringify(ys.map(y => y.dtype)));
 }
 
 // Multi-layer perceptron (MLP).

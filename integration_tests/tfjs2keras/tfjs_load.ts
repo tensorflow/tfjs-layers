@@ -25,10 +25,10 @@ async function loadModel(modelDir: string) {
   // xs.print();  // DEBUG
   const ys = tfc.tensor(
       JSON.parse(fs.readFileSync(join(modelDir, 'ys.json'), 'utf8')));
-  ys.print();  // DEBUG
+  // ys.print();  // DEBUG
 
   const modelOuts = model.predict(xs) as tfc.Tensor;
-  modelOuts.print();  // DEBUG
+  // modelOuts.print();  // DEBUG
   tfc.test_util.expectArraysClose(modelOuts, ys);
 }
 
