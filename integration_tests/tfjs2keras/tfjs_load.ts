@@ -17,7 +17,6 @@ import {join} from 'path';
 async function loadModel(modelDir: string) {
   const modelJsonPath = join(modelDir, 'model.json');
   const model = await tfl.loadModel(tfjsNode.io.fileSystem(modelJsonPath));
-  model.summary();  // DEBUG
 
   // TODO(cais): Handle cases where there are multiple tensors in xs or ys.
   // Load xs values from JSON.

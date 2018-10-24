@@ -142,17 +142,17 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
   def testMLP(self):
     self._loadAndTestModel('mlp')
 
-  # def testCNN(self):
-  #   self._loadAndTestModel('cnn')
+  def testCNN(self):
+    self._loadAndTestModel('cnn')
 
-  # def testDepthwiseCNN(self):
-  #   self._loadAndTestModel('depthwise_cnn')
+  def testDepthwiseCNN(self):
+    self._loadAndTestModel('depthwise_cnn')
 
-  # def testSimpleRNN(self):
-  #   self._loadAndTestModel('simple_rnn')
+  def testSimpleRNN(self):
+    self._loadAndTestModel('simple_rnn')
 
-  # def testGRU(self):
-  #   self._loadAndTestModel('gru')
+  def testGRU(self):
+    self._loadAndTestModel('gru')
 
   # def testBidirectionalLSTM(self):
   #   self._loadAndTestModel('bidirectional_lstm')
