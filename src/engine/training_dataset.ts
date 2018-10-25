@@ -273,14 +273,16 @@ export async function fitDataset<T extends TensorContainer>(
     let valXs: tfc.Tensor|tfc.Tensor[];
     let valYs: tfc.Tensor|tfc.Tensor[];
     if (doValidation) {
-      if (config.validationData instanceof Dataset) {
+      if (typeof (config.validationData as Dataset<T>).iterator ===
+          'function') {
         tfc.util.assert(
             config.validationBatches > 0 &&
                 Number.isInteger(config.validationBatches),
             `For fitDataset() with dataset-based validation, ` +
                 `config.validationBatches is expected to be a ` +
                 `positive integer, but got ${config.validationBatches}`);
-        validationDataIterator = await config.validationData.iterator();
+        validationDataIterator =
+            await (config.validationData as Dataset<T>).iterator();
       } else {
         const validationData = standardizeTensorValidationData(
             config.validationData as
@@ -362,7 +364,8 @@ export async function fitDataset<T extends TensorContainer>(
         // Epoch finished. Perform validation.
         if (stepsDone >= config.batchesPerEpoch && doValidation) {
           let valOuts: tfc.Scalar[];
-          if (config.validationData instanceof Dataset) {
+          if (typeof (config.validationData as Dataset<T>).iterator ===
+              'function') {
             valOuts = toList(await model.evaluateDataset(
                 validationDataIterator, {batches: config.validationBatches}));
           } else {
@@ -410,7 +413,9 @@ export async function evaluateDataset<T extends TensorContainer>(
       'Test loop expects `batches` to be a positive integer, but ' +
           `received ${JSON.stringify(config.batches)}`);
   const dataIterator =
-      dataset instanceof LazyIterator ? dataset : await dataset.iterator();
+      (typeof (dataset as LazyIterator<T>).next === 'function') ?
+      dataset as LazyIterator<T>:
+      await (dataset as Dataset<T>).iterator();
   // Keeps track of number of examples used in this evaluation.
   let numExamples = 0;
   for (let batch = 0; batch < config.batches; ++batch) {
