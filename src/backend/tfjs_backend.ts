@@ -13,7 +13,7 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
+import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, Tensor5D, Tensor6D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
 
 import {disposeScalarCache, getScalar} from '../backend/state';
 import {checkDataFormat, DataFormat} from '../common';
@@ -166,6 +166,15 @@ export function sliceAlongFirstAxis(
         return tfc.slice4d(
             array as Tensor4D, [start, 0, 0, 0],
             [size, array.shape[1], array.shape[2], array.shape[3]]);
+      case 5:
+        return tfc.slice5d(
+            array as Tensor5D, [start, 0, 0, 0, 0],
+            [size, array.shape[1], array.shape[2], array.shape[3], array.shape[4]]);
+      case 6:
+        return tfc.slice6d(
+            array as Tensor6D, [start, 0, 0, 0, 0, 0],
+            [size, array.shape[1], array.shape[2], array.shape[3], array.shape[4], array.shape[5]]);
+
       default:
         throw new ValueError(
             `sliceAlongFirstAxis() received an unsupported tensor rank: ` +
@@ -269,7 +278,7 @@ export function sliceAlongAxis(
         }
       default:
         throw new ValueError(
-            `sliceAlongLastAxis() received an unsupported tensor rank: ` +
+            `sliceAlongAxis() received an unsupported tensor rank: ` +
             `${array.rank}`);
     }
   });
@@ -552,7 +561,22 @@ export function biasAdd(
     const biasShape = bias.shape;
 
     let y: Tensor;
-    if (x.rank === 5) {
+    if (x.rank === 6) {
+      if (dataFormat === 'channelsFirst') {
+        if (biasShape.length === 1) {
+          y = x.add(bias.reshape([1, biasShape[0], 1, 1, 1, 1]));
+        } else {
+          y = x.add(bias.reshape(
+              [1, biasShape[4], biasShape[0], biasShape[1], biasShape[2], biasShape[3]]));
+        }
+      } else if (dataFormat === 'channelsLast') {
+        if (biasShape.length === 1) {
+          y = x.add(bias.reshape([1, 1, 1, 1, 1, biasShape[0]]));
+        } else {
+          y = x.add(bias.reshape([1].concat(biasShape)));
+        }
+      }
+    } else if (x.rank === 5) {
       if (dataFormat === 'channelsFirst') {
         if (biasShape.length === 1) {
           y = x.add(bias.reshape([1, biasShape[0], 1, 1, 1]));
