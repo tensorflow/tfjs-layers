@@ -10,8 +10,10 @@
 set -e
 
 # If this is nightly, use tfjs-core at master.
-if [ "$TRAVIS_EVENT_TYPE" = cron ]
+if [ true ]
 then
+  echo '########### Testing against tfjs-core@master ###########'
+  yarn run rimraf tfjs-core/
   git clone https://github.com/tensorflow/tfjs-core.git --depth=5
   cd tfjs-core
   yarn && yarn build && yarn publish-local
