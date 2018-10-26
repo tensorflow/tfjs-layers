@@ -17,7 +17,7 @@ import {Reshape} from './layers/core';
 import {deserialize} from './layers/serialization';
 import {loadModelInternal, ModelAndWeightsConfig, modelFromJSON} from './models';
 import {JsonDict} from './types';
-import {convertPythonicToTs} from './utils/serialization_utils';
+import {convertPythonicToTs, convertTsToPythonic} from './utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 import {version as layersVersion} from './version';
 
@@ -376,6 +376,25 @@ describeMathCPU('modelFromJSON', () => {
         })
         .catch(done.fail);
   });
+
+  it('modelFromJSON with only model topology (no weights)', async () => {
+    const model = await modelFromJSON(fakeSequentialModel.modelTopology);
+    expect(model.name).toEqual('test');
+    expect(model.layers.length).toEqual(2);
+    expect(model.inputs.length).toEqual(1);
+    expect(model.inputs[0].shape).toEqual([null, 32]);
+    expect(model.outputs.length).toEqual(1);
+    expect(model.outputs[0].shape).toEqual([null, 32]);
+  });
+
+  it('toJSON and modelFromJSON', async () => {
+    const model1 = tfl.sequential();
+    model1.add(tfl.layers.repeatVector({inputShape: [2], n: 4}));
+    const model1JSON = model1.toJSON(null, false) as JsonDict;
+    const model2 = await tfl.models.modelFromJSON(model1JSON);
+    expect(model2.toJSON(null, false)).toEqual(model1JSON);
+  });
+
   // TODO(bileschi): Uncomment once we are able to load the full RNN model.
   /*
   it('reconstitutes rnn model', done => {
@@ -387,7 +406,7 @@ describeMathCPU('modelFromJSON', () => {
         .catch(done.fail);
   });*/
 
-  it('reconstitutes mnist non-sequential mode.', async done => {
+  it('reconstitutes mnist non-sequential mode.', async () => {
     /*
     input_shape = (28,28,1)
     num_classes=10
@@ -414,18 +433,14 @@ describeMathCPU('modelFromJSON', () => {
     model = Model(inputs=input_layer, outputs=layer8_result, name='mnist')
     model.to_json()
       */
-    modelFromJSON(fakeNonSequentialModel)
-        .then(model => {
-          expect(model.name).toEqual('mnist');
-          expect(model.layers.length).toEqual(9);
-          const prediction = model.predict(zeros([1, 28, 28, 1])) as Tensor;
-          expect(prediction.shape).toEqual([1, 10]);
-          expect(sum(prediction).dataSync()).toBeCloseTo(1);
-          done();
-        })
-        .catch(done.fail);
+    const model = await modelFromJSON(fakeNonSequentialModel);
+    expect(model.name).toEqual('mnist');
+    expect(model.layers.length).toEqual(9);
+    const prediction = model.predict(zeros([1, 28, 28, 1])) as Tensor;
+    expect(prediction.shape).toEqual([1, 10]);
+    expect(sum(prediction).dataSync()).toBeCloseTo(1);
   });
-  it('reconstitutes mnist sequential mode.', async done => {
+  it('reconstitutes mnist sequential mode.', async () => {
     /*
     input_shape = (28,28,1)
     num_classes = 10
@@ -444,44 +459,33 @@ describeMathCPU('modelFromJSON', () => {
 
     model.to_json())
     */
-
-    modelFromJSON(fakeMnistModel).then(async model => {
-      expect(model.layers.length).toEqual(8);
-      const prediction = model.predict(zeros([1, 28, 28, 1])) as Tensor;
-      expect(prediction.shape).toEqual([1, 10]);
-      expect(sum(prediction).dataSync()).toBeCloseTo(1);
-      done();
-    });
+    const model = await modelFromJSON(fakeMnistModel);
+    expect(model.layers.length).toEqual(8);
+    const prediction = model.predict(zeros([1, 28, 28, 1])) as Tensor;
+    expect(prediction.shape).toEqual([1, 10]);
+    expect(sum(prediction).dataSync()).toBeCloseTo(1);
   });
 
-  it('Serialization round-tripping', done => {
-    modelFromJSON(fakeRoundtripModel)
-        .then(model => {
-          const serializedModel = model.toJSON() as string;
-          // toJSON() returns a string by default.
-          expect(typeof serializedModel).toEqual('string');
-          const reparsedJson = JSON.parse(serializedModel);
-          expect(reparsedJson['class_name'])
-              .toEqual(fakeRoundtripModel.modelTopology['class_name']);
-          // Intentionally skipping backend and keras_version fields.
-          expect(reparsedJson['config'])
-              .toEqual(fakeRoundtripModel.modelTopology['config']);
-        })
-        .then(done)
-        .catch(done.fail);
+  it('Serialization round-tripping', async () => {
+    const model = await modelFromJSON(fakeRoundtripModel);
+    const serializedModel = model.toJSON() as string;
+    // toJSON() returns a string by default.
+    expect(typeof serializedModel).toEqual('string');
+    const reparsedJson = JSON.parse(serializedModel);
+    expect(reparsedJson['class_name'])
+        .toEqual(fakeRoundtripModel.modelTopology['class_name']);
+    // Intentionally skipping backend and keras_version fields.
+    expect(reparsedJson['config'])
+        .toEqual(fakeRoundtripModel.modelTopology['config']);
   });
 
-  it('toJSON with returnString = false', done => {
-    modelFromJSON(fakeRoundtripModel)
-        .then(model => {
-          const serializedModel = model.toJSON(null, false) as JsonDict;
-          expect(serializedModel['class_name'])
-              .toEqual(fakeRoundtripModel.modelTopology['class_name']);
-          expect(serializedModel['config'])
-              .toEqual(fakeRoundtripModel.modelTopology['config']);
-        })
-        .then(done)
-        .catch(done.fail);
+  it('toJSON with returnString = false', async () => {
+    const model = await modelFromJSON(fakeRoundtripModel);
+    const serializedModel = model.toJSON(null, false) as JsonDict;
+    expect(serializedModel['class_name'])
+        .toEqual(fakeRoundtripModel.modelTopology['class_name']);
+    expect(serializedModel['config'])
+        .toEqual(fakeRoundtripModel.modelTopology['config']);
   });
 
   it('toJSON return value includes correct versions', async () => {
@@ -604,60 +608,51 @@ describeMathCPU('loadModel from URL', () => {
     }
   }
 
-  it('load topology and weights from implicit relative http path',
-     async done => {
-       const modelTopology =
-           JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
-       const weightsManifest: io.WeightsManifestConfig = [
-         {
-           'paths': ['weight_0'],
-           'weights': [
-             {'name': `dense_6/kernel`, 'dtype': 'float32', 'shape': [32, 32]}
-           ],
-         },
-         {
-           'paths': ['weight_1'],
-           'weights':
-               [{'name': `dense_6/bias`, 'dtype': 'float32', 'shape': [32]}],
-         }
-       ];
-       spyOn(window, 'fetch').and.callFake((path: string) => {
-         if (path === 'model/model.json') {
-           return new Response(JSON.stringify({
-             modelTopology,
-             weightsManifest,
-           }));
-         } else if (path === 'model/weight_0') {
-           return new Response(
-               ones([32, 32], 'float32').dataSync() as Float32Array);
-         } else if (path === 'model/weight_1') {
-           return new Response(
-               zeros([32], 'float32').dataSync() as Float32Array);
-         } else {
-           throw new Error(`Invalid path: ${path}`);
-         }
-       });
+  it('load topology and weights from implicit relative http path', async () => {
+    const modelTopology =
+        JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
+    const weightsManifest: io.WeightsManifestConfig = [
+      {
+        'paths': ['weight_0'],
+        'weights':
+            [{'name': `dense_6/kernel`, 'dtype': 'float32', 'shape': [32, 32]}],
+      },
+      {
+        'paths': ['weight_1'],
+        'weights':
+            [{'name': `dense_6/bias`, 'dtype': 'float32', 'shape': [32]}],
+      }
+    ];
+    spyOn(window, 'fetch').and.callFake((path: string) => {
+      if (path === 'model/model.json') {
+        return new Response(JSON.stringify({
+          modelTopology,
+          weightsManifest,
+        }));
+      } else if (path === 'model/weight_0') {
+        return new Response(
+            ones([32, 32], 'float32').dataSync() as Float32Array);
+      } else if (path === 'model/weight_1') {
+        return new Response(zeros([32], 'float32').dataSync() as Float32Array);
+      } else {
+        throw new Error(`Invalid path: ${path}`);
+      }
+    });
 
-       loadModelInternal('model/model.json')
-           .then(model => {
-             expect(model.layers.length).toEqual(2);
-             expect(model.inputs.length).toEqual(1);
-             expect(model.inputs[0].shape).toEqual([null, 32]);
-             expect(model.outputs.length).toEqual(1);
-             expect(model.outputs[0].shape).toEqual([null, 32]);
-             const weightValues = model.getWeights();
-             expect(weightValues.length).toEqual(2);
-             expectTensorsClose(weightValues[0], ones([32, 32]));
-             expectTensorsClose(weightValues[1], zeros([32]));
-             done();
-           })
-           .catch(err => {
-             done.fail(err.stack);
-           });
-     });
+    const model = await loadModelInternal('model/model.json');
+    expect(model.layers.length).toEqual(2);
+    expect(model.inputs.length).toEqual(1);
+    expect(model.inputs[0].shape).toEqual([null, 32]);
+    expect(model.outputs.length).toEqual(1);
+    expect(model.outputs[0].shape).toEqual([null, 32]);
+    const weightValues = model.getWeights();
+    expect(weightValues.length).toEqual(2);
+    expectTensorsClose(weightValues[0], ones([32, 32]));
+    expectTensorsClose(weightValues[1], zeros([32]));
+  });
 
   it('load topology and weights from implicit relative http path: HDF5 format',
-     async done => {
+     async () => {
        const modelTopology =
            JSON.parse(JSON.stringify(fakeSequentialModelFromHDF5))
                .modelTopology;
@@ -707,27 +702,21 @@ describeMathCPU('loadModel from URL', () => {
          }
        });
 
-       loadModelInternal('model/model.json')
-           .then(model => {
-             expect(model.layers.length).toEqual(2);
-             expect(model.inputs.length).toEqual(1);
-             expect(model.inputs[0].shape).toEqual([null, 10]);
-             expect(model.outputs.length).toEqual(1);
-             expect(model.outputs[0].shape).toEqual([null, 1]);
-             const weightValues = model.getWeights();
-             expect(weightValues.length).toEqual(4);
-             expectTensorsClose(weightValues[0], ones([10, 2]));
-             expectTensorsClose(weightValues[1], zeros([2]));
-             expectTensorsClose(weightValues[2], zeros([2, 1]));
-             expectTensorsClose(weightValues[3], ones([1]));
-             done();
-           })
-           .catch(err => {
-             done.fail(err.stack);
-           });
+       const model = await loadModelInternal('model/model.json');
+       expect(model.layers.length).toEqual(2);
+       expect(model.inputs.length).toEqual(1);
+       expect(model.inputs[0].shape).toEqual([null, 10]);
+       expect(model.outputs.length).toEqual(1);
+       expect(model.outputs[0].shape).toEqual([null, 1]);
+       const weightValues = model.getWeights();
+       expect(weightValues.length).toEqual(4);
+       expectTensorsClose(weightValues[0], ones([10, 2]));
+       expectTensorsClose(weightValues[1], zeros([2]));
+       expectTensorsClose(weightValues[2], zeros([2, 1]));
+       expectTensorsClose(weightValues[3], ones([1]));
      });
 
-  it('load topology and weights: non-array Sequential config', async done => {
+  it('load topology and weights: non-array Sequential config', async () => {
     const modelTopology =
         JSON.parse(JSON.stringify(fakeNonArrayConfigSequentialModelFromHDF5))
             .modelTopology;
@@ -772,30 +761,24 @@ describeMathCPU('loadModel from URL', () => {
       }
     });
 
-    loadModelInternal('model/model.json')
-        .then(model => {
-          expect(model.name.indexOf('Foo123Sequential')).toEqual(0);
-          expect(model.layers.length).toEqual(2);
-          expect(model.inputs.length).toEqual(1);
-          expect(model.inputs[0].shape).toEqual([null, 10]);
-          expect(model.outputs.length).toEqual(1);
-          expect(model.outputs[0].shape).toEqual([null, 1]);
-          const weightValues = model.getWeights();
-          expect(weightValues.length).toEqual(4);
-          expectTensorsClose(weightValues[0], ones([10, 2]));
-          expectTensorsClose(weightValues[1], zeros([2]));
-          expectTensorsClose(weightValues[2], zeros([2, 1]));
-          expectTensorsClose(weightValues[3], ones([1]));
-          done();
-        })
-        .catch(err => {
-          done.fail(err.stack);
-        });
+    const model = await loadModelInternal('model/model.json');
+    expect(model.name.indexOf('Foo123Sequential')).toEqual(0);
+    expect(model.layers.length).toEqual(2);
+    expect(model.inputs.length).toEqual(1);
+    expect(model.inputs[0].shape).toEqual([null, 10]);
+    expect(model.outputs.length).toEqual(1);
+    expect(model.outputs[0].shape).toEqual([null, 1]);
+    const weightValues = model.getWeights();
+    expect(weightValues.length).toEqual(4);
+    expectTensorsClose(weightValues[0], ones([10, 2]));
+    expectTensorsClose(weightValues[1], zeros([2]));
+    expectTensorsClose(weightValues[2], zeros([2, 1]));
+    expectTensorsClose(weightValues[3], ones([1]));
   });
 
 
   it('load topology and weights with browserHTTPRequest with requestInit',
-     async done => {
+     async () => {
        const modelTopology =
            JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
        const weightsManifest: io.WeightsManifestConfig = [
@@ -836,42 +819,34 @@ describeMathCPU('loadModel from URL', () => {
              }
            });
 
-       loadModelInternal(io.browserHTTPRequest('model/model.json', {
-         headers: {'header_key_1': 'header_value_1'},
-         credentials: 'include',
-       }))
-           .then(model => {
-             expect(model.layers.length).toEqual(2);
-             expect(model.inputs.length).toEqual(1);
-             expect(model.inputs[0].shape).toEqual([null, 32]);
-             expect(model.outputs.length).toEqual(1);
-             expect(model.outputs[0].shape).toEqual([null, 32]);
-             const weightValues = model.getWeights();
-             expect(weightValues.length).toEqual(2);
-             expectTensorsClose(weightValues[0], ones([32, 32]));
-             expectTensorsClose(weightValues[1], zeros([32]));
+       const model =
+           await loadModelInternal(io.browserHTTPRequest('model/model.json', {
+             headers: {'header_key_1': 'header_value_1'},
+             credentials: 'include',
+           }));
+       expect(model.layers.length).toEqual(2);
+       expect(model.inputs.length).toEqual(1);
+       expect(model.inputs[0].shape).toEqual([null, 32]);
+       expect(model.outputs.length).toEqual(1);
+       expect(model.outputs[0].shape).toEqual([null, 32]);
+       const weightValues = model.getWeights();
+       expect(weightValues.length).toEqual(2);
+       expectTensorsClose(weightValues[0], ones([32, 32]));
+       expectTensorsClose(weightValues[1], zeros([32]));
 
-             // Verify that the headers and credentials are sent via
-             // `fetch` properly.
-             expect(requestHeaders).toEqual([
-               {'header_key_1': 'header_value_1'},
-               {'header_key_1': 'header_value_1'},
-               {'header_key_1': 'header_value_1'}
-             ]);
-             expect(requestCredentials).toEqual([
-               'include', 'include', 'include'
-             ]);
-             done();
-           })
-           .catch(err => {
-             done.fail(err.stack);
-           });
+       // Verify that the headers and credentials are sent via
+       // `fetch` properly.
+       expect(requestHeaders).toEqual([
+         {'header_key_1': 'header_value_1'}, {'header_key_1': 'header_value_1'},
+         {'header_key_1': 'header_value_1'}
+       ]);
+       expect(requestCredentials).toEqual(['include', 'include', 'include']);
      });
 
   const httpProtocols = ['http://', 'https://'];
   for (const protocol of httpProtocols) {
     it(`load topology and weights: explicit relative ${protocol} path`,
-       async done => {
+       async () => {
          const modelTopology =
              JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
          const weightsManifest: io.WeightsManifestConfig = [
@@ -904,22 +879,17 @@ describeMathCPU('loadModel from URL', () => {
            }
          });
 
-         loadModelInternal(`${protocol}localhost:8888/models/model.json`)
-             .then(model => {
-               expect(model.layers.length).toEqual(2);
-               expect(model.inputs.length).toEqual(1);
-               expect(model.inputs[0].shape).toEqual([null, 32]);
-               expect(model.outputs.length).toEqual(1);
-               expect(model.outputs[0].shape).toEqual([null, 32]);
-               const weightValues = model.getWeights();
-               expect(weightValues.length).toEqual(2);
-               expectTensorsClose(weightValues[0], ones([32, 32]));
-               expectTensorsClose(weightValues[1], zeros([32]));
-               done();
-             })
-             .catch(err => {
-               done.fail(err.stack);
-             });
+         const model = await loadModelInternal(
+             `${protocol}localhost:8888/models/model.json`);
+         expect(model.layers.length).toEqual(2);
+         expect(model.inputs.length).toEqual(1);
+         expect(model.inputs[0].shape).toEqual([null, 32]);
+         expect(model.outputs.length).toEqual(1);
+         expect(model.outputs[0].shape).toEqual([null, 32]);
+         const weightValues = model.getWeights();
+         expect(weightValues.length).toEqual(2);
+         expectTensorsClose(weightValues[0], ones([32, 32]));
+         expectTensorsClose(weightValues[1], zeros([32]));
        });
   }
 
@@ -950,62 +920,55 @@ describeMathCPU('loadModel from URL', () => {
         .catch(() => done());
   });
 
-  it('Loads weights despite uniqueified tensor names', async done => {
-    try {
-      setupFakeWeightFiles({
-        './weight_0': ones([32, 32], 'float32').dataSync() as Float32Array,
-        './weight_1': ones([32], 'float32').dataSync() as Float32Array,
-      });
-      const denseLayerName = 'dense_uniqueify';
-      const weightsManifest: io.WeightsManifestConfig = [
-        {
-          'paths': ['weight_0'],
-          'weights': [{
-            'name': `${denseLayerName}/kernel`,
-            'dtype': 'float32',
-            'shape': [32, 32]
-          }],
-        },
-        {
-          'paths': ['weight_1'],
-          'weights': [{
-            'name': `${denseLayerName}/bias`,
-            'dtype': 'float32',
-            'shape': [32]
-          }],
-        }
-      ];
-      // JSON.parse and stringify to deep copy fakeSequentialModel.
-      const configJson =
-          JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
-      configJson['config']['layers'][1]['config']['name'] = denseLayerName;
-      const model1 = await modelFromJSON(
-          {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
-      expect(model1.weights[0].name).toEqual('dense_uniqueify/kernel');
-      expect(model1.weights[0].originalName).toEqual('dense_uniqueify/kernel');
-      expect(model1.weights[1].name).toEqual('dense_uniqueify/bias');
-      expect(model1.weights[1].originalName).toEqual('dense_uniqueify/bias');
-      expectTensorsClose(model1.weights[0].read(), ones([32, 32], 'float32'));
-      expectTensorsClose(model1.weights[1].read(), ones([32], 'float32'));
+  it('Loads weights despite uniqueified tensor names', async () => {
+    setupFakeWeightFiles({
+      './weight_0': ones([32, 32], 'float32').dataSync() as Float32Array,
+      './weight_1': ones([32], 'float32').dataSync() as Float32Array,
+    });
+    const denseLayerName = 'dense_uniqueify';
+    const weightsManifest: io.WeightsManifestConfig = [
+      {
+        'paths': ['weight_0'],
+        'weights': [{
+          'name': `${denseLayerName}/kernel`,
+          'dtype': 'float32',
+          'shape': [32, 32]
+        }],
+      },
+      {
+        'paths': ['weight_1'],
+        'weights': [
+          {'name': `${denseLayerName}/bias`, 'dtype': 'float32', 'shape': [32]}
+        ],
+      }
+    ];
+    // JSON.parse and stringify to deep copy fakeSequentialModel.
+    const configJson =
+        JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
+    configJson['config']['layers'][1]['config']['name'] = denseLayerName;
+    const model1 = await modelFromJSON(
+        {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
+    expect(model1.weights[0].name).toEqual('dense_uniqueify/kernel');
+    expect(model1.weights[0].originalName).toEqual('dense_uniqueify/kernel');
+    expect(model1.weights[1].name).toEqual('dense_uniqueify/bias');
+    expect(model1.weights[1].originalName).toEqual('dense_uniqueify/bias');
+    expectTensorsClose(model1.weights[0].read(), ones([32, 32], 'float32'));
+    expectTensorsClose(model1.weights[1].read(), ones([32], 'float32'));
 
-      // On the second load, the variable names will be uniqueified. This
-      // test succeeds only because we maintain the name mapping, so we
-      // can load weights--keyed by non-unique names in the weight
-      // manifest--into variables with newly uniqueified names.
-      const model2 = await modelFromJSON(
-          {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
-      // note unique suffix
-      expect(model2.weights[0].name).toEqual('dense_uniqueify/kernel_1');
-      expect(model2.weights[0].originalName).toEqual('dense_uniqueify/kernel');
-      // note unique suffix
-      expect(model2.weights[1].name).toEqual('dense_uniqueify/bias_1');
-      expect(model2.weights[1].originalName).toEqual('dense_uniqueify/bias');
-      expectTensorsClose(model2.weights[0].read(), ones([32, 32], 'float32'));
-      expectTensorsClose(model2.weights[1].read(), ones([32], 'float32'));
-      done();
-    } catch (e) {
-      done.fail(e.stack);
-    }
+    // On the second load, the variable names will be uniqueified. This
+    // test succeeds only because we maintain the name mapping, so we
+    // can load weights--keyed by non-unique names in the weight
+    // manifest--into variables with newly uniqueified names.
+    const model2 = await modelFromJSON(
+        {modelTopology: configJson, weightsManifest, pathPrefix: '.'});
+    // note unique suffix
+    expect(model2.weights[0].name).toEqual('dense_uniqueify/kernel_1');
+    expect(model2.weights[0].originalName).toEqual('dense_uniqueify/kernel');
+    // note unique suffix
+    expect(model2.weights[1].name).toEqual('dense_uniqueify/bias_1');
+    expect(model2.weights[1].originalName).toEqual('dense_uniqueify/bias');
+    expectTensorsClose(model2.weights[0].read(), ones([32, 32], 'float32'));
+    expectTensorsClose(model2.weights[1].read(), ones([32], 'float32'));
   });
 
   it('Repeated saving and loading of Model works', () => {
@@ -1100,39 +1063,26 @@ describeMathCPU('loadModel from IOHandler', () => {
     constructor() {}
   }
 
-  it('load topology and weights', async done => {
-    loadModelInternal(new IOHandlerForTest(true))
-        .then(model => {
-          expect(model.layers.length).toEqual(1);
-          expect(model.inputs.length).toEqual(1);
-          expect(model.inputs[0].shape).toEqual([null, 4]);
-          expect(model.outputs.length).toEqual(1);
-          expect(model.outputs[0].shape).toEqual([null, 1]);
-          const weightValues = model.getWeights();
-          expect(weightValues.length).toEqual(2);
-          expectTensorsClose(
-              weightValues[0], tensor2d([1.1, 2.2, 3.3, 4.4], [4, 1]));
-          expectTensorsClose(weightValues[1], tensor1d([5.5]));
-          done();
-        })
-        .catch(err => {
-          done.fail(err.stack);
-        });
+  it('load topology and weights', async () => {
+    const model = await loadModelInternal(new IOHandlerForTest(true));
+    expect(model.layers.length).toEqual(1);
+    expect(model.inputs.length).toEqual(1);
+    expect(model.inputs[0].shape).toEqual([null, 4]);
+    expect(model.outputs.length).toEqual(1);
+    expect(model.outputs[0].shape).toEqual([null, 1]);
+    const weightValues = model.getWeights();
+    expect(weightValues.length).toEqual(2);
+    expectTensorsClose(weightValues[0], tensor2d([1.1, 2.2, 3.3, 4.4], [4, 1]));
+    expectTensorsClose(weightValues[1], tensor1d([5.5]));
   });
 
-  it('load topology only', async done => {
-    loadModelInternal(new IOHandlerForTest(false))
-        .then(model => {
-          expect(model.layers.length).toEqual(1);
-          expect(model.inputs.length).toEqual(1);
-          expect(model.inputs[0].shape).toEqual([null, 4]);
-          expect(model.outputs.length).toEqual(1);
-          expect(model.outputs[0].shape).toEqual([null, 1]);
-          done();
-        })
-        .catch(err => {
-          done.fail(err.stack);
-        });
+  it('load topology only', async () => {
+    const model = await loadModelInternal(new IOHandlerForTest(false));
+    expect(model.layers.length).toEqual(1);
+    expect(model.inputs.length).toEqual(1);
+    expect(model.inputs[0].shape).toEqual([null, 4]);
+    expect(model.outputs.length).toEqual(1);
+    expect(model.outputs[0].shape).toEqual([null, 1]);
   });
 
   it('IOHandler without load method causes error', async done => {
@@ -2265,3 +2215,86 @@ const fakeRoundtripModel: ModelAndWeightsConfig = {
     }
   }
 };
+
+describeMathCPU('Functional-model saving and loading', () => {
+  it('Save-load round trip: multi-node layer', async () => {
+    const input1 = tfl.input({shape: [2, 3]});
+    const input2 = tfl.input({shape: [3, 2]});
+
+    const reshape = tfl.layers.reshape({targetShape: [6]});
+    const output1 = reshape.apply(input1) as tfl.SymbolicTensor;
+    const output2 = reshape.apply(input2) as tfl.SymbolicTensor;
+
+    const model1 =
+        tfl.model({inputs: [input1, input2], outputs: [output1, output2]});
+
+    const model1JSON = model1.toJSON(null, false) as JsonDict;
+    const model2 =
+        await modelFromJSON({modelTopology: model1JSON}) as tfl.Model;
+
+    expect(model2.inputs.length).toEqual(model1.inputs.length);
+    expect(model2.inputs[0].shape).toEqual(model1.inputs[0].shape);
+    expect(model2.inputs[1].shape).toEqual(model1.inputs[1].shape);
+    expect(model2.outputs.length).toEqual(model1.outputs.length);
+    expect(model2.outputs[0].shape).toEqual(model1.outputs[0].shape);
+    expect(model2.outputs[1].shape).toEqual(model1.outputs[1].shape);
+    expect(model2.toJSON(null, false)).toEqual(model1JSON);
+
+    const x1 = randomNormal([1, 2, 3]);
+    const x2 = randomNormal([1, 3, 2]);
+    const ys1 = model1.apply([x1, x2]) as Tensor[];
+
+    const ys2 = model2.apply([x1, x2]) as Tensor[];
+
+    expectTensorsClose(ys1[0], ys2[0]);
+    expectTensorsClose(ys1[1], ys2[1]);
+  });
+
+  it('Save-load round trip: layer with loopy invocation', async () => {
+    const input = tfl.layers.input({shape: [1]});
+    const dense = tfl.layers.dense(
+        {units: 1, kernelInitializer: 'ones', biasInitializer: 'ones'});
+    let output = dense.apply(input) as tfl.SymbolicTensor;
+    for (let i = 0; i < 3; ++i) {
+      output = dense.apply(output) as tfl.SymbolicTensor;
+    }
+    const model1 = tfl.model({inputs: input, outputs: output});
+
+    const xs = ones([10, 1]);
+    const ys1 = model1.predict(xs) as Tensor;
+
+    const model1JSON = model1.toJSON(null, false) as JsonDict;
+    const model2 =
+        await modelFromJSON({modelTopology: model1JSON}) as tfl.Model;
+    expect(model2.toJSON(null, false)).toEqual(model1JSON);
+
+    const ys2 = model2.predict(xs) as Tensor;
+    expectTensorsClose(ys1, ys2);
+  });
+
+  it('Load attention model', async () => {
+    // From https://github.com/tensorflow/tfjs/issues/794
+    const modelJSON = JSON.parse(
+        // tslint:disable-next-line:max-line-length
+        `{"modelTopology":{"keras_version":"2.1.6","backend":"tensorflow","model_config":{"class_name":"Model","config":{"input_layers":[["input_1",0,0],["s0",0,0],["c0",0,0]],"name":"model_1","layers":[{"class_name":"InputLayer","inbound_nodes":[],"name":"input_1","config":{"dtype":"float32","name":"input_1","sparse":false,"batch_input_shape":[null,30,38]}},{"class_name":"InputLayer","inbound_nodes":[],"name":"s0","config":{"dtype":"float32","name":"s0","sparse":false,"batch_input_shape":[null,64]}},{"class_name":"Bidirectional","inbound_nodes":[[["input_1",0,0,{}]]],"name":"bidirectional_1","config":{"trainable":true,"name":"bidirectional_1","merge_mode":"concat","layer":{"class_name":"LSTM","config":{"stateful":false,"units":32,"activation":"tanh","recurrent_activation":"hard_sigmoid","dropout":0,"recurrent_dropout":0,"use_bias":true,"trainable":true,"recurrent_initializer":{"class_name":"Orthogonal","config":{"seed":null,"gain":1}},"bias_constraint":null,"unroll":false,"kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"unit_forget_bias":true,"bias_initializer":{"class_name":"Zeros","config":{}},"kernel_constraint":null,"activity_regularizer":null,"return_sequences":true,"recurrent_constraint":null,"recurrent_regularizer":null,"bias_regularizer":null,"go_backwards":false,"implementation":1,"name":"lstm_2","kernel_regularizer":null,"return_state":false}}}},{"class_name":"RepeatVector","inbound_nodes":[[["s0",0,0,{}]],[["lstm_1",0,0,{}]],[["lstm_1",1,0,{}]],[["lstm_1",2,0,{}]],[["lstm_1",3,0,{}]],[["lstm_1",4,0,{}]],[["lstm_1",5,0,{}]],[["lstm_1",6,0,{}]],[["lstm_1",7,0,{}]],[["lstm_1",8,0,{}]]],"name":"repeat_vector_1","config":{"n":30,"trainable":true,"name":"repeat_vector_1"}},{"class_name":"Concatenate","inbound_nodes":[[["bidirectional_1",0,0,{}],["repeat_vector_1",0,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",1,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",2,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",3,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",4,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",5,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",6,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",7,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",8,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",9,0,{}]]],"name":"concatenate_1","config":{"trainable":true,"name":"concatenate_1","axis":-1}},{"class_name":"Dense","inbound_nodes":[[["concatenate_1",0,0,{}]],[["concatenate_1",1,0,{}]],[["concatenate_1",2,0,{}]],[["concatenate_1",3,0,{}]],[["concatenate_1",4,0,{}]],[["concatenate_1",5,0,{}]],[["concatenate_1",6,0,{}]],[["concatenate_1",7,0,{}]],[["concatenate_1",8,0,{}]],[["concatenate_1",9,0,{}]]],"name":"dense_1","config":{"bias_constraint":null,"kernel_constraint":null,"units":10,"activity_regularizer":null,"use_bias":true,"bias_regularizer":null,"trainable":true,"activation":"tanh","name":"dense_1","kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"kernel_regularizer":null,"bias_initializer":{"class_name":"Zeros","config":{}}}},{"class_name":"Dense","inbound_nodes":[[["dense_1",0,0,{}]],[["dense_1",1,0,{}]],[["dense_1",2,0,{}]],[["dense_1",3,0,{}]],[["dense_1",4,0,{}]],[["dense_1",5,0,{}]],[["dense_1",6,0,{}]],[["dense_1",7,0,{}]],[["dense_1",8,0,{}]],[["dense_1",9,0,{}]]],"name":"dense_2","config":{"bias_constraint":null,"kernel_constraint":null,"units":1,"activity_regularizer":null,"use_bias":true,"bias_regularizer":null,"trainable":true,"activation":"relu","name":"dense_2","kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"kernel_regularizer":null,"bias_initializer":{"class_name":"Zeros","config":{}}}},{"class_name":"Activation","inbound_nodes":[[["dense_2",0,0,{}]],[["dense_2",1,0,{}]],[["dense_2",2,0,{}]],[["dense_2",3,0,{}]],[["dense_2",4,0,{}]],[["dense_2",5,0,{}]],[["dense_2",6,0,{}]],[["dense_2",7,0,{}]],[["dense_2",8,0,{}]],[["dense_2",9,0,{}]]],"name":"attention_weights","config":{"trainable":true,"activation":"softmax","name":"attention_weights"}},{"class_name":"Dot","inbound_nodes":[[["attention_weights",0,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",1,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",2,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",3,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",4,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",5,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",6,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",7,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",8,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",9,0,{}],["bidirectional_1",0,0,{}]]],"name":"dot_1","config":{"trainable":true,"name":"dot_1","normalize":false,"axes":1}},{"class_name":"InputLayer","inbound_nodes":[],"name":"c0","config":{"dtype":"float32","name":"c0","sparse":false,"batch_input_shape":[null,64]}},{"class_name":"LSTM","inbound_nodes":[[["dot_1",0,0,{}],["s0",0,0,{}],["c0",0,0,{}]],[["dot_1",1,0,{}],["lstm_1",0,0,{}],["lstm_1",0,2,{}]],[["dot_1",2,0,{}],["lstm_1",1,0,{}],["lstm_1",1,2,{}]],[["dot_1",3,0,{}],["lstm_1",2,0,{}],["lstm_1",2,2,{}]],[["dot_1",4,0,{}],["lstm_1",3,0,{}],["lstm_1",3,2,{}]],[["dot_1",5,0,{}],["lstm_1",4,0,{}],["lstm_1",4,2,{}]],[["dot_1",6,0,{}],["lstm_1",5,0,{}],["lstm_1",5,2,{}]],[["dot_1",7,0,{}],["lstm_1",6,0,{}],["lstm_1",6,2,{}]],[["dot_1",8,0,{}],["lstm_1",7,0,{}],["lstm_1",7,2,{}]],[["dot_1",9,0,{}],["lstm_1",8,0,{}],["lstm_1",8,2,{}]]],"name":"lstm_1","config":{"stateful":false,"units":64,"activation":"tanh","recurrent_activation":"hard_sigmoid","dropout":0,"recurrent_dropout":0,"use_bias":true,"trainable":true,"recurrent_initializer":{"class_name":"Orthogonal","config":{"seed":null,"gain":1}},"bias_constraint":null,"unroll":false,"kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"unit_forget_bias":true,"bias_initializer":{"class_name":"Zeros","config":{}},"kernel_constraint":null,"activity_regularizer":null,"return_sequences":false,"recurrent_constraint":null,"recurrent_regularizer":null,"bias_regularizer":null,"go_backwards":false,"implementation":1,"name":"lstm_1","kernel_regularizer":null,"return_state":true}},{"class_name":"Dense","inbound_nodes":[[["lstm_1",0,0,{}]],[["lstm_1",1,0,{}]],[["lstm_1",2,0,{}]],[["lstm_1",3,0,{}]],[["lstm_1",4,0,{}]],[["lstm_1",5,0,{}]],[["lstm_1",6,0,{}]],[["lstm_1",7,0,{}]],[["lstm_1",8,0,{}]],[["lstm_1",9,0,{}]]],"name":"dense_3","config":{"bias_constraint":null,"kernel_constraint":null,"units":11,"activity_regularizer":null,"use_bias":true,"bias_regularizer":null,"trainable":true,"activation":"softmax","name":"dense_3","kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"kernel_regularizer":null,"bias_initializer":{"class_name":"Zeros","config":{}}}}],"output_layers":[["dense_3",0,0],["dense_3",1,0],["dense_3",2,0],["dense_3",3,0],["dense_3",4,0],["dense_3",5,0],["dense_3",6,0],["dense_3",7,0],["dense_3",8,0],["dense_3",9,0]]}},"training_config":{"loss":"categorical_crossentropy","sample_weight_mode":null,"metrics":["accuracy"],"optimizer_config":{"class_name":"Adam","config":{"beta_1":0.8999999761581421,"decay":0.009999999776482582,"beta_2":0.9990000128746033,"lr":0.004999999888241291,"amsgrad":false,"epsilon":1e-7}},"loss_weights":null}},"weightsManifest":[{"paths":["group1-shard1of1"],"weights":[{"shape":[38,128],"dtype":"float32","name":"bidirectional_1/forward_lstm_2/kernel"},{"shape":[32,128],"dtype":"float32","name":"bidirectional_1/forward_lstm_2/recurrent_kernel"},{"shape":[128],"dtype":"float32","name":"bidirectional_1/forward_lstm_2/bias"},{"shape":[38,128],"dtype":"float32","name":"bidirectional_1/backward_lstm_2/kernel"},{"shape":[32,128],"dtype":"float32","name":"bidirectional_1/backward_lstm_2/recurrent_kernel"},{"shape":[128],"dtype":"float32","name":"bidirectional_1/backward_lstm_2/bias"},{"shape":[128,10],"dtype":"float32","name":"dense_1/kernel"},{"shape":[10],"dtype":"float32","name":"dense_1/bias"},{"shape":[10,1],"dtype":"float32","name":"dense_2/kernel"},{"shape":[1],"dtype":"float32","name":"dense_2/bias"},{"shape":[64,11],"dtype":"float32","name":"dense_3/kernel"},{"shape":[11],"dtype":"float32","name":"dense_3/bias"},{"shape":[64,256],"dtype":"float32","name":"lstm_1/kernel"},{"shape":[64,256],"dtype":"float32","name":"lstm_1/recurrent_kernel"},{"shape":[256],"dtype":"float32","name":"lstm_1/bias"}]}]}`);
+    const modelTopology = modelJSON.modelTopology;
+    const model = await modelFromJSON({modelTopology}) as tfl.Model;
+
+    expect(model.inputs.length).toEqual(3);
+    expect(model.inputs[0].shape).toEqual([null, 30, 38]);
+    expect(model.inputs[1].shape).toEqual([null, 64]);
+    expect(model.inputs[2].shape).toEqual([null, 64]);
+    expect(model.outputs.length).toEqual(10);
+    for (const output of model.outputs) {
+      expect(output.shape).toEqual([null, 11]);
+    }
+    expect(convertTsToPythonic(model.getConfig()))
+        .toEqual(modelTopology['model_config']['config']);
+
+    const x = randomNormal([2, 30, 38]);
+    const s = randomNormal([2, 64]);
+    const c = randomNormal([2, 64]);
+    const output = model.predict([x, s, c]) as Tensor[];
+    expect(output.length).toEqual(10);
+  });
+});
