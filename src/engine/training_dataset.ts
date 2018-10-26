@@ -404,8 +404,15 @@ function isDatasetObject<T extends TensorContainer>(
           tfc.Tensor|tfc.Tensor[]|TensorMap, tfc.Tensor|tfc.Tensor[]|TensorMap
         ]|[tfc.Tensor | tfc.Tensor[] | TensorMap,
            tfc.Tensor | tfc.Tensor[] | TensorMap,
-           tfc.Tensor | tfc.Tensor[] | TensorMap]|Dataset<T>) {
+           tfc.Tensor | tfc.Tensor[] | TensorMap]|Dataset<T>): boolean {
   return (typeof (dataset as Dataset<T>).iterator === 'function');
+}
+
+// Check if provided object is a LazyIterator object by checking it's .next
+// element.
+function isLazyIteratorObject<T extends TensorContainer>(
+    iterator: Dataset<T>|LazyIterator<T>): boolean {
+  return (typeof (iterator as LazyIterator<T>).next === 'function');
 }
 
 export async function evaluateDataset<T extends TensorContainer>(
@@ -422,8 +429,7 @@ export async function evaluateDataset<T extends TensorContainer>(
       config.batches > 0 && Number.isInteger(config.batches),
       'Test loop expects `batches` to be a positive integer, but ' +
           `received ${JSON.stringify(config.batches)}`);
-  const dataIterator =
-      (typeof (dataset as LazyIterator<T>).next === 'function') ?
+  const dataIterator = isLazyIteratorObject(dataset) ?
       dataset as LazyIterator<T>:
       await (dataset as Dataset<T>).iterator();
   // Keeps track of number of examples used in this evaluation.

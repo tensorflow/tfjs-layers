@@ -822,7 +822,9 @@ export class Model extends Container implements tfc.InferenceModel {
   //   available.
   /**
    * Evaluate model using a dataset object.
+   *
    * Note: Unlike `evaluate()`, this method is asynchronous (`async`);
+   *
    * @param dataset A dataset object. Its `iterator()` method is expected
    *   to generate a dataset iterator object, the `next()` method of which
    *   is expected to produce data batches for evaluation. The return value
