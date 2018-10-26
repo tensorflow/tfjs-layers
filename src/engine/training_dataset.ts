@@ -273,8 +273,7 @@ export async function fitDataset<T extends TensorContainer>(
     let valXs: tfc.Tensor|tfc.Tensor[];
     let valYs: tfc.Tensor|tfc.Tensor[];
     if (doValidation) {
-      if (typeof (config.validationData as Dataset<T>).iterator ===
-          'function') {
+      if (isDatasetObject(config.validationData)) {
         tfc.util.assert(
             config.validationBatches > 0 &&
                 Number.isInteger(config.validationBatches),
@@ -364,8 +363,7 @@ export async function fitDataset<T extends TensorContainer>(
         // Epoch finished. Perform validation.
         if (stepsDone >= config.batchesPerEpoch && doValidation) {
           let valOuts: tfc.Scalar[];
-          if (typeof (config.validationData as Dataset<T>).iterator ===
-              'function') {
+          if (isDatasetObject(config.validationData)) {
             valOuts = toList(await model.evaluateDataset(
                 validationDataIterator, {batches: config.validationBatches}));
           } else {
@@ -396,6 +394,18 @@ export async function fitDataset<T extends TensorContainer>(
   } finally {
     model.isTraining = false;
   }
+}
+
+// Check if provided object is a Dataset object by checking it's .iterator
+// element.
+function isDatasetObject<T extends TensorContainer>(
+    dataset:
+        [
+          tfc.Tensor|tfc.Tensor[]|TensorMap, tfc.Tensor|tfc.Tensor[]|TensorMap
+        ]|[tfc.Tensor | tfc.Tensor[] | TensorMap,
+           tfc.Tensor | tfc.Tensor[] | TensorMap,
+           tfc.Tensor | tfc.Tensor[] | TensorMap]|Dataset<T>) {
+  return (typeof (dataset as Dataset<T>).iterator === 'function');
 }
 
 export async function evaluateDataset<T extends TensorContainer>(
