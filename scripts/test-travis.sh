@@ -12,12 +12,9 @@ set -e
 # If this is nightly, use tfjs-core at master.
 if [ "$TRAVIS_EVENT_TYPE" = cron ]
 then
-  rm -rf tfjs-core
   git clone https://github.com/tensorflow/tfjs-core.git --depth=5
   cd tfjs-core
-  yarn
-  yarn build
-  yarn publish-local
+  yarn && yarn build && yarn publish-local
   cd ..
   yarn link-local '@tensorflow/tfjs-core'
 fi
