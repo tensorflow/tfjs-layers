@@ -28,12 +28,34 @@ def _call_command(command):
 
 def _generate_random_tensor_like(xs, integer_max=None):
   if isinstance(xs, list):
-    return [self._generate_random_tensor_like(x) for x in xs]
+    return [_generate_random_tensor_like(x) for x in xs]
   else:
     if integer_max is None:
       return np.random.randn(*xs.shape).astype(xs.dtype)
     else:
       return np.random.randint(0, integer_max, xs.shape).astype(xs.dtype)
+
+
+def _save_tensors_to_disk(tensors, path_prefix):
+  '''Save a number of tensors to disk, as JSON files.
+
+  Args:
+    tensors: A list of numpy arrays to be saved.
+    path_prefix: The prefix for the save target directory. For example,
+      if `path_prefix` is `/tmp/a` and there are two numpy arrays in
+      `tensors`, then the two resulting files will be
+        `/tmp/a_1.json`, `/tmp/a_1.shape.json` for the 1st tensor
+        and
+        `/tmp/a_2.json`, `/tmp/a_2.shape.json` for the 2nd tensor.
+  '''
+  num_tensors = len(tensors)
+  for i, tensor in enumerate(tensors):
+    save_value_path = '%s_%d.json' % (path_prefix, i + 1)
+    with open(save_value_path, 'wt') as f:
+      json.dump(tensor.tolist(), f)
+    save_shape_path = '%s_%d.shape.json' % (path_prefix, i + 1)
+    with open(save_shape_path, 'wt') as f:
+      json.dump(list(tensor.shape), f)
 
 
 class Tfjs2KerasExportTest(tf.test.TestCase):
@@ -94,8 +116,6 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
       xs_dtypes = json.load(f)
     with open(xs_data_path, 'rt') as f:
       xs_values = json.load(f)
-    # print(xs_dtypes)  # DEBUG
-    # print(xs_values)  # DEBUG
     xs = [np.array(value, dtype=np.float32).reshape(shape)
           for value, shape in zip(xs_values, xs_shapes)]
     if len(xs) == 1:
@@ -107,7 +127,6 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
     if os.path.isfile(xs_input_integer_max_path):
       with open(xs_input_integer_max_path, 'rt') as f:
         xs_input_integer_max = json.load(f)
-        # print('xs_input_integer_max = %d' % xs_input_integer_max)  # DEBUG
 
     ys_shape_path = os.path.join(
         self._tmp_dir, model_path + '.ys-shapes.json')
@@ -121,7 +140,6 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
       ys_dtypes = json.load(f)
     with open(ys_data_path, 'rt') as f:
       ys_values = json.load(f)
-    # print(ys_dtypes)  # DEBUG
     ys = [np.array(value, dtype=np.float32).reshape(shape)
           for value, shape in zip(ys_values, ys_shapes)]
     if len(ys) == 1:
@@ -141,22 +159,18 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
 
       new_xs = _generate_random_tensor_like(
           xs, integer_max=xs_input_integer_max)
-      # print(xs.dtype)
-      # print(xs.shape)
-      # print(xs)  # DEBUG
-      # print(new_xs)  # DEBUG
       new_ys = model.predict(new_xs)
       new_save_path = os.path.join(self._tmp_dir, model_path, 'from_py')
-      tfjs.converters.save_keras_model(model, new_save_path)
-      # print(new_save_path)  # DEBUG
 
-      # Save the new xs and ys values.
-      new_xs_json_path = os.path.join(new_save_path, 'xs.json')
-      with open(new_xs_json_path,'wt') as f:
-        json.dump(xs.tolist(), f)
-      new_ys_json_path = os.path.join(new_save_path, 'ys.json')
-      with open(new_ys_json_path,'wt') as f:
-        json.dump(ys.tolist(), f)
+      if not isinstance(new_xs, list):
+        new_xs = [new_xs]
+      if not isinstance(new_ys, list):
+        new_ys = [new_ys]
+
+      tfjs.converters.save_keras_model(model, new_save_path)
+
+      _save_tensors_to_disk(new_xs, os.path.join(new_save_path, 'xs'))
+      _save_tensors_to_disk(new_ys, os.path.join(new_save_path, 'ys'))
 
       _call_command(['node', 'dist/tfjs_load.js', new_save_path ])
 
@@ -184,8 +198,8 @@ class Tfjs2KerasExportTest(tf.test.TestCase):
   def testOneDimensional(self):
     self._loadAndTestModel('one_dimensional')
 
-  # def testFunctionalMerge(self):
-  #   self._loadAndTestModel('functional_merge.json')
+  def testFunctionalMerge(self):
+    self._loadAndTestModel('functional_merge.json')
 
 
 if __name__ == '__main__':

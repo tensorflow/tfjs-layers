@@ -14,22 +14,55 @@ import * as tfjsNode from '@tensorflow/tfjs-node';
 import * as fs from 'fs';
 import {join} from 'path';
 
+// The following call is done so that unhandled promises caused by
+// exceptions inside async functions will lead to non-zero process
+// exit codes and thereby cause the calling Python parent process
+// to error out.
+process.on('unhandledRejection', up => {throw up});
+
+function readXsAndYsTensors(baseDir: string):
+    {xs: tfc.Tensor[], ys: tfc.Tensor[]} {
+  const XS_JSON_REGEX = /^xs_\d\.json$/;
+  const YS_JSON_REGEX = /^ys_\d\.json$/;
+
+  const outs = fs.readdirSync(baseDir);
+  const xs: tfc.Tensor[] = [];
+  const ys: tfc.Tensor[] = [];
+  for (const out of outs) {
+    if (out.match(XS_JSON_REGEX) || out.match(YS_JSON_REGEX)) {
+      const shapePath =
+          join(baseDir, out.slice(0, out.length - 5) + '.shape.json');
+      const shape = JSON.parse(fs.readFileSync(shapePath, 'utf8'));
+      const tensor =
+          tfc.tensor(JSON.parse(fs.readFileSync(join(baseDir, out), 'utf8')))
+              .reshape(shape);
+
+      if (out.match(XS_JSON_REGEX)) {
+        xs.push(tensor);
+      } else {
+        ys.push(tensor);
+      }
+    }
+  }
+  return {xs, ys};
+}
+
 async function loadModel(modelDir: string) {
   const modelJsonPath = join(modelDir, 'model.json');
   const model = await tfl.loadModel(tfjsNode.io.fileSystem(modelJsonPath));
 
-  // TODO(cais): Handle cases where there are multiple tensors in xs or ys.
-  // Load xs values from JSON.
-  const xs = tfc.tensor(
-      JSON.parse(fs.readFileSync(join(modelDir, 'xs.json'), 'utf8')));
-  // xs.print();  // DEBUG
-  const ys = tfc.tensor(
-      JSON.parse(fs.readFileSync(join(modelDir, 'ys.json'), 'utf8')));
-  // ys.print();  // DEBUG
+  const {xs, ys} = readXsAndYsTensors(modelDir);
 
-  const modelOuts = model.predict(xs) as tfc.Tensor;
-  // modelOuts.print();  // DEBUG
-  tfc.test_util.expectArraysClose(modelOuts, ys);
+  let modelOuts = model.predict(xs) as tfc.Tensor | tfc.Tensor[];
+  if (!Array.isArray(modelOuts)) {
+    modelOuts = [modelOuts];
+  }
+  modelOuts = modelOuts as tfc.Tensor[];
+
+  tfc.test_util.expectNumbersClose(modelOuts.length, ys.length);
+  for (let i = 0; i < modelOuts.length; ++i) {
+    tfc.test_util.expectArraysClose(modelOuts[i], ys[i]);
+  }
 }
 
 (async function main() {
