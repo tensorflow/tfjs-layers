@@ -7,6 +7,13 @@
 # https://opensource.org/licenses/MIT.
 # =============================================================================
 
+# Syntax:
+#   run-tet.sh [--tfkeras]
+#
+# Args:
+#   --tfkeras: optionally use tf.keras, instead of the backend-independent 
+#              keras-team/keras.
+
 set -e
 
 if [[ -z "${TRAVIS_BUILD_NUMBER}" ]]; then
@@ -15,6 +22,7 @@ else
   # If in Travis, use the `--user` flag when performing `pip install` of
   # dependencies.
   pip install --user -r requirements.txt
+
 fi
 
-python tfjs2keras_test.py
+python tfjs2keras_test.py foo
