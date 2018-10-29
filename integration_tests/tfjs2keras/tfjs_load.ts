@@ -18,7 +18,7 @@ import {join} from 'path';
 // exceptions inside async functions will lead to non-zero process
 // exit codes and thereby cause the calling Python parent process
 // to error out.
-process.on('unhandledRejection', up => {throw up});
+process.on('unhandledRejection', error => {throw error});
 
 function readXsAndYsTensors(baseDir: string):
     {xs: tfc.Tensor[], ys: tfc.Tensor[]} {

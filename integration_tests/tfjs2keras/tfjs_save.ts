@@ -14,6 +14,12 @@ import * as tfjsNode from '@tensorflow/tfjs-node';
 import * as fs from 'fs';
 import {join} from 'path';
 
+// The following call is done so that unhandled promises caused by
+// exceptions inside async functions will lead to non-zero process
+// exit codes and thereby cause the calling Python parent process
+// to error out.
+process.on('unhandledRejection', error => {throw error});
+
 /**
  * Generate random input(s), get predict() output(s), and save them along with
  * the model.
