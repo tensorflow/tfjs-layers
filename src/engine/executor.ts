@@ -167,13 +167,13 @@ export function execute(
   const fetchArray: SymbolicTensor[] =
       arrayFetches ? fetches as SymbolicTensor[] : [fetches as SymbolicTensor];
 
-  console.log('Performing topological sort...');  // DEBUG
+  // console.log('Performing topological sort...');  // DEBUG
   const visitedFetches = new Set<string>();
   const sorted: SymbolicTensor[] = [];
   const recipientMap: {[fetchName: string]: string[]} = {};
   getTpologicalSortAndRecipientMap(
       fetchArray, sorted, recipientMap, visitedFetches);
-  sorted.reverse();
+  // sorted.reverse();
   console.log('Topological sort result:', sorted.map(f => f.name));  // DEBUG
   console.log('recipientMap:', JSON.stringify(recipientMap));        // DEBUG
   visitedFetches.clear();  // For memory savings.
@@ -188,8 +188,8 @@ export function execute(
     if (symbolic.sourceLayer instanceof InputLayer) {
       continue;
     }
-    console.log(`Symbolic: ${symbolic.name}`);              // DEBUG
-    console.log(`  symbolic.inputs = ${symbolic.inputs}`);  // DEBUG
+    console.log(`Symbolic: ${symbolic.name}`);  // DEBUG
+    // console.log(`  symbolic.inputs = ${symbolic.inputs}`);  // DEBUG
     const inputValues: Tensor[] = [];
     const tensorsToDispose: Tensor[] = [];
     for (const input of symbolic.inputs) {
@@ -198,11 +198,12 @@ export function execute(
       console.log(`  Got input from ${input.name}`);  // DEBUG
       const recipients = recipientMap[input.name];
       const recipientIndex = recipients.indexOf(symbolic.name);
-      console.log(`  # recipientIndex = ${recipientIndex}`);  // DEBUG
+      // console.log(`  # recipientIndex = ${recipientIndex}`);  // DEBUG
       recipients.splice(recipientIndex);
-      if (recipients.length === 0 && !feedDict.hasKey(input)) {
+      if (recipients.length === 0 && !feedDict.hasKey(input) &&
+          outputNames.indexOf(input.name) === -1) {
         // Note: original feeds should not be disposed because they come from
-        //   the caller.
+        //   the caller. Also, output tensors should not be disposed.
         console.log(`  # Disposing ${input.name}`);  // DEBUG
         tensorsToDispose.push(value);
       }
@@ -215,18 +216,18 @@ export function execute(
     for (let i = 0; i < outputSymbolicTensors.length; ++i) {
       internalFeedDict.add(outputSymbolicTensors[i], output[i]);
       const index = outputNames.indexOf(outputSymbolicTensors[i].name);
-      console.log(
-          `  -- Adding to feed dict: ${outputSymbolicTensors[i].name}, ` +
-          `index=${index}`);  // DEBUG
+      // console.log(
+      //     `  -- Adding to feed dict: ${outputSymbolicTensors[i].name}, ` +
+      //     `index=${index}`);  // DEBUG
       if (index !== -1) {
         finalOutputs[index] = output[i];
       }
     }
-    
+
     dispose(tensorsToDispose);
   }
 
-  console.log(`outputs:`, finalOutputs);  // DEBUG
+  // console.log(`outputs:`, finalOutputs);  // DEBUG
   // return singletonOrArray(finalOutputs);
   // for (const fetch of fetchArray) {
   //   outputs.push(executeInternal(fetch, internalFeedDict, kwargs) as Tensor);
@@ -244,30 +245,51 @@ export function execute(
 function getTpologicalSortAndRecipientMap(
     fetches: SymbolicTensor[], sorted: SymbolicTensor[],
     recipientMap: {[fetchName: string]: string[]}, visited: Set<String>) {
-  const inputs: SymbolicTensor[] = [];
+  // const inputs: SymbolicTensor[] = [];
+  const fetchSortedArrays: SymbolicTensor[][] = [];
+
   for (const fetch of fetches) {
-    if (visited.has(fetch.name)) {  // TODO(cais): Simplify?
-      console.log(`Already visited: ${fetch.name}`);
+    const fetchSorted: SymbolicTensor[] = [];
+    if (visited.has(fetch.name)) {
       break;
     }
-    console.log(`Visiting ${fetch.name}`);
+    // DEBUG
+    // console.log(
+    //     `Visiting ${fetch.name}: inputs = ${fetch.inputs.map(t => t.name)}`);
     visited.add(fetch.name);
-    sorted.push(fetch);
-    for (const input of fetch.inputs) {
-      if (recipientMap[input.name] == null) {
-        recipientMap[input.name] = [fetch.name];
-      } else {
-        recipientMap[input.name].push(fetch.name);
+    fetchSorted.push(fetch);
+    // console.log('  ', JSON.stringify(fetchSorted.map(s => s.name)));  //
+    // DEBUG
+    if (fetch.inputs.length > 0) {
+      for (const input of fetch.inputs) {
+        // console.log(`  @ input: ${input.name}`);  // DEBUG
+        if (recipientMap[input.name] == null) {
+          recipientMap[input.name] = [fetch.name];
+        } else {
+          recipientMap[input.name].push(fetch.name);
+        }
+        // if (!visited.has(input.name)) {
+        // inputs.push(input);
+        // }
       }
-      if (!visited.has(input.name)) { 
-        inputs.push(input);
-      }
+      // Recursive call.
+      getTpologicalSortAndRecipientMap(
+          fetch.inputs, sorted, recipientMap, visited);  // DEBUG
+    }
+    console.log(  // DEBUG
+      `fetchSorted: ${JSON.stringify(fetchSorted.map(s => s.name))}`);
+      fetchSortedArrays.push(fetchSorted);
+  }
+  for (const fetchSorted of fetchSortedArrays) {
+    while (fetchSorted.length > 0) {
+      sorted.push(fetchSorted.splice(0, 1)[0]);
+      console.log(`sorted = ${JSON.stringify(sorted.map(s => s.name))}`);  // DEBUG
     }
   }
-  if (inputs.length > 0) {
-    // Recursive call.
-    getTpologicalSortAndRecipientMap(inputs, sorted, recipientMap, visited);
-  }
+  // if (inputs.length > 0) {
+  // Recursive call.
+
+  // }
 }
 
 // TODO(cais): Remove.
