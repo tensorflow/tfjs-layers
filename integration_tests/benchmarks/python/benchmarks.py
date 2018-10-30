@@ -159,6 +159,12 @@ def convolutional_model_fn(num_filters, input_shape, target_shape):
   return model
 
 
+def mobilenet_model_fn(input_shape, target_shape):
+  """2D convolutional model."""
+  model = keras.applications.MobileNet(alpha=0.25)
+  return model
+
+
 _RNN_TYPE_MAP = {
     'SimpleRNN': keras.layers.SimpleRNN,
     'GRU': keras.layers.GRU,
@@ -267,6 +273,28 @@ def main():
        (rnn_type, input_shape, target_shape, optimizer, loss))
       for rnn_type in ('SimpleRNN', 'GRU', 'LSTM')]
 
+  for model_name, model_fn, description in names_fns_and_descriptions:
+    train_time, predict_time = (
+        benchmark_and_serialize_model(
+            model_name,
+            description,
+            model_fn,
+            input_shape,
+            target_shape,
+            optimizer,
+            loss,
+            batch_size,
+            train_epochs,
+            os.path.join(FLAGS.data_root, model_name)))
+    benchmarks['models'].append(model_name)
+    print('train_time = %g s' % train_time)
+    print('predict_time = %g s' % predict_time)
+
+  # Mobilenet
+  names_fns_and_descriptions = [[
+      'mobilenet',
+      mobilenet_model_fn,
+      'mobilenet']]
   for model_name, model_fn, description in names_fns_and_descriptions:
     train_time, predict_time = (
         benchmark_and_serialize_model(
