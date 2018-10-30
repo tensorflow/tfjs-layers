@@ -152,8 +152,7 @@ describeMathCPUAndGPU('Executor', () => {
   });
 
   describe('Diamond Graph Topology', () => {
-    fit('Calling execute with two fetches and diamond graph works', () => {
-      console.log('In test.');  // DEBUG
+    it('Calling execute with two fetches and diamond graph works', () => {
       const x = tfl.input({shape: [2], name: 'fooInput', dtype: 'float32'});
       const denseLayer1 = tfl.layers.dense({
         units: 5,

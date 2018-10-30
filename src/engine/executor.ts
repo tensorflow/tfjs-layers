@@ -16,7 +16,7 @@ import {cast, dispose, Tensor} from '@tensorflow/tfjs-core';
 
 import {ValueError} from '../errors';
 import {Kwargs} from '../types';
-import {singletonOrArray, toList} from '../utils/generic_utils';
+import {toList} from '../utils/generic_utils';
 
 import {InputLayer} from './input_layer';
 import {SymbolicTensor} from './topology';
@@ -134,7 +134,7 @@ export class FeedDict {
    */
   getValue(key: SymbolicTensor): Tensor {
     if (this.id2Value[key.id] == null) {
-      throw new ValueError(`Nonexistent key: ${JSON.stringify(key)}`);
+      throw new ValueError(`Nonexistent key: ${key.name}`);
     } else {
       return this.id2Value[key.id];
     }
@@ -179,7 +179,7 @@ export function execute(
   visitedFetches.clear();  // For memory savings.
 
   const outputNames = fetchArray.map(t => t.name);
-  console.log(`outputNames: ${JSON.stringify(outputNames)}`);  // DEBUG
+  // console.log(`outputNames: ${JSON.stringify(outputNames)}`);  // DEBUG
   const finalOutputs: Tensor[] = outputNames.map(t => null);
   const internalFeedDict = new FeedDict(feedDict);
 
@@ -200,7 +200,9 @@ export function execute(
       const recipientIndex = recipients.indexOf(symbolic.name);
       console.log(`  # recipientIndex = ${recipientIndex}`);  // DEBUG
       recipients.splice(recipientIndex);
-      if (recipients.length === 0) {
+      if (recipients.length === 0 && !feedDict.hasKey(input)) {
+        // Note: original feeds should not be disposed because they come from
+        //   the caller.
         console.log(`  # Disposing ${input.name}`);  // DEBUG
         tensorsToDispose.push(value);
       }
@@ -225,11 +227,11 @@ export function execute(
   }
 
   console.log(`outputs:`, finalOutputs);  // DEBUG
-  return singletonOrArray(finalOutputs);
+  // return singletonOrArray(finalOutputs);
   // for (const fetch of fetchArray) {
   //   outputs.push(executeInternal(fetch, internalFeedDict, kwargs) as Tensor);
   // }
-  // return arrayFetches ? outputs : outputs[0];
+  return arrayFetches ? finalOutputs : finalOutputs[0];
 }
 
 /**
@@ -245,18 +247,19 @@ function getTpologicalSortAndRecipientMap(
   const inputs: SymbolicTensor[] = [];
   for (const fetch of fetches) {
     if (visited.has(fetch.name)) {  // TODO(cais): Simplify?
+      console.log(`Already visited: ${fetch.name}`);
       break;
     }
     console.log(`Visiting ${fetch.name}`);
     visited.add(fetch.name);
     sorted.push(fetch);
     for (const input of fetch.inputs) {
-      if (!visited.has(input.name)) {
-        if (recipientMap[input.name] == null) {
-          recipientMap[input.name] = [fetch.name];
-        } else {
-          recipientMap[input.name].push(fetch.name);
-        }
+      if (recipientMap[input.name] == null) {
+        recipientMap[input.name] = [fetch.name];
+      } else {
+        recipientMap[input.name].push(fetch.name);
+      }
+      if (!visited.has(input.name)) { 
         inputs.push(input);
       }
     }
