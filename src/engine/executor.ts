@@ -223,7 +223,6 @@ export function execute(
   // console.log('recipientMap:', JSON.stringify(recipientMap));        // DEBUG
   visited.clear();  // For memory savings.
 
-
   // console.log(`outputNames: ${JSON.stringify(outputNames)}`);  // DEBUG
 
   const internalFeedDict = new FeedDict(feedDict);
@@ -291,19 +290,23 @@ function getTpologicalSortAndRecipientMap(
     fetches: SymbolicTensor[], sorted: SymbolicTensor[],
     recipientMap: {[fetchName: string]: string[]}, visited: Set<string>) {
   // const inputs: SymbolicTensor[] = [];
+  // console.log(`In getTpologicalSortAndRecipientMap(): ` +
+  //             `fetches = ${fetches.map(f => f.name)}`);  // DEBUG
   const fetchSortedArrays: SymbolicTensor[][] = [];
 
   for (const fetch of fetches) {
+    // console.log(`@ fetch: ${fetch.name}`);  // DEBUG
     const fetchSorted: SymbolicTensor[] = [];
     if (visited.has(fetch.name)) {
-      break;
+      // console.log(`Skipping already visited: ${fetch.name}`);  // DEBUG
+      continue;
     }
     // DEBUG
     // console.log(
     //     `Visiting ${fetch.name}: inputs = ${fetch.inputs.map(t => t.name)}`);
     visited.add(fetch.name);
     fetchSorted.push(fetch);
-    // console.log('  ', JSON.stringify(fetchSorted.map(s => s.name)));  //
+    // console.log('  ', JSON.stringify(fetchSorted.map(s => s.name)));
     // DEBUG
     if (fetch.inputs.length > 0) {
       for (const input of fetch.inputs) {

@@ -33,3 +33,4 @@ export {Shape} from './types';
 export {LayerVariable} from './variables';
 export {version as version_layers} from './version';
 export {constraints, initializers, layers, models, metrics, regularizers};
+console.log('New ver!');  // DEBUG
