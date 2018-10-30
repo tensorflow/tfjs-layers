@@ -136,7 +136,7 @@ export class FeedDict {
     }
     return false;
   }
-  
+
   getValueByName(name: string): Tensor {
     for (const id of Object.keys(this.id2Value)) {
       if (this.id2Name[+id] === name) {
@@ -190,6 +190,8 @@ export class FeedDict {
 export function execute(
     fetches: SymbolicTensor|SymbolicTensor[], feedDict: FeedDict,
     kwargs?: Kwargs): Tensor|Tensor[]|[Tensor | Tensor[]] {
+  const training: boolean = kwargs == null ? false : kwargs['training'];
+
   const arrayFetches = Array.isArray(fetches);
   const fetchArray: SymbolicTensor[] =
       arrayFetches ? fetches as SymbolicTensor[] : [fetches as SymbolicTensor];
@@ -210,22 +212,20 @@ export function execute(
   // walked. This is useful in case where there are feeds for intermediate
   // SymbolicTensors of the graph.
   for (const key of feedDict.names()) {
-    console.log(`Adding key ${key}`);  // DEBUG
     visited.add(key);
   }
 
   const sorted: SymbolicTensor[] = [];
   const recipientMap: {[fetchName: string]: string[]} = {};
-  getTpologicalSortAndRecipientMap(
-      fetchArray, sorted, recipientMap, visited);
-  // sorted.reverse();
-  console.log('Topological sort result:', sorted.map(f => f.name));  // DEBUG
-  console.log('recipientMap:', JSON.stringify(recipientMap));        // DEBUG
+  getTpologicalSortAndRecipientMap(fetchArray, sorted, recipientMap, visited);
+  // sorted.reverse();  // DEBUG
+  // console.log('Topological sort result:', sorted.map(f => f.name));  // DEBUG
+  // console.log('recipientMap:', JSON.stringify(recipientMap));        // DEBUG
   visited.clear();  // For memory savings.
 
-  
+
   // console.log(`outputNames: ${JSON.stringify(outputNames)}`);  // DEBUG
-  
+
   const internalFeedDict = new FeedDict(feedDict);
 
   for (let i = 0; i < sorted.length; ++i) {
@@ -233,25 +233,23 @@ export function execute(
     if (symbolic.sourceLayer instanceof InputLayer) {
       continue;
     }
-    console.log(`Symbolic: ${symbolic.name}`);  // DEBUG
+    // console.log(`Symbolic: ${symbolic.name}`);  // DEBUG
     // console.log(`  symbolic.inputs = ${symbolic.inputs}`);  // DEBUG
     const inputValues: Tensor[] = [];
     const tensorsToDispose: Tensor[] = [];
     for (const input of symbolic.inputs) {
       const value = internalFeedDict.getValue(input);
       inputValues.push(value);
-      console.log(`  Got input from ${input.name}`);  // DEBUG
       const recipients = recipientMap[input.name];
-      console.log(`  BEFORE recipients = ${recipients}`);  // DEBUG
       const recipientIndex = recipients.indexOf(symbolic.name);
       // console.log(`  # recipientIndex = ${recipientIndex}`);  // DEBUG
       recipients.splice(recipientIndex, 1);
-      console.log(`  AFTER recipients = ${recipients}`);  // DEBUG
+      // console.log(`  AFTER recipients = ${recipients}`);  // DEBUG
       if (recipients.length === 0 && !feedDict.hasKey(input) &&
           outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
         // Note: original feeds should not be disposed because they come from
         //   the caller. Also, output tensors should not be disposed.
-        console.log(`  # Disposing ${input.name}`);  // DEBUG
+        // console.log(`  # Disposing ${input.name}`);  // DEBUG
         tensorsToDispose.push(value);
       }
     }
@@ -261,7 +259,9 @@ export function execute(
     const outputSymbolicTensors =
         Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
     for (let i = 0; i < outputSymbolicTensors.length; ++i) {
-      internalFeedDict.add(outputSymbolicTensors[i], output[i]);
+      if (!internalFeedDict.hasKey(outputSymbolicTensors[i])) {
+        internalFeedDict.add(outputSymbolicTensors[i], output[i]);
+      }
       const index = outputNames.indexOf(outputSymbolicTensors[i].name);
       // console.log(
       //     `  -- Adding to feed dict: ${outputSymbolicTensors[i].name}, ` +
@@ -271,14 +271,12 @@ export function execute(
       }
     }
 
-    dispose(tensorsToDispose);
+    if (!training) {
+      dispose(tensorsToDispose);
+    }
   }
 
-  console.log(`finalOutputs:`, finalOutputs);  // DEBUG
-  // return singletonOrArray(finalOutputs);
-  // for (const fetch of fetchArray) {
-  //   outputs.push(executeInternal(fetch, internalFeedDict, kwargs) as Tensor);
-  // }
+  // console.log(`finalOutputs:`, finalOutputs);  // DEBUG
   return arrayFetches ? finalOutputs : finalOutputs[0];
 }
 
@@ -323,15 +321,15 @@ function getTpologicalSortAndRecipientMap(
       getTpologicalSortAndRecipientMap(
           fetch.inputs, sorted, recipientMap, visited);  // DEBUG
     }
-    console.log(  // DEBUG
-        `fetchSorted: ${JSON.stringify(fetchSorted.map(s => s.name))}`);
+    // console.log(  // DEBUG
+    //     `fetchSorted: ${JSON.stringify(fetchSorted.map(s => s.name))}`);
     fetchSortedArrays.push(fetchSorted);
   }
   for (const fetchSorted of fetchSortedArrays) {
     while (fetchSorted.length > 0) {
       sorted.push(fetchSorted.splice(0, 1)[0]);
-      console.log(
-          `sorted = ${JSON.stringify(sorted.map(s => s.name))}`);  // DEBUG
+      // console.log(
+      //     `sorted = ${JSON.stringify(sorted.map(s => s.name))}`);  // DEBUG
     }
   }
   // if (inputs.length > 0) {
