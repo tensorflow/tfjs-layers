@@ -2064,6 +2064,7 @@ describeMathCPUAndGPU('Model.execute', () => {
     const inputs: NamedTensorMap = {};
     inputs[inputName1] = zeros([1, 2, 3]);
     inputs[inputName2] = zeros([1, 3, 4]);
+    console.log(`Third fetch: ${layers['input2'].name}`);  // DEBUG
     const outputs = model.execute(inputs, [
       layers['reshape1'].name, layers['concat'].name, layers['input2'].name
     ]) as Tensor[];

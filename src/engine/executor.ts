@@ -71,6 +71,7 @@ export interface Feed {
  */
 export class FeedDict {
   private id2Value: {[id: number]: Tensor} = {};
+  private id2Name: {[id: number]: string} = {};
 
   /**
    * Constructor, optionally does copy-construction.
@@ -103,6 +104,7 @@ export class FeedDict {
   add(key: SymbolicTensor, value: Tensor): FeedDict {
     if (this.id2Value[key.id] == null) {
       this.id2Value[key.id] = assertFeedCompatibility(key, value);
+      this.id2Name[key.id] = key.name;
     } else {
       throw new ValueError(`Duplicate key: name=${key.name}, id=${key.id}`);
     }
@@ -124,6 +126,31 @@ export class FeedDict {
    */
   hasKey(key: SymbolicTensor): boolean {
     return this.id2Value[key.id] != null;
+  }
+
+  hasName(name: string): boolean {
+    for (const id of Object.keys(this.id2Value)) {
+      if (this.id2Name[+id] === name) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  getValueByName(name: string): Tensor {
+    for (const id of Object.keys(this.id2Value)) {
+      if (this.id2Name[+id] === name) {
+        return this.id2Value[+id];
+      }
+    }
+    throw new ValueError(`Nonexistent name: ${name}`);
+  }
+
+  /**
+   * Get all the SymbolicTensor available in this FeedDict.
+   */
+  names() {
+    return Object.keys(this.id2Value).map(id => this.id2Name[+id]);
   }
 
   /**
@@ -167,20 +194,38 @@ export function execute(
   const fetchArray: SymbolicTensor[] =
       arrayFetches ? fetches as SymbolicTensor[] : [fetches as SymbolicTensor];
 
+  const outputNames = fetchArray.map(t => t.name);
+  const finalOutputs: Tensor[] = [];
+  for (const outputName of outputNames) {
+    if (feedDict.hasName(outputName)) {
+      finalOutputs.push(feedDict.getValueByName(outputName));
+    } else {
+      finalOutputs.push(null);
+    }
+  }
+
   // console.log('Performing topological sort...');  // DEBUG
-  const visitedFetches = new Set<string>();
+  const visited = new Set<string>();
+  // Put keys of the feedDict into visited first, so they don't have to be
+  // walked. This is useful in case where there are feeds for intermediate
+  // SymbolicTensors of the graph.
+  for (const key of feedDict.names()) {
+    console.log(`Adding key ${key}`);  // DEBUG
+    visited.add(key);
+  }
+
   const sorted: SymbolicTensor[] = [];
   const recipientMap: {[fetchName: string]: string[]} = {};
   getTpologicalSortAndRecipientMap(
-      fetchArray, sorted, recipientMap, visitedFetches);
+      fetchArray, sorted, recipientMap, visited);
   // sorted.reverse();
   console.log('Topological sort result:', sorted.map(f => f.name));  // DEBUG
   console.log('recipientMap:', JSON.stringify(recipientMap));        // DEBUG
-  visitedFetches.clear();  // For memory savings.
+  visited.clear();  // For memory savings.
 
-  const outputNames = fetchArray.map(t => t.name);
+  
   // console.log(`outputNames: ${JSON.stringify(outputNames)}`);  // DEBUG
-  const finalOutputs: Tensor[] = outputNames.map(t => null);
+  
   const internalFeedDict = new FeedDict(feedDict);
 
   for (let i = 0; i < sorted.length; ++i) {
@@ -197,11 +242,13 @@ export function execute(
       inputValues.push(value);
       console.log(`  Got input from ${input.name}`);  // DEBUG
       const recipients = recipientMap[input.name];
+      console.log(`  BEFORE recipients = ${recipients}`);  // DEBUG
       const recipientIndex = recipients.indexOf(symbolic.name);
       // console.log(`  # recipientIndex = ${recipientIndex}`);  // DEBUG
-      recipients.splice(recipientIndex);
+      recipients.splice(recipientIndex, 1);
+      console.log(`  AFTER recipients = ${recipients}`);  // DEBUG
       if (recipients.length === 0 && !feedDict.hasKey(input) &&
-          outputNames.indexOf(input.name) === -1) {
+          outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
         // Note: original feeds should not be disposed because they come from
         //   the caller. Also, output tensors should not be disposed.
         console.log(`  # Disposing ${input.name}`);  // DEBUG
@@ -227,7 +274,7 @@ export function execute(
     dispose(tensorsToDispose);
   }
 
-  // console.log(`outputs:`, finalOutputs);  // DEBUG
+  console.log(`finalOutputs:`, finalOutputs);  // DEBUG
   // return singletonOrArray(finalOutputs);
   // for (const fetch of fetchArray) {
   //   outputs.push(executeInternal(fetch, internalFeedDict, kwargs) as Tensor);
@@ -244,7 +291,7 @@ export function execute(
  */
 function getTpologicalSortAndRecipientMap(
     fetches: SymbolicTensor[], sorted: SymbolicTensor[],
-    recipientMap: {[fetchName: string]: string[]}, visited: Set<String>) {
+    recipientMap: {[fetchName: string]: string[]}, visited: Set<string>) {
   // const inputs: SymbolicTensor[] = [];
   const fetchSortedArrays: SymbolicTensor[][] = [];
 
@@ -277,13 +324,14 @@ function getTpologicalSortAndRecipientMap(
           fetch.inputs, sorted, recipientMap, visited);  // DEBUG
     }
     console.log(  // DEBUG
-      `fetchSorted: ${JSON.stringify(fetchSorted.map(s => s.name))}`);
-      fetchSortedArrays.push(fetchSorted);
+        `fetchSorted: ${JSON.stringify(fetchSorted.map(s => s.name))}`);
+    fetchSortedArrays.push(fetchSorted);
   }
   for (const fetchSorted of fetchSortedArrays) {
     while (fetchSorted.length > 0) {
       sorted.push(fetchSorted.splice(0, 1)[0]);
-      console.log(`sorted = ${JSON.stringify(sorted.map(s => s.name))}`);  // DEBUG
+      console.log(
+          `sorted = ${JSON.stringify(sorted.map(s => s.name))}`);  // DEBUG
     }
   }
   // if (inputs.length > 0) {
