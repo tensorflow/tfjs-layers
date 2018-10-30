@@ -440,6 +440,7 @@ describeMathCPU('modelFromJSON', () => {
     expect(prediction.shape).toEqual([1, 10]);
     expect(sum(prediction).dataSync()).toBeCloseTo(1);
   });
+
   it('reconstitutes mnist sequential mode.', async () => {
     /*
     input_shape = (28,28,1)

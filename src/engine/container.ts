@@ -811,6 +811,7 @@ export abstract class Container extends Layer {
    *   are more than one outputs.
    */
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+    console.log(`In Container.call`);  // DEBUG
     return tidy(() => {
       inputs = generic_utils.toList(inputs);
       let masks: Tensor[];
@@ -946,6 +947,7 @@ export abstract class Container extends Layer {
    * @param masks List of masks (tensors or null).
    * @return Three lists: outputTensors, outputMasks, outputShapes
    */
+  // TODO(cais): Remove in favor of execute().
   protected runInternalGraph(inputs: Tensor[], masks?: Tensor[]):
       [Tensor[], Tensor[], Shape[]] {
     if (masks == null) {
