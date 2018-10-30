@@ -206,7 +206,6 @@ export function execute(
     }
   }
 
-  // console.log('Performing topological sort...');  // DEBUG
   const visited = new Set<string>();
   // Put keys of the feedDict into visited first, so they don't have to be
   // walked. This is useful in case where there are feeds for intermediate
@@ -214,16 +213,10 @@ export function execute(
   for (const key of feedDict.names()) {
     visited.add(key);
   }
-
   const sorted: SymbolicTensor[] = [];
   const recipientMap: {[fetchName: string]: string[]} = {};
   getTpologicalSortAndRecipientMap(fetchArray, sorted, recipientMap, visited);
-  // sorted.reverse();  // DEBUG
-  // console.log('Topological sort result:', sorted.map(f => f.name));  // DEBUG
-  // console.log('recipientMap:', JSON.stringify(recipientMap));        // DEBUG
   visited.clear();  // For memory savings.
-
-  // console.log(`outputNames: ${JSON.stringify(outputNames)}`);  // DEBUG
 
   const internalFeedDict = new FeedDict(feedDict);
 
@@ -232,8 +225,6 @@ export function execute(
     if (symbolic.sourceLayer instanceof InputLayer) {
       continue;
     }
-    // console.log(`Symbolic: ${symbolic.name}`);  // DEBUG
-    // console.log(`  symbolic.inputs = ${symbolic.inputs}`);  // DEBUG
     const inputValues: Tensor[] = [];
     const tensorsToDispose: Tensor[] = [];
     for (const input of symbolic.inputs) {
@@ -241,14 +232,9 @@ export function execute(
       inputValues.push(value);
       const recipients = recipientMap[input.name];
       const recipientIndex = recipients.indexOf(symbolic.name);
-      // console.log(`  # recipientIndex = ${recipientIndex}`);  // DEBUG
       recipients.splice(recipientIndex, 1);
-      // console.log(`  AFTER recipients = ${recipients}`);  // DEBUG
       if (recipients.length === 0 && !feedDict.hasKey(input) &&
           outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
-        // Note: original feeds should not be disposed because they come from
-        //   the caller. Also, output tensors should not be disposed.
-        // console.log(`  # Disposing ${input.name}`);  // DEBUG
         tensorsToDispose.push(value);
       }
     }
@@ -262,20 +248,17 @@ export function execute(
         internalFeedDict.add(outputSymbolicTensors[i], output[i]);
       }
       const index = outputNames.indexOf(outputSymbolicTensors[i].name);
-      // console.log(
-      //     `  -- Adding to feed dict: ${outputSymbolicTensors[i].name}, ` +
-      //     `index=${index}`);  // DEBUG
       if (index !== -1) {
         finalOutputs[index] = output[i];
       }
     }
 
     if (!training) {
+      // console.log(`# Disposing ${tensorsToDispose.length}`);  // DEBUG
       dispose(tensorsToDispose);
     }
   }
 
-  // console.log(`finalOutputs:`, finalOutputs);  // DEBUG
   return arrayFetches ? finalOutputs : finalOutputs[0];
 }
 
@@ -289,92 +272,35 @@ export function execute(
 function getTpologicalSortAndRecipientMap(
     fetches: SymbolicTensor[], sorted: SymbolicTensor[],
     recipientMap: {[fetchName: string]: string[]}, visited: Set<string>) {
-  // const inputs: SymbolicTensor[] = [];
-  // console.log(`In getTpologicalSortAndRecipientMap(): ` +
-  //             `fetches = ${fetches.map(f => f.name)}`);  // DEBUG
   const fetchSortedArrays: SymbolicTensor[][] = [];
 
   for (const fetch of fetches) {
-    // console.log(`@ fetch: ${fetch.name}`);  // DEBUG
     const fetchSorted: SymbolicTensor[] = [];
     if (visited.has(fetch.name)) {
-      // console.log(`Skipping already visited: ${fetch.name}`);  // DEBUG
       continue;
     }
-    // DEBUG
-    // console.log(
-    //     `Visiting ${fetch.name}: inputs = ${fetch.inputs.map(t => t.name)}`);
     visited.add(fetch.name);
     fetchSorted.push(fetch);
-    // console.log('  ', JSON.stringify(fetchSorted.map(s => s.name)));
-    // DEBUG
     if (fetch.inputs.length > 0) {
       for (const input of fetch.inputs) {
-        // console.log(`  @ input: ${input.name}`);  // DEBUG
         if (recipientMap[input.name] == null) {
           recipientMap[input.name] = [fetch.name];
         } else {
           recipientMap[input.name].push(fetch.name);
         }
-        // if (!visited.has(input.name)) {
-        // inputs.push(input);
-        // }
       }
       // Recursive call.
       getTpologicalSortAndRecipientMap(
-          fetch.inputs, sorted, recipientMap, visited);  // DEBUG
+          fetch.inputs, sorted, recipientMap, visited);
     }
-    // console.log(  // DEBUG
-    //     `fetchSorted: ${JSON.stringify(fetchSorted.map(s => s.name))}`);
     fetchSortedArrays.push(fetchSorted);
   }
   for (const fetchSorted of fetchSortedArrays) {
     while (fetchSorted.length > 0) {
       sorted.push(fetchSorted.splice(0, 1)[0]);
-      // console.log(
-      //     `sorted = ${JSON.stringify(sorted.map(s => s.name))}`);  // DEBUG
     }
   }
-  // if (inputs.length > 0) {
-  // Recursive call.
-
-  // }
 }
-
-// TODO(cais): Remove.
-// function executeInternal(
-//     fetch: SymbolicTensor, internalFeedDict: FeedDict,
-//     kwargs?: Kwargs): Tensor {
-//   if (internalFeedDict.hasKey(fetch)) {
-//     return internalFeedDict.getValue(fetch);
-//   }
-//   if (fetch.sourceLayer instanceof InputLayer) {
-//     throw new ValueError(
-//         `Missing a feed value for SymbolicTensor from InputLayer ` +
-//         `'${InputLayer.name}'`);
-//   }
-
-//   const inputs = fetch.inputs;
-//   const inputValues: Tensor[] = [];
-//   for (const input of inputs) {
-//     // Recursive call.
-//     const inputVal = executeInternal(input, internalFeedDict, kwargs) as
-//     Tensor; inputValues.push(inputVal);
-//   }
-
-//   let output =
-//       fetch.sourceLayer.apply(inputValues, kwargs) as Tensor | Tensor[];
-//   if (!Array.isArray(output)) {
-//     output = [output];
-//   }
-//   const layerOutputs = getNodeOutputs(fetch);
-//   const outputSymbolicTensors =
-//       Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
-//   for (let i = 0; i < outputSymbolicTensors.length; ++i) {
-//     internalFeedDict.add(outputSymbolicTensors[i], output[i]);
-//   }
-//   return output.length === 1 ? output[0] : output[fetch.outputTensorIndex];
-// }
 
 /**
  * Get the symbolic output tensors of the node to which a given fetch belongs.

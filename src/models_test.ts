@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {DataType, io, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+import {DataType, io, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros, util} from '@tensorflow/tfjs-core';
 import {ConfigDict} from '@tensorflow/tfjs-core/dist/serialization';
 
 import {Model} from './engine/training';
@@ -2217,7 +2217,7 @@ const fakeRoundtripModel: ModelAndWeightsConfig = {
   }
 };
 
-describeMathCPU('Functional-model saving and loading', () => {
+describeMathCPUAndGPU('Functional-model saving and loading', () => {
   it('Save-load round trip: multi-node layer', async () => {
     const input1 = tfl.input({shape: [2, 3]});
     const input2 = tfl.input({shape: [3, 2]});
@@ -2273,7 +2273,7 @@ describeMathCPU('Functional-model saving and loading', () => {
     expectTensorsClose(ys1, ys2);
   });
 
-  it('Load attention model', async () => {
+  fit('Load attention model', async () => {
     // From https://github.com/tensorflow/tfjs/issues/794
     const modelJSON = JSON.parse(
         // tslint:disable-next-line:max-line-length
@@ -2295,7 +2295,9 @@ describeMathCPU('Functional-model saving and loading', () => {
     const x = randomNormal([2, 30, 38]);
     const s = randomNormal([2, 64]);
     const c = randomNormal([2, 64]);
+    const t0 = util.now();
     const output = model.predict([x, s, c]) as Tensor[];
+    console.log(util.now() - t0);  // DEBUG
     expect(output.length).toEqual(10);
   });
 });
