@@ -187,6 +187,8 @@ function executeInternal(
         `'${InputLayer.name}'`);
   }
 
+  // console.log('Performing topological sort...');  // DEBUG
+
   const inputs = fetch.inputs;
   const inputValues: Tensor[] = [];
   for (const input of inputs) {

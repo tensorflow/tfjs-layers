@@ -40,14 +40,18 @@ async function runBenchmark(artifactsDir, modelName, config) {
   const PREDICT_RUNS = config.PREDICT_RUNS;
 
   // Perform fit() burn-in.
-  await model.fit(
-      xs, ys, {batchSize: benchmarkData.batch_size, epochs: FIT_BURNIN_EPOCHS});
+  await model.fit(xs, ys, {
+    batchSize: benchmarkData.batch_size,
+    epochs: FIT_BURNIN_EPOCHS,
+    yieldEvery: 'never'
+  });
   model.trainableWeights[0].read().dataSync();
 
   const trainBeginMs = performance.now();
   await model.fit(xs, ys, {
     batchSize: benchmarkData.batch_size,
-    epochs: benchmarkData.train_epochs
+    epochs: benchmarkData.train_epochs,
+    yieldEvery: 'never'
   });
   // After the fit() call, call dataSync() to let the scheduled GPU
   // operations to complete before proceeding.
@@ -104,13 +108,17 @@ function getRunAllBenchmarks(artifactsDir, benchmarks) {
 }
 
 async function setupBenchmarks() {
-  const artifactsDir = './data/';
+  const artifactsDir = './dist/data/';
+
+  console.log(tfl.version_layers);  // DEBUG
 
   console.log('Loading benchmarks...');
   const url = 'http:' + artifactsDir + 'benchmarks.json';
   console.log(url);
   const x = await fetch(url);
+  console.log(`x = ${x}`);  // DEBUG
   const benchmarks = await x.json();
+  console.log(`Done await x json`);  // DEBUG
   console.log('Done loading benchmarks:', benchmarks);
 
   ui.setMetadata(benchmarks.metadata);
