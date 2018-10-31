@@ -186,27 +186,26 @@ export function rnn(
   //   TODO(cais): Determine in what exact way the learning phase information
   //     will be passed.
 
+  const inputsByTime = tfc.unstack(inputs);
+  const outputsByTime: Tensor[] = [];
+
   let outputs: Tensor;
   let lastOutput: Tensor;
   let states = initialStates;
   const timeSteps = inputs.shape[0];
   for (let t = 0; t < timeSteps; ++t) {
-    let currentInput = K.sliceAlongFirstAxis(inputs, t, 1);
-    currentInput = currentInput.reshape(currentInput.shape.slice(1));
+    const currentInput = inputsByTime[t];
     const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
+    tfc.dispose(currentInput);
     lastOutput = stepOutputs[0];
     if (needPerStepOutputs) {
-      if (t === 0) {
-        outputs = lastOutput.expandDims(1);
-      } else {
-        const newOutputs = tfc.concat([outputs, lastOutput.expandDims(1)], 1);
-        outputs.dispose();
-        outputs = newOutputs;
-      }
+      outputsByTime.push(lastOutput);
     }
-    // TODO(soergel): Call K.concatenate() to perform only one concatenation
-    // at the end, once the backend function is available.
     states = stepOutputs[1];
+  }
+
+  if (needPerStepOutputs) {
+    outputs = tfc.stack(outputsByTime).transpose(axes);
   }
   return [lastOutput, outputs, states];
 }
