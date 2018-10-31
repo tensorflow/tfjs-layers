@@ -165,7 +165,7 @@ def convolutional_model_fn(num_filters, input_shape, target_shape):
 
 def mobilenet_model_fn(input_shape, target_shape):
   """2D convolutional model."""
-  model = keras.applications.MobileNet(alpha=0.25)
+  model = keras.applications.MobileNet(alpha=0.5)
   return model
 
 
