@@ -291,6 +291,12 @@ def main():
     print('predict_time = %g s' % predict_time)
 
   # Mobilenet
+  optimizer = 'adam'
+  loss = 'categorical_crossentropy'
+  input_shape = [224, 224, 3]
+  target_shape = [1000]
+  batch_size = 1
+  train_epochs = 1
   names_fns_and_descriptions = [[
       'mobilenet',
       mobilenet_model_fn,
