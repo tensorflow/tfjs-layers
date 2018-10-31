@@ -47,17 +47,20 @@ async function runBenchmark(artifactsDir, modelName, config) {
   });
   model.trainableWeights[0].read().dataSync();
 
-  const trainBeginMs = performance.now();
-  await model.fit(xs, ys, {
-    batchSize: benchmarkData.batch_size,
-    epochs: benchmarkData.train_epochs,
-    yieldEvery: 'never'
-  });
-  // After the fit() call, call dataSync() to let the scheduled GPU
-  // operations to complete before proceeding.
-  model.trainableWeights[0].read().dataSync();
-  const trainEndMs = performance.now();
-  const trainTimeMs = (trainEndMs - trainBeginMs) / benchmarkData.train_epochs;
+  let trainTimeMs;
+  if (benchmarkData.train_epochs > 0) {
+    const trainBeginMs = performance.now();
+    await model.fit(xs, ys, {
+      batchSize: benchmarkData.batch_size,
+      epochs: benchmarkData.train_epochs,
+      yieldEvery: 'never'
+    });
+    // After the fit() call, call dataSync() to let the scheduled GPU
+    // operations to complete before proceeding.
+    model.trainableWeights[0].read().dataSync();
+    const trainEndMs = performance.now();
+    trainTimeMs = (trainEndMs - trainBeginMs) / benchmarkData.train_epochs;
+  }
 
   // Perform predict() burn-in.
   return tfc.tidy(() => {

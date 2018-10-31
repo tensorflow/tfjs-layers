@@ -77,9 +77,10 @@ def benchmark_and_serialize_model(model_name,
   model.fit(xs, ys, batch_size=batch_size, epochs=_FIT_BURNIN_EPOCHS)
 
   # Time fit().
-  train_t_begin = time.time()
-  model.fit(xs, ys, batch_size=batch_size, epochs=train_epochs)
-  train_t_end = time.time()
+  if train_epochs > 0:
+    train_t_begin = time.time()
+    model.fit(xs, ys, batch_size=batch_size, epochs=train_epochs)
+    train_t_end = time.time()
 
   # Perform predict() burn-in.
   for _ in range(_PREDICT_BURNINS):
@@ -94,7 +95,10 @@ def benchmark_and_serialize_model(model_name,
   tfjs.converters.save_keras_model(model, artifacts_dir)
 
   # Save data about the model and benchmark results.
-  train_time = (train_t_end - train_t_begin) / train_epochs
+  if train_epochs > 0:
+    train_time = (train_t_end - train_t_begin) / train_epochs
+  else:
+    train_time = None
   predict_time = (predict_t_end - predict_t_begin) / _PREDICT_RUNS
   data = {
       'name': model_name,
@@ -296,7 +300,7 @@ def main():
   input_shape = [224, 224, 3]
   target_shape = [1000]
   batch_size = 1
-  train_epochs = 1
+  train_epochs = 0
   names_fns_and_descriptions = [[
       'mobilenet',
       mobilenet_model_fn,
@@ -315,7 +319,8 @@ def main():
             train_epochs,
             os.path.join(FLAGS.data_root, model_name)))
     benchmarks['models'].append(model_name)
-    print('train_time = %g s' % train_time)
+    if train_epochs > 0:
+      print('train_time = %g s' % train_time)    
     print('predict_time = %g s' % predict_time)
 
   with open(os.path.join(FLAGS.data_root, 'benchmarks.json'), 'wt') as f:
