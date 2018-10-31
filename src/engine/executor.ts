@@ -214,8 +214,9 @@ export function execute(
     visited.add(key);
   }
   const sorted: SymbolicTensor[] = [];
-  const recipientMap: {[fetchName: string]: string[]} = {};
-  getTpologicalSortAndRecipientMap(fetchArray, sorted, recipientMap, visited);
+  const recipientCounts: {[fetchName: string]: number} = {};
+  getTpologicalSortAndRecipientMap(
+      fetchArray, sorted, recipientCounts, visited);
   visited.clear();  // For memory savings.
 
   const internalFeedDict = new FeedDict(feedDict);
@@ -230,10 +231,8 @@ export function execute(
     for (const input of symbolic.inputs) {
       const value = internalFeedDict.getValue(input);
       inputValues.push(value);
-      const recipients = recipientMap[input.name];
-      const recipientIndex = recipients.indexOf(symbolic.name);
-      recipients.splice(recipientIndex, 1);
-      if (recipients.length === 0 && !feedDict.hasKey(input) &&
+      recipientCounts[input.name]--;
+      if (recipientCounts[input.name] === 0 && !feedDict.hasKey(input) &&
           outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
         tensorsToDispose.push(value);
       }
@@ -271,7 +270,7 @@ export function execute(
  */
 function getTpologicalSortAndRecipientMap(
     fetches: SymbolicTensor[], sorted: SymbolicTensor[],
-    recipientMap: {[fetchName: string]: string[]}, visited: Set<string>) {
+    recipientCounts: {[fetchName: string]: number}, visited: Set<string>) {
   const fetchSortedArrays: SymbolicTensor[][] = [];
 
   for (const fetch of fetches) {
@@ -283,15 +282,15 @@ function getTpologicalSortAndRecipientMap(
     fetchSorted.push(fetch);
     if (fetch.inputs.length > 0) {
       for (const input of fetch.inputs) {
-        if (recipientMap[input.name] == null) {
-          recipientMap[input.name] = [fetch.name];
+        if (recipientCounts[input.name] == null) {
+          recipientCounts[input.name] = 1;
         } else {
-          recipientMap[input.name].push(fetch.name);
+          recipientCounts[input.name]++;
         }
       }
       // Recursive call.
       getTpologicalSortAndRecipientMap(
-          fetch.inputs, sorted, recipientMap, visited);
+          fetch.inputs, sorted, recipientCounts, visited);
     }
     fetchSortedArrays.push(fetchSorted);
   }
