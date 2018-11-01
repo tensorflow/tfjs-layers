@@ -34,29 +34,19 @@ async function runBenchmark(artifactsDir, modelName, config) {
     for (const input of model.inputs) {
       xs.push(tfc.randomUniform([batchSize].concat(input.shape.slice(1))));
     }
-    console.log('All xs from model input shapes:');  // DEBUG
-    console.log(xs);  // DEBUG
   } else {
     xs = tfc.randomUniform([batchSize].concat(benchmarkData.input_shape));
   }
 
-  console.log('== 100');  // DEBUG
-
   let ys;
-  console.log(benchmarkData);  // DEBUG
   if (benchmarkData.target_shape == null) {
     ys = [];
     for (const output of model.outputs) {
-      console.log(output.shape);  // DEBUG
       ys.push(tfc.randomUniform([batchSize].concat(output.shape.slice(1))));
     }
-    console.log('All ys from model input shapes:');  // DEBUG
-    console.log(ys);  // DEBUG
   } else {
     ys = tfc.randomUniform([batchSize].concat(benchmarkData.target_shape));
   }
-  
-  console.log('== 200');  // DEBUG
 
   if (benchmarkData.train_epochs > 0) {
     model.compile({
@@ -153,15 +143,11 @@ function getRunAllBenchmarks(artifactsDir, benchmarks) {
 async function setupBenchmarks() {
   const artifactsDir = './dist/data/';
 
-  console.log(tfl.version_layers);  // DEBUG
-
   console.log('Loading benchmarks...');
   const url = 'http:' + artifactsDir + 'benchmarks.json';
   console.log(url);
   const x = await fetch(url);
-  console.log(`x = ${x}`);  // DEBUG
   const benchmarks = await x.json();
-  console.log(`Done await x json`);  // DEBUG
   console.log('Done loading benchmarks:', benchmarks);
 
   ui.setMetadata(benchmarks.metadata);
