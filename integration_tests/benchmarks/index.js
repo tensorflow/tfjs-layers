@@ -30,6 +30,8 @@ async function runBenchmark(artifactsDir, modelName, config) {
   const batchSize = benchmarkData.batch_size;
   let xs;
   if (benchmarkData.input_shape == null) {
+    // If input_shape is not provided, determine the shape(s) from the model
+    // itself.
     xs = [];
     for (const input of model.inputs) {
       xs.push(tfc.randomUniform([batchSize].concat(input.shape.slice(1))));
@@ -40,6 +42,8 @@ async function runBenchmark(artifactsDir, modelName, config) {
 
   let ys;
   if (benchmarkData.target_shape == null) {
+    // If output_shape is not provided, determine the shape(s) from the model
+    // itself.
     ys = [];
     for (const output of model.outputs) {
       ys.push(tfc.randomUniform([batchSize].concat(output.shape.slice(1))));
