@@ -28,24 +28,56 @@ async function runBenchmark(artifactsDir, modelName, config) {
   // for losses.
 
   const batchSize = benchmarkData.batch_size;
-  const xs = tfc.randomUniform([batchSize].concat(benchmarkData.input_shape));
-  const ys = tfc.randomUniform([batchSize].concat(benchmarkData.target_shape));
-  model.compile({
-    optimizer: benchmarkData.optimizer,
-    loss: lossMap[benchmarkData.loss],
-  });
+  let xs;
+  if (benchmarkData.input_shape == null) {
+    xs = [];
+    for (const input of model.inputs) {
+      xs.push(tfc.randomUniform([batchSize].concat(input.shape.slice(1))));
+    }
+    console.log('All xs from model input shapes:');  // DEBUG
+    console.log(xs);  // DEBUG
+  } else {
+    xs = tfc.randomUniform([batchSize].concat(benchmarkData.input_shape));
+  }
+
+  console.log('== 100');  // DEBUG
+
+  let ys;
+  console.log(benchmarkData);  // DEBUG
+  if (benchmarkData.target_shape == null) {
+    ys = [];
+    for (const output of model.outputs) {
+      console.log(output.shape);  // DEBUG
+      ys.push(tfc.randomUniform([batchSize].concat(output.shape.slice(1))));
+    }
+    console.log('All ys from model input shapes:');  // DEBUG
+    console.log(ys);  // DEBUG
+  } else {
+    ys = tfc.randomUniform([batchSize].concat(benchmarkData.target_shape));
+  }
+  
+  console.log('== 200');  // DEBUG
+
+  if (benchmarkData.train_epochs > 0) {
+    model.compile({
+      optimizer: benchmarkData.optimizer,
+      loss: lossMap[benchmarkData.loss],
+    });
+  }
 
   const FIT_BURNIN_EPOCHS = config.FIT_BURNIN_EPOCHS;
   const PREDICT_BURNINS = config.PREDICT_BURNINS;
   const PREDICT_RUNS = config.PREDICT_RUNS;
 
   // Perform fit() burn-in.
-  await model.fit(xs, ys, {
-    batchSize: benchmarkData.batch_size,
-    epochs: FIT_BURNIN_EPOCHS,
-    yieldEvery: 'never'
-  });
-  model.trainableWeights[0].read().dataSync();
+  if (benchmarkData.train_epochs > 0) {
+    await model.fit(xs, ys, {
+      batchSize: benchmarkData.batch_size,
+      epochs: FIT_BURNIN_EPOCHS,
+      yieldEvery: 'never'
+    });
+    model.trainableWeights[0].read().dataSync();
+  }
 
   let trainTimeMs;
   if (benchmarkData.train_epochs > 0) {
@@ -79,9 +111,17 @@ async function runBenchmark(artifactsDir, modelName, config) {
     }
     // After all the model.predict() calls, invoke dataSync() once to let the
     // scheduled GPU operations complete before proceeding.
-    output.dataSync();
+    if (Array.isArray(output)) {
+      output.map(out => out.dataSync());
+    } else {
+      output.dataSync();
+    }
     const predictEndMs = performance.now();
     const predictTimeMs = (predictEndMs - predictBeginMs) / PREDICT_RUNS;
+
+    tfc.dispose(xs);
+    tfc.dispose(ys);
+
     return {
       originalData: benchmarkData,
       predictTimeMs: predictTimeMs,

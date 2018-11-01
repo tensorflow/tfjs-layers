@@ -69,15 +69,35 @@ def benchmark_and_serialize_model(model_name,
     2. Average predict() time over all the _PREDICT_RUNS.
   """
   model = model_fn(input_shape, target_shape)
-  model.compile(optimizer=optimizer, loss=loss)
-  xs = np.random.rand(*([batch_size] + input_shape))
-  ys = np.random.rand(*([batch_size] + target_shape))
+  if train_epochs:
+    model.compile(optimizer=optimizer, loss=loss)
+
+  if input_shape is None:
+    input_shapes = [[
+        int(d) for d in list(inp.shape[1:])] for inp in model.inputs]
+    xs = []
+    for in_shape in input_shapes:
+      x = np.random.rand(*([batch_size] + in_shape))
+      xs.append(x)
+  else:
+    xs = np.random.rand(*([batch_size] + input_shape))
+  
+  if target_shape is None:
+    output_shapes = [[
+        int(d) for d in list(inp.shape[1:])] for inp in model.outputs]
+    ys = []
+    for output_shape in output_shapes:
+      y = np.random.rand(*([batch_size] + output_shape))
+      ys.append(x)
+  else:
+    ys = np.random.rand(*([batch_size] + target_shape))
 
   # Perform fit() burn-in.
-  model.fit(xs, ys, batch_size=batch_size, epochs=_FIT_BURNIN_EPOCHS)
+  if train_epochs:
+    model.fit(xs, ys, batch_size=batch_size, epochs=_FIT_BURNIN_EPOCHS)
 
   # Time fit().
-  if train_epochs > 0:
+  if train_epochs:
     train_t_begin = time.time()
     model.fit(xs, ys, batch_size=batch_size, epochs=train_epochs)
     train_t_end = time.time()
@@ -95,7 +115,7 @@ def benchmark_and_serialize_model(model_name,
   tfjs.converters.save_keras_model(model, artifacts_dir)
 
   # Save data about the model and benchmark results.
-  if train_epochs > 0:
+  if train_epochs:
     train_time = (train_t_end - train_t_begin) / train_epochs
   else:
     train_time = None
@@ -169,6 +189,15 @@ def mobilenet_model_fn(input_shape, target_shape):
   return model
 
 
+def attention_model_fn(input_shape, target_shape):
+  """Attention-based translation model."""
+  model_json = '{"class_name":"Model","config":{"input_layers":[["input_1",0,0],["s0",0,0],["c0",0,0]],"name":"model_1","layers":[{"class_name":"InputLayer","inbound_nodes":[],"name":"input_1","config":{"dtype":"float32","name":"input_1","sparse":false,"batch_input_shape":[null,30,38]}},{"class_name":"InputLayer","inbound_nodes":[],"name":"s0","config":{"dtype":"float32","name":"s0","sparse":false,"batch_input_shape":[null,64]}},{"class_name":"Bidirectional","inbound_nodes":[[["input_1",0,0,{}]]],"name":"bidirectional_1","config":{"trainable":true,"name":"bidirectional_1","merge_mode":"concat","layer":{"class_name":"LSTM","config":{"stateful":false,"units":32,"activation":"tanh","recurrent_activation":"hard_sigmoid","dropout":0,"recurrent_dropout":0,"use_bias":true,"trainable":true,"recurrent_initializer":{"class_name":"Orthogonal","config":{"seed":null,"gain":1}},"bias_constraint":null,"unroll":false,"kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"unit_forget_bias":true,"bias_initializer":{"class_name":"Zeros","config":{}},"kernel_constraint":null,"activity_regularizer":null,"return_sequences":true,"recurrent_constraint":null,"recurrent_regularizer":null,"bias_regularizer":null,"go_backwards":false,"implementation":1,"name":"attLSTM_2","kernel_regularizer":null,"return_state":false}}}},{"class_name":"RepeatVector","inbound_nodes":[[["s0",0,0,{}]],[["attLSTM_1",0,0,{}]],[["attLSTM_1",1,0,{}]],[["attLSTM_1",2,0,{}]],[["attLSTM_1",3,0,{}]],[["attLSTM_1",4,0,{}]],[["attLSTM_1",5,0,{}]],[["attLSTM_1",6,0,{}]],[["attLSTM_1",7,0,{}]],[["attLSTM_1",8,0,{}]]],"name":"repeat_vector_1","config":{"n":30,"trainable":true,"name":"repeat_vector_1"}},{"class_name":"Concatenate","inbound_nodes":[[["bidirectional_1",0,0,{}],["repeat_vector_1",0,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",1,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",2,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",3,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",4,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",5,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",6,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",7,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",8,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",9,0,{}]]],"name":"concatenate_1","config":{"trainable":true,"name":"concatenate_1","axis":-1}},{"class_name":"Dense","inbound_nodes":[[["concatenate_1",0,0,{}]],[["concatenate_1",1,0,{}]],[["concatenate_1",2,0,{}]],[["concatenate_1",3,0,{}]],[["concatenate_1",4,0,{}]],[["concatenate_1",5,0,{}]],[["concatenate_1",6,0,{}]],[["concatenate_1",7,0,{}]],[["concatenate_1",8,0,{}]],[["concatenate_1",9,0,{}]]],"name":"attDense_1","config":{"bias_constraint":null,"kernel_constraint":null,"units":10,"activity_regularizer":null,"use_bias":true,"bias_regularizer":null,"trainable":true,"activation":"tanh","name":"attDense_1","kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"kernel_regularizer":null,"bias_initializer":{"class_name":"Zeros","config":{}}}},{"class_name":"Dense","inbound_nodes":[[["attDense_1",0,0,{}]],[["attDense_1",1,0,{}]],[["attDense_1",2,0,{}]],[["attDense_1",3,0,{}]],[["attDense_1",4,0,{}]],[["attDense_1",5,0,{}]],[["attDense_1",6,0,{}]],[["attDense_1",7,0,{}]],[["attDense_1",8,0,{}]],[["attDense_1",9,0,{}]]],"name":"attDense_2","config":{"bias_constraint":null,"kernel_constraint":null,"units":1,"activity_regularizer":null,"use_bias":true,"bias_regularizer":null,"trainable":true,"activation":"relu","name":"attDense_2","kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"kernel_regularizer":null,"bias_initializer":{"class_name":"Zeros","config":{}}}},{"class_name":"Activation","inbound_nodes":[[["attDense_2",0,0,{}]],[["attDense_2",1,0,{}]],[["attDense_2",2,0,{}]],[["attDense_2",3,0,{}]],[["attDense_2",4,0,{}]],[["attDense_2",5,0,{}]],[["attDense_2",6,0,{}]],[["attDense_2",7,0,{}]],[["attDense_2",8,0,{}]],[["attDense_2",9,0,{}]]],"name":"attention_weights","config":{"trainable":true,"activation":"softmax","name":"attention_weights"}},{"class_name":"Dot","inbound_nodes":[[["attention_weights",0,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",1,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",2,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",3,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",4,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",5,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",6,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",7,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",8,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",9,0,{}],["bidirectional_1",0,0,{}]]],"name":"dot_1","config":{"trainable":true,"name":"dot_1","normalize":false,"axes":1}},{"class_name":"InputLayer","inbound_nodes":[],"name":"c0","config":{"dtype":"float32","name":"c0","sparse":false,"batch_input_shape":[null,64]}},{"class_name":"LSTM","inbound_nodes":[[["dot_1",0,0,{}],["s0",0,0,{}],["c0",0,0,{}]],[["dot_1",1,0,{}],["attLSTM_1",0,0,{}],["attLSTM_1",0,2,{}]],[["dot_1",2,0,{}],["attLSTM_1",1,0,{}],["attLSTM_1",1,2,{}]],[["dot_1",3,0,{}],["attLSTM_1",2,0,{}],["attLSTM_1",2,2,{}]],[["dot_1",4,0,{}],["attLSTM_1",3,0,{}],["attLSTM_1",3,2,{}]],[["dot_1",5,0,{}],["attLSTM_1",4,0,{}],["attLSTM_1",4,2,{}]],[["dot_1",6,0,{}],["attLSTM_1",5,0,{}],["attLSTM_1",5,2,{}]],[["dot_1",7,0,{}],["attLSTM_1",6,0,{}],["attLSTM_1",6,2,{}]],[["dot_1",8,0,{}],["attLSTM_1",7,0,{}],["attLSTM_1",7,2,{}]],[["dot_1",9,0,{}],["attLSTM_1",8,0,{}],["attLSTM_1",8,2,{}]]],"name":"attLSTM_1","config":{"stateful":false,"units":64,"activation":"tanh","recurrent_activation":"hard_sigmoid","dropout":0,"recurrent_dropout":0,"use_bias":true,"trainable":true,"recurrent_initializer":{"class_name":"Orthogonal","config":{"seed":null,"gain":1}},"bias_constraint":null,"unroll":false,"kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"unit_forget_bias":true,"bias_initializer":{"class_name":"Zeros","config":{}},"kernel_constraint":null,"activity_regularizer":null,"return_sequences":false,"recurrent_constraint":null,"recurrent_regularizer":null,"bias_regularizer":null,"go_backwards":false,"implementation":1,"name":"attLSTM_1","kernel_regularizer":null,"return_state":true}},{"class_name":"Dense","inbound_nodes":[[["attLSTM_1",0,0,{}]],[["attLSTM_1",1,0,{}]],[["attLSTM_1",2,0,{}]],[["attLSTM_1",3,0,{}]],[["attLSTM_1",4,0,{}]],[["attLSTM_1",5,0,{}]],[["attLSTM_1",6,0,{}]],[["attLSTM_1",7,0,{}]],[["attLSTM_1",8,0,{}]],[["attLSTM_1",9,0,{}]]],"name":"attDense_3","config":{"bias_constraint":null,"kernel_constraint":null,"units":11,"activity_regularizer":null,"use_bias":true,"bias_regularizer":null,"trainable":true,"activation":"softmax","name":"attDense_3","kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"kernel_regularizer":null,"bias_initializer":{"class_name":"Zeros","config":{}}}}],"output_layers":[["attDense_3",0,0],["attDense_3",1,0],["attDense_3",2,0],["attDense_3",3,0],["attDense_3",4,0],["attDense_3",5,0],["attDense_3",6,0],["attDense_3",7,0],["attDense_3",8,0],["attDense_3",9,0]]}}';
+  model = keras.models.model_from_json(model_json)
+  print(model.inputs)
+  print(model.outputs)
+  return model
+
+
 _RNN_TYPE_MAP = {
     'SimpleRNN': keras.layers.SimpleRNN,
     'GRU': keras.layers.GRU,
@@ -198,6 +227,64 @@ def main():
       'PREDICT_RUNS': _PREDICT_RUNS
   }
   benchmarks['models'] = []
+
+  # Attention model 
+  input_shape = None  # Determine from the Model object itself.
+  target_shape = None  # Determine from the Model object itself.
+  batch_size = 32
+  train_epochs = 0
+  optimizer = None
+  loss = None
+  names_fns_and_descriptions = [[
+      'attention',
+      attention_model_fn,
+      'attention']]
+  for model_name, model_fn, description in names_fns_and_descriptions:
+    train_time, predict_time = (
+        benchmark_and_serialize_model(
+            model_name,
+            description,
+            model_fn,
+            input_shape,
+            target_shape,
+            optimizer,
+            loss,
+            batch_size,
+            train_epochs,
+            os.path.join(FLAGS.data_root, model_name)))
+    benchmarks['models'].append(model_name)
+    if train_epochs > 0:
+      print('train_time = %g s' % train_time)    
+    print('predict_time = %g s' % predict_time)
+
+  # Mobilenet (inference only).
+  input_shape = [224, 224, 3]
+  target_shape = [1000]
+  batch_size = 1
+  train_epochs = 0
+  optimizer = None
+  loss = None
+  names_fns_and_descriptions = [[
+      'mobilenet',
+      mobilenet_model_fn,
+      'mobilenet']]
+  for model_name, model_fn, description in names_fns_and_descriptions:
+    train_time, predict_time = (
+        benchmark_and_serialize_model(
+            model_name,
+            description,
+            model_fn,
+            input_shape,
+            target_shape,
+            optimizer,
+            loss,
+            batch_size,
+            train_epochs,
+            os.path.join(FLAGS.data_root, model_name)))
+    benchmarks['models'].append(model_name)
+    if train_epochs > 0:
+      print('train_time = %g s' % train_time)    
+    print('predict_time = %g s' % predict_time)
 
   # Dense model.
   optimizer = 'sgd'
@@ -292,35 +379,6 @@ def main():
             os.path.join(FLAGS.data_root, model_name)))
     benchmarks['models'].append(model_name)
     print('train_time = %g s' % train_time)
-    print('predict_time = %g s' % predict_time)
-
-  # Mobilenet
-  optimizer = 'adam'
-  loss = 'categorical_crossentropy'
-  input_shape = [224, 224, 3]
-  target_shape = [1000]
-  batch_size = 1
-  train_epochs = 0
-  names_fns_and_descriptions = [[
-      'mobilenet',
-      mobilenet_model_fn,
-      'mobilenet']]
-  for model_name, model_fn, description in names_fns_and_descriptions:
-    train_time, predict_time = (
-        benchmark_and_serialize_model(
-            model_name,
-            description,
-            model_fn,
-            input_shape,
-            target_shape,
-            optimizer,
-            loss,
-            batch_size,
-            train_epochs,
-            os.path.join(FLAGS.data_root, model_name)))
-    benchmarks['models'].append(model_name)
-    if train_epochs > 0:
-      print('train_time = %g s' % train_time)    
     print('predict_time = %g s' % predict_time)
 
   with open(os.path.join(FLAGS.data_root, 'benchmarks.json'), 'wt') as f:
