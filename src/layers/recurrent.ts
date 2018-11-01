@@ -2567,8 +2567,7 @@ export class StackedRNNCells extends RNNCell {
    * Set the weights of the model.
    *
    * @param weights An `Array` of `tf.Tensor`s with shapes and types matching
-   *     the
-   *   output of `getWeights()`.
+   *     the output of `getWeights()`.
    */
   setWeights(weights: Tensor[]): void {
     const tuples: Array<[LayerVariable, Tensor]> = [];
