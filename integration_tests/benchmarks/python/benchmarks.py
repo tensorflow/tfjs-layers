@@ -326,8 +326,8 @@ def main():
     print('predict_time = %g s' % predict_time)
 
   # Mobilenet (inference only).
-  input_shape = None
-  target_shape = None
+  input_shape = None  # Determine from the Model object itself.
+  target_shape = None  # Determine from the Model object itself.
   batch_size = 1
   train_epochs = 0
   optimizer = None
@@ -364,7 +364,7 @@ def main():
   names_fns_and_descriptions = [[
       'attention',
       attention_model_fn,
-      'attention']]
+      'Attention-based translation model: Function model with bidirectional LSTM layers']]
   for model_name, model_fn, description in names_fns_and_descriptions:
     train_time, predict_time = (
         benchmark_and_serialize_model(
