@@ -328,7 +328,7 @@ def main():
   # Mobilenet (inference only).
   input_shape = None  # Determine from the Model object itself.
   target_shape = None  # Determine from the Model object itself.
-  batch_size = 1
+  batch_size = 8
   train_epochs = 0
   optimizer = None
   loss = None
