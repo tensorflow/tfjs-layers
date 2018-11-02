@@ -72,27 +72,7 @@ def benchmark_and_serialize_model(model_name,
   if train_epochs:
     model.compile(optimizer=optimizer, loss=loss)
 
-  if input_shape is None:
-    # If input_shape is not provided, determine it from the model.
-    input_shapes = [[
-        int(d) for d in list(inp.shape[1:])] for inp in model.inputs]
-    xs = []
-    for in_shape in input_shapes:
-      x = np.random.rand(*([batch_size] + in_shape))
-      xs.append(x)
-  else:
-    xs = np.random.rand(*([batch_size] + input_shape))
-  
-  if target_shape is None:
-    # If target_shape is not provided, determine it from the model.
-    output_shapes = [[
-        int(d) for d in list(inp.shape[1:])] for inp in model.outputs]
-    ys = []
-    for output_shape in output_shapes:
-      y = np.random.rand(*([batch_size] + output_shape))
-      ys.append(x)
-  else:
-    ys = np.random.rand(*([batch_size] + target_shape))
+  xs, ys = _get_random_inputs_and_outputs(model, batch_size)
 
   # Perform fit() burn-in.
   if train_epochs:
@@ -138,6 +118,37 @@ def benchmark_and_serialize_model(model_name,
     f.write(json.dumps(data))
 
   return train_time, predict_time
+
+def _get_random_inputs_and_outputs(model, batch_size):
+  """Synthesize random inputs and outputs based on the model's specs.
+
+  Args:
+    model: An instance of keras Model.
+    batch_size: Desired batch size.
+
+  Returns:
+    xs: Synthesized random feature tensor(s).
+    ys: Synthesized random target tensor(s).
+  """
+  input_shapes = [[
+      int(d) for d in list(inp.shape[1:])] for inp in model.inputs]
+  xs = []
+  for in_shape in input_shapes:
+    x = np.random.rand(*([batch_size] + in_shape))
+    xs.append(x)
+  if len(xs) == 1:
+    xs = xs[0]
+
+  output_shapes = [[
+      int(d) for d in list(inp.shape[1:])] for inp in model.outputs]
+  ys = []
+  for output_shape in output_shapes:
+    y = np.random.rand(*([batch_size] + output_shape))
+    ys.append(y)
+  if len(ys) == 1:
+    ys = ys[0]
+
+  return xs, ys
 
 def dense_tiny_model_fn(input_shape, target_shape):
   assert len(target_shape) == 1
@@ -351,10 +362,10 @@ def main():
             os.path.join(FLAGS.data_root, model_name)))
     benchmarks['models'].append(model_name)
     if train_epochs > 0:
-      print('train_time = %g s' % train_time)    
+      print('train_time = %g s' % train_time)
     print('predict_time = %g s' % predict_time)
 
-  # Attention model 
+  # Attention model
   input_shape = None  # Determine from the Model object itself.
   target_shape = None  # Determine from the Model object itself.
   batch_size = 32
@@ -380,7 +391,7 @@ def main():
             os.path.join(FLAGS.data_root, model_name)))
     benchmarks['models'].append(model_name)
     if train_epochs > 0:
-      print('train_time = %g s' % train_time)    
+      print('train_time = %g s' % train_time)
     print('predict_time = %g s' % predict_time)
 
   with open(os.path.join(FLAGS.data_root, 'benchmarks.json'), 'wt') as f:

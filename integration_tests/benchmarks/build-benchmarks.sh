@@ -60,4 +60,14 @@ cd ${DEMO_DIR}
 rm -rf node_modules
 yarn
 yarn build
+
+echo
+echo "-----------------------------------------------------------"
+echo "Benchmarks page will open in your browser shortly...       "
+echo
+echo "Once the page is up, click the 'Run Benchmarks' button     "
+echo "to run the benchmarks in the browser.                      "
+echo "-----------------------------------------------------------"
+echo
+
 yarn watch
