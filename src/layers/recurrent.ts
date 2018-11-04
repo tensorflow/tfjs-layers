@@ -2123,7 +2123,7 @@ export interface LSTMLayerConfig extends SimpleRNNLayerConfig {
    * Note: For superior performance, TensorFlow.js always uses implementation
    * 2, regardless of the actual value of this config field.
    */
-  implementation?: 1|2;
+  implementation?: number;
 }
 
 /**

@@ -1434,14 +1434,16 @@ describeMathCPU('LSTM Symbolic', () => {
      });
 
 
-  it('Serialization round trip', () => {
-    const layer = tfl.layers.lstm({units: 4});
-    const pythonicConfig = convertTsToPythonic(layer.getConfig());
-    // tslint:disable-next-line:no-any
-    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
-    const layerPrime = tfl.layers.lstm(tsConfig);
-    expect(layerPrime.getConfig().units).toEqual(4);
-  });
+  for (const implementation of [1, 2]) {
+    it('Serialization round trip', () => {
+      const layer = tfl.layers.lstm({units: 4, implementation});
+      const pythonicConfig = convertTsToPythonic(layer.getConfig());
+      // tslint:disable-next-line:no-any
+      const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+      const layerPrime = tfl.layers.lstm(tsConfig);
+      expect(layerPrime.getConfig().units).toEqual(4);
+    });
+  }
 });
 
 describeMathCPUAndGPU('LSTM Tensor', () => {
