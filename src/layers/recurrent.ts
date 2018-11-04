@@ -2047,10 +2047,15 @@ export class LSTMCell extends RNNCell {
         z = K.biasAdd(z, this.bias.read());
       }
 
-      const z0 = K.sliceAlongLastAxis(z, 0, this.units);
-      const z1 = K.sliceAlongLastAxis(z, this.units, this.units);
-      const z2 = K.sliceAlongLastAxis(z, this.units * 2, this.units);
-      const z3 = K.sliceAlongLastAxis(z, this.units * 3, this.units);
+      const zs = tfc.split(z, 4, z.rank - 1);
+      const z0 = zs[0];
+      const z1 = zs[1];
+      const z2 = zs[2];
+      const z3 = zs[3];
+      // const z0 = K.sliceAlongLastAxis(z, 0, this.units);
+      // const z1 = K.sliceAlongLastAxis(z, this.units, this.units);
+      // const z2 = K.sliceAlongLastAxis(z, this.units * 2, this.units);
+      // const z3 = K.sliceAlongLastAxis(z, this.units * 3, this.units);
 
       i = this.recurrentActivation.apply(z0);
       f = this.recurrentActivation.apply(z1);
