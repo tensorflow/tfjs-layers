@@ -1555,7 +1555,7 @@ export class GRUCell extends RNNCell {
       if (this.useBias) {
         matrixX = K.biasAdd(matrixX, this.bias.read());
       }
-      if (0 < this.dropout && this.dropout < 1) {
+      if (0 < this.recurrentDropout && this.recurrentDropout < 1) {
         hTMinus1 = tfc.mul(hTMinus1, recDpMask[0]);
       }
       const matrixInner = K.dot(
