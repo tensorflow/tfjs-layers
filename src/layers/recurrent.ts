@@ -1370,6 +1370,9 @@ export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
    * Mode 2 will batch them into fewer, larger operations. These modes will
    * have different performance profiles on different hardware and
    * for different applications.
+   *
+   * Note: For superior performance, TensorFlow.js always uses implementation
+   * 2, regardless of the actual value of this configuration field.
    */
   implementation?: number;
 }
@@ -1530,6 +1533,9 @@ export class GRUCell extends RNNCell {
       let hTMinus1 = inputs[1];  // Previous memory state.
       inputs = inputs[0];
 
+      // Note: For superior performance, TensorFlow.js always uses
+      // implementation 2, regardless of the actual value of
+      // config.implementation.
       if (0 < this.dropout && this.dropout < 1 && this.dropoutMask == null) {
         this.dropoutMask = generateDropoutMask(
                                () => tfc.onesLike(inputs as Tensor),
@@ -1633,6 +1639,9 @@ export interface GRULayerConfig extends SimpleRNNLayerConfig {
    * Mode 2 will batch them into fewer, larger operations. These modes will
    * have different performance profiles on different hardware and
    * for different applications.
+   *
+   * Note: For superior performance, TensorFlow.js always uses implementation
+   * 2, regardless of the actual value of this configuration field.
    */
   implementation?: number;
 }
@@ -1820,8 +1829,11 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
    * Mode 2 will batch them into fewer, larger operations. These modes will
    * have different performance profiles on different hardware and
    * for different applications.
+   *
+   * Note: For superior performance, TensorFlow.js always uses implementation
+   * 2, regardless of the actual value of this configuration field.
    */
-  implementation?: 1|2;
+  implementation?: number;
 }
 
 /**
@@ -2016,6 +2028,9 @@ export class LSTMCell extends RNNCell {
       const recDpMask =
           this.recurrentDropoutMask as [Tensor, Tensor, Tensor, Tensor];
 
+      // Note: For superior performance, TensorFlow.js always uses
+      // implementation 2 regardless of the actual value of
+      // config.implementation.
       let i: Tensor;
       let f: Tensor;
       let c: Tensor;
@@ -2104,6 +2119,9 @@ export interface LSTMLayerConfig extends SimpleRNNLayerConfig {
    *   batch them into fewer, larger operations. These modes will
    *   have different performance profiles on different hardware and
    *   for different applications.
+   *
+   * Note: For superior performance, TensorFlow.js always uses implementation
+   * 2, regardless of the actual value of this config field.
    */
   implementation?: 1|2;
 }
