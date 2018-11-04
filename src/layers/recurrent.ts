@@ -1573,7 +1573,7 @@ export class GRUCell extends RNNCell {
 
       const [xZ, xR, xH] = tfc.split(matrixX, 3, matrixX.rank - 1);
       const [recurrentZ, recurrentR] =
-          tfc.split(matrixInner, 2, matrixInner.rank - 1)
+          tfc.split(matrixInner, 2, matrixInner.rank - 1);
       z = this.recurrentActivation.apply(tfc.add(xZ, recurrentZ));
       r = this.recurrentActivation.apply(tfc.add(xR, recurrentR));
 
