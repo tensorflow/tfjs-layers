@@ -31,87 +31,95 @@ import {makeBatches, sliceArraysByIndices} from './training_tensors';
 
 
 describeMathCPU('isDataTensor', () => {
+  const x = tfc.tensor2d([[3.14]]);
+
   it('Positive case', () => {
-    expect(isDataTensor(scalar(3.14))).toEqual(true);
+    expect(isDataTensor(x)).toEqual(true);
   });
   it('Negative cases', () => {
-    expect(isDataTensor([scalar(3.14), scalar(-3.14)])).toEqual(false);
-    expect(isDataTensor({'Pie': scalar(3.14)})).toEqual(false);
+    expect(isDataTensor([x, x])).toEqual(false);
+    expect(isDataTensor({'Pie': x})).toEqual(false);
     expect(isDataTensor({})).toEqual(false);
   });
 });
 
 describeMathCPU('isDataArray', () => {
+  const x = tfc.tensor2d([[3.14]]);
+
   it('Positive case', () => {
-    expect(isDataArray([scalar(3.14), scalar(-3.14)])).toEqual(true);
+    expect(isDataArray([x, x])).toEqual(true);
     expect(isDataArray([])).toEqual(true);
   });
   it('Negative cases', () => {
-    expect(isDataArray(scalar(3.14))).toEqual(false);
-    expect(isDataArray({'Pie': scalar(3.14)})).toEqual(false);
+    expect(isDataArray(x)).toEqual(false);
+    expect(isDataArray({'Pie': x})).toEqual(false);
     expect(isDataArray({})).toEqual(false);
   });
 });
 
 describeMathCPU('isDataDict', () => {
+  const x = tfc.tensor2d([[3.14]]);
   it('Positive case', () => {
-    expect(isDataDict({'Pie': scalar(3.14)})).toEqual(true);
+    expect(isDataDict({'Pie': x})).toEqual(true);
     expect(isDataDict({})).toEqual(true);
   });
   it('Negative cases', () => {
-    expect(isDataDict(scalar(3.14))).toEqual(false);
-    expect(isDataDict([scalar(3.14), scalar(-3.14)])).toEqual(false);
+    expect(isDataDict(x)).toEqual(false);
+    expect(isDataDict([x, x])).toEqual(false);
     expect(isDataDict([])).toEqual(false);
   });
 });
 
 describeMathCPU('standardizeInputData', () => {
+  const getX = () => tfc.tensor2d([[42]]);
+  const getY = () => tfc.tensor2d([[21]]);
+
   it('Singleton Tensor, Array of one name', () => {
-    const outputs = standardizeInputData(scalar(42), ['Foo']);
+    const outputs = standardizeInputData(getX(), ['Foo']);
     expect(outputs.length).toEqual(1);
-    expectTensorsClose(outputs[0], scalar(42));
+    expectTensorsClose(outputs[0], getX());
   });
   it('Array of one Tensor, Array of one name', () => {
-    const outputs = standardizeInputData([scalar(42)], ['Foo']);
+    const outputs = standardizeInputData([getX()], ['Foo']);
     expect(outputs.length).toEqual(1);
-    expectTensorsClose(outputs[0], scalar(42));
+    expectTensorsClose(outputs[0], getX());
   });
   it('Array of two Tensors, Array of two names', () => {
     const outputs =
-        standardizeInputData([scalar(42), scalar(21)], ['Foo', 'Bar']);
+        standardizeInputData([getX(), getY()], ['Foo', 'Bar']);
     expect(outputs.length).toEqual(2);
-    expectTensorsClose(outputs[0], scalar(42));
-    expectTensorsClose(outputs[1], scalar(21));
+    expectTensorsClose(outputs[0], getX());
+    expectTensorsClose(outputs[1], getY());
   });
   it('Dict of two Tensors, Array of two names', () => {
     const outputs = standardizeInputData(
-        {'Foo': scalar(42), 'Bar': scalar(21)}, ['Foo', 'Bar']);
+        {'Foo': getX(), 'Bar': getY()}, ['Foo', 'Bar']);
     expect(outputs.length).toEqual(2);
-    expectTensorsClose(outputs[0], scalar(42));
-    expectTensorsClose(outputs[1], scalar(21));
+    expectTensorsClose(outputs[0], getX());
+    expectTensorsClose(outputs[1], getY());
   });
   it('Unexpected data leads to exception: singleton Tensor', () => {
-    expect(() => standardizeInputData(scalar(42), []))
+    expect(() => standardizeInputData(getX(), []))
         .toThrowError(/expected no data/);
   });
   it('Unexpected data leads to exception: Array of two Tensors', () => {
-    expect(() => standardizeInputData([scalar(42), scalar(21)], []))
+    expect(() => standardizeInputData([getX(), getY()], []))
         .toThrowError(/expected no data/);
   });
   it('Unexpected data leads to exception: Dict', () => {
-    expect(() => standardizeInputData({'Pie': scalar(42)}, []))
+    expect(() => standardizeInputData({'Pie': getX()}, []))
         .toThrowError(/expected no data/);
   });
   it('Length mismatch: 1 singleton Scalar vs two names', () => {
-    expect(() => standardizeInputData(scalar(42), ['Foo', 'Bar']))
+    expect(() => standardizeInputData(getX(), ['Foo', 'Bar']))
         .toThrowError(/expects 2 Tensor.* but only received one/);
   });
   it('Length mismatch: Array of 2 Scalars vs one name', () => {
-    expect(() => standardizeInputData([scalar(42), scalar(-42)], ['Foo']))
+    expect(() => standardizeInputData([getX(), scalar(-42)], ['Foo']))
         .toThrowError(/Expected to see 1 Tensor/);
   });
   it('Length mismatch: Dict of 1 Scalar vs 2 names', () => {
-    expect(() => standardizeInputData({'Foo': scalar(42)}, ['Foo', 'Bar']))
+    expect(() => standardizeInputData({'Foo': getX()}, ['Foo', 'Bar']))
         .toThrowError(/No data provided for \"Bar\"/);
   });
 });
