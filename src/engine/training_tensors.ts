@@ -521,7 +521,13 @@ export async function fitTensors(
   // TODO(cais): Add value to outLabels.
 }
 
-export function ensureTensorRank2OrHigher(tensors: Tensor|Tensor[]): Tensor[] {
+/**
+ * Ensure tensors all have a rank of at least 2.
+ * 
+ * If a tensor has a rank of 1, it is dimension-expanded to rank 2.
+ * If any tensor has a rank of 0 (i.e., is a scalar), an error will be thrown.
+ */
+export function ensureTensorsRank2OrHigher(tensors: Tensor|Tensor[]): Tensor[] {
   const outs: Tensor[] = [];
   if (tensors instanceof Tensor) {
     tensors = [tensors];
@@ -530,8 +536,12 @@ export function ensureTensorRank2OrHigher(tensors: Tensor|Tensor[]): Tensor[] {
   // Make Tensors at least 2D.
   for (let i = 0; i < tensors.length; ++i) {
     const tensor = tensors[i];
-    if (tensor.shape.length === 1) {
+    if (tensor.rank === 1) {
       outs.push(expandDims(tensor, 1));
+    } else if (tensor.rank === 0) {
+      throw new Error(
+          'Expected tensor to be at least 1D, but received a 0D tensor ' +
+          '(scalar).');
     } else {
       outs.push(tensor);
     }

@@ -806,8 +806,7 @@ export class Model extends Container implements tfc.InferenceModel {
     const standardizedOuts = this.standardizeUserData(x, y, true, batchSize);
     try {
       // TODO(cais): If uses `useLearningPhase`, set the corresponding element
-      // of
-      //   the input to 0.
+      // of the input to 0.
       const ins = standardizedOuts[0].concat(standardizedOuts[1]);
       this.makeTestFunction();
       const f = this.testFunction;
