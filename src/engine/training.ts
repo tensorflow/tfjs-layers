@@ -33,7 +33,7 @@ import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetConfig, ModelFitDatasetConfig} from './training_dataset';
-import {checkBatchSize, disposeNewTensors, ensureTensorRank2OrHigher, fitTensors, makeBatches, ModelFitConfig, sliceArrays, sliceArraysByIndices} from './training_tensors';
+import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitConfig, sliceArrays, sliceArraysByIndices} from './training_tensors';
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
@@ -138,7 +138,7 @@ export function standardizeInputData(
     arrays = [data];
   }
 
-  arrays = ensureTensorRank2OrHigher(arrays);
+  arrays = ensureTensorsRank2OrHigher(arrays);
 
   // Check shape compatibility.
   if (shapes != null) {
@@ -1071,7 +1071,7 @@ export class Model extends Container implements tfc.InferenceModel {
    */
   predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
       |Tensor[] {
-    const xsRank2OrHigher = ensureTensorRank2OrHigher(x);
+    const xsRank2OrHigher = ensureTensorsRank2OrHigher(x);
     checkInputData(
         xsRank2OrHigher, this.inputNames, this.feedInputShapes, false);
     try {
