@@ -400,6 +400,14 @@ export async function fitTensors(
         'Cannot start training because another fit() call is ongoing.');
   }
   model.isTraining = true;
+  let inputs: Tensor[];
+  let targets: Tensor[];
+  let inputsDisposalNeeded: boolean[];
+  let targetsDisposalNeeded: boolean[];
+  let valX: Tensor|Tensor[];
+  let valY: Tensor|Tensor[];
+  let valXDisposalNeeded: boolean[];
+  let valYDisposalNeeded: boolean[];
   try {
     const batchSize = config.batchSize == null ? 32 : config.batchSize;
     checkBatchSize(batchSize);
@@ -408,23 +416,18 @@ export async function fitTensors(
     // TODO(cais): Add sampleWeight and  classWeight.
     const standardizedOuts =
         model.standardizeUserData(
-            x, y, false, batchSize) as [Tensor[], Tensor[], Tensor[]];
-    let inputs = standardizedOuts[0];
-    let targets = standardizedOuts[1];
+            x, y, false,
+            batchSize) as [Tensor[], Tensor[], Tensor[], boolean[], boolean[], boolean[]];
+    inputs = standardizedOuts[0];
+    targets = standardizedOuts[1];
+    inputsDisposalNeeded = standardizedOuts[3];
+    targetsDisposalNeeded = standardizedOuts[4];
     // TODO(cais): Make use of sampleWeights in standardizedOuts[2] when
     //   available.
 
     // Prepare validation data.
     let doValidation = false;
-    let valX: Tensor|Tensor[];
-    let valY: Tensor|Tensor[];
     let valIns: Tensor[];
-    // A flag to keep track of whether `valIns`, `inputs` and `targets`
-    // need to be memory-disposed prior to returning from this method.
-    // This is the case if `config.validationSplit` is set to a number
-    // between 0 and 1, in which case the input `x` and `y` tensors will
-    // be sliced, leading to allocation of new tensor memory.
-    let needValidationDisposal = false;
     if (config.validationData != null && config.validationData.length > 0) {
       doValidation = true;
       if (config.validationData.length === 2) {
@@ -442,9 +445,13 @@ export async function fitTensors(
       }
 
       const valStandardized =
-          model.standardizeUserData(valX, valY, true, batchSize);
-      valX = valStandardized[0] as Tensor[];
-      valY = valStandardized[1] as Tensor[];
+          model.standardizeUserData(
+              valX, valY, true,
+              batchSize) as [Tensor[], Tensor[], Tensor[], boolean[], boolean[], boolean[]];
+      valX = valStandardized[0];
+      valY = valStandardized[1];
+      valXDisposalNeeded = valStandardized[3];
+      valYDisposalNeeded = valStandardized[4];
       // TODO(cais): Use validation sample weights in valStandardized[2]
       // once
       //   it becomes available.
@@ -462,7 +469,6 @@ export async function fitTensors(
       inputs = sliceArrays(inputs, 0, splitAt) as Tensor[];
       valY = sliceArrays(targets, splitAt, originalBatchSize) as Tensor[];
       targets = sliceArrays(targets, 0, splitAt) as Tensor[];
-      needValidationDisposal = true;
       // TODO(cais): Once sampleWeights becomes available, slice it to get
       //   valSampleWeights.
       valIns = valX.concat(valY);
@@ -510,15 +516,38 @@ export async function fitTensors(
         model, trainFunction, ins, outLabels, batchSize, config.epochs,
         config.verbose, callbacks, valFunction, valIns, config.shuffle,
         callbackMetrics, config.initialEpoch, null, null, config.yieldEvery);
-    if (needValidationDisposal) {
-      valIns.forEach(tensor => tensor.dispose());
-      inputs.forEach(tensor => tensor.dispose());
-      targets.forEach(tensor => tensor.dispose());
-    }
     model.isTraining = false;
     return out;
   } finally {
     model.isTraining = false;
+    if (inputsDisposalNeeded != null) {
+      inputsDisposalNeeded.forEach((needed, i) => {
+        if (needed) {
+          inputs[i].dispose();
+        }
+      });
+    }
+    if (targetsDisposalNeeded != null) {
+      targetsDisposalNeeded.forEach((needed, i) => {
+        if (needed) {
+          targets[i].dispose();
+        }
+      });
+    }
+    if (valXDisposalNeeded != null) {
+      valXDisposalNeeded.forEach((needed, i) => {
+        if (needed) {
+          (valX as Tensor[])[i].dispose();
+        }
+      });
+    }
+    if (valYDisposalNeeded != null) {
+      valYDisposalNeeded.forEach((needed, i) => {
+        if (needed) {
+          (valY as Tensor[])[i].dispose();
+        }
+      });
+    }
   }
   // TODO(cais): Add value to outLabels.
 }

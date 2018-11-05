@@ -72,7 +72,8 @@ export function isDataDict(x: Tensor|Tensor[]|
  */
 export function standardizeInputData(
     data: Tensor|Tensor[]|{[inputName: string]: Tensor}, names: string[],
-    shapes?: Shape[], checkBatchAxis = true, exceptionPrefix = ''): Tensor[] {
+    shapes?: Shape[], checkBatchAxis = true,
+    exceptionPrefix = ''): {tensors: Tensor[], disposalNeeded: boolean[]} {
   if (names == null || names.length === 0) {
     // Check for the case where the model expected no data, but some data got
     // sent.
@@ -97,23 +98,29 @@ export function standardizeInputData(
             `but got ${data}`);
       }
     }
-    return [];
+    return {tensors: [], disposalNeeded: []};
   }
   if (data == null) {
-    return names.map(name => null);
+    return {
+      tensors: names.map(name => null),
+      disposalNeeded: names.map(name => null)
+    };
   }
 
-  let arrays: Tensor[];
+  let tensors: Tensor[];
+  let disposalNeeded: boolean[];
   if (isDataDict(data)) {
     data = data as {[inputName: string]: Tensor};
-    arrays = [];
+    tensors = [];
+    disposalNeeded = [];
     for (const name of names) {
       if (data[name] == null) {
         throw new ValueError(
             `No data provided for "${name}". Need data for each key in: ` +
             `${names}`);
       }
-      arrays.push(data[name]);
+      tensors.push(data[name]);
+      disposalNeeded.push(false);
     }
   } else if (isDataArray(data)) {
     data = data as Tensor[];
@@ -124,7 +131,8 @@ export function standardizeInputData(
           `model expected. Expected to see ${names.length} Tensor(s), but ` +
           `instead got the following list of Tensor(s): ${data}`);
     }
-    arrays = data;
+    tensors = data;
+    disposalNeeded = data.map(d => false);
   } else {
     data = data as Tensor;
     if (names.length > 1) {
@@ -133,14 +141,16 @@ export function standardizeInputData(
           `but only received one Tensor. Found: Tensor with shape ${
               data.shape}`);
     }
-    arrays = [data];
+    tensors = [data];
+    disposalNeeded = [false];
   }
 
   // Make Tensors at least 2D.
   for (let i = 0; i < names.length; ++i) {
-    const array = arrays[i];
+    const array = tensors[i];
     if (array.shape.length === 1) {
-      arrays[i] = K.expandDims(array, 1);
+      tensors[i] = K.expandDims(array, 1);
+      disposalNeeded[i] = true;
     }
   }
 
@@ -150,7 +160,7 @@ export function standardizeInputData(
       if (shapes[i] == null) {
         continue;
       }
-      const array = arrays[i];
+      const array = tensors[i];
       if (array.shape.length !== shapes[i].length) {
         throw new ValueError(
             `Error when checking ${exceptionPrefix}: expected ${names[i]} ` +
@@ -173,7 +183,7 @@ export function standardizeInputData(
       }
     }
   }
-  return arrays;
+  return {tensors, disposalNeeded};
 }
 
 /**
@@ -1103,7 +1113,8 @@ export class Model extends Container implements tfc.InferenceModel {
   protected standardizeUserData(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor}, checkBatchAxis = true,
-      batchSize?: number): [Tensor[], Tensor[], Tensor[]] {
+      batchSize?: number):
+      [Tensor[], Tensor[], Tensor[], boolean[], boolean[], boolean[]] {
     // TODO(cais): Add sampleWeight, classWeight
     if (this.optimizer == null) {
       throw new RuntimeError(
@@ -1122,11 +1133,14 @@ export class Model extends Container implements tfc.InferenceModel {
         outputShapes.push(outputShape);
       }
     }
-    x = standardizeInputData(
-            x, this.feedInputNames, this.feedInputShapes, false, 'input') as
-        Tensor[];
-    y = standardizeInputData(
-            y, this.feedOutputNames, outputShapes, false, 'target') as Tensor[];
+    const xStandard = standardizeInputData(
+        x, this.feedInputNames, this.feedInputShapes, false, 'input');
+    x = xStandard.tensors;
+    const xDisposalNeeded = xStandard.disposalNeeded;
+    const yStandard = standardizeInputData(
+        y, this.feedOutputNames, outputShapes, false, 'target');
+    y = yStandard.tensors;
+    const yDisposalNeeded = yStandard.disposalNeeded;
     // TODO(cais): Standardize sampleWeights & classWeights.
     checkArrayLengths(x, y, null);
     // TODO(cais): Check sampleWeights as well.
@@ -1140,7 +1154,7 @@ export class Model extends Container implements tfc.InferenceModel {
       }
     }
     // TODO(cais): Deal with the case of model.stateful == true.
-    return [x, y, null];
+    return [x, y, null, xDisposalNeeded, yDisposalNeeded, null];
   }
 
   /**

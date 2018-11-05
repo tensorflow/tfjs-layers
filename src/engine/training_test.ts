@@ -68,27 +68,29 @@ describeMathCPU('isDataDict', () => {
 describeMathCPU('standardizeInputData', () => {
   it('Singleton Tensor, Array of one name', () => {
     const outputs = standardizeInputData(scalar(42), ['Foo']);
-    expect(outputs.length).toEqual(1);
-    expectTensorsClose(outputs[0], scalar(42));
+    expect(outputs.tensors.length).toEqual(1);
+    expect(outputs.disposalNeeded.length).toEqual(1);
+    expectTensorsClose(outputs.tensors[0], scalar(42));
+    expect(outputs.disposalNeeded[0]).toEqual(false);
   });
   it('Array of one Tensor, Array of one name', () => {
     const outputs = standardizeInputData([scalar(42)], ['Foo']);
-    expect(outputs.length).toEqual(1);
-    expectTensorsClose(outputs[0], scalar(42));
+    expect(outputs.tensors.length).toEqual(1);
+    expectTensorsClose(outputs.tensors[0], scalar(42));
   });
   it('Array of two Tensors, Array of two names', () => {
     const outputs =
         standardizeInputData([scalar(42), scalar(21)], ['Foo', 'Bar']);
-    expect(outputs.length).toEqual(2);
-    expectTensorsClose(outputs[0], scalar(42));
-    expectTensorsClose(outputs[1], scalar(21));
+    expect(outputs.tensors.length).toEqual(2);
+    expectTensorsClose(outputs.tensors[0], scalar(42));
+    expectTensorsClose(outputs.tensors[1], scalar(21));
   });
   it('Dict of two Tensors, Array of two names', () => {
     const outputs = standardizeInputData(
         {'Foo': scalar(42), 'Bar': scalar(21)}, ['Foo', 'Bar']);
-    expect(outputs.length).toEqual(2);
-    expectTensorsClose(outputs[0], scalar(42));
-    expectTensorsClose(outputs[1], scalar(21));
+    expect(outputs.tensors.length).toEqual(2);
+    expectTensorsClose(outputs.tensors[0], scalar(42));
+    expectTensorsClose(outputs.tensors[1], scalar(21));
   });
   it('Unexpected data leads to exception: singleton Tensor', () => {
     expect(() => standardizeInputData(scalar(42), []))
@@ -426,6 +428,38 @@ describeMathCPUAndGPU('Model.fit', () => {
        expectTensorsClose(
            newWeightsValue, tensor2d(expectedValueArray, [inputSize, 1]));
      });
+
+  it('1D tensor as inputs, targets and validationData', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({units: 1, inputShape: [1]}));
+    model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
+
+    // Use 1D tensor shapes.
+    inputs = ones([numSamples]);
+    targets = ones([numSamples]);
+    const valInputs = ones([numSamples]);
+    const valTargets = ones([numSamples]);
+
+    // Do a burn-in run before checking memory to give any cached
+    // tensors a chance to be created first.
+    await model.fit(inputs, targets, {
+      batchSize: numSamples,
+      epochs: 2,
+      validationData: [valInputs, valTargets]
+    });
+
+    const numTensors0 = memory().numTensors;
+    const history = await model.fit(inputs, targets, {
+      batchSize: numSamples,
+      epochs: 2,
+      validationData: [valInputs, valTargets]
+    });
+    expect(memory().numTensors).toEqual(numTensors0);
+    // Assert no memory leak.
+    expect(history.epoch).toEqual([0, 1]);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.val_loss.length).toEqual(2);
+  });
 
   it('training with custom loss', async () => {
     // Use the following Python code snippet to get reference values
