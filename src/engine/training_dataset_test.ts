@@ -821,6 +821,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     });
     model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
 
+    
     const numTensors0 = tfc.memory().numTensors;
     const history = await model.fitDataset(dataset, {
       batchesPerEpoch,
@@ -897,7 +898,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[0])
   // print(model.get_weights()[1])
   // ```
-  it('2 input, 1 output, 1 metric, tensor array validation', async () => {
+  it('2 input, 1 output, 1 metric, tensor array validation', async () => {    
     // Create a functional model with 2 inputs.
     const input1 = tfl.layers.input({shape: [1]});
     const input2 = tfl.layers.input({shape: [1]});

@@ -575,7 +575,7 @@ export function disposeNewTensors(
     }
   } else if (Array.isArray(tensors)) {
     tensors.forEach(t => {
-      if (oldTensorIds.indexOf(t.id)) {
+      if (oldTensorIds.indexOf(t.id) === -1) {
         tensorsToDispose.push(t);
       }
     });
@@ -583,7 +583,7 @@ export function disposeNewTensors(
     // `oldTensors` is a map from string name to Tensor.
     for (const name in tensors) {
       const tensor = tensors[name];
-      if (oldTensorIds.indexOf(tensor.id)) {
+      if (oldTensorIds.indexOf(tensor.id) === -1) {
         tensorsToDispose.push(tensor);
       }
     }
