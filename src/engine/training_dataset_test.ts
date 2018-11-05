@@ -820,7 +820,6 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       validationBatchSize: batchSize
     });
     model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
-
     
     const numTensors0 = tfc.memory().numTensors;
     const history = await model.fitDataset(dataset, {
