@@ -33,7 +33,7 @@ import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetConfig, ModelFitDatasetConfig} from './training_dataset';
-import {checkBatchSize, fitTensors, makeBatches, ModelFitConfig, sliceArrays, sliceArraysByIndices} from './training_tensors';
+import {checkBatchSize, disposeNewTensors, ensureTensorRank2OrHigher, fitTensors, makeBatches, ModelFitConfig, sliceArrays, sliceArraysByIndices} from './training_tensors';
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
@@ -59,6 +59,8 @@ export function isDataDict(x: Tensor|Tensor[]|
   return !isDataTensor(x) && !isDataArray(x);
 }
 
+
+
 /**
  * Normalizes inputs and targets provided by users.
  * @param data User-provided input data (polymorphic).
@@ -72,8 +74,7 @@ export function isDataDict(x: Tensor|Tensor[]|
  */
 export function standardizeInputData(
     data: Tensor|Tensor[]|{[inputName: string]: Tensor}, names: string[],
-    shapes?: Shape[], checkBatchAxis = true,
-    exceptionPrefix = ''): {tensors: Tensor[], disposalNeeded: boolean[]} {
+    shapes?: Shape[], checkBatchAxis = true, exceptionPrefix = ''): Tensor[] {
   if (names == null || names.length === 0) {
     // Check for the case where the model expected no data, but some data got
     // sent.
@@ -98,29 +99,23 @@ export function standardizeInputData(
             `but got ${data}`);
       }
     }
-    return {tensors: [], disposalNeeded: []};
+    return [];
   }
   if (data == null) {
-    return {
-      tensors: names.map(name => null),
-      disposalNeeded: names.map(name => null)
-    };
+    return names.map(name => null);
   }
 
-  let tensors: Tensor[];
-  let disposalNeeded: boolean[];
+  let arrays: Tensor[];
   if (isDataDict(data)) {
     data = data as {[inputName: string]: Tensor};
-    tensors = [];
-    disposalNeeded = [];
+    arrays = [];
     for (const name of names) {
       if (data[name] == null) {
         throw new ValueError(
             `No data provided for "${name}". Need data for each key in: ` +
             `${names}`);
       }
-      tensors.push(data[name]);
-      disposalNeeded.push(false);
+      arrays.push(data[name]);
     }
   } else if (isDataArray(data)) {
     data = data as Tensor[];
@@ -131,8 +126,7 @@ export function standardizeInputData(
           `model expected. Expected to see ${names.length} Tensor(s), but ` +
           `instead got the following list of Tensor(s): ${data}`);
     }
-    tensors = data;
-    disposalNeeded = data.map(d => false);
+    arrays = data;
   } else {
     data = data as Tensor;
     if (names.length > 1) {
@@ -141,18 +135,10 @@ export function standardizeInputData(
           `but only received one Tensor. Found: Tensor with shape ${
               data.shape}`);
     }
-    tensors = [data];
-    disposalNeeded = [false];
+    arrays = [data];
   }
 
-  // Make Tensors at least 2D.
-  for (let i = 0; i < names.length; ++i) {
-    const array = tensors[i];
-    if (array.shape.length === 1) {
-      tensors[i] = K.expandDims(array, 1);
-      disposalNeeded[i] = true;
-    }
-  }
+  arrays = ensureTensorRank2OrHigher(arrays);
 
   // Check shape compatibility.
   if (shapes != null) {
@@ -160,7 +146,7 @@ export function standardizeInputData(
       if (shapes[i] == null) {
         continue;
       }
-      const array = tensors[i];
+      const array = arrays[i];
       if (array.shape.length !== shapes[i].length) {
         throw new ValueError(
             `Error when checking ${exceptionPrefix}: expected ${names[i]} ` +
@@ -183,7 +169,7 @@ export function standardizeInputData(
       }
     }
   }
-  return {tensors, disposalNeeded};
+  return arrays;
 }
 
 /**
@@ -818,14 +804,20 @@ export class Model extends Container implements tfc.InferenceModel {
     // TODO(cais): Standardize `config.sampleWeights` as well.
     // Validate user data.
     const standardizedOuts = this.standardizeUserData(x, y, true, batchSize);
-    // TODO(cais): If uses `useLearningPhase`, set the corresponding element of
-    //   the input to 0.
-    const ins = standardizedOuts[0].concat(standardizedOuts[1]);
-    this.makeTestFunction();
-    const f = this.testFunction;
-    const testOuts =
-        this.testLoop(f, ins, batchSize, config.verbose, config.steps);
-    return singletonOrArray(testOuts);
+    try {
+      // TODO(cais): If uses `useLearningPhase`, set the corresponding element
+      // of
+      //   the input to 0.
+      const ins = standardizedOuts[0].concat(standardizedOuts[1]);
+      this.makeTestFunction();
+      const f = this.testFunction;
+      const testOuts =
+          this.testLoop(f, ins, batchSize, config.verbose, config.steps);
+      return singletonOrArray(testOuts);
+    } finally {
+      disposeNewTensors(standardizedOuts[0], x);
+      disposeNewTensors(standardizedOuts[1], y);
+    }
   }
 
   // TODO(cais): Add code snippet below once real dataset objects are
@@ -1080,14 +1072,20 @@ export class Model extends Container implements tfc.InferenceModel {
    */
   predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
       |Tensor[] {
-    checkInputData(x, this.inputNames, this.feedInputShapes, false);
-    // TODO(cais): Take care of stateful models.
-    //   if (this.stateful) ...
-    // TODO(cais): Take care of the learning_phase boolean flag.
-    //   if (this.useLearningPhase) ...
-    const batchSize = config.batchSize == null ? 32 : config.batchSize;
-    checkBatchSize(batchSize);
-    return this.predictLoop(x, batchSize);
+    const xsRank2OrHigher = ensureTensorRank2OrHigher(x);
+    checkInputData(
+        xsRank2OrHigher, this.inputNames, this.feedInputShapes, false);
+    try {
+      // TODO(cais): Take care of stateful models.
+      //   if (this.stateful) ...
+      // TODO(cais): Take care of the learning_phase boolean flag.
+      //   if (this.useLearningPhase) ...
+      const batchSize = config.batchSize == null ? 32 : config.batchSize;
+      checkBatchSize(batchSize);
+      return this.predictLoop(xsRank2OrHigher, batchSize);
+    } finally {
+      disposeNewTensors(xsRank2OrHigher, x);
+    }
   }
 
   /**
@@ -1113,8 +1111,7 @@ export class Model extends Container implements tfc.InferenceModel {
   protected standardizeUserData(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor}, checkBatchAxis = true,
-      batchSize?: number):
-      [Tensor[], Tensor[], Tensor[], boolean[], boolean[], boolean[]] {
+      batchSize?: number): [Tensor[], Tensor[], Tensor[]] {
     // TODO(cais): Add sampleWeight, classWeight
     if (this.optimizer == null) {
       throw new RuntimeError(
@@ -1133,14 +1130,11 @@ export class Model extends Container implements tfc.InferenceModel {
         outputShapes.push(outputShape);
       }
     }
-    const xStandard = standardizeInputData(
-        x, this.feedInputNames, this.feedInputShapes, false, 'input');
-    x = xStandard.tensors;
-    const xDisposalNeeded = xStandard.disposalNeeded;
-    const yStandard = standardizeInputData(
-        y, this.feedOutputNames, outputShapes, false, 'target');
-    y = yStandard.tensors;
-    const yDisposalNeeded = yStandard.disposalNeeded;
+    x = standardizeInputData(
+            x, this.feedInputNames, this.feedInputShapes, false, 'input') as
+        Tensor[];
+    y = standardizeInputData(
+            y, this.feedOutputNames, outputShapes, false, 'target') as Tensor[];
     // TODO(cais): Standardize sampleWeights & classWeights.
     checkArrayLengths(x, y, null);
     // TODO(cais): Check sampleWeights as well.
@@ -1154,7 +1148,7 @@ export class Model extends Container implements tfc.InferenceModel {
       }
     }
     // TODO(cais): Deal with the case of model.stateful == true.
-    return [x, y, null, xDisposalNeeded, yDisposalNeeded, null];
+    return [x, y, null];
   }
 
   /**
