@@ -978,6 +978,7 @@ describeMathCPU('GRU Symbolic', () => {
       const tsConfig = convertPythonicToTs(pythonicConfig) as any;
       const layerPrime = tfl.layers.gru(tsConfig);
       expect(layerPrime.getConfig().units).toEqual(4);
+      expect(layerPrime.getConfig().implementation).toEqual(implementation);
     });
   }
 });
@@ -1442,6 +1443,7 @@ describeMathCPU('LSTM Symbolic', () => {
       const tsConfig = convertPythonicToTs(pythonicConfig) as any;
       const layerPrime = tfl.layers.lstm(tsConfig);
       expect(layerPrime.getConfig().units).toEqual(4);
+      expect(layerPrime.getConfig().implementation).toEqual(implementation);
     });
   }
 });
