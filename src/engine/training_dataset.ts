@@ -28,14 +28,6 @@ import {Dataset, LazyIterator, TensorMap, TensorOrTensorMap} from './dataset_stu
  */
 export interface ModelFitDatasetConfig<T extends TensorContainer> {
   /**
-   * Total number of steps (batches of samples) before
-   * declaring one epoch finished and starting the next epoch. It should
-   * typically be equal to the number of samples of your dataset divided by
-   * the batch size, so that `fitDataset`() call can utilize the entire dataset.
-   */
-  batchesPerEpoch: number;
-
-  /**
    * The number of times to iterate over the training dataset.
    *
    * An integer.
@@ -255,11 +247,6 @@ export async function fitDataset<T extends TensorContainer>(
           Number.isInteger(config.epochs),
       `For fitDataset(), config.epochs is expected to be a positive ` +
           `integer, but got ${config.epochs}`);
-  tfc.util.assert(
-      config.batchesPerEpoch != null && config.batchesPerEpoch > 0 &&
-          Number.isInteger(config.batchesPerEpoch),
-      `For fitDataset(), config.batchesPerEpoch is expected to be a ` +
-          `positive integer, but got ${config.batchesPerEpoch}`);
 
   if (model.isTraining) {
     throw new Error(
@@ -309,7 +296,7 @@ export async function fitDataset<T extends TensorContainer>(
     const callbacks = standardizeCallbacks(config.callbacks);
     const {callbackList, history} = configureCallbacks(
         callbacks, config.yieldEvery, config.verbose, config.epochs, null, null,
-        config.batchesPerEpoch,
+        null,
         null,  // Batch size determined by the dataset itself.
         doValidation, callbackMetrics);
     model.history = history;
@@ -317,22 +304,32 @@ export async function fitDataset<T extends TensorContainer>(
     await callbackList.onTrainBegin();
     let epoch = config.initialEpoch == null ? 0 : config.initialEpoch;
     const epochLogs: UnresolvedLogs = {};
-    const dataIterator = await dataset.iterator();
     while (epoch < config.epochs) {
       await callbackList.onEpochBegin(epoch);
-      let stepsDone = 0;
+      const dataIterator = await dataset.iterator();
       let batchIndex = 0;
-      while (stepsDone < config.batchesPerEpoch) {
+      while (true) {
         const iteratorOut = await dataIterator.next();
+
         if (iteratorOut.done) {
-          console.warn(
-              'Your dataset iterator ran out of data; ' +
-              'interrupting training. Make sure that your ' +
-              'dataset can generate at least `batchesPerEpoch * epochs` ' +
-              'batches (in this case, ' +
-              `${config.batchesPerEpoch * config.epochs} batches). ` +
-              'You may need to use the repeat() function when building ' +
-              'your dataset.');
+          // Epoch finished. Perform validation.
+          if (doValidation) {
+            let valOuts: tfc.Scalar[];
+            if (isDatasetObject(config.validationData)) {
+              valOuts = toList(await model.evaluateDataset(
+                  validationDataIterator, {batches: config.validationBatches}));
+            } else {
+              valOuts = toList(model.evaluate(valXs, valYs, {
+                batchSize: config.validationBatchSize == null ?
+                    DEFAULT_VALIDATION_BATCH_SIZE :
+                    config.validationBatchSize,
+                verbose: 0
+              }));
+            }
+            for (let i = 0; i < model.metricsNames.length; ++i) {
+              epochLogs[`val_${model.metricsNames[i]}`] = valOuts[i];
+            }
+          }
           break;
         }
 
@@ -358,26 +355,7 @@ export async function fitDataset<T extends TensorContainer>(
         disposeTensorsInLogs(batchLogs);
 
         batchIndex++;
-        stepsDone++;
 
-        // Epoch finished. Perform validation.
-        if (stepsDone >= config.batchesPerEpoch && doValidation) {
-          let valOuts: tfc.Scalar[];
-          if (isDatasetObject(config.validationData)) {
-            valOuts = toList(await model.evaluateDataset(
-                validationDataIterator, {batches: config.validationBatches}));
-          } else {
-            valOuts = toList(model.evaluate(valXs, valYs, {
-              batchSize: config.validationBatchSize == null ?
-                  DEFAULT_VALIDATION_BATCH_SIZE :
-                  config.validationBatchSize,
-              verbose: 0
-            }));
-          }
-          for (let i = 0; i < model.metricsNames.length; ++i) {
-            epochLogs[`val_${model.metricsNames[i]}`] = valOuts[i];
-          }
-        }
         if (model.stopTraining_) {
           break;
         }
