@@ -311,28 +311,6 @@ export async function fitDataset<T extends TensorContainer>(
       while (true) {
         const iteratorOut = await dataIterator.next();
 
-        if (iteratorOut.done) {
-          // Epoch finished. Perform validation.
-          if (doValidation) {
-            let valOuts: tfc.Scalar[];
-            if (isDatasetObject(config.validationData)) {
-              valOuts = toList(await model.evaluateDataset(
-                  validationDataIterator, {batches: config.validationBatches}));
-            } else {
-              valOuts = toList(model.evaluate(valXs, valYs, {
-                batchSize: config.validationBatchSize == null ?
-                    DEFAULT_VALIDATION_BATCH_SIZE :
-                    config.validationBatchSize,
-                verbose: 0
-              }));
-            }
-            for (let i = 0; i < model.metricsNames.length; ++i) {
-              epochLogs[`val_${model.metricsNames[i]}`] = valOuts[i];
-            }
-          }
-          break;
-        }
-
         const xsAndYs = standardizeDataIteratorOutput(model, iteratorOut.value);
         const batchLogs: UnresolvedLogs = {};
         batchLogs['batch'] = batchIndex;
@@ -355,6 +333,28 @@ export async function fitDataset<T extends TensorContainer>(
         disposeTensorsInLogs(batchLogs);
 
         batchIndex++;
+
+        if (iteratorOut.done) {
+          // Epoch finished. Perform validation.
+          if (doValidation) {
+            let valOuts: tfc.Scalar[];
+            if (isDatasetObject(config.validationData)) {
+              valOuts = toList(await model.evaluateDataset(
+                  validationDataIterator, {batches: config.validationBatches}));
+            } else {
+              valOuts = toList(model.evaluate(valXs, valYs, {
+                batchSize: config.validationBatchSize == null ?
+                    DEFAULT_VALIDATION_BATCH_SIZE :
+                    config.validationBatchSize,
+                verbose: 0
+              }));
+            }
+            for (let i = 0; i < model.metricsNames.length; ++i) {
+              epochLogs[`val_${model.metricsNames[i]}`] = valOuts[i];
+            }
+          }
+          break;
+        }
 
         if (model.stopTraining_) {
           break;
