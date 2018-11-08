@@ -161,7 +161,7 @@ class FakeNumericIterator extends
           tfc.util.arraysEqual(ys.shape, this.yBatchShape as Shape),
           `Shape mismatch: expected: ${JSON.stringify(this.yBatchShape)}; ` +
               `actual: ${JSON.stringify(ys.shape)}`);
-      return {done, value: done ? null : [xs, ys]};
+      return {done, value: [xs, ys]};
     }
   }
 }

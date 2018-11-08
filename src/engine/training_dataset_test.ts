@@ -1799,6 +1799,44 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expect(errorCaught.message)
         .toEqual('The model needs to be compiled before being used.');
   });
+
+  it('Wrong validationBatches leads to Error', async () => {
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+    const batchSize = 8;
+    const epochs = 2;
+    const batchesPerEpoch = 3;
+    // Training dataset.
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: batchesPerEpoch * epochs
+    });
+    // Validation dataset.
+    const valDataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: batchesPerEpoch * epochs
+    });
+    // Do a burn-in call to account for initialization of cached
+    // tensors (for the memory-leak check below).
+    let errorCaught: Error;
+    try {
+      await model.fitDataset(dataset, {
+        batchesPerEpoch,
+        epochs,
+        validationData: valDataset,
+        validationBatches: 0
+      });
+    } catch (err) {
+      errorCaught = err;
+    }
+    expect(errorCaught.message)
+        .toMatch(/fitDataset.*dataset-based validation.*not to be provided.*0/);
+  });
 });
 
 describeMathCPUAndGPU('Model.evaluateDataset', () => {

@@ -110,7 +110,7 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
    * Total number of batches of samples to draw from `validationData` for
    * validation purpose before stopping at the end of every epoch. If not
    * specified, `evaluateDataset` will use `iterator.next().done` as signal to
-   * stop evaluation.
+   * stop validation.
    */
   validationBatches?: number;
 
