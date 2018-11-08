@@ -104,10 +104,13 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
   validationBatchSize?: number;
 
   /**
-   * Only relevant if `validationData` is specified and is a dataset object.
+   * (Optional) Only relevant if `validationData` is specified and is a dataset
+   * object.
    *
    * Total number of batches of samples to draw from `validationData` for
-   * validation purpose before stopping at the end of every epoch.
+   * validation purpose before stopping at the end of every epoch. If not
+   * specified, `evaluateDataset` will use `iterator.next().done` as signal to
+   * stop evaluation.
    */
   validationBatches?: number;
 
@@ -244,6 +247,7 @@ export async function fitDataset<T extends TensorContainer>(
     // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>,
     config: ModelFitDatasetConfig<T>): Promise<History> {
+  const hasBatchesPerEpoch = config.batchesPerEpoch != null;
   tfc.util.assert(
       model.optimizer != null,
       'You must compile a model before training/testing. Use ' +
@@ -259,11 +263,11 @@ export async function fitDataset<T extends TensorContainer>(
       `For fitDataset(), config.epochs is expected to be a positive ` +
           `integer, but got ${config.epochs}`);
   tfc.util.assert(
-      config.batchesPerEpoch == null ||
+      !hasBatchesPerEpoch ||
           (config.batchesPerEpoch > 0 &&
            Number.isInteger(config.batchesPerEpoch)),
       `For fitDataset(), config.batchesPerEpoch is expected to be a ` +
-          `positive integer, but got ${config.batchesPerEpoch}`);
+          `positive integer if specified, but got ${config.batchesPerEpoch}`);
 
   if (model.isTraining) {
     throw new Error(
@@ -323,7 +327,6 @@ export async function fitDataset<T extends TensorContainer>(
     await callbackList.onTrainBegin();
     let epoch = config.initialEpoch == null ? 0 : config.initialEpoch;
     const epochLogs: UnresolvedLogs = {};
-    const hasBatchesPerEpoch = config.batchesPerEpoch != null;
 
     let dataIterator = await dataset.iterator();
     while (epoch < config.epochs) {
@@ -340,7 +343,7 @@ export async function fitDataset<T extends TensorContainer>(
         // exhausted until all epoches are done.
         if (hasBatchesPerEpoch && iteratorOut.done) {
           console.warn(
-              'You provided `batchesPerEpoch but your dataset iterator ' +
+              'You provided `batchesPerEpoch` but your dataset iterator ' +
               'ran out of data; interrupting training. Make sure that your ' +
               'dataset can generate at least `batchesPerEpoch * epochs` ' +
               'batches (in this case, ' +
@@ -445,12 +448,12 @@ export async function evaluateDataset<T extends TensorContainer>(
     // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>|LazyIterator<T>,
     config: ModelEvaluateDatasetConfig): Promise<tfc.Scalar|tfc.Scalar[]> {
+  const hasBatches = config.batches != null;
   const f = model.testFunction;
   const outs: tfc.Scalar[] = [];
   if (config.verbose > 0) {
     throw new NotImplementedError('Verbose mode is not implemented yet.');
   }
-  const hasBatches = config.batches != null;
 
   tfc.util.assert(
       (!hasBatches) || (config.batches > 0 && Number.isInteger(config.batches)),

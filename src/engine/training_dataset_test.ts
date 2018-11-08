@@ -706,38 +706,79 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        expect(epochEndValAccs[1]).toBeCloseTo(1);
      });
 
-  it('Memory leak check with metric and validation', async () => {
-    const model = createDenseModel();
-    model.compile(
-        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+  it('Memory leak check with metric and validation, with batchesPerEpoch',
+     async () => {
+       const model = createDenseModel();
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
 
-    const batchSize = 8;
-    const epochs = 3;
-    const batchesPerEpoch = 3;
-    const dataset = new FakeNumericDataset(
-        {xShape: [1], yShape: [1], batchSize, numBatches: batchesPerEpoch});
-    const valXs = tfc.zeros([batchSize * 2, 1]);
-    const valYs = tfc.zeros([batchSize * 2, 1]);
+       const batchSize = 8;
+       const epochs = 3;
+       const batchesPerEpoch = 3;
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batchesPerEpoch * epochs
+       });
+       const valXs = tfc.zeros([batchSize * 2, 1]);
+       const valYs = tfc.zeros([batchSize * 2, 1]);
 
-    // Do a burn-in call to account for initialization of cached
-    // tensors (for the memory-leak check below).
-    await model.fitDataset(
-        dataset, {epochs: 1, validationData: [valXs, valYs]});
-    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+       // Do a burn-in call to account for initialization of cached
+       // tensors (for the memory-leak check below).
+       await model.fitDataset(
+           dataset,
+           {batchesPerEpoch, epochs: 1, validationData: [valXs, valYs]});
+       model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
-    const numTensors0 = tfc.memory().numTensors;
-    await model.fitDataset(dataset, {
-      epochs,
-      validationData: [valXs, valYs],
-      callbacks: {
-        onEpochEnd: async (epoch, logs) => {
-          expect(tfc.memory().numTensors).toEqual(numTensors0);
-        }
-      }
-    });
-    const numTensors1 = tfc.memory().numTensors;
-    expect(numTensors1).toEqual(numTensors0);
-  });
+       const numTensors0 = tfc.memory().numTensors;
+       await model.fitDataset(dataset, {
+         batchesPerEpoch,
+         epochs,
+         validationData: [valXs, valYs],
+         callbacks: {
+           onEpochEnd: async (epoch, logs) => {
+             expect(tfc.memory().numTensors).toEqual(numTensors0);
+           }
+         }
+       });
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+     });
+
+  it('Memory leak check with metric and validation, no batchesPerEpoch',
+     async () => {
+       const model = createDenseModel();
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+       const batchSize = 8;
+       const epochs = 3;
+       const batchesPerEpoch = 3;
+       const dataset = new FakeNumericDataset(
+           {xShape: [1], yShape: [1], batchSize, numBatches: batchesPerEpoch});
+       const valXs = tfc.zeros([batchSize * 2, 1]);
+       const valYs = tfc.zeros([batchSize * 2, 1]);
+
+       // Do a burn-in call to account for initialization of cached
+       // tensors (for the memory-leak check below).
+       await model.fitDataset(
+           dataset, {epochs: 1, validationData: [valXs, valYs]});
+       model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+
+       const numTensors0 = tfc.memory().numTensors;
+       await model.fitDataset(dataset, {
+         epochs,
+         validationData: [valXs, valYs],
+         callbacks: {
+           onEpochEnd: async (epoch, logs) => {
+             expect(tfc.memory().numTensors).toEqual(numTensors0);
+           }
+         }
+       });
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+     });
 
   // Refence Python tf.keras code:
   //
@@ -774,101 +815,201 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   //                     callbacks=[CustomCallback()])
   // print(history.history)
   // ```
-  it('1 input, 1 output, 1 metric, no validation, callback', async () => {
-    const model = createDenseModel();
-    model.compile(
-        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+  it('1 input, 1 output, 1 metric, no validation, callback, ' +
+         'with batchesPerEpoch',
+     async () => {
+       const model = createDenseModel();
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
 
-    const batchSize = 8;
-    const epochs = 2;
-    const batchesPerEpoch = 3;
-    const xTensorsFunc =
-        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
-          batchSize, 1
-        ])];
-    const yTensorsFunc =
-        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
-          batchSize, 1
-        ])];
-    const dataset = new FakeNumericDataset({
-      xShape: [1],
-      yShape: [1],
-      batchSize,
-      numBatches: batchesPerEpoch,
-      xTensorsFunc,
-      yTensorsFunc
-    });
+       const batchSize = 8;
+       const epochs = 2;
+       const batchesPerEpoch = 3;
+       const xTensorsFunc = () =>
+           [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+       const yTensorsFunc = () =>
+           [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batchesPerEpoch * epochs,
+         xTensorsFunc,
+         yTensorsFunc
+       });
 
-    // Do a burn-in call to account for initialization of cached tensors (for
-    // the memory-leak check below).
-    await model.fitDataset(dataset, {epochs: 1});
-    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1});
+       model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
 
-    const numTensors0 = tfc.memory().numTensors;
-    let onTrainBeginCalls = 0;
-    let onTrainEndCalls = 0;
-    const epochBeginEpochs: number[] = [];
-    const epochEndEpochs: number[] = [];
-    const batchBeginBatches: number[] = [];
-    const batchEndBatches: number[] = [];
-    const epochEndLosses: number[] = [];
-    const epochEndAccs: number[] = [];
-    const batchEndLosses: number[] = [];
-    const batchEndAccs: number[] = [];
-    const history = await model.fitDataset(dataset, {
-      epochs,
-      callbacks: {
-        onTrainBegin: async () => {
-          onTrainBeginCalls++;
-        },
-        onTrainEnd: async () => {
-          onTrainEndCalls++;
-        },
-        onEpochBegin: async (epoch) => {
-          epochBeginEpochs.push(epoch);
-        },
-        onEpochEnd: async (epoch, logs) => {
-          epochEndEpochs.push(epoch);
-          epochEndLosses.push(logs.loss);
-          epochEndAccs.push(logs.acc);
-        },
-        onBatchBegin: async (batch, logs) => {
-          batchBeginBatches.push(batch);
-        },
-        onBatchEnd: async (batch, logs) => {
-          batchEndBatches.push(batch);
-          batchEndLosses.push(logs.loss);
-          batchEndAccs.push(logs.acc);
-        },
-      }
-    });
-    const numTensors1 = tfc.memory().numTensors;
-    expect(numTensors1).toEqual(numTensors0);
-    expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
-    expect(history.history.loss.length).toEqual(2);
-    expect(history.history.loss[0]).toBeCloseTo(0.923649);
-    expect(history.history.loss[1]).toBeCloseTo(0.722993);
-    expect(history.history.acc.length).toEqual(2);
-    expect(history.history.acc[0]).toBeCloseTo(0);
-    expect(history.history.acc[1]).toBeCloseTo(0);
-    expectArraysClose(model.getWeights()[0], tfc.tensor2d([[0.108621]]));
-    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+       const numTensors0 = tfc.memory().numTensors;
+       let onTrainBeginCalls = 0;
+       let onTrainEndCalls = 0;
+       const epochBeginEpochs: number[] = [];
+       const epochEndEpochs: number[] = [];
+       const batchBeginBatches: number[] = [];
+       const batchEndBatches: number[] = [];
+       const epochEndLosses: number[] = [];
+       const epochEndAccs: number[] = [];
+       const batchEndLosses: number[] = [];
+       const batchEndAccs: number[] = [];
+       const history = await model.fitDataset(dataset, {
+         batchesPerEpoch,
+         epochs,
+         callbacks: {
+           onTrainBegin: async () => {
+             onTrainBeginCalls++;
+           },
+           onTrainEnd: async () => {
+             onTrainEndCalls++;
+           },
+           onEpochBegin: async (epoch) => {
+             epochBeginEpochs.push(epoch);
+           },
+           onEpochEnd: async (epoch, logs) => {
+             epochEndEpochs.push(epoch);
+             epochEndLosses.push(logs.loss);
+             epochEndAccs.push(logs.acc);
+           },
+           onBatchBegin: async (batch, logs) => {
+             batchBeginBatches.push(batch);
+           },
+           onBatchEnd: async (batch, logs) => {
+             batchEndBatches.push(batch);
+             batchEndLosses.push(logs.loss);
+             batchEndAccs.push(logs.acc);
+           },
+         }
+       });
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+       expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
+       expect(history.history.loss.length).toEqual(2);
+       expect(history.history.loss[0]).toBeCloseTo(0.923649);
+       expect(history.history.loss[1]).toBeCloseTo(0.722993);
+       expect(history.history.acc.length).toEqual(2);
+       expect(history.history.acc[0]).toBeCloseTo(0);
+       expect(history.history.acc[1]).toBeCloseTo(0);
+       expectArraysClose(model.getWeights()[0], tfc.tensor2d([[0.108621]]));
+       expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
 
-    expect(onTrainBeginCalls).toEqual(1);
-    expect(onTrainEndCalls).toEqual(1);
-    expect(epochBeginEpochs).toEqual([0, 1]);
-    expect(epochEndEpochs).toEqual([0, 1]);
-    expect(batchBeginBatches).toEqual([0, 1, 2, 0, 1, 2]);
-    expect(batchEndBatches).toEqual([0, 1, 2, 0, 1, 2]);
-    expect(epochEndLosses.length).toEqual(2);
-    expect(epochEndLosses[0]).toBeCloseTo(0.923649);
-    expect(epochEndLosses[1]).toBeCloseTo(0.722993);
-    expect(epochEndAccs.length).toEqual(2);
-    expect(epochEndAccs[0]).toBeCloseTo(0);
-    expect(epochEndAccs[1]).toBeCloseTo(0);
-    expectArraysClose(
-        batchEndLosses, [1, 0.9216, 0.849347, 0.782758, 0.721390, 0.664832]);
-  });
+       expect(onTrainBeginCalls).toEqual(1);
+       expect(onTrainEndCalls).toEqual(1);
+       expect(epochBeginEpochs).toEqual([0, 1]);
+       expect(epochEndEpochs).toEqual([0, 1]);
+       expect(batchBeginBatches).toEqual([0, 1, 2, 0, 1, 2]);
+       expect(batchEndBatches).toEqual([0, 1, 2, 0, 1, 2]);
+       expect(epochEndLosses.length).toEqual(2);
+       expect(epochEndLosses[0]).toBeCloseTo(0.923649);
+       expect(epochEndLosses[1]).toBeCloseTo(0.722993);
+       expect(epochEndAccs.length).toEqual(2);
+       expect(epochEndAccs[0]).toBeCloseTo(0);
+       expect(epochEndAccs[1]).toBeCloseTo(0);
+       expectArraysClose(
+           batchEndLosses, [1, 0.9216, 0.849347, 0.782758, 0.721390, 0.664832]);
+     });
+
+  it('1 input, 1 output, 1 metric, no validation, callback, no batchesPerEpoch',
+     async () => {
+       const model = createDenseModel();
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+       const batchSize = 8;
+       const epochs = 2;
+       const batchesPerEpoch = 3;
+       const xTensorsFunc =
+           () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+             batchSize, 1
+           ])];
+       const yTensorsFunc =
+           () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+             batchSize, 1
+           ])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batchesPerEpoch,
+         xTensorsFunc,
+         yTensorsFunc
+       });
+
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.fitDataset(dataset, {epochs: 1});
+       model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+
+       const numTensors0 = tfc.memory().numTensors;
+       let onTrainBeginCalls = 0;
+       let onTrainEndCalls = 0;
+       const epochBeginEpochs: number[] = [];
+       const epochEndEpochs: number[] = [];
+       const batchBeginBatches: number[] = [];
+       const batchEndBatches: number[] = [];
+       const epochEndLosses: number[] = [];
+       const epochEndAccs: number[] = [];
+       const batchEndLosses: number[] = [];
+       const batchEndAccs: number[] = [];
+       const history = await model.fitDataset(dataset, {
+         epochs,
+         callbacks: {
+           onTrainBegin: async () => {
+             onTrainBeginCalls++;
+           },
+           onTrainEnd: async () => {
+             onTrainEndCalls++;
+           },
+           onEpochBegin: async (epoch) => {
+             epochBeginEpochs.push(epoch);
+           },
+           onEpochEnd: async (epoch, logs) => {
+             epochEndEpochs.push(epoch);
+             epochEndLosses.push(logs.loss);
+             epochEndAccs.push(logs.acc);
+           },
+           onBatchBegin: async (batch, logs) => {
+             batchBeginBatches.push(batch);
+           },
+           onBatchEnd: async (batch, logs) => {
+             batchEndBatches.push(batch);
+             batchEndLosses.push(logs.loss);
+             batchEndAccs.push(logs.acc);
+           },
+         }
+       });
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+       expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
+       expect(history.history.loss.length).toEqual(2);
+       expect(history.history.loss[0]).toBeCloseTo(0.923649);
+       expect(history.history.loss[1]).toBeCloseTo(0.722993);
+       expect(history.history.acc.length).toEqual(2);
+       expect(history.history.acc[0]).toBeCloseTo(0);
+       expect(history.history.acc[1]).toBeCloseTo(0);
+       expectArraysClose(model.getWeights()[0], tfc.tensor2d([[0.108621]]));
+       expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+
+       expect(onTrainBeginCalls).toEqual(1);
+       expect(onTrainEndCalls).toEqual(1);
+       expect(epochBeginEpochs).toEqual([0, 1]);
+       expect(epochEndEpochs).toEqual([0, 1]);
+       expect(batchBeginBatches).toEqual([0, 1, 2, 0, 1, 2]);
+       expect(batchEndBatches).toEqual([0, 1, 2, 0, 1, 2]);
+       expect(epochEndLosses.length).toEqual(2);
+       expect(epochEndLosses[0]).toBeCloseTo(0.923649);
+       expect(epochEndLosses[1]).toBeCloseTo(0.722993);
+       expect(epochEndAccs.length).toEqual(2);
+       expect(epochEndAccs[0]).toBeCloseTo(0);
+       expect(epochEndAccs[1]).toBeCloseTo(0);
+       expectArraysClose(
+           batchEndLosses, [1, 0.9216, 0.849347, 0.782758, 0.721390, 0.664832]);
+     });
 
   // Reference Python tf.keras code:
   //
@@ -906,70 +1047,140 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[0])
   // print(model.get_weights()[1])
   // ```
-  it('2 input, 1 output, 1 metric, no validation', async () => {
-    // Create a functional model with 2 inputs.
-    const input1 = tfl.layers.input({shape: [1]});
-    const input2 = tfl.layers.input({shape: [1]});
-    const concat = tfl.layers.concatenate().apply([input1, input2]);
-    const y = tfl.layers
-                  .dense({
-                    units: 1,
-                    kernelInitializer: 'zeros',
-                    biasInitializer: 'zeros'
-                  })
-                  .apply(concat) as tfl.SymbolicTensor;
-    const model = tfl.model({inputs: [input1, input2], outputs: y});
-    model.compile(
-        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+  it('2 input, 1 output, 1 metric, no validation, with batchesPerEpoch',
+     async () => {
+       // Create a functional model with 2 inputs.
+       const input1 = tfl.layers.input({shape: [1]});
+       const input2 = tfl.layers.input({shape: [1]});
+       const concat = tfl.layers.concatenate().apply([input1, input2]);
+       const y = tfl.layers
+                     .dense({
+                       units: 1,
+                       kernelInitializer: 'zeros',
+                       biasInitializer: 'zeros'
+                     })
+                     .apply(concat) as tfl.SymbolicTensor;
+       const model = tfl.model({inputs: [input1, input2], outputs: y});
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
 
-    const batchSize = 8;
-    const epochs = 2;
-    const batchesPerEpoch = 3;
-    const xTensorsFunc = () => {
-      const output: {[name: string]: tfc.Tensor[]} = {};
-      output[input1.name] = [
-        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
-        tfc.ones([batchSize, 1])
-      ];
-      output[input2.name] = [
-        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
-        tfc.ones([batchSize, 1])
-      ];
-      return output;
-    };
-    const yTensorsFunc =
-        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
-          batchSize, 1
-        ])];
-    const dataset = new FakeNumericDataset({
-      xShape: [1],
-      yShape: [1],
-      batchSize,
-      numBatches: batchesPerEpoch,
-      xTensorsFunc,
-      yTensorsFunc
-    });
+       const batchSize = 8;
+       const epochs = 2;
+       const batchesPerEpoch = 3;
+       const xTensorsFunc = () => {
+         const output: {[name: string]: tfc.Tensor[]} = {};
+         output[input1.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+         ];
+         output[input2.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+         ];
+         return output;
+       };
+       const yTensorsFunc = () =>
+           [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batchesPerEpoch * epochs,
+         xTensorsFunc,
+         yTensorsFunc
+       });
 
-    // Do a burn-in call to account for initialization of cached tensors (for
-    // the memory-leak check below).
-    await model.fitDataset(dataset, {epochs: 1});
-    model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1});
+       model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
 
-    const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {epochs});
-    const numTensors1 = tfc.memory().numTensors;
-    expect(numTensors1).toEqual(numTensors0);
-    expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
-    expect(history.history.loss.length).toEqual(2);
-    expect(history.history.loss[0]).toBeCloseTo(0.888116);
-    expect(history.history.loss[1]).toBeCloseTo(0.612685);
-    expect(history.history.acc.length).toEqual(2);
-    expect(history.history.acc[0]).toBeCloseTo(0);
-    expect(history.history.acc[1]).toBeCloseTo(0);
-    expectArraysClose(
-        model.getWeights()[0], tfc.tensor2d([[0.103377], [0.103377]]));
-    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
-  });
+       const numTensors0 = tfc.memory().numTensors;
+       const history =
+           await model.fitDataset(dataset, {batchesPerEpoch, epochs});
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+       expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
+       expect(history.history.loss.length).toEqual(2);
+       expect(history.history.loss[0]).toBeCloseTo(0.888116);
+       expect(history.history.loss[1]).toBeCloseTo(0.612685);
+       expect(history.history.acc.length).toEqual(2);
+       expect(history.history.acc[0]).toBeCloseTo(0);
+       expect(history.history.acc[1]).toBeCloseTo(0);
+       expectArraysClose(
+           model.getWeights()[0], tfc.tensor2d([[0.103377], [0.103377]]));
+       expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
+     });
+
+  it('2 input, 1 output, 1 metric, no validation, no batchesPerEpoch',
+     async () => {
+       // Create a functional model with 2 inputs.
+       const input1 = tfl.layers.input({shape: [1]});
+       const input2 = tfl.layers.input({shape: [1]});
+       const concat = tfl.layers.concatenate().apply([input1, input2]);
+       const y = tfl.layers
+                     .dense({
+                       units: 1,
+                       kernelInitializer: 'zeros',
+                       biasInitializer: 'zeros'
+                     })
+                     .apply(concat) as tfl.SymbolicTensor;
+       const model = tfl.model({inputs: [input1, input2], outputs: y});
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+       const batchSize = 8;
+       const epochs = 2;
+       const batchesPerEpoch = 3;
+       const xTensorsFunc = () => {
+         const output: {[name: string]: tfc.Tensor[]} = {};
+         output[input1.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         output[input2.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         return output;
+       };
+       const yTensorsFunc =
+           () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+             batchSize, 1
+           ])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batchesPerEpoch,
+         xTensorsFunc,
+         yTensorsFunc
+       });
+
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.fitDataset(dataset, {epochs: 1});
+       model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
+
+       const numTensors0 = tfc.memory().numTensors;
+       const history = await model.fitDataset(dataset, {epochs});
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+       expect(Object.keys(history.history)).toEqual(['loss', 'acc']);
+       expect(history.history.loss.length).toEqual(2);
+       expect(history.history.loss[0]).toBeCloseTo(0.888116);
+       expect(history.history.loss[1]).toBeCloseTo(0.612685);
+       expect(history.history.acc.length).toEqual(2);
+       expect(history.history.acc[0]).toBeCloseTo(0);
+       expect(history.history.acc[1]).toBeCloseTo(0);
+       expectArraysClose(
+           model.getWeights()[0], tfc.tensor2d([[0.103377], [0.103377]]));
+       expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
+     });
 
   // Reference Python tf.keras code:
   //
@@ -1016,93 +1227,189 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[0])
   // print(model.get_weights()[1])
   // ```
-  it('2 input, 1 output, 1 metric, tensor array validation', async () => {
-    // Create a functional model with 2 inputs.
-    const input1 = tfl.layers.input({shape: [1]});
-    const input2 = tfl.layers.input({shape: [1]});
-    const concat = tfl.layers.concatenate().apply([input1, input2]);
-    const y = tfl.layers
-                  .dense({
-                    units: 1,
-                    kernelInitializer: 'zeros',
-                    biasInitializer: 'zeros'
-                  })
-                  .apply(concat) as tfl.SymbolicTensor;
-    const model = tfl.model({inputs: [input1, input2], outputs: y});
-    model.compile(
-        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+  it('2 input, 1 output, 1 metric, tensor array validation, ' +
+         'with batchesPerEpoch',
+     async () => {
+       // Create a functional model with 2 inputs.
+       const input1 = tfl.layers.input({shape: [1]});
+       const input2 = tfl.layers.input({shape: [1]});
+       const concat = tfl.layers.concatenate().apply([input1, input2]);
+       const y = tfl.layers
+                     .dense({
+                       units: 1,
+                       kernelInitializer: 'zeros',
+                       biasInitializer: 'zeros'
+                     })
+                     .apply(concat) as tfl.SymbolicTensor;
+       const model = tfl.model({inputs: [input1, input2], outputs: y});
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
 
-    const batchSize = 8;
-    const epochs = 2;
-    const batchesPerEpoch = 3;
+       const batchSize = 8;
+       const epochs = 2;
+       const batchesPerEpoch = 3;
 
-    // Training data.
-    const xTensorsFunc = () => {
-      const output: {[name: string]: tfc.Tensor[]} = {};
-      output[input1.name] = [
-        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
-        tfc.ones([batchSize, 1])
-      ];
-      output[input2.name] = [
-        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
-        tfc.ones([batchSize, 1])
-      ];
-      return output;
-    };
-    const yTensorsFunc =
-        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
-          batchSize, 1
-        ])];
-    const dataset = new FakeNumericDataset({
-      xShape: [1],
-      yShape: [1],
-      batchSize,
-      numBatches: batchesPerEpoch,
-      xTensorsFunc,
-      yTensorsFunc
-    });
+       // Training data.
+       const xTensorsFunc = () => {
+         const output: {[name: string]: tfc.Tensor[]} = {};
+         output[input1.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+         ];
+         output[input2.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+         ];
+         return output;
+       };
+       const yTensorsFunc = () =>
+           [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batchesPerEpoch * epochs,
+         xTensorsFunc,
+         yTensorsFunc
+       });
 
-    // Validation data.
-    const valXs: tfc.Tensor[] =
-        [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
-    const valYs = tfc.zeros([batchSize, 1]);
+       // Validation data.
+       const valXs: tfc.Tensor[] =
+           [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
+       const valYs = tfc.zeros([batchSize, 1]);
 
-    // Do a burn-in call to account for initialization of cached tensors (for
-    // the memory-leak check below).
-    await model.fitDataset(dataset, {
-      epochs: 1,
-      validationData: [valXs, valYs],
-      validationBatchSize: batchSize
-    });
-    model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.fitDataset(dataset, {
+         batchesPerEpoch,
+         epochs: 1,
+         validationData: [valXs, valYs],
+         validationBatchSize: batchSize
+       });
+       model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
 
-    const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {
-      epochs,
-      validationData: [valXs, valYs],
-      validationBatchSize: batchSize
-    });
-    const numTensors1 = tfc.memory().numTensors;
-    expect(numTensors1).toEqual(numTensors0);
-    expect(Object.keys(history.history).sort()).toEqual([
-      'acc', 'loss', 'val_acc', 'val_loss'
-    ]);
-    expect(history.history.loss.length).toEqual(2);
-    expect(history.history.loss[0]).toBeCloseTo(0.888116);
-    expect(history.history.loss[1]).toBeCloseTo(0.612685);
-    expect(history.history.acc.length).toEqual(2);
-    expect(history.history.acc[0]).toBeCloseTo(0);
-    expect(history.history.acc[1]).toBeCloseTo(0);
-    expect(history.history.val_loss.length).toEqual(2);
-    expect(history.history.val_loss[0]).toBeCloseTo(0.003189);
-    expect(history.history.val_loss[1]).toBeCloseTo(0.010687);
-    expect(history.history.val_acc.length).toEqual(2);
-    expect(history.history.val_acc[0]).toBeCloseTo(1.0);
-    expect(history.history.val_acc[1]).toBeCloseTo(1.0);
-    expectArraysClose(
-        model.getWeights()[0], tfc.tensor2d([[0.103377], [0.103377]]));
-    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
-  });
+       const numTensors0 = tfc.memory().numTensors;
+       const history = await model.fitDataset(dataset, {
+         batchesPerEpoch,
+         epochs,
+         validationData: [valXs, valYs],
+         validationBatchSize: batchSize
+       });
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+       expect(Object.keys(history.history).sort()).toEqual([
+         'acc', 'loss', 'val_acc', 'val_loss'
+       ]);
+       expect(history.history.loss.length).toEqual(2);
+       expect(history.history.loss[0]).toBeCloseTo(0.888116);
+       expect(history.history.loss[1]).toBeCloseTo(0.612685);
+       expect(history.history.acc.length).toEqual(2);
+       expect(history.history.acc[0]).toBeCloseTo(0);
+       expect(history.history.acc[1]).toBeCloseTo(0);
+       expect(history.history.val_loss.length).toEqual(2);
+       expect(history.history.val_loss[0]).toBeCloseTo(0.003189);
+       expect(history.history.val_loss[1]).toBeCloseTo(0.010687);
+       expect(history.history.val_acc.length).toEqual(2);
+       expect(history.history.val_acc[0]).toBeCloseTo(1.0);
+       expect(history.history.val_acc[1]).toBeCloseTo(1.0);
+       expectArraysClose(
+           model.getWeights()[0], tfc.tensor2d([[0.103377], [0.103377]]));
+       expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
+     });
+
+  it('2 input, 1 output, 1 metric, tensor array validation, ' +
+         'no batchesPerEpoch',
+     async () => {
+       // Create a functional model with 2 inputs.
+       const input1 = tfl.layers.input({shape: [1]});
+       const input2 = tfl.layers.input({shape: [1]});
+       const concat = tfl.layers.concatenate().apply([input1, input2]);
+       const y = tfl.layers
+                     .dense({
+                       units: 1,
+                       kernelInitializer: 'zeros',
+                       biasInitializer: 'zeros'
+                     })
+                     .apply(concat) as tfl.SymbolicTensor;
+       const model = tfl.model({inputs: [input1, input2], outputs: y});
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+       const batchSize = 8;
+       const epochs = 2;
+       const batchesPerEpoch = 3;
+
+       // Training data.
+       const xTensorsFunc = () => {
+         const output: {[name: string]: tfc.Tensor[]} = {};
+         output[input1.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         output[input2.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         return output;
+       };
+       const yTensorsFunc =
+           () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+             batchSize, 1
+           ])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batchesPerEpoch,
+         xTensorsFunc,
+         yTensorsFunc
+       });
+
+       // Validation data.
+       const valXs: tfc.Tensor[] =
+           [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
+       const valYs = tfc.zeros([batchSize, 1]);
+
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.fitDataset(dataset, {
+         epochs: 1,
+         validationData: [valXs, valYs],
+         validationBatchSize: batchSize
+       });
+       model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
+
+       const numTensors0 = tfc.memory().numTensors;
+       const history = await model.fitDataset(dataset, {
+         epochs,
+         validationData: [valXs, valYs],
+         validationBatchSize: batchSize
+       });
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+       expect(Object.keys(history.history).sort()).toEqual([
+         'acc', 'loss', 'val_acc', 'val_loss'
+       ]);
+       expect(history.history.loss.length).toEqual(2);
+       expect(history.history.loss[0]).toBeCloseTo(0.888116);
+       expect(history.history.loss[1]).toBeCloseTo(0.612685);
+       expect(history.history.acc.length).toEqual(2);
+       expect(history.history.acc[0]).toBeCloseTo(0);
+       expect(history.history.acc[1]).toBeCloseTo(0);
+       expect(history.history.val_loss.length).toEqual(2);
+       expect(history.history.val_loss[0]).toBeCloseTo(0.003189);
+       expect(history.history.val_loss[1]).toBeCloseTo(0.010687);
+       expect(history.history.val_acc.length).toEqual(2);
+       expect(history.history.val_acc[0]).toBeCloseTo(1.0);
+       expect(history.history.val_acc[1]).toBeCloseTo(1.0);
+       expectArraysClose(
+           model.getWeights()[0], tfc.tensor2d([[0.103377], [0.103377]]));
+       expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
+     });
 
   // Reference Python tf.keras code:
   //
@@ -1151,7 +1458,193 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[0])
   // print(model.get_weights()[1])
   // ```
-  it('2 input, 1 output, 1 metric, tensor array validation', async () => {
+  it('2 input, 1 output, 1 metric, tensor array validation, ' +
+         'with batchesPerEpoch',
+     async () => {
+       // Create a functional model with 2 inputs.
+       const input1 = tfl.layers.input({shape: [1]});
+       const input2 = tfl.layers.input({shape: [1]});
+       const concat = tfl.layers.concatenate().apply([input1, input2]);
+       const y = tfl.layers
+                     .dense({
+                       units: 1,
+                       kernelInitializer: 'zeros',
+                       biasInitializer: 'zeros'
+                     })
+                     .apply(concat) as tfl.SymbolicTensor;
+       const model = tfl.model({inputs: [input1, input2], outputs: y});
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+       const batchSize = 8;
+       const epochs = 2;
+       const batchesPerEpoch = 3;
+
+       // Training data.
+       const xTensorsFunc = () => {
+         const output: {[name: string]: tfc.Tensor[]} = {};
+         output[input1.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+         ];
+         output[input2.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+         ];
+         return output;
+       };
+       const yTensorsFunc = () =>
+           [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+            tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batchesPerEpoch * epochs,
+         xTensorsFunc,
+         yTensorsFunc
+       });
+
+       // Validation data.
+       const valXs: TensorMap = {};
+       valXs[input1.name] = tfc.zeros([batchSize, 1]);
+       valXs[input2.name] = tfc.zeros([batchSize, 1]);
+       const valYs = tfc.zeros([batchSize, 1]);
+
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.fitDataset(dataset, {
+         batchesPerEpoch,
+         epochs: 1,
+         validationData: [valXs, valYs],
+         validationBatchSize: batchSize
+       });
+       model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
+
+       const numTensors0 = tfc.memory().numTensors;
+       const history = await model.fitDataset(dataset, {
+         batchesPerEpoch,
+         epochs,
+         validationData: [valXs, valYs],
+         validationBatchSize: batchSize
+       });
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+       expect(Object.keys(history.history).sort()).toEqual([
+         'acc', 'loss', 'val_acc', 'val_loss'
+       ]);
+       expect(history.history.loss.length).toEqual(2);
+       expect(history.history.loss[0]).toBeCloseTo(0.888116);
+       expect(history.history.loss[1]).toBeCloseTo(0.612685);
+       expect(history.history.acc.length).toEqual(2);
+       expect(history.history.acc[0]).toBeCloseTo(0);
+       expect(history.history.acc[1]).toBeCloseTo(0);
+       expect(history.history.val_loss.length).toEqual(2);
+       expect(history.history.val_loss[0]).toBeCloseTo(0.003189);
+       expect(history.history.val_loss[1]).toBeCloseTo(0.010687);
+       expect(history.history.val_acc.length).toEqual(2);
+       expect(history.history.val_acc[0]).toBeCloseTo(1.0);
+       expect(history.history.val_acc[1]).toBeCloseTo(1.0);
+       expectArraysClose(
+           model.getWeights()[0], tfc.tensor2d([[0.103377], [0.103377]]));
+       expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
+     });
+
+  it('2 input, 1 output, 1 metric, tensor array validation, ' +
+         'no batchesPerEpoch',
+     async () => {
+       // Create a functional model with 2 inputs.
+       const input1 = tfl.layers.input({shape: [1]});
+       const input2 = tfl.layers.input({shape: [1]});
+       const concat = tfl.layers.concatenate().apply([input1, input2]);
+       const y = tfl.layers
+                     .dense({
+                       units: 1,
+                       kernelInitializer: 'zeros',
+                       biasInitializer: 'zeros'
+                     })
+                     .apply(concat) as tfl.SymbolicTensor;
+       const model = tfl.model({inputs: [input1, input2], outputs: y});
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+       const batchSize = 8;
+       const epochs = 2;
+       const batchesPerEpoch = 3;
+
+       // Training data.
+       const xTensorsFunc = () => {
+         const output: {[name: string]: tfc.Tensor[]} = {};
+         output[input1.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         output[input2.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         return output;
+       };
+       const yTensorsFunc =
+           () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+             batchSize, 1
+           ])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batchesPerEpoch,
+         xTensorsFunc,
+         yTensorsFunc
+       });
+
+       // Validation data.
+       const valXs: TensorMap = {};
+       valXs[input1.name] = tfc.zeros([batchSize, 1]);
+       valXs[input2.name] = tfc.zeros([batchSize, 1]);
+       const valYs = tfc.zeros([batchSize, 1]);
+
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.fitDataset(dataset, {
+         epochs: 1,
+         validationData: [valXs, valYs],
+         validationBatchSize: batchSize
+       });
+       model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
+
+       const numTensors0 = tfc.memory().numTensors;
+       const history = await model.fitDataset(dataset, {
+         epochs,
+         validationData: [valXs, valYs],
+         validationBatchSize: batchSize
+       });
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+       expect(Object.keys(history.history).sort()).toEqual([
+         'acc', 'loss', 'val_acc', 'val_loss'
+       ]);
+       expect(history.history.loss.length).toEqual(2);
+       expect(history.history.loss[0]).toBeCloseTo(0.888116);
+       expect(history.history.loss[1]).toBeCloseTo(0.612685);
+       expect(history.history.acc.length).toEqual(2);
+       expect(history.history.acc[0]).toBeCloseTo(0);
+       expect(history.history.acc[1]).toBeCloseTo(0);
+       expect(history.history.val_loss.length).toEqual(2);
+       expect(history.history.val_loss[0]).toBeCloseTo(0.003189);
+       expect(history.history.val_loss[1]).toBeCloseTo(0.010687);
+       expect(history.history.val_acc.length).toEqual(2);
+       expect(history.history.val_acc[0]).toBeCloseTo(1.0);
+       expect(history.history.val_acc[1]).toBeCloseTo(1.0);
+       expectArraysClose(
+           model.getWeights()[0], tfc.tensor2d([[0.103377], [0.103377]]));
+       expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
+     });
+
+  it('2 input, 1 missing input in dataset, with batchesPerEpoch', async () => {
     // Create a functional model with 2 inputs.
     const input1 = tfl.layers.input({shape: [1]});
     const input2 = tfl.layers.input({shape: [1]});
@@ -1164,83 +1657,47 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
                   })
                   .apply(concat) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: [input1, input2], outputs: y});
-    model.compile(
-        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
     const batchSize = 8;
     const epochs = 2;
     const batchesPerEpoch = 3;
-
-    // Training data.
     const xTensorsFunc = () => {
       const output: {[name: string]: tfc.Tensor[]} = {};
       output[input1.name] = [
         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
-        tfc.ones([batchSize, 1])
-      ];
-      output[input2.name] = [
         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
-        tfc.ones([batchSize, 1])
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
       ];
+      // Note: input2 is missing from the data, by intention.
       return output;
     };
-    const yTensorsFunc =
-        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
-          batchSize, 1
-        ])];
+    const yTensorsFunc = () =>
+        [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+         tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
     const dataset = new FakeNumericDataset({
       xShape: [1],
       yShape: [1],
       batchSize,
-      numBatches: batchesPerEpoch,
+      numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
       yTensorsFunc
     });
 
-    // Validation data.
-    const valXs: TensorMap = {};
-    valXs[input1.name] = tfc.zeros([batchSize, 1]);
-    valXs[input2.name] = tfc.zeros([batchSize, 1]);
-    const valYs = tfc.zeros([batchSize, 1]);
-
-    // Do a burn-in call to account for initialization of cached tensors (for
-    // the memory-leak check below).
-    await model.fitDataset(dataset, {
-      epochs: 1,
-      validationData: [valXs, valYs],
-      validationBatchSize: batchSize
-    });
-    model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
-
-    const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {
-      epochs,
-      validationData: [valXs, valYs],
-      validationBatchSize: batchSize
-    });
-    const numTensors1 = tfc.memory().numTensors;
-    expect(numTensors1).toEqual(numTensors0);
-    expect(Object.keys(history.history).sort()).toEqual([
-      'acc', 'loss', 'val_acc', 'val_loss'
-    ]);
-    expect(history.history.loss.length).toEqual(2);
-    expect(history.history.loss[0]).toBeCloseTo(0.888116);
-    expect(history.history.loss[1]).toBeCloseTo(0.612685);
-    expect(history.history.acc.length).toEqual(2);
-    expect(history.history.acc[0]).toBeCloseTo(0);
-    expect(history.history.acc[1]).toBeCloseTo(0);
-    expect(history.history.val_loss.length).toEqual(2);
-    expect(history.history.val_loss[0]).toBeCloseTo(0.003189);
-    expect(history.history.val_loss[1]).toBeCloseTo(0.010687);
-    expect(history.history.val_acc.length).toEqual(2);
-    expect(history.history.val_acc[0]).toBeCloseTo(1.0);
-    expect(history.history.val_acc[1]).toBeCloseTo(1.0);
-    expectArraysClose(
-        model.getWeights()[0], tfc.tensor2d([[0.103377], [0.103377]]));
-    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
+    let errorCaught: Error;
+    try {
+      await model.fitDataset(dataset, {batchesPerEpoch, epochs});
+    } catch (err) {
+      errorCaught = err;
+    }
+    expect(errorCaught.message)
+        .toEqual(
+            'The feature data generated by the dataset lacks the required ' +
+            `input key '${input2.name}'.`);
   });
 
-  it('2 input, 1 missing input in dataset', async () => {
+  it('2 input, 1 missing input in dataset, no batchesPerEpoch', async () => {
     // Create a functional model with 2 inputs.
     const input1 = tfl.layers.input({shape: [1]});
     const input2 = tfl.layers.input({shape: [1]});
@@ -1290,6 +1747,34 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
         .toEqual(
             'The feature data generated by the dataset lacks the required ' +
             `input key '${input2.name}'.`);
+  });
+
+  it('Exhausting iterator with batchesPerEpoch throws warning', async () => {
+    const model = createDenseModel();
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    const batchSize = 8;
+    const batchesPerEpoch = 3;
+    const dataset = new FakeNumericDataset(
+        {xShape: [1], yShape: [1], batchSize, numBatches: batchesPerEpoch});
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1});
+    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
+    const warningMessages: string[] = [];
+    spyOn(console, 'warn')
+        .and.callFake((msg: string) => warningMessages.push(msg));
+    const numTensors0 = tfc.memory().numTensors;
+    const epochs = 3;
+    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+    expect(Object.keys(history.history)).toEqual(['loss']);
+    expect(history.history.loss.length).toEqual(3);
+    expect(warningMessages.length).toEqual(2);
+    expect(warningMessages[0])
+        .toMatch(/You provided `batchesPerEpoch` but .* 9 batches/);
+    expect(warningMessages[1])
+        .toMatch(/You provided `batchesPerEpoch` but .* 9 batches/);
   });
 
   it('Calling fitDataset() without calling compile() errors', async () => {
@@ -1344,7 +1829,46 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
   // out = model.evaluate(dataset, steps=3, verbose=0)
   // print(out)
   // ```
-  it('1 input, 1 output, no metric', async () => {
+  it('1 input, 1 output, no metric, with batches specified', async () => {
+    const model = createDenseModel();
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const batchSize = 8;
+    const batches = 3;
+    const xTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const yTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: batches,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    tfc.dispose(
+        await model.evaluateDataset(dataset, {batches}) as tfc.Scalar[]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const evalOut =
+        await model.evaluateDataset(dataset, {batches}) as tfc.Scalar;
+    const expectedLoss = tfc.scalar(1.0);
+    expectTensorsClose(evalOut, expectedLoss);
+    tfc.dispose(evalOut);
+    tfc.dispose(expectedLoss);
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+  });
+
+  it('1 input, 1 output, no metric, no batches specified', async () => {
     const model = createDenseModel();
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
@@ -1409,7 +1933,50 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
   // out = model.evaluate(dataset, steps=3, verbose=0)
   // print(out)
   // ```
-  it('1 input, 1 output, 1 metric', async () => {
+  it('1 input, 1 output, 1 metric, with batches specified', async () => {
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['acc']});
+
+    const batchSize = 8;
+    const batches = 3;
+    const xTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const yTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: batches,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    tfc.dispose(
+        await model.evaluateDataset(dataset, {batches}) as tfc.Scalar[]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const evalOut =
+        await model.evaluateDataset(dataset, {batches}) as tfc.Scalar[];
+    expect(evalOut.length).toEqual(2);
+    const expectedLoss = tfc.scalar(1.0);
+    const expectedAcc = tfc.scalar(0.0);
+    expectTensorsClose(evalOut[0], expectedLoss);
+    expectTensorsClose(evalOut[1], expectedAcc);
+    tfc.dispose(evalOut);
+    tfc.dispose([expectedLoss, expectedAcc]);
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+  });
+
+  it('1 input, 1 output, 1 metric, no batches specified', async () => {
     const model = createDenseModel();
     model.compile(
         {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['acc']});
@@ -1450,7 +2017,7 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
     expect(numTensors1).toEqual(numTensors0);
   });
 
-  it('1 input, 1 output, iterator exhaustion', async () => {
+  it('1 input, 1 output, iterator exhaustion with batches', async () => {
     const model = createDenseModel();
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
@@ -1461,14 +2028,15 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
 
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
-    tfc.dispose(await model.evaluateDataset(dataset, {}) as tfc.Scalar[]);
+    tfc.dispose(
+        await model.evaluateDataset(dataset, {batches}) as tfc.Scalar[]);
 
     const warningMessages: string[] = [];
     spyOn(console, 'warn')
         .and.callFake((msg: string) => warningMessages.push(msg));
 
     const numTensors0 = tfc.memory().numTensors;
-    tfc.dispose(await model.evaluateDataset(dataset, {}));
+    tfc.dispose(await model.evaluateDataset(dataset, {batches: batches + 2}));
     const numTensors1 = tfc.memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
 
@@ -1511,63 +2079,126 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
   // out = model.evaluate(dataset, steps=3, verbose=0)
   // print(out)
   // ```
-  it('2 input, 1 output, 1 metric, no validation', async () => {
-    // Create a functional model with 2 inputs.
-    const input1 = tfl.layers.input({shape: [1]});
-    const input2 = tfl.layers.input({shape: [1]});
-    const concat = tfl.layers.concatenate().apply([input1, input2]);
-    const y = tfl.layers
-                  .dense({
-                    units: 1,
-                    kernelInitializer: 'zeros',
-                    biasInitializer: 'zeros'
-                  })
-                  .apply(concat) as tfl.SymbolicTensor;
-    const model = tfl.model({inputs: [input1, input2], outputs: y});
-    model.compile(
-        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+  it('2 input, 1 output, 1 metric, no validation, with batches specified',
+     async () => {
+       // Create a functional model with 2 inputs.
+       const input1 = tfl.layers.input({shape: [1]});
+       const input2 = tfl.layers.input({shape: [1]});
+       const concat = tfl.layers.concatenate().apply([input1, input2]);
+       const y = tfl.layers
+                     .dense({
+                       units: 1,
+                       kernelInitializer: 'zeros',
+                       biasInitializer: 'zeros'
+                     })
+                     .apply(concat) as tfl.SymbolicTensor;
+       const model = tfl.model({inputs: [input1, input2], outputs: y});
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
 
-    const batchSize = 8;
-    const batches = 3;
-    const xTensorsFunc = () => {
-      const output: {[name: string]: tfc.Tensor[]} = {};
-      output[input1.name] = [
-        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
-        tfc.ones([batchSize, 1])
-      ];
-      output[input2.name] = [
-        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
-        tfc.ones([batchSize, 1])
-      ];
-      return output;
-    };
-    const yTensorsFunc =
-        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
-          batchSize, 1
-        ])];
-    const dataset = new FakeNumericDataset({
-      xShape: [1],
-      yShape: [1],
-      batchSize,
-      numBatches: batches,
-      xTensorsFunc,
-      yTensorsFunc
-    });
+       const batchSize = 8;
+       const batches = 3;
+       const xTensorsFunc = () => {
+         const output: {[name: string]: tfc.Tensor[]} = {};
+         output[input1.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         output[input2.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         return output;
+       };
+       const yTensorsFunc =
+           () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+             batchSize, 1
+           ])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batches,
+         xTensorsFunc,
+         yTensorsFunc
+       });
 
-    // Do a burn-in call to account for initialization of cached tensors (for
-    // the memory-leak check below).
-    await model.evaluateDataset(dataset, {});
-    model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.evaluateDataset(dataset, {batches});
+       model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
 
-    const numTensors0 = tfc.memory().numTensors;
-    const evalOut = await model.evaluateDataset(dataset, {}) as tfc.Scalar[];
-    const expectedLoss = tfc.scalar(1.0);
-    const expectedAcc = tfc.scalar(0.0);
-    expectTensorsClose(evalOut[0], expectedLoss);
-    expectTensorsClose(evalOut[1], expectedAcc);
-    tfc.dispose(evalOut);
-    tfc.dispose([expectedLoss, expectedAcc]);
-    const numTensors1 = tfc.memory().numTensors;
-    expect(numTensors1).toEqual(numTensors0);
-  });
+       const numTensors0 = tfc.memory().numTensors;
+       const evalOut =
+           await model.evaluateDataset(dataset, {batches}) as tfc.Scalar[];
+       const expectedLoss = tfc.scalar(1.0);
+       const expectedAcc = tfc.scalar(0.0);
+       expectTensorsClose(evalOut[0], expectedLoss);
+       expectTensorsClose(evalOut[1], expectedAcc);
+       tfc.dispose(evalOut);
+       tfc.dispose([expectedLoss, expectedAcc]);
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+     });
+
+  it('2 input, 1 output, 1 metric, no validation, no batches specified',
+     async () => {
+       // Create a functional model with 2 inputs.
+       const input1 = tfl.layers.input({shape: [1]});
+       const input2 = tfl.layers.input({shape: [1]});
+       const concat = tfl.layers.concatenate().apply([input1, input2]);
+       const y = tfl.layers
+                     .dense({
+                       units: 1,
+                       kernelInitializer: 'zeros',
+                       biasInitializer: 'zeros'
+                     })
+                     .apply(concat) as tfl.SymbolicTensor;
+       const model = tfl.model({inputs: [input1, input2], outputs: y});
+       model.compile(
+           {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+       const batchSize = 8;
+       const batches = 3;
+       const xTensorsFunc = () => {
+         const output: {[name: string]: tfc.Tensor[]} = {};
+         output[input1.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         output[input2.name] = [
+           tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+           tfc.ones([batchSize, 1])
+         ];
+         return output;
+       };
+       const yTensorsFunc =
+           () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+             batchSize, 1
+           ])];
+       const dataset = new FakeNumericDataset({
+         xShape: [1],
+         yShape: [1],
+         batchSize,
+         numBatches: batches,
+         xTensorsFunc,
+         yTensorsFunc
+       });
+
+       // Do a burn-in call to account for initialization of cached tensors (for
+       // the memory-leak check below).
+       await model.evaluateDataset(dataset, {});
+       model.setWeights([tfc.zeros([2, 1]), tfc.zeros([1])]);
+
+       const numTensors0 = tfc.memory().numTensors;
+       const evalOut = await model.evaluateDataset(dataset, {}) as tfc.Scalar[];
+       const expectedLoss = tfc.scalar(1.0);
+       const expectedAcc = tfc.scalar(0.0);
+       expectTensorsClose(evalOut[0], expectedLoss);
+       expectTensorsClose(evalOut[1], expectedAcc);
+       tfc.dispose(evalOut);
+       tfc.dispose([expectedLoss, expectedAcc]);
+       const numTensors1 = tfc.memory().numTensors;
+       expect(numTensors1).toEqual(numTensors0);
+     });
 });
