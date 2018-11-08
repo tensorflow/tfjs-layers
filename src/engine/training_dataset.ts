@@ -69,9 +69,8 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
    * `validationBatchSize` (which defaults to 32). The entirety of the
    * `tf.Tensor` objects will be used in the validation.
    *
-   * If `validationData` is a dataset object, the `validationBatches` parameter
-   * must be specified. The validation will use `validationBatches` batches
-   * drawn from the dataset object or when it is exhausted.
+   * If `validationData` is a dataset object, the validation will stop when the
+   * dataset object is exhausted.
    *
    * The model will not be trained on this data.
    */
@@ -91,14 +90,6 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
    * If not specified, its value defaults to 32.
    */
   validationBatchSize?: number;
-
-  /**
-   * Only relevant if `validationData` is specified and is a dataset object.
-   *
-   * Total number of batches of samples to draw from `validationData` for
-   * validation purpose before stopping at the end of every epoch.
-   */
-  validationBatches?: number;
 
   /**
    * Configures the frequency of yielding the main thread to other tasks.
@@ -129,12 +120,6 @@ export interface ModelFitDatasetConfig<T extends TensorContainer> {
  * Interface for configuring model evaluation based on a dataset object.
  */
 export interface ModelEvaluateDatasetConfig {
-  /**
-   * Number of batches to draw from the dataset object before ending the
-   * evaluation.
-   */
-  batches: number;
-
   /**
    * Verbosity mode.
    */
@@ -261,12 +246,6 @@ export async function fitDataset<T extends TensorContainer>(
     let valYs: tfc.Tensor|tfc.Tensor[];
     if (doValidation) {
       if (isDatasetObject(config.validationData)) {
-        tfc.util.assert(
-            config.validationBatches > 0 &&
-                Number.isInteger(config.validationBatches),
-            `For fitDataset() with dataset-based validation, ` +
-                `config.validationBatches is expected to be a ` +
-                `positive integer, but got ${config.validationBatches}`);
         validationDataIterator =
             await (config.validationData as Dataset<T>).iterator();
       } else {
@@ -311,13 +290,41 @@ export async function fitDataset<T extends TensorContainer>(
       while (true) {
         const iteratorOut = await dataIterator.next();
 
+        if (iteratorOut.value) {
+          const xsAndYs =
+              standardizeDataIteratorOutput(model, iteratorOut.value);
+          const batchLogs: UnresolvedLogs = {};
+          batchLogs['batch'] = batchIndex;
+          batchLogs['size'] = xsAndYs[0].shape[0];
+
+          callbackList.onBatchBegin(batchIndex, batchLogs);
+
+          // Train on batch.
+          // TODO(cais): Take care of models with multiple outputs.
+          const outs = trainFunction(xsAndYs);
+          tfc.dispose(xsAndYs);
+          for (let i = 0; i < outLabels.length; ++i) {
+            const label = outLabels[i];
+            const out = outs[i];
+            batchLogs[label] = out;
+            tfc.keep(out);
+          }
+
+          await callbackList.onBatchEnd(batchIndex, batchLogs);
+          disposeTensorsInLogs(batchLogs);
+
+          batchIndex++;
+        }
+
         if (iteratorOut.done) {
           // Epoch finished. Perform validation.
           if (doValidation) {
             let valOuts: tfc.Scalar[];
             if (isDatasetObject(config.validationData)) {
-              valOuts = toList(await model.evaluateDataset(
-                  validationDataIterator, {batches: config.validationBatches}));
+              validationDataIterator =
+                  await (config.validationData as Dataset<T>).iterator();
+              valOuts = toList(
+                  await model.evaluateDataset(validationDataIterator, {}));
             } else {
               valOuts = toList(model.evaluate(valXs, valYs, {
                 batchSize: config.validationBatchSize == null ?
@@ -332,29 +339,6 @@ export async function fitDataset<T extends TensorContainer>(
           }
           break;
         }
-
-        const xsAndYs = standardizeDataIteratorOutput(model, iteratorOut.value);
-        const batchLogs: UnresolvedLogs = {};
-        batchLogs['batch'] = batchIndex;
-        batchLogs['size'] = xsAndYs[0].shape[0];
-
-        callbackList.onBatchBegin(batchIndex, batchLogs);
-
-        // Train on batch.
-        // TODO(cais): Take care of models with multiple outputs.
-        const outs = trainFunction(xsAndYs);
-        tfc.dispose(xsAndYs);
-        for (let i = 0; i < outLabels.length; ++i) {
-          const label = outLabels[i];
-          const out = outs[i];
-          batchLogs[label] = out;
-          tfc.keep(out);
-        }
-
-        await callbackList.onBatchEnd(batchIndex, batchLogs);
-        disposeTensorsInLogs(batchLogs);
-
-        batchIndex++;
 
         if (model.stopTraining_) {
           break;
@@ -403,25 +387,15 @@ export async function evaluateDataset<T extends TensorContainer>(
   if (config.verbose > 0) {
     throw new NotImplementedError('Verbose mode is not implemented yet.');
   }
-  tfc.util.assert(
-      config.batches > 0 && Number.isInteger(config.batches),
-      'Test loop expects `batches` to be a positive integer, but ' +
-          `received ${JSON.stringify(config.batches)}`);
   const dataIterator = isLazyIteratorObject(dataset) ?
       dataset as LazyIterator<T>:
       await (dataset as Dataset<T>).iterator();
   // Keeps track of number of examples used in this evaluation.
   let numExamples = 0;
-  for (let batch = 0; batch < config.batches; ++batch) {
+  let batch = 0;
+  while (true) {
     const iteratorOut = await dataIterator.next();
     if (iteratorOut.done) {
-      console.warn(
-          'Your dataset iterator ran out of data during evaluateDataset(). ' +
-          'Interrupting evalution. Make sure that your ' +
-          'dataset can generate at least `batches` ' +
-          `batches (in this case, ${config.batches} batches). ` +
-          'You may need to use the repeat() function when building ' +
-          'your dataset.');
       break;
     }
     // TODO(cais): Once real dataset is available, use
@@ -448,6 +422,8 @@ export async function evaluateDataset<T extends TensorContainer>(
     }
     tfc.dispose(batchOuts);
     numExamples += batchSize;
+
+    ++batch;
   }
   for (let i = 0; i < outs.length; ++i) {
     const oldScalar = outs[i];
