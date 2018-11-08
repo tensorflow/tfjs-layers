@@ -343,7 +343,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[0])
   // print(model.get_weights()[1])
   // ```
-  fit('1 input, 1 output, 1 metric, dataset validation, callback', async () => {
+  it('1 input, 1 output, 1 metric, dataset validation, callback', async () => {
     const model = createDenseModel();
     model.compile(
         {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
@@ -371,17 +371,19 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     });
 
     // Validation dataset.
-    const valXTensorsFunc = () =>
-        [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1]),
-         tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
-    const valYTensorsFunc = () =>
-        [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1]),
-         tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
+    const valXTensorsFunc =
+        () => [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1]), tfc.zeros([
+          batchSize, 1
+        ])];
+    const valYTensorsFunc =
+        () => [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1]), tfc.zeros([
+          batchSize, 1
+        ])];
     const valDataset = new FakeNumericDataset({
       xShape: [1],
       yShape: [1],
       batchSize,
-      numBatches: batchesPerEpoch * epochs,
+      numBatches: batchesPerEpoch,
       xTensorsFunc: valXTensorsFunc,
       yTensorsFunc: valYTensorsFunc
     });
@@ -1018,38 +1020,6 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
             `input key '${input2.name}'.`);
   });
 
-  it('Exhausting iterator throws warning', async () => {
-    const model = createDenseModel();
-    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
-
-    const batchSize = 8;
-    const batchesPerEpoch = 3;
-    const dataset = new FakeNumericDataset(
-        {xShape: [1], yShape: [1], batchSize, numBatches: batchesPerEpoch});
-
-    // Do a burn-in call to account for initialization of cached tensors (for
-    // the memory-leak check below).
-    await model.fitDataset(dataset, {epochs: 1});
-    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
-
-    const warningMessages: string[] = [];
-    spyOn(console, 'warn')
-        .and.callFake((msg: string) => warningMessages.push(msg));
-
-    const numTensors0 = tfc.memory().numTensors;
-    const epochs = 3;
-    const history = await model.fitDataset(dataset, {epochs});
-    const numTensors1 = tfc.memory().numTensors;
-    expect(numTensors1).toEqual(numTensors0);
-    expect(Object.keys(history.history)).toEqual(['loss']);
-    expect(history.history.loss.length).toEqual(3);
-    expect(warningMessages.length).toEqual(2);
-    expect(warningMessages[0])
-        .toMatch(/Your dataset iterator ran out of data; .* 9 batches/);
-    expect(warningMessages[1])
-        .toMatch(/Your dataset iterator ran out of data; .* 9 batches/);
-  });
-
   it('Calling fitDataset() without calling compile() errors', async () => {
     const model = createDenseModel();
 
@@ -1071,38 +1041,6 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     }
     expect(errorCaught.message)
         .toEqual('The model needs to be compiled before being used.');
-  });
-
-  it('Missing validationBatches leads to Error', async () => {
-    const model = createDenseModel();
-    model.compile(
-        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
-
-    const batchSize = 8;
-    const epochs = 2;
-    const batchesPerEpoch = 3;
-
-    // Training dataset.
-    const dataset = new FakeNumericDataset(
-        {xShape: [1], yShape: [1], batchSize, numBatches: batchesPerEpoch});
-
-    // Validation dataset.
-    const valDataset = new FakeNumericDataset(
-        {xShape: [1], yShape: [1], batchSize, numBatches: batchesPerEpoch});
-
-    // Do a burn-in call to account for initialization of cached
-    // tensors (for the memory-leak check below).
-    let errorCaught: Error;
-    try {
-      await model.fitDataset(dataset, {
-        epochs,
-        validationData: valDataset,
-      });
-    } catch (err) {
-      errorCaught = err;
-    }
-    expect(errorCaught.message)
-        .toMatch(/fitDataset.*dataset-based validation.*integer.*undefined/);
   });
 });
 
