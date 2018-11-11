@@ -59,8 +59,6 @@ export function isDataDict(x: Tensor|Tensor[]|
   return !isDataTensor(x) && !isDataArray(x);
 }
 
-
-
 /**
  * Normalizes inputs and targets provided by users.
  * @param data User-provided input data (polymorphic).
