@@ -1282,8 +1282,8 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
            [tfc.zeros([batchSize, 1]), tfc.zeros([batchSize, 1])];
        const valYs = tfc.zeros([batchSize, 1]);
 
-       // Do a burn-in call to account for initialization of cached tensors (for
-       // the memory-leak check below).
+       // Do a burn-in call to account for initialization of cached tensors
+       // (for the memory-leak check below).
        await model.fitDataset(dataset, {
          batchesPerEpoch,
          epochs: 1,
@@ -1772,9 +1772,9 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expect(history.history.loss.length).toEqual(3);
     expect(warningMessages.length).toEqual(2);
     expect(warningMessages[0])
-        .toMatch(/You provided `batchesPerEpoch` but .* 9 batches/);
+        .toMatch(/You provided `batchesPerEpoch` as .* 9 batches/);
     expect(warningMessages[1])
-        .toMatch(/You provided `batchesPerEpoch` but .* 9 batches/);
+        .toMatch(/You provided `batchesPerEpoch` as .* 9 batches/);
   });
 
   it('Calling fitDataset() without calling compile() errors', async () => {

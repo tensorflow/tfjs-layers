@@ -277,7 +277,6 @@ export async function fitDataset<T extends TensorContainer>(
 
   try {
     const doValidation = config.validationData != null;
-    let validationDataIterator: LazyIterator<T>;
     let valXs: tfc.Tensor|tfc.Tensor[];
     let valYs: tfc.Tensor|tfc.Tensor[];
     if (doValidation) {
@@ -290,8 +289,6 @@ export async function fitDataset<T extends TensorContainer>(
                 `config.validationBatches is expected not to be provided, ` +
                 `or to be a positive integer, ` +
                 `but got ${config.validationBatches}`);
-        validationDataIterator =
-            await (config.validationData as Dataset<T>).iterator();
       } else {
         const validationData = standardizeTensorValidationData(
             config.validationData as
@@ -343,8 +340,11 @@ export async function fitDataset<T extends TensorContainer>(
         // exhausted until all epoches are done.
         if (hasBatchesPerEpoch && iteratorOut.done) {
           console.warn(
-              'You provided `batchesPerEpoch` but your dataset iterator ' +
-              'ran out of data; interrupting training. Make sure that your ' +
+              'You provided `batchesPerEpoch` as ' +
+              `${config.batchesPerEpoch}, ` +
+              'but your dataset iterator ran out of data after ' +
+              `${stepsDone} batches; ` +
+              'interrupting training. Make sure that your ' +
               'dataset can generate at least `batchesPerEpoch * epochs` ' +
               'batches (in this case, ' +
               `${config.batchesPerEpoch * config.epochs} batches). ` +
@@ -354,7 +354,7 @@ export async function fitDataset<T extends TensorContainer>(
         }
 
 
-        if (iteratorOut.value) {
+        if (iteratorOut.value != null) {
           const xsAndYs =
               standardizeDataIteratorOutput(model, iteratorOut.value);
           const batchLogs: UnresolvedLogs = {};
@@ -387,10 +387,8 @@ export async function fitDataset<T extends TensorContainer>(
           if (doValidation) {
             let valOuts: tfc.Scalar[];
             if (isDatasetObject(config.validationData)) {
-              validationDataIterator =
-                  await (config.validationData as Dataset<T>).iterator();
               valOuts = toList(await model.evaluateDataset(
-                  validationDataIterator, {batches: config.validationBatches}));
+                  config.validationData, {batches: config.validationBatches}));
             } else {
               valOuts = toList(model.evaluate(valXs, valYs, {
                 batchSize: config.validationBatchSize == null ?
@@ -456,7 +454,7 @@ export async function evaluateDataset<T extends TensorContainer>(
   }
 
   tfc.util.assert(
-      (!hasBatches) || (config.batches > 0 && Number.isInteger(config.batches)),
+      !hasBatches || (config.batches > 0 && Number.isInteger(config.batches)),
       'Test loop expects `batches` to be a positive integer, but ' +
           `received ${JSON.stringify(config.batches)}`);
   const dataIterator = isLazyIteratorObject(dataset) ?
@@ -496,7 +494,7 @@ export async function evaluateDataset<T extends TensorContainer>(
       ++batch;
     }
     if (iteratorOut.done) {
-      if (hasBatches)
+      if (hasBatches) {
         console.warn(
             'Your dataset iterator ran out of data during evaluateDataset(). ' +
             'Interrupting evalution. Make sure that your ' +
@@ -504,6 +502,7 @@ export async function evaluateDataset<T extends TensorContainer>(
             `batches (in this case, ${config.batches} batches). ` +
             'You may need to use the repeat() function when building ' +
             'your dataset.');
+      }
       break;
     }
   }
