@@ -268,6 +268,11 @@ export async function fitDataset<T extends TensorContainer>(
            Number.isInteger(config.batchesPerEpoch)),
       `For fitDataset(), config.batchesPerEpoch is expected to be a ` +
           `positive integer if specified, but got ${config.batchesPerEpoch}`);
+  tfc.util.assert(
+      // tslint:disable-next-line:no-any
+      (config as any)['validationSplit'] == null,
+      '`validationSplit` is not supported by `fitDataset()`. ' +
+          'Use validationData instead.');
 
   if (model.isTraining) {
     throw new Error(
