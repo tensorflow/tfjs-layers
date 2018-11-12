@@ -401,6 +401,11 @@ export async function fitDataset<T extends TensorContainer>(
               epochLogs[`val_${model.metricsNames[i]}`] = valOuts[i];
             }
           }
+          // Call `break` to exit one epoch lopp after validation is done. If
+          // config.batchesPerEpoch is specified, an epoch while loop will stop
+          // when `stepsDone >= config.batchesPerEpoch`. When
+          // config.batchesPerEpoch is not provided, the following `break` is
+          // required to exit the while lopp after dataset is exhausted.
           break;
         }
 
