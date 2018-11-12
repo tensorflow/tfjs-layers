@@ -523,7 +523,7 @@ export async function fitTensors(
 
 /**
  * Ensure tensors all have a rank of at least 2.
- * 
+ *
  * If a tensor has a rank of 1, it is dimension-expanded to rank 2.
  * If any tensor has a rank of 0 (i.e., is a scalar), an error will be thrown.
  */
@@ -559,6 +559,7 @@ export function ensureTensorsRank2OrHigher(tensors: Tensor|Tensor[]): Tensor[] {
  *   `refTensors`.
  * @param refTensors Reference Tensor set.
  */
+// TODO(cais, kangyizhang): Deduplicate with tfjs-data.
 export function disposeNewTensors(
     tensors: Tensor|Tensor[]|{[inputName: string]: Tensor},
     refTensors: Tensor|Tensor[]|{[inputName: string]: Tensor}): void {
