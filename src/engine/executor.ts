@@ -12,10 +12,11 @@
  * Executor: Evaluates SymbolicTensor based on feeds.
  */
 
-import {cast, Tensor} from '@tensorflow/tfjs-core';
+import {cast, dispose, Tensor} from '@tensorflow/tfjs-core';
 
 import {ValueError} from '../errors';
 import {Kwargs} from '../types';
+import {toList} from '../utils/generic_utils';
 
 import {InputLayer} from './input_layer';
 import {SymbolicTensor} from './topology';
@@ -66,10 +67,11 @@ export interface Feed {
 
 /**
  * FeedDict: A mapping from unique SymbolicTensors to feed values for them.
- * A feed value is a concrete value represented as an `tf.Tensor`.
+ * A feed value is a concrete value represented as an `Tensor`.
  */
 export class FeedDict {
   private id2Value: {[id: number]: Tensor} = {};
+  private id2Name: {[id: number]: string} = {};
 
   /**
    * Constructor, optionally does copy-construction.
@@ -96,12 +98,13 @@ export class FeedDict {
    * @param key The key of the feed.
    * @param value The value of the feed.
    * @returns This `FeedDict`.
-   * @throws ValueError: If the key `tf.SymbolicTensor` already exists in the
+   * @throws ValueError: If the key `SymbolicTensor` already exists in the
    *   `FeedDict`.
    */
   add(key: SymbolicTensor, value: Tensor): FeedDict {
     if (this.id2Value[key.id] == null) {
       this.id2Value[key.id] = assertFeedCompatibility(key, value);
+      this.id2Name[key.id] = key.name;
     } else {
       throw new ValueError(`Duplicate key: name=${key.name}, id=${key.id}`);
     }
@@ -125,6 +128,31 @@ export class FeedDict {
     return this.id2Value[key.id] != null;
   }
 
+  hasName(name: string): boolean {
+    for (const id of Object.keys(this.id2Value)) {
+      if (this.id2Name[+id] === name) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getValueByName(name: string): Tensor {
+    for (const id of Object.keys(this.id2Value)) {
+      if (this.id2Name[+id] === name) {
+        return this.id2Value[+id];
+      }
+    }
+    throw new ValueError(`Nonexistent name: ${name}`);
+  }
+
+  /**
+   * Get all the SymbolicTensor available in this FeedDict.
+   */
+  names() {
+    return Object.keys(this.id2Value).map(id => this.id2Name[+id]);
+  }
+
   /**
    * Get the feed value for given key.
    * @param key
@@ -133,7 +161,7 @@ export class FeedDict {
    */
   getValue(key: SymbolicTensor): Tensor {
     if (this.id2Value[key.id] == null) {
-      throw new ValueError(`Nonexistent key: ${JSON.stringify(key)}`);
+      throw new ValueError(`Nonexistent key: ${key.name}`);
     } else {
       return this.id2Value[key.id];
     }
@@ -143,70 +171,134 @@ export class FeedDict {
 /**
  * Execute a SymbolicTensor by using concrete feed values.
  *
- * A `tf.SymbolicTensor` object is a node in a computation graph of TF.js
+ * A `SymbolicTensor` object is a node in a computation graph of TF.js
  * Layers. The object is backed by a source layer and input
- * `tf.SymbolicTensor`s to the source layer. This method evaluates
+ * `SymbolicTensor`s to the source layer. This method evaluates
  * the `call()` method of the source layer, using concrete values of the inputs
  * obtained from either
  * * `feedDict`, if the input key exists in `feedDict`, or else,
  * * a recursive call to `execute()` itself.
  *
- * @param x: The `tf.SymbolicTensor` to execute.
+ * @param x: The `SymbolicTensor` to execute.
  * @param feedDict: The feed values, as base condition of the recursion.
  *   execution.
  * @param kwargs: Optional keyword arguments.
  * @returns Result of the execution.
- * @throws ValueError: If any `tf.SymbolicTensor`s from `InputLayer`s
+ * @throws ValueError: If any `SymbolicTensor`s from `InputLayer`s
  *   encountered during the execution lacks a feed value in `feedDict`.
  */
 export function execute(
     fetches: SymbolicTensor|SymbolicTensor[], feedDict: FeedDict,
     kwargs?: Kwargs): Tensor|Tensor[]|[Tensor | Tensor[]] {
+  const training: boolean = kwargs == null ? false : kwargs['training'];
+
   const arrayFetches = Array.isArray(fetches);
   const fetchArray: SymbolicTensor[] =
       arrayFetches ? fetches as SymbolicTensor[] : [fetches as SymbolicTensor];
 
-  const outputs: Tensor[] = [];
+  const outputNames = fetchArray.map(t => t.name);
+  const finalOutputs: Tensor[] = [];
+  for (const outputName of outputNames) {
+    if (feedDict.hasName(outputName)) {
+      finalOutputs.push(feedDict.getValueByName(outputName));
+    } else {
+      finalOutputs.push(null);
+    }
+  }
+
+  const visited = new Set<string>();
+  // Put keys of the feedDict into visited first, so they don't have to be
+  // walked. This is useful in case where there are feeds for intermediate
+  // SymbolicTensors of the graph.
+  for (const key of feedDict.names()) {
+    visited.add(key);
+  }
+  const sorted: SymbolicTensor[] = [];
+  const recipientCounts: {[fetchName: string]: number} = {};
+  getTpologicalSortAndRecipientMap(
+      fetchArray, sorted, recipientCounts, visited);
+  visited.clear();  // For memory savings.
+
   const internalFeedDict = new FeedDict(feedDict);
 
-  for (const fetch of fetchArray) {
-    outputs.push(executeInternal(fetch, internalFeedDict, kwargs) as Tensor);
+  for (let i = 0; i < sorted.length; ++i) {
+    const symbolic = sorted[i];
+    if (symbolic.sourceLayer instanceof InputLayer) {
+      continue;
+    }
+    const inputValues: Tensor[] = [];
+    const tensorsToDispose: Tensor[] = [];
+    for (const input of symbolic.inputs) {
+      const value = internalFeedDict.getValue(input);
+      inputValues.push(value);
+      recipientCounts[input.name]--;
+      if (recipientCounts[input.name] === 0 && !feedDict.hasKey(input) &&
+          outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
+        tensorsToDispose.push(value);
+      }
+    }
+    const output =
+        toList(symbolic.sourceLayer.apply(inputValues, kwargs)) as Tensor[];
+    const layerOutputs = getNodeOutputs(symbolic);
+    const outputSymbolicTensors =
+        Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
+    for (let i = 0; i < outputSymbolicTensors.length; ++i) {
+      if (!internalFeedDict.hasKey(outputSymbolicTensors[i])) {
+        internalFeedDict.add(outputSymbolicTensors[i], output[i]);
+      }
+      const index = outputNames.indexOf(outputSymbolicTensors[i].name);
+      if (index !== -1) {
+        finalOutputs[index] = output[i];
+      }
+    }
+
+    if (!training) {
+      // console.log(`# Disposing ${tensorsToDispose.length}`);  // DEBUG
+      dispose(tensorsToDispose);
+    }
   }
-  return arrayFetches ? outputs : outputs[0];
+
+  return arrayFetches ? finalOutputs : finalOutputs[0];
 }
 
-function executeInternal(
-    fetch: SymbolicTensor, internalFeedDict: FeedDict,
-    kwargs?: Kwargs): Tensor {
-  if (internalFeedDict.hasKey(fetch)) {
-    return internalFeedDict.getValue(fetch);
-  }
-  if (fetch.sourceLayer instanceof InputLayer) {
-    throw new ValueError(
-        `Missing a feed value for SymbolicTensor from InputLayer ` +
-        `'${InputLayer.name}'`);
-  }
+/**
+ * Use depth-first search (DFS) to sort the `SymbolicTensor`s topologically.
+ *
+ * @param fetch
+ * @param sorted
+ * @param visited
+ */
+function getTpologicalSortAndRecipientMap(
+    fetches: SymbolicTensor[], sorted: SymbolicTensor[],
+    recipientCounts: {[fetchName: string]: number}, visited: Set<string>) {
+  const fetchSortedArrays: SymbolicTensor[][] = [];
 
-  const inputs = fetch.inputs;
-  const inputValues: Tensor[] = [];
-  for (const input of inputs) {
-    // Recursive call.
-    const inputVal = executeInternal(input, internalFeedDict, kwargs) as Tensor;
-    inputValues.push(inputVal);
+  for (const fetch of fetches) {
+    const fetchSorted: SymbolicTensor[] = [];
+    if (visited.has(fetch.name)) {
+      continue;
+    }
+    visited.add(fetch.name);
+    fetchSorted.push(fetch);
+    if (fetch.inputs.length > 0) {
+      for (const input of fetch.inputs) {
+        if (recipientCounts[input.name] == null) {
+          recipientCounts[input.name] = 1;
+        } else {
+          recipientCounts[input.name]++;
+        }
+      }
+      // Recursive call.
+      getTpologicalSortAndRecipientMap(
+          fetch.inputs, sorted, recipientCounts, visited);
+    }
+    fetchSortedArrays.push(fetchSorted);
   }
-
-  let output =
-      fetch.sourceLayer.apply(inputValues, kwargs) as Tensor | Tensor[];
-  if (!Array.isArray(output)) {
-    output = [output];
+  for (const fetchSorted of fetchSortedArrays) {
+    while (fetchSorted.length > 0) {
+      sorted.push(fetchSorted.splice(0, 1)[0]);
+    }
   }
-  const layerOutputs = getNodeOutputs(fetch);
-  const outputSymbolicTensors =
-      Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
-  for (let i = 0; i < outputSymbolicTensors.length; ++i) {
-    internalFeedDict.add(outputSymbolicTensors[i], output[i]);
-  }
-  return output.length === 1 ? output[0] : output[fetch.outputTensorIndex];
 }
 
 /**

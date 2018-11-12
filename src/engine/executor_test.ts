@@ -146,8 +146,7 @@ describeMathCPUAndGPU('Executor', () => {
     it('Calling execute without all Input feeds available leads to error',
        () => {
          const feedDict = new FeedDict();
-         expect(() => execute(y as tfl.SymbolicTensor, feedDict))
-             .toThrowError(/Missing a feed value .* from InputLayer/);
+         expect(() => execute(y as tfl.SymbolicTensor, feedDict)).toThrow();
        });
   });
 
