@@ -168,6 +168,10 @@ export class FeedDict {
   }
 }
 
+const cachedSorted: {[concatFetchNames: string]: SymbolicTensor[]} = {};
+const cachedRecipientCounts:
+    {[concatFetchNames: string]: {[fetchName: string]: number}} = {};
+
 /**
  * Execute a SymbolicTensor by using concrete feed values.
  *
@@ -206,18 +210,31 @@ export function execute(
     }
   }
 
-  const visited = new Set<string>();
-  // Put keys of the feedDict into visited first, so they don't have to be
-  // walked. This is useful in case where there are feeds for intermediate
-  // SymbolicTensors of the graph.
-  for (const key of feedDict.names()) {
-    visited.add(key);
+  // Check cache.
+  const concatFetchNames = outputNames.join(',');  // TODO(cais): Maybe sort.
+  let sorted: SymbolicTensor[];
+  let recipientCounts: {[fetchName: string]: number};
+  if (cachedSorted[concatFetchNames] == null) {
+    sorted = [];
+    recipientCounts = {};
+    const visited = new Set<string>();
+    // Put keys of the feedDict into visited first, so they don't have to be
+    // walked. This is useful in case where there are feeds for intermediate
+    // SymbolicTensors of the graph.
+    for (const key of feedDict.names()) {
+      visited.add(key);
+    }
+    getTopologicalSortAndRecipientMap(
+        fetchArray, sorted, recipientCounts, visited);
+    visited.clear();  // For potential memory savings.
+
+    // Store results in cache for future use.
+    cachedSorted[concatFetchNames] = sorted;
+    cachedRecipientCounts[concatFetchNames] = recipientCounts;
   }
-  const sorted: SymbolicTensor[] = [];
-  const recipientCounts: {[fetchName: string]: number} = {};
-  getTpologicalSortAndRecipientMap(
-      fetchArray, sorted, recipientCounts, visited);
-  visited.clear();  // For memory savings.
+  sorted = cachedSorted[concatFetchNames];
+  recipientCounts = {};
+  Object.assign(recipientCounts, cachedRecipientCounts[concatFetchNames]);
 
   const internalFeedDict = new FeedDict(feedDict);
 
@@ -268,7 +285,7 @@ export function execute(
  * @param sorted
  * @param visited
  */
-function getTpologicalSortAndRecipientMap(
+function getTopologicalSortAndRecipientMap(
     fetches: SymbolicTensor[], sorted: SymbolicTensor[],
     recipientCounts: {[fetchName: string]: number}, visited: Set<string>) {
   const fetchSortedArrays: SymbolicTensor[][] = [];
@@ -289,7 +306,7 @@ function getTpologicalSortAndRecipientMap(
         }
       }
       // Recursive call.
-      getTpologicalSortAndRecipientMap(
+      getTopologicalSortAndRecipientMap(
           fetch.inputs, sorted, recipientCounts, visited);
     }
     fetchSortedArrays.push(fetchSorted);
