@@ -129,22 +129,6 @@ export class FeedDict {
   }
 
   /**
-   * Probe whether a SymbolicTensor name exists in the FeedDict.
-   *
-   * @param name Name of the SymbolicTensor being queried.
-   * @returns Whether a SymbolicTensor of the name exists in this instance of
-   *     FeedDict.
-   */
-  hasName(name: string): boolean {
-    for (const id of Object.keys(this.id2Value)) {
-      if (this.id2Name[+id] === name) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
    * Get all the SymbolicTensor available in this FeedDict.
    */
   names() {
@@ -233,8 +217,9 @@ export function execute(
 
   const outputNames = fetchArray.map(t => t.name);
   const finalOutputs: Tensor[] = [];
+  const feedNames = feedDict.names();
   for (const outputName of outputNames) {
-    if (feedDict.hasName(outputName)) {
+    if (feedNames.indexOf(outputName) !== -1) {
       finalOutputs.push(feedDict.getValue(outputName));
     } else {
       finalOutputs.push(null);
