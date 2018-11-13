@@ -132,6 +132,8 @@ export class FeedDict {
    * Probe whether a SymbolicTensor name exists in the FeedDict.
    *
    * @param name Name of the SymbolicTensor being queried.
+   * @returns Whether a SymbolicTensor of the name exists in this instance of
+   *     FeedDict.
    */
   hasName(name: string): boolean {
     for (const id of Object.keys(this.id2Value)) {
@@ -151,8 +153,8 @@ export class FeedDict {
 
   /**
    * Get the feed value for given key.
-   * @param key The SymbolicTensor or its name (as a string) of which the value
-   *   is being retrieved.
+   * @param key The SymbolicTensor, or its name (as a string), of which the
+   *     value is sought.
    * @returns If `key` exists, the corresponding feed value.
    * @throws ValueError: If `key` does not exist in this `FeedDict`.
    */
@@ -178,8 +180,23 @@ const cachedSorted: {[concatFetchNames: string]: SymbolicTensor[]} = {};
 const cachedRecipientCounts:
     {[concatFetchNames: string]: {[fetchName: string]: number}} = {};
 
+/**
+ * Interface for the optional object used for probing the memory
+ * usage and other statistics during execution.
+ */
 export interface ExecutionProbe {
+  /**
+   * Maximum number of tensors that exist during all steps of the
+   * execution. Tensor counts are measured at the beginning of every
+   * step.
+   */
   maxNumTensors?: number;
+
+  /**
+   * Minimum number of tensors that exist during all steps of the
+   * execution. Tensor counts are measured at the beginning of every
+   * step.
+   */
   minNumTensors?: number;
 }
 
@@ -231,10 +248,12 @@ export function execute(
   }
 
   // Check cache.
-  const concatFetchNames = outputNames.join(',');  // TODO(cais): Maybe sort.
+  const concatFetchNames = outputNames.join(',');
   let sorted: SymbolicTensor[];
   let recipientCounts: {[fetchName: string]: number};
   if (cachedSorted[concatFetchNames] == null) {
+    // Cache doesn't contain the desired combination of fetches. Compute
+    // topological sort for the combination for the first time.
     sorted = [];
     recipientCounts = {};
     const visited = new Set<string>();
@@ -258,9 +277,10 @@ export function execute(
 
   const internalFeedDict = new FeedDict(feedDict);
 
+  // Start iterative execution on the topologically-sorted SymbolicTensors.
   for (let i = 0; i < sorted.length; ++i) {
     if (probe != null) {
-      // For optional probing of memory footprint during execution.
+      // For optional probing of memory usage during execution.
       const numTensors = memory().numTensors;
       if (numTensors > probe.maxNumTensors) {
         probe.maxNumTensors = numTensors;
@@ -282,6 +302,7 @@ export function execute(
       recipientCounts[input.name]--;
       if (recipientCounts[input.name] === 0 && !feedDict.hasKey(input) &&
           outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
+        // Keep track of Tensors to be disposed at the end of this execution.
         tensorsToDispose.push(value);
       }
     }
@@ -301,6 +322,7 @@ export function execute(
     }
 
     if (!training) {
+      // Clean up unneeded Tensors.
       dispose(tensorsToDispose);
     }
   }
@@ -309,15 +331,19 @@ export function execute(
 }
 
 /**
- * Use depth-first search (DFS) to sort the `SymbolicTensor`s topologically.
+ * Sort the `SymbolicTensor`s topologically.
  *
- * @param fetch
- * @param sorted
- * @param visited
+ * @param fetch The fetches requested.
+ * @param sorted An Array of SymbolicTensors to be populated in a topologically
+ *   sorted order. The items will start from the "leaf nodes" of the graph
+ *   and end at the fetches.
+ * @param visited A Set of the names of already-visited SymbolicTensors, used
+ *   for avoiding repeated visits to a same SymbolicTensor.
  */
-function getTopologicalSortAndRecipientMap(
+export function getTopologicalSortAndRecipientMap(
     fetches: SymbolicTensor[], sorted: SymbolicTensor[],
-    recipientCounts: {[fetchName: string]: number}, visited: Set<string>) {
+    recipientCounts: {[fetchName: string]: number},
+    visited: Set<string>): void {
   const fetchSortedArrays: SymbolicTensor[][] = [];
 
   for (const fetch of fetches) {
