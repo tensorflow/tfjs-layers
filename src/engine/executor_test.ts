@@ -54,6 +54,21 @@ describeMathCPU('FeedDict', () => {
     expect(feedDict.getValue(x)).toEqual(xValue);
     expect(feedDict.getValue(y)).toEqual(yValue);
   });
+  it('getValue by tensor name', () => {
+    const feedDict = new FeedDict();
+    expect(feedDict.hasKey(x)).toBe(false);
+    expect(feedDict.hasKey(y)).toBe(false);
+
+    expect(feedDict.add(x, xValue)).toEqual(feedDict);
+    expect(feedDict.hasKey(x)).toBe(true);
+    expect(feedDict.hasKey(y)).toBe(false);
+
+    expect(feedDict.add(y, yValue)).toEqual(feedDict);
+    expect(feedDict.hasKey(x)).toBe(true);
+    expect(feedDict.hasKey(y)).toBe(true);
+    expect(feedDict.getValue(x.name)).toEqual(xValue);
+    expect(feedDict.getValue(y.name)).toEqual(yValue);
+  });
   it('Copy constructor', () => {
     const feedDict1 = new FeedDict().add(x, xValue);
     const feedDict2 = new FeedDict(feedDict1);

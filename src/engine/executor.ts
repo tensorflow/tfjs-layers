@@ -256,16 +256,8 @@ export function execute(
     // topological sort for the combination for the first time.
     sorted = [];
     recipientCounts = {};
-    const visited = new Set<string>();
-    // Put keys of the feedDict into visited first, so they don't have to be
-    // walked. This is useful in case where there are feeds for intermediate
-    // SymbolicTensors of the graph.
-    for (const key of feedDict.names()) {
-      visited.add(key);
-    }
     getTopologicalSortAndRecipientMap(
-        fetchArray, sorted, recipientCounts, visited);
-    visited.clear();  // For potential memory savings.
+        fetchArray, feedDict, sorted, recipientCounts);
 
     // Store results in cache for future use.
     cachedSorted[concatFetchNames] = sorted;
@@ -337,41 +329,98 @@ export function execute(
  * @param sorted An Array of SymbolicTensors to be populated in a topologically
  *   sorted order. The items will start from the "leaf nodes" of the graph
  *   and end at the fetches.
- * @param visited A Set of the names of already-visited SymbolicTensors, used
- *   for avoiding repeated visits to a same SymbolicTensor.
+ * @param recipientCounts TODO(cais):
  */
 export function getTopologicalSortAndRecipientMap(
-    fetches: SymbolicTensor[], sorted: SymbolicTensor[],
-    recipientCounts: {[fetchName: string]: number},
-    visited: Set<string>): void {
-  const fetchSortedArrays: SymbolicTensor[][] = [];
+    fetches: SymbolicTensor[], feedDict: FeedDict, sorted: SymbolicTensor[],
+    recipientCounts: {[fetchName: string]: number}): void {
+  // console.log('In getTopologicalSortAndRecipientMap');  // DEBUG
+  const visited = new Set<string>();
 
-  for (const fetch of fetches) {
-    const fetchSorted: SymbolicTensor[] = [];
-    if (visited.has(fetch.name)) {
-      continue;
-    }
-    visited.add(fetch.name);
-    fetchSorted.push(fetch);
-    if (fetch.inputs.length > 0) {
-      for (const input of fetch.inputs) {
+  // Put keys of the feedDict into visited first, so they don't have to be
+  // walked. This is needed in case where there are feeds for intermediate
+  // SymbolicTensors of the graph.
+  for (const key of feedDict.names()) {
+    visited.add(key);
+  }
+
+  // TODO(cais): Turn into return values.
+
+  const stack: SymbolicTensor[] = [];
+  const marks: number[] = [];
+
+  // Initial population of stack and marks.
+  for (let i = 0; i < fetches.length; ++i) {
+    stack.push(fetches[i]);
+    visited.add(fetches[i].name);
+  }
+  // let steps = 0;  // DEBUG
+  while (stack.length > 0) {
+    // if (steps++ > 50) {
+    //   break;  // DEBUG
+    // }
+    // console.log(`stack = ${stack.map(item => item.name)}`);  // DEBUG
+    // console.log(`marks = ${marks}`);                         // DEBUG
+
+    const top = stack[stack.length - 1];
+    const topIsMarked = marks[marks.length - 1] === stack.length - 1;
+    if (top.inputs.length === 0 || topIsMarked) {
+      // Input SymbolicTensor or all children have been visited.
+      stack.pop();
+      sorted.push(top);
+      if (topIsMarked) {
+        marks.pop();
+      }
+    } else {
+      // A non-input SymbolicTensor whose upstream SymbolicTensors haven't
+      // been visited yet. Push them onto the stack.
+      marks.push(stack.length - 1);
+      for (const input of top.inputs) {
+        // Increment the recipient count. Note that this needs to happen
+        // regardless of whether the SymbolicTensor has been visited before.
         if (recipientCounts[input.name] == null) {
           recipientCounts[input.name] = 1;
         } else {
           recipientCounts[input.name]++;
         }
+
+        if (visited.has(input.name)) {
+          continue;  // Avoid repeated visits to the same SymbolicTensor.
+        }
+        stack.push(input);
+        visited.add(input.name);
       }
-      // Recursive call.
-      getTopologicalSortAndRecipientMap(
-          fetch.inputs, sorted, recipientCounts, visited);
-    }
-    fetchSortedArrays.push(fetchSorted);
-  }
-  for (const fetchSorted of fetchSortedArrays) {
-    while (fetchSorted.length > 0) {
-      sorted.push(fetchSorted.splice(0, 1)[0]);
     }
   }
+
+  // const fetchSortedArrays: SymbolicTensor[][] = [];
+
+  // for (const fetch of fetches) {
+  //   const fetchSorted: SymbolicTensor[] = [];
+  //   if (visited.has(fetch.name)) {
+  //     continue;
+  //   }
+  //   visited.add(fetch.name);
+  //   fetchSorted.push(fetch);
+  //   if (fetch.inputs.length > 0) {
+  //     for (const input of fetch.inputs) {
+  //       if (recipientCounts[input.name] == null) {
+  //         recipientCounts[input.name] = 1;
+  //       } else {
+  //         recipientCounts[input.name]++;
+  //       }
+  //     }
+  //     // Recursive call.
+  //     getTopologicalSortAndRecipientMap(
+  //         fetch.inputs, sorted, recipientCounts, visited);
+  //   }
+  //   fetchSortedArrays.push(fetchSorted);
+  // }
+  // for (const fetchSorted of fetchSortedArrays) {
+  //   while (fetchSorted.length > 0) {
+  //     sorted.push(fetchSorted.splice(0, 1)[0]);
+  //   }
+  // }
 }
 
 /**
