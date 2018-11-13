@@ -192,6 +192,8 @@ export interface ExecutionProbe {
  * @param feedDict: The feed values, as base condition of the recursion.
  *   execution.
  * @param kwargs: Optional keyword arguments.
+ * @param probe: A probe object (of interface `ExecutionProbe`) used for
+ *   testing memory footprint of `execute` calls.
  * @returns Result of the execution.
  * @throws ValueError: If any `SymbolicTensor`s from `InputLayer`s
  *   encountered during the execution lacks a feed value in `feedDict`.
