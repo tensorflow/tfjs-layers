@@ -12,7 +12,7 @@
  * Executor: Evaluates SymbolicTensor based on feeds.
  */
 
-import {cast, dispose, Tensor} from '@tensorflow/tfjs-core';
+import {cast, dispose, memory, Tensor} from '@tensorflow/tfjs-core';
 
 import {ValueError} from '../errors';
 import {Kwargs} from '../types';
@@ -172,6 +172,11 @@ const cachedSorted: {[concatFetchNames: string]: SymbolicTensor[]} = {};
 const cachedRecipientCounts:
     {[concatFetchNames: string]: {[fetchName: string]: number}} = {};
 
+export interface ExecutionProbe {
+  maxNumTensors?: number;
+  minNumTensors?: number;
+}
+
 /**
  * Execute a SymbolicTensor by using concrete feed values.
  *
@@ -193,7 +198,8 @@ const cachedRecipientCounts:
  */
 export function execute(
     fetches: SymbolicTensor|SymbolicTensor[], feedDict: FeedDict,
-    kwargs?: Kwargs): Tensor|Tensor[]|[Tensor | Tensor[]] {
+    kwargs?: Kwargs, probe?: ExecutionProbe): Tensor|
+    Tensor[]|[Tensor | Tensor[]] {
   const training: boolean = kwargs == null ? false : kwargs['training'];
 
   const arrayFetches = Array.isArray(fetches);
@@ -208,6 +214,12 @@ export function execute(
     } else {
       finalOutputs.push(null);
     }
+  }
+
+  if (probe != null) {
+    // For optional probing of memory footprint during execution.
+    probe.maxNumTensors = -Infinity;
+    probe.minNumTensors = Infinity;
   }
 
   // Check cache.
@@ -239,6 +251,17 @@ export function execute(
   const internalFeedDict = new FeedDict(feedDict);
 
   for (let i = 0; i < sorted.length; ++i) {
+    if (probe != null) {
+      // For optional probing of memory footprint during execution.
+      const numTensors = memory().numTensors;
+      if (numTensors > probe.maxNumTensors) {
+        probe.maxNumTensors = numTensors;
+      }
+      if (numTensors < probe.minNumTensors) {
+        probe.minNumTensors = numTensors;
+      }
+    }
+
     const symbolic = sorted[i];
     if (symbolic.sourceLayer instanceof InputLayer) {
       continue;
@@ -270,7 +293,6 @@ export function execute(
     }
 
     if (!training) {
-      // console.log(`# Disposing ${tensorsToDispose.length}`);  // DEBUG
       dispose(tensorsToDispose);
     }
   }
