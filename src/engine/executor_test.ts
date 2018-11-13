@@ -158,13 +158,12 @@ describeMathCPUAndGPU('Executor', () => {
        });
 
 
-    fit('Maximum memory use under linear graph topology', () => {
+    it('Maximum memory use under linear graph topology', () => {
       const input = tfl.input({shape: [2, 3]});
       let y: tfl.SymbolicTensor = input;
       for (let i = 0; i < 10; ++i) {
-        y = tfl.layers.reshape({
-          targetShape:　i % 2 === 0 ? [6] : [3, 2]
-        }).apply(y) as tfl.SymbolicTensor;
+        y = tfl.layers.reshape({targetShape:　i % 2 === 0 ? [6] : [3, 2]})
+                .apply(y) as tfl.SymbolicTensor;
       }
       const feedDict = new FeedDict(
           [{key: input as tfl.SymbolicTensor, value: zeros([4, 2, 3])}]);
