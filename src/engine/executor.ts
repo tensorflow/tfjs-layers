@@ -254,7 +254,6 @@ export function execute(
   if (cachedSorted[concatFetchNames] == null) {
     // Cache doesn't contain the desired combination of fetches. Compute
     // topological sort for the combination for the first time.
-
     const out = getTopologicalSortAndRecipientCounts(fetchArray, feedDict);
     sorted = out.sorted;
     recipientCounts = out.recipientCounts;
@@ -314,7 +313,7 @@ export function execute(
     }
 
     if (!training) {
-      // Clean up unneeded Tensors.
+      // Clean up Tensors that are no longer needed.
       dispose(tensorsToDispose);
     }
   }
