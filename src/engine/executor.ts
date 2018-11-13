@@ -12,7 +12,7 @@
  * Executor: Evaluates SymbolicTensor based on feeds.
  */
 
-import {cast, dispose, memory, Tensor} from '@tensorflow/tfjs-core';
+import {cast, dispose, memory, Tensor, util} from '@tensorflow/tfjs-core';
 
 import {ValueError} from '../errors';
 import {Kwargs} from '../types';
@@ -254,10 +254,10 @@ export function execute(
   if (cachedSorted[concatFetchNames] == null) {
     // Cache doesn't contain the desired combination of fetches. Compute
     // topological sort for the combination for the first time.
-    sorted = [];
-    recipientCounts = {};
-    getTopologicalSortAndRecipientMap(
-        fetchArray, feedDict, sorted, recipientCounts);
+
+    const out = getTopologicalSortAndRecipientCounts(fetchArray, feedDict);
+    sorted = out.sorted;
+    recipientCounts = out.recipientCounts;
 
     // Store results in cache for future use.
     cachedSorted[concatFetchNames] = sorted;
@@ -322,20 +322,99 @@ export function execute(
   return arrayFetches ? finalOutputs : finalOutputs[0];
 }
 
+type RecipientCounts = {
+  [fetchName: string]: number
+};
+
+type RecipientMap = {
+  [fetchName: string]: Set<string>;
+};
+
 /**
- * Sort the `SymbolicTensor`s topologically.
+ * Sort the `SymbolicTensor`s topologically, for an array of fetches.
  *
- * @param fetch The fetches requested.
+ * This function calls getTopologicalSortAndRecipientCountsForOneFetch and
+ * merges their results.
+ *
+ * @param fetch The array of fetches requested. Must be a non-empty array.
  * @param sorted An Array of SymbolicTensors to be populated in a topologically
  *   sorted order. The items will start from the "leaf nodes" of the graph
  *   and end at the fetches.
- * @param recipientCounts TODO(cais):
+ * @returns sorted: Topologically-sorted array of SymbolicTensors.
+ *   recipientCounts: Recipient counts for all SymbolicTensors in `sorted`.
  */
-export function getTopologicalSortAndRecipientMap(
-    fetches: SymbolicTensor[], feedDict: FeedDict, sorted: SymbolicTensor[],
-    recipientCounts: {[fetchName: string]: number}): void {
-  // console.log('In getTopologicalSortAndRecipientMap');  // DEBUG
+function getTopologicalSortAndRecipientCounts(
+    fetches: SymbolicTensor[], feedDict: FeedDict):
+    {sorted: SymbolicTensor[], recipientCounts: RecipientCounts} {
+  util.assert(
+      fetches != null && fetches.length > 0,
+      `Exepcted at least one fetch, got none`);
+
+  let finalSorted: SymbolicTensor[] = [];
+  let finalRecipientMap: RecipientMap = {};
+  if (fetches.length === 1) {
+    // Special-casing 1 fetch for efficiency.
+    const out =
+        getTopologicalSortAndRecipientCountsForOneFetch(fetches[0], feedDict);
+    finalSorted = out.sorted;
+    finalRecipientMap = out.recipientMap;
+  } else {
+    const visited = new Set<string>();
+    for (const fetch of fetches) {
+      const {sorted, recipientMap} =
+          getTopologicalSortAndRecipientCountsForOneFetch(fetch, feedDict);
+
+      // Merge sorted SymbolicTensor Arrays.
+      for (const symbolicTensor of sorted) {
+        if (!visited.has(symbolicTensor.name)) {
+          finalSorted.push(symbolicTensor);
+          visited.add(symbolicTensor.name);
+        }
+      }
+
+      // Merge recipient maps.
+      for (const name in recipientMap) {
+        if (finalRecipientMap[name] == null) {
+          finalRecipientMap[name] = new Set<string>();
+        }
+        recipientMap[name].forEach(
+            recipient => finalRecipientMap[name].add(recipient));
+      }
+    }
+  }
+  return {
+    sorted: finalSorted,
+    recipientCounts: recipientMap2Counts(finalRecipientMap)
+  };
+}
+
+function recipientMap2Counts(recipientMap: RecipientMap): RecipientCounts {
+  const recipientCounts: RecipientCounts = {};
+  for (const name in recipientMap) {
+    recipientCounts[name] = recipientMap[name].size;
+  }
+  return recipientCounts;
+}
+
+/**
+ * Sort the `SymbolicTensor`s topologically, for a single fetch.
+ *
+ * This helper function processes the upstream SymbolicTensors of a single
+ * fetch.
+ *
+ * @param fetch The single fetch requested.
+ * @param sorted An Array of SymbolicTensors to be populated in a topologically
+ *   sorted order. The items will start from the "leaf nodes" of the graph
+ *   and end at the fetches.
+ * @returns sorted: Topologically-sorted array of SymbolicTensors.
+ *   recipientMap: Recipient names for all SymbolicTensors in `sorted`.
+ */
+function getTopologicalSortAndRecipientCountsForOneFetch(
+    fetch: SymbolicTensor, feedDict: FeedDict):
+    {sorted: SymbolicTensor[], recipientMap: RecipientMap} {
   const visited = new Set<string>();
+  const sorted: SymbolicTensor[] = [];
+  const recipientMap: RecipientMap = {};
 
   // Put keys of the feedDict into visited first, so they don't have to be
   // walked. This is needed in case where there are feeds for intermediate
@@ -350,18 +429,10 @@ export function getTopologicalSortAndRecipientMap(
   const marks: number[] = [];
 
   // Initial population of stack and marks.
-  for (let i = 0; i < fetches.length; ++i) {
-    stack.push(fetches[i]);
-    visited.add(fetches[i].name);
-  }
-  // let steps = 0;  // DEBUG
-  while (stack.length > 0) {
-    // if (steps++ > 50) {
-    //   break;  // DEBUG
-    // }
-    // console.log(`stack = ${stack.map(item => item.name)}`);  // DEBUG
-    // console.log(`marks = ${marks}`);                         // DEBUG
+  stack.push(fetch);
+  visited.add(fetch.name);
 
+  while (stack.length > 0) {
     const top = stack[stack.length - 1];
     const topIsMarked = marks[marks.length - 1] === stack.length - 1;
     if (top.inputs.length === 0 || topIsMarked) {
@@ -378,11 +449,10 @@ export function getTopologicalSortAndRecipientMap(
       for (const input of top.inputs) {
         // Increment the recipient count. Note that this needs to happen
         // regardless of whether the SymbolicTensor has been visited before.
-        if (recipientCounts[input.name] == null) {
-          recipientCounts[input.name] = 1;
-        } else {
-          recipientCounts[input.name]++;
+        if (recipientMap[input.name] == null) {
+          recipientMap[input.name] = new Set<string>();
         }
+        recipientMap[input.name].add(top.name);
 
         if (visited.has(input.name)) {
           continue;  // Avoid repeated visits to the same SymbolicTensor.
@@ -392,35 +462,7 @@ export function getTopologicalSortAndRecipientMap(
       }
     }
   }
-
-  // const fetchSortedArrays: SymbolicTensor[][] = [];
-
-  // for (const fetch of fetches) {
-  //   const fetchSorted: SymbolicTensor[] = [];
-  //   if (visited.has(fetch.name)) {
-  //     continue;
-  //   }
-  //   visited.add(fetch.name);
-  //   fetchSorted.push(fetch);
-  //   if (fetch.inputs.length > 0) {
-  //     for (const input of fetch.inputs) {
-  //       if (recipientCounts[input.name] == null) {
-  //         recipientCounts[input.name] = 1;
-  //       } else {
-  //         recipientCounts[input.name]++;
-  //       }
-  //     }
-  //     // Recursive call.
-  //     getTopologicalSortAndRecipientMap(
-  //         fetch.inputs, sorted, recipientCounts, visited);
-  //   }
-  //   fetchSortedArrays.push(fetchSorted);
-  // }
-  // for (const fetchSorted of fetchSortedArrays) {
-  //   while (fetchSorted.length > 0) {
-  //     sorted.push(fetchSorted.splice(0, 1)[0]);
-  //   }
-  // }
+  return {sorted, recipientMap};
 }
 
 /**
