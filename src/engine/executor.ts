@@ -249,7 +249,9 @@ export function execute(
   }
   sorted = cachedSorted[concatFetchNames];
   recipientCounts = {};
-  Object.assign(recipientCounts, cachedRecipientCounts[concatFetchNames]);
+  if (!training) {
+    Object.assign(recipientCounts, cachedRecipientCounts[concatFetchNames]);
+  }
 
   const internalFeedDict = new FeedDict(feedDict);
 
@@ -272,14 +274,17 @@ export function execute(
     }
     const inputValues: Tensor[] = [];
     const tensorsToDispose: Tensor[] = [];
+
     for (const input of symbolic.inputs) {
       const value = internalFeedDict.getValue(input);
       inputValues.push(value);
-      recipientCounts[input.name]--;
-      if (recipientCounts[input.name] === 0 && !feedDict.hasKey(input) &&
-          outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
-        // Keep track of Tensors to be disposed at the end of this execution.
-        tensorsToDispose.push(value);
+      if (!training) {
+        recipientCounts[input.name]--;
+        if (recipientCounts[input.name] === 0 && !feedDict.hasKey(input) &&
+            outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
+          // Keep track of Tensors to be disposed at the end of this execution.
+          tensorsToDispose.push(value);
+        }
       }
     }
     const output =
