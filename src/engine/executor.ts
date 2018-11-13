@@ -128,6 +128,11 @@ export class FeedDict {
     return this.id2Value[key.id] != null;
   }
 
+  /**
+   * Probe whether a SymbolicTensor name exists in the FeedDict.
+   *
+   * @param name Name of the SymbolicTensor being queried.
+   */
   hasName(name: string): boolean {
     for (const id of Object.keys(this.id2Value)) {
       if (this.id2Name[+id] === name) {
@@ -135,15 +140,6 @@ export class FeedDict {
       }
     }
     return false;
-  }
-
-  getValueByName(name: string): Tensor {
-    for (const id of Object.keys(this.id2Value)) {
-      if (this.id2Name[+id] === name) {
-        return this.id2Value[+id];
-      }
-    }
-    throw new ValueError(`Nonexistent name: ${name}`);
   }
 
   /**
@@ -155,15 +151,25 @@ export class FeedDict {
 
   /**
    * Get the feed value for given key.
-   * @param key
+   * @param key The SymbolicTensor or its name (as a string) of which the value
+   *   is being retrieved.
    * @returns If `key` exists, the corresponding feed value.
    * @throws ValueError: If `key` does not exist in this `FeedDict`.
    */
-  getValue(key: SymbolicTensor): Tensor {
-    if (this.id2Value[key.id] == null) {
-      throw new ValueError(`Nonexistent key: ${key.name}`);
+  getValue(key: SymbolicTensor|string): Tensor {
+    if (key instanceof SymbolicTensor) {
+      if (this.id2Value[key.id] == null) {
+        throw new ValueError(`Nonexistent key: ${key.name}`);
+      } else {
+        return this.id2Value[key.id];
+      }
     } else {
-      return this.id2Value[key.id];
+      for (const id of Object.keys(this.id2Value)) {
+        if (this.id2Name[+id] === key) {
+          return this.id2Value[+id];
+        }
+      }
+      throw new ValueError(`Feed dict has no SymbolicTensor name: ${key}`);
     }
   }
 }
@@ -183,8 +189,8 @@ export interface ExecutionProbe {
  * A `SymbolicTensor` object is a node in a computation graph of TF.js
  * Layers. The object is backed by a source layer and input
  * `SymbolicTensor`s to the source layer. This method evaluates
- * the `call()` method of the source layer, using concrete values of the inputs
- * obtained from either
+ * the `call()` method of the source layer, using concrete values of the
+ * inputs obtained from either
  * * `feedDict`, if the input key exists in `feedDict`, or else,
  * * a recursive call to `execute()` itself.
  *
@@ -212,7 +218,7 @@ export function execute(
   const finalOutputs: Tensor[] = [];
   for (const outputName of outputNames) {
     if (feedDict.hasName(outputName)) {
-      finalOutputs.push(feedDict.getValueByName(outputName));
+      finalOutputs.push(feedDict.getValue(outputName));
     } else {
       finalOutputs.push(null);
     }
