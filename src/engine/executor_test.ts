@@ -166,8 +166,6 @@ describeMathCPUAndGPU('Executor', () => {
 
 
     it('Maximum memory use under linear graph topology', () => {
-      const probe: ExecutionProbe = {};
-
       const input = tfl.input({shape: [2, 3]});
       let y: tfl.SymbolicTensor = input;
       for (let i = 0; i < 10; ++i) {
@@ -177,6 +175,7 @@ describeMathCPUAndGPU('Executor', () => {
       const feedDict = new FeedDict(
           [{key: input as tfl.SymbolicTensor, value: zeros([4, 2, 3])}]);
       const numTensors0 = memory().numTensors;
+      const probe: ExecutionProbe = {};
       dispose(execute(y, feedDict, null, probe));
       // Assert no memory leak.
       expect(memory().numTensors).toEqual(numTensors0);

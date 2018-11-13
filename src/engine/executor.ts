@@ -422,8 +422,6 @@ function getTopologicalSortAndRecipientCountsForOneFetch(
     visited.add(key);
   }
 
-  // TODO(cais): Turn into return values.
-
   const stack: SymbolicTensor[] = [];
   const marks: number[] = [];
 
