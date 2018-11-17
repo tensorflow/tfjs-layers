@@ -386,8 +386,8 @@ export abstract class BaseConv extends Layer {
           `length 1 or 2, but received ${JSON.stringify(config.kernelSize)}.`);
   }
 
-  getConfig(): serialization.ConfigDict {
-    const config: serialization.ConfigDict = {
+  getConfig(): BaseConvLayerConfig {
+    const config: BaseConvLayerConfig = {
       kernelSize: this.kernelSize,
       strides: this.strides,
       padding: this.padding,
@@ -1121,8 +1121,7 @@ export class Cropping2D extends Layer {
   computeOutputShape(inputShape: Shape): Shape {
     if (this.dataFormat === 'channelsFirst')
       return [
-        inputShape[0],
-        inputShape[1],
+        inputShape[0], inputShape[1],
         inputShape[2] - this.cropping[0][0] - this.cropping[0][1],
         inputShape[3] - this.cropping[1][0] - this.cropping[1][1]
       ];
@@ -1130,8 +1129,7 @@ export class Cropping2D extends Layer {
       return [
         inputShape[0],
         inputShape[1] - this.cropping[0][0] - this.cropping[0][1],
-        inputShape[2] - this.cropping[1][0] - this.cropping[1][1],
-        inputShape[3]
+        inputShape[2] - this.cropping[1][0] - this.cropping[1][1], inputShape[3]
       ];
   }
 

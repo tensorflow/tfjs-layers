@@ -113,7 +113,7 @@ export class Dropout extends Layer {
     });
   }
 
-  getConfig(): serialization.ConfigDict {
+  getConfig(): DropoutLayerConfig {
     const config = {
       rate: this.rate,
       noiseShape: this.noiseShape,
@@ -129,22 +129,27 @@ serialization.registerClass(Dropout);
 export interface DenseLayerConfig extends LayerConfig {
   /** Positive integer, dimensionality of the output space. */
   units: number;
+
   /**
    * Activation function to use.
    *
    * If unspecified, no activation is applied.
    */
   activation?: ActivationIdentifier;
+
   /** Whether to apply a bias. */
   useBias?: boolean;
+
   /**
    * Initializer for the dense kernel weights matrix.
    */
   kernelInitializer?: InitializerIdentifier|Initializer;
+
   /**
    * Initializer for the bias vector.
    */
   biasInitializer?: InitializerIdentifier|Initializer;
+
   /**
    * If specified, defines inputShape as `[inputDim]`.
    */
@@ -297,8 +302,8 @@ export class Dense extends Layer {
     });
   }
 
-  getConfig(): serialization.ConfigDict {
-    const config: serialization.ConfigDict = {
+  getConfig(): DenseLayerConfig {
+    const config: DenseLayerConfig = {
       units: this.units,
       activation: serializeActivation(this.activation),
       useBias: this.useBias,

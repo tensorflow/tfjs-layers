@@ -12,15 +12,18 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {abs, add, Scalar, serialization, sum, Tensor, tidy, zeros} from '@tensorflow/tfjs-core';
+import {ConfigDict} from '@tensorflow/tfjs-core/dist/serialization';
 
 import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
+import {RegularizerWrapper} from './keras_json_types';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 
 /**
  * Regularizer base class.
  */
-export abstract class Regularizer extends serialization.Serializable {
+export abstract class Regularizer<T extends RegularizerConfig> extends
+    serialization.TypedSerializable<T> {
   abstract apply(x: Tensor): Scalar;
 }
 
@@ -41,6 +44,8 @@ export interface L2Config {
   l2: number;
 }
 
+export type RegularizerConfig = L1Config|L2Config|L1L2Config;
+
 /**
  * Regularizer for L1 and L2 regularization.
  *
@@ -48,7 +53,7 @@ export interface L2Config {
  * loss += sum(l1 * abs(x)) + sum(l2 * x^2)
  */
 /** @doc {heading: 'Regularizers', namespace: 'regularizers'} */
-export class L1L2 extends Regularizer {
+export class L1L2 extends Regularizer<L1L2Config> {
   static className = 'L1L2';
 
   private readonly l1: Scalar;
@@ -85,7 +90,7 @@ export class L1L2 extends Regularizer {
     });
   }
 
-  getConfig(): serialization.ConfigDict {
+  getConfig(): L1L2Config {
     return {'l1': this.l1.dataSync()[0], 'l2': this.l2.dataSync()[0]};
   }
 
@@ -129,7 +134,7 @@ export const REGULARIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:
     };
 
 export function serializeRegularizer(constraint: Regularizer):
-    serialization.ConfigDictValue {
+    RegularizerWrapper {
   return serializeKerasObject(constraint);
 }
 

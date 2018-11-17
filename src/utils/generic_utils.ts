@@ -135,7 +135,7 @@ export function toCamelCase(identifier: string): string {
 let _GLOBAL_CUSTOM_OBJECTS = {} as {[objName: string]: any};
 
 export function serializeKerasObject(instance: serialization.Serializable):
-    serialization.ConfigDictValue {
+    serialization.ConfigDict {
   if (instance === null || instance === undefined) {
     return null;
   }

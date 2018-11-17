@@ -11,6 +11,7 @@
 /* Original source: keras/engine/topology.py */
 
 import {DataType, Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+import {ConfigDict} from '@tensorflow/tfjs-core/dist/serialization';
 
 import {getNextUniqueTensorId, getUid} from '../backend/state';
 import {getScopedTensorName, getUniqueTensorName, nameScope} from '../common';
@@ -323,7 +324,7 @@ export class Node {
     config.outboundLayer.inboundNodes.push(this);
   }
 
-  getConfig(): serialization.ConfigDict {
+  getConfig(): NodeConfig {
     const inboundNames: string[] = [];
     for (const layer of this.inboundLayers) {
       if (layer != null) {
@@ -342,7 +343,7 @@ export class Node {
 }
 
 /** Constructor arguments for Layer. */
-export interface LayerConfig {
+export interface LayerConfig extends ConfigDict {
   /**
    * If defined, will be used to create an input layer to insert before this
    * layer. If both `inputShape` and `batchInputShape` are defined,
