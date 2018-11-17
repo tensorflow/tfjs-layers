@@ -88,10 +88,10 @@ export class InputSpec {
 }
 
 /**
- * `SymbolicTensor` is a placeholder for a Tensor without any concrete value.
+ * `tf.SymbolicTensor` is a placeholder for a Tensor without any concrete value.
  *
  * They are most often encountered when building a graph of `Layer`s for a
- * a `Model` and the input data's shape, but not values are known.
+ * a `tf.Model` and the input data's shape, but not values are known.
  */
 /** @doc {heading: 'Models', 'subheading': 'Classes'} */
 export class SymbolicTensor {
@@ -393,7 +393,7 @@ let _nextLayerID = 0;
 
 /**
  * A layer is a grouping of operations and weights that can be composed to
- * create a `Model`.
+ * create a `tf.Model`.
  *
  * Layers are constructed by using the functions under the
  * [tf.layers](#Layers-Basic) namespace.
@@ -858,7 +858,7 @@ export abstract class Layer extends serialization.Serializable {
   /**
    * Builds or executes a `Layer's logic.
    *
-   * When called with `Tensor`(s), execute the `Layer`s computation and
+   * When called with `tf.Tensor`(s), execute the `Layer`s computation and
    * return Tensor(s). For example:
    *
    * ```js
@@ -868,7 +868,7 @@ export abstract class Layer extends serialization.Serializable {
    *   useBias: false
    * });
    *
-   * // Invoke the layer's apply() method with a `Tensor` (with concrete
+   * // Invoke the layer's apply() method with a `tf.Tensor` (with concrete
    * // numeric values).
    * const input = tf.ones([2, 2]);
    * const output = denseLayer.apply(input);
@@ -879,12 +879,12 @@ export abstract class Layer extends serialization.Serializable {
    * output.print();
    * ```
    *
-   * When called with `SymbolicTensor`(s), this will prepare the layer for
+   * When called with `tf.SymbolicTensor`(s), this will prepare the layer for
    * future execution.  This entails internal book-keeping on shapes of
    * expected Tensors, wiring layers together, and initializing weights.
    *
-   * Calling `apply` with `SymbolicTensor`s are typically used during the
-   * building of non-`Sequential` models. For example:
+   * Calling `apply` with `tf.SymbolicTensor`s are typically used during the
+   * building of non-`tf.Sequential` models. For example:
    *
    * ```js
    * const flattenLayer = tf.layers.flatten();
@@ -913,7 +913,7 @@ export abstract class Layer extends serialization.Serializable {
    * const model = tf.model({inputs: input, outputs: output2});
    * ```
    *
-   * @param inputs a `Tensor` or `SymbolicTensor` or an Array of them.
+   * @param inputs a `tf.Tensor` or `tf.SymbolicTensor` or an Array of them.
    * @param kwargs Additional keyword arguments to be passed to `call()`.
    *
    * @return Output of the layer's `call` method.
@@ -1181,7 +1181,7 @@ export abstract class Layer extends serialization.Serializable {
    * Returns the current values of the weights of the layer.
    *
    * @param trainableOnly Whether to get the values of only trainable weights.
-   * @returns Weight values as an `Array` of `Tensor`s.
+   * @returns Weight values as an `Array` of `tf.Tensor`s.
    */
   /** @doc {heading: 'Models', 'subheading': 'Classes'} */
   getWeights(trainableOnly = false): Tensor[] {
@@ -1514,7 +1514,8 @@ export abstract class Layer extends serialization.Serializable {
 }
 
 /**
- * Collects the input shape(s) of a list of `Tensor`s or `SymbolicTensor`s.
+ * Collects the input shape(s) of a list of `tf.Tensor`s or
+ * `tf.SymbolicTensor`s.
  *
  * TODO(michaelterry): Update PyKeras docs (backport).
  *

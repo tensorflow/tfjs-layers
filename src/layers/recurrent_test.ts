@@ -787,8 +787,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
         y2 = model.predict(x) as Tensor;
         expectArraysClose(y2, tfc.ones([batchSize, units]).mul(scalar2));
       });
-      model.resetStates();
-      // Assert no memory leak.
+      // Assert no memory leak, even without resetStates() being called.
       expect(tfc.memory().numTensors).toEqual(numTensors0);
     });
   }
@@ -971,14 +970,17 @@ describeMathCPU('GRU Symbolic', () => {
      });
 
 
-  it('Serialization round trip', () => {
-    const layer = tfl.layers.gru({units: 4});
-    const pythonicConfig = convertTsToPythonic(layer.getConfig());
-    // tslint:disable-next-line:no-any
-    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
-    const layerPrime = tfl.layers.gru(tsConfig);
-    expect(layerPrime.getConfig().units).toEqual(4);
-  });
+  for (const implementation of [1, 2]) {
+    it('Serialization round trip', () => {
+      const layer = tfl.layers.gru({units: 4, implementation});
+      const pythonicConfig = convertTsToPythonic(layer.getConfig());
+      // tslint:disable-next-line:no-any
+      const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+      const layerPrime = tfl.layers.gru(tsConfig);
+      expect(layerPrime.getConfig().units).toEqual(4);
+      expect(layerPrime.getConfig().implementation).toEqual(implementation);
+    });
+  }
 });
 
 describeMathCPUAndGPU('GRU Tensor', () => {
@@ -1223,8 +1225,7 @@ describeMathCPUAndGPU('GRU Tensor', () => {
       expectArraysClose(
           y4, tfc.ones([batchSize, units]).mul(tfc.scalar(0.9371182)));
     });
-    model.resetStates();
-    // Assert no memory leak.
+    // Assert no memory leak, even without resetStates() being called.
     expect(tfc.memory().numTensors).toEqual(numTensors0);
   });
 
@@ -1434,14 +1435,17 @@ describeMathCPU('LSTM Symbolic', () => {
      });
 
 
-  it('Serialization round trip', () => {
-    const layer = tfl.layers.lstm({units: 4});
-    const pythonicConfig = convertTsToPythonic(layer.getConfig());
-    // tslint:disable-next-line:no-any
-    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
-    const layerPrime = tfl.layers.lstm(tsConfig);
-    expect(layerPrime.getConfig().units).toEqual(4);
-  });
+  for (const implementation of [1, 2]) {
+    it('Serialization round trip', () => {
+      const layer = tfl.layers.lstm({units: 4, implementation});
+      const pythonicConfig = convertTsToPythonic(layer.getConfig());
+      // tslint:disable-next-line:no-any
+      const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+      const layerPrime = tfl.layers.lstm(tsConfig);
+      expect(layerPrime.getConfig().units).toEqual(4);
+      expect(layerPrime.getConfig().implementation).toEqual(implementation);
+    });
+  }
 });
 
 describeMathCPUAndGPU('LSTM Tensor', () => {
@@ -1694,8 +1698,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         expectArraysClose(
             y2, tfc.ones([batchSize, units]).mul(tfc.scalar(0.99998766)));
       });
-      model.resetStates();
-      // Assert no memory leak.
+      // Assert no memory leak, even without resetStates() being called.
       expect(tfc.memory().numTensors).toEqual(numTensors0);
     });
 
@@ -1830,17 +1833,12 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
 });
 
 describeMathCPU('LSTM-deserialization', () => {
-  it('modelFromConfig', async done => {
-    modelFromJSON(fakeLSTMModel)
-        .then(model => {
-          const encoderInputs = tfc.zeros([1, 3, 71], 'float32');
-          const decoderInputs = tfc.zeros([1, 3, 94], 'float32');
-          const outputs =
-              model.predict([encoderInputs, decoderInputs]) as Tensor;
-          expect(outputs.shape).toEqual([1, 3, 94]);
-          done();
-        })
-        .catch(done.fail);
+  it('modelFromConfig', async () => {
+    const model = await modelFromJSON(fakeLSTMModel);
+    const encoderInputs = tfc.zeros([1, 3, 71], 'float32');
+    const decoderInputs = tfc.zeros([1, 3, 94], 'float32');
+    const outputs = model.predict([encoderInputs, decoderInputs]) as Tensor;
+    expect(outputs.shape).toEqual([1, 3, 94]);
   });
 
   it('Default recurrentActivation round trip', () => {

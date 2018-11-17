@@ -27,61 +27,45 @@ describeMathCPUAndGPU('Model.save', () => {
 
   class EmptyIOHandler implements io.IOHandler {}
 
-  it('Saving all weights succeeds', async done => {
+  it('Saving all weights succeeds', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({units: 3, inputShape: [5]}));
     const handler = new IOHandlerForTest();
 
-    model.save(handler)
-        .then(saveResult => {
-          expect(handler.savedArtifacts.modelTopology)
-              .toEqual(model.toJSON(null, false));
-          expect(handler.savedArtifacts.weightSpecs.length).toEqual(2);
-          expect(handler.savedArtifacts.weightSpecs[0].name.indexOf('/kernel'))
-              .toBeGreaterThan(0);
-          expect(handler.savedArtifacts.weightSpecs[0].shape).toEqual([5, 3]);
-          expect(handler.savedArtifacts.weightSpecs[0].dtype)
-              .toEqual('float32');
-          expect(handler.savedArtifacts.weightSpecs[1].name.indexOf('/bias'))
-              .toBeGreaterThan(0);
-          expect(handler.savedArtifacts.weightSpecs[1].shape).toEqual([3]);
-          expect(handler.savedArtifacts.weightSpecs[1].dtype)
-              .toEqual('float32');
-          done();
-        })
-        .catch(err => {
-          console.error(err.stack);
-        });
+    await model.save(handler);
+    expect(handler.savedArtifacts.modelTopology)
+        .toEqual(model.toJSON(null, false));
+    expect(handler.savedArtifacts.weightSpecs.length).toEqual(2);
+    expect(handler.savedArtifacts.weightSpecs[0].name.indexOf('/kernel'))
+        .toBeGreaterThan(0);
+    expect(handler.savedArtifacts.weightSpecs[0].shape).toEqual([5, 3]);
+    expect(handler.savedArtifacts.weightSpecs[0].dtype).toEqual('float32');
+    expect(handler.savedArtifacts.weightSpecs[1].name.indexOf('/bias'))
+        .toBeGreaterThan(0);
+    expect(handler.savedArtifacts.weightSpecs[1].shape).toEqual([3]);
+    expect(handler.savedArtifacts.weightSpecs[1].dtype).toEqual('float32');
   });
 
-  it('Saving only trainable weights succeeds', async done => {
+  it('Saving only trainable weights succeeds', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({units: 3, inputShape: [5], trainable: false}));
     model.add(tfl.layers.dense({units: 2}));
     const handler = new IOHandlerForTest();
 
-    model.save(handler, {trainableOnly: true})
-        .then(saveResult => {
-          expect(handler.savedArtifacts.modelTopology)
-              .toEqual(model.toJSON(null, false));
-          // Verify that only the trainable weights (i.e., weights from the
-          // 2nd, trainable Dense layer) are saved.
-          expect(handler.savedArtifacts.weightSpecs.length).toEqual(2);
-          expect(handler.savedArtifacts.weightSpecs[0].name.indexOf('/kernel'))
-              .toBeGreaterThan(0);
-          expect(handler.savedArtifacts.weightSpecs[0].shape).toEqual([3, 2]);
-          expect(handler.savedArtifacts.weightSpecs[0].dtype)
-              .toEqual('float32');
-          expect(handler.savedArtifacts.weightSpecs[1].name.indexOf('/bias'))
-              .toBeGreaterThan(0);
-          expect(handler.savedArtifacts.weightSpecs[1].shape).toEqual([2]);
-          expect(handler.savedArtifacts.weightSpecs[1].dtype)
-              .toEqual('float32');
-          done();
-        })
-        .catch(err => {
-          console.error(err.stack);
-        });
+    await model.save(handler, {trainableOnly: true});
+    expect(handler.savedArtifacts.modelTopology)
+        .toEqual(model.toJSON(null, false));
+    // Verify that only the trainable weights (i.e., weights from the
+    // 2nd, trainable Dense layer) are saved.
+    expect(handler.savedArtifacts.weightSpecs.length).toEqual(2);
+    expect(handler.savedArtifacts.weightSpecs[0].name.indexOf('/kernel'))
+        .toBeGreaterThan(0);
+    expect(handler.savedArtifacts.weightSpecs[0].shape).toEqual([3, 2]);
+    expect(handler.savedArtifacts.weightSpecs[0].dtype).toEqual('float32');
+    expect(handler.savedArtifacts.weightSpecs[1].name.indexOf('/bias'))
+        .toBeGreaterThan(0);
+    expect(handler.savedArtifacts.weightSpecs[1].shape).toEqual([2]);
+    expect(handler.savedArtifacts.weightSpecs[1].dtype).toEqual('float32');
   });
 
   it('Saving to a handler without save method fails', async done => {
@@ -105,7 +89,7 @@ describeMathCPUAndGPU('Model.save', () => {
 });
 
 describeMathGPU('Save-load round trips', () => {
-  it('Sequential model, Local storage', done => {
+  it('Sequential model, Local storage', async () => {
     const model1 = tfl.sequential();
     model1.add(
         tfl.layers.dense({units: 2, inputShape: [2], activation: 'relu'}));
@@ -116,35 +100,22 @@ describeMathGPU('Save-load round trips', () => {
 
     // First save the model to local storage.
     const modelURL = `localstorage://${path}`;
-    model1.save(modelURL)
-        .then(saveResult => {
-          // Once the saving succeeds, load the model back.
-          tfl.loadModel(modelURL)
-              .then(model2 => {
-                // Verify that the topology of the model is correct.
-                expect(model2.toJSON(null, false))
-                    .toEqual(model1.toJSON(null, false));
+    await model1.save(modelURL);
+    // Once the saving succeeds, load the model back.
+    const model2 = await tfl.loadModel(modelURL);
+    // Verify that the topology of the model is correct.
+    expect(model2.toJSON(null, false)).toEqual(model1.toJSON(null, false));
 
-                // Check the equality of the two models' weights.
-                const weights1 = model1.getWeights();
-                const weights2 = model2.getWeights();
-                expect(weights2.length).toEqual(weights1.length);
-                for (let i = 0; i < weights1.length; ++i) {
-                  expectTensorsClose(weights1[i], weights2[i]);
-                }
-
-                done();
-              })
-              .catch(err => {
-                done.fail(err.stack);
-              });
-        })
-        .catch(err => {
-          done.fail(err.stack);
-        });
+    // Check the equality of the two models' weights.
+    const weights1 = model1.getWeights();
+    const weights2 = model2.getWeights();
+    expect(weights2.length).toEqual(weights1.length);
+    for (let i = 0; i < weights1.length; ++i) {
+      expectTensorsClose(weights1[i], weights2[i]);
+    }
   });
 
-  it('Functional model, IndexedDB', done => {
+  it('Functional model, IndexedDB', async () => {
     const input = tfl.input({shape: [2, 2]});
     const layer1 = tfl.layers.flatten().apply(input);
     const layer2 =
@@ -155,35 +126,22 @@ describeMathGPU('Save-load round trips', () => {
 
     // First save the model to local storage.
     const modelURL = `indexeddb://${path}`;
-    model1.save(modelURL)
-        .then(saveResult => {
-          // Once the saving succeeds, load the model back.
-          tfl.loadModel(modelURL)
-              .then(model2 => {
-                // Verify that the topology of the model is correct.
-                expect(model2.toJSON(null, false))
-                    .toEqual(model1.toJSON(null, false));
+    await model1.save(modelURL);
+    // Once the saving succeeds, load the model back.
+    const model2 = await tfl.loadModel(modelURL);
+    // Verify that the topology of the model is correct.
+    expect(model2.toJSON(null, false)).toEqual(model1.toJSON(null, false));
 
-                // Check the equality of the two models' weights.
-                const weights1 = model1.getWeights();
-                const weights2 = model2.getWeights();
-                expect(weights2.length).toEqual(weights1.length);
-                for (let i = 0; i < weights1.length; ++i) {
-                  expectTensorsClose(weights1[i], weights2[i]);
-                }
-
-                done();
-              })
-              .catch(err => {
-                done.fail(err.stack);
-              });
-        })
-        .catch(err => {
-          done.fail(err.stack);
-        });
+    // Check the equality of the two models' weights.
+    const weights1 = model1.getWeights();
+    const weights2 = model2.getWeights();
+    expect(weights2.length).toEqual(weights1.length);
+    for (let i = 0; i < weights1.length; ++i) {
+      expectTensorsClose(weights1[i], weights2[i]);
+    }
   });
 
-  it('Call predict() and fit() after load: conv2d model', done => {
+  it('Call predict() and fit() after load: conv2d model', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.conv2d({
       filters: 8,
@@ -204,35 +162,23 @@ describeMathGPU('Save-load round trips', () => {
 
     const path = `testModel${new Date().getTime()}_${Math.random()}`;
     const url = `indexeddb://${path}`;
-    model.save(url)
-        .then(saveResult => {
-          // Load the model back.
-          tfl.loadModel(url)
-              .then(modelPrime => {
-                // Call predict() on the loaded model and assert the result
-                // equals the original predict() result.
-                const yPrime = modelPrime.predict(x) as Tensor;
-                expectTensorsClose(y, yPrime);
+    await model.save(url);
+    // Load the model back.
+    const modelPrime = await tfl.loadModel(url);
+    // Call predict() on the loaded model and assert the result
+    // equals the original predict() result.
+    const yPrime = modelPrime.predict(x) as Tensor;
+    expectTensorsClose(y, yPrime);
 
-                // Call compile and fit() on the loaded model.
-                modelPrime.compile(
-                    {optimizer: 'sgd', loss: 'meanSquaredError'});
-                const trainExamples = 10;
-                modelPrime
-                    .fit(
-                        randomNormal([trainExamples, 28, 28, 1]),
-                        randomNormal([trainExamples]), {epochs: 4})
-                    .then(history => {
-                      done();
-                    })
-                    .catch(err => done.fail(err.stack));
-              })
-              .catch(err => done.fail(err.stack));
-        })
-        .catch(err => done.fail(err.stack));
+    // Call compile and fit() on the loaded model.
+    modelPrime.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+    const trainExamples = 10;
+    await modelPrime.fit(
+        randomNormal([trainExamples, 28, 28, 1]),
+        randomNormal([trainExamples, 1]), {epochs: 4});
   });
 
-  it('Call predict() and fit() after load: conv1d model', done => {
+  it('Call predict() and fit() after load: conv1d model', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.conv1d({
       filters: 8,
@@ -253,35 +199,23 @@ describeMathGPU('Save-load round trips', () => {
 
     const path = `testModel${new Date().getTime()}_${Math.random()}`;
     const url = `indexeddb://${path}`;
-    model.save(url)
-        .then(saveResult => {
-          // Load the model back.
-          tfl.loadModel(url)
-              .then(modelPrime => {
-                // Call predict() on the loaded model and assert the
-                // result equals the original predict() result.
-                const yPrime = modelPrime.predict(x) as Tensor;
-                expectTensorsClose(y, yPrime);
+    await model.save(url);
+    // Load the model back.
+    const modelPrime = await tfl.loadModel(url);
+    // Call predict() on the loaded model and assert the
+    // result equals the original predict() result.
+    const yPrime = modelPrime.predict(x) as Tensor;
+    expectTensorsClose(y, yPrime);
 
-                // Call compile and fit() on the loaded model.
-                modelPrime.compile(
-                    {optimizer: 'sgd', loss: 'meanSquaredError'});
-                const trainExamples = 10;
-                modelPrime
-                    .fit(
-                        randomNormal([trainExamples, 100, 1]),
-                        randomNormal([trainExamples]), {epochs: 4})
-                    .then(history => {
-                      done();
-                    })
-                    .catch(err => done.fail(err.stack));
-              })
-              .catch(err => done.fail(err.stack));
-        })
-        .catch(err => done.fail(err.stack));
+    // Call compile and fit() on the loaded model.
+    modelPrime.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+    const trainExamples = 10;
+    await modelPrime.fit(
+        randomNormal([trainExamples, 100, 1]), randomNormal([trainExamples, 1]),
+        {epochs: 4});
   });
 
-  it('Call predict() and fit() after load: Bidirectional LSTM', done => {
+  it('Call predict() and fit() after load: Bidirectional LSTM', async () => {
     const model = tfl.sequential();
     const lstmUnits = 3;
     const sequenceLength = 4;
@@ -297,30 +231,16 @@ describeMathGPU('Save-load round trips', () => {
 
     const path = `testModel${new Date().getTime()}_${Math.random()}`;
     const url = `indexeddb://${path}`;
-    model.save(url)
-        .then(saveResult => {
-          tfl.loadModel(url)
-              .then(modelPrime => {
-                const yPrime = modelPrime.predict(x) as Tensor;
-                expectTensorsClose(y, yPrime);
+    await model.save(url);
+    const modelPrime = await tfl.loadModel(url);
+    const yPrime = modelPrime.predict(x) as Tensor;
+    expectTensorsClose(y, yPrime);
 
-                // Call compile and fit() on the loaded model.
-                modelPrime.compile(
-                    {optimizer: 'sgd', loss: 'meanSquaredError'});
-                const trainExamples = 2;
-                modelPrime
-                    .fit(
-                        randomNormal(
-                            [trainExamples, sequenceLength, inputDims]),
-                        randomNormal([trainExamples, lstmUnits * 2]),
-                        {epochs: 2})
-                    .then(history => {
-                      done();
-                    })
-                    .catch(err => done.fail(err.stack));
-              })
-              .catch(err => done.fail(err.stack));
-        })
-        .catch(err => done.fail(err.stack));
+    // Call compile and fit() on the loaded model.
+    modelPrime.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+    const trainExamples = 2;
+    await modelPrime.fit(
+        randomNormal([trainExamples, sequenceLength, inputDims]),
+        randomNormal([trainExamples, lstmUnits * 2]), {epochs: 2});
   });
 });
