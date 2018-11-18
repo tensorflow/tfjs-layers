@@ -278,6 +278,7 @@ export async function fitDataset<T extends TensorContainer>(
     throw new Error(
         'Cannot start training because another fit() call is ongoing.');
   }
+  model.stopTraining_ = false;
   model.isTraining = true;
 
   try {
