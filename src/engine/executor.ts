@@ -71,7 +71,7 @@ export interface Feed {
  */
 export class FeedDict {
   private id2Value: {[id: number]: Tensor} = {};
-  private id2Name: {[id: number]: string} = {};
+  private name2Id: {[name: string]: number} = {};
 
   /**
    * Constructor, optionally does copy-construction.
@@ -104,7 +104,7 @@ export class FeedDict {
   add(key: SymbolicTensor, value: Tensor): FeedDict {
     if (this.id2Value[key.id] == null) {
       this.id2Value[key.id] = assertFeedCompatibility(key, value);
-      this.id2Name[key.id] = key.name;
+      this.name2Id[key.name] = key.id;
     } else {
       throw new ValueError(`Duplicate key: name=${key.name}, id=${key.id}`);
     }
@@ -131,8 +131,8 @@ export class FeedDict {
   /**
    * Get all the SymbolicTensor available in this FeedDict.
    */
-  names() {
-    return Object.keys(this.id2Value).map(id => this.id2Name[+id]);
+  names(): string[] {
+    return Object.keys(this.name2Id);
   }
 
   /**
@@ -150,17 +150,20 @@ export class FeedDict {
         return this.id2Value[key.id];
       }
     } else {
-      for (const id of Object.keys(this.id2Value)) {
-        if (this.id2Name[+id] === key) {
-          return this.id2Value[+id];
-        }
+      const id = this.name2Id[key];
+      if (id == null) {
+        throw new ValueError(`Feed dict has no SymbolicTensor name: ${key}`);
       }
-      throw new ValueError(`Feed dict has no SymbolicTensor name: ${key}`);
+      return this.id2Value[id];
     }
   }
 }
 
+// Cache for topologically sorted SymbolicTensors for given execution
+// targets (i.e., fetches).
 const cachedSorted: {[concatFetchNames: string]: SymbolicTensor[]} = {};
+
+// Cache for recipient count maps for given execution targets (i.e., fetches).
 const cachedRecipientCounts:
     {[concatFetchNames: string]: {[fetchName: string]: number}} = {};
 
@@ -233,10 +236,11 @@ export function execute(
   }
 
   // Check cache.
-  const concatFetchNames = outputNames.join(',');
+  const fetchAndFeedKey =
+      outputNames.join(',') + '|' + feedDict.names().join(',');
   let sorted: SymbolicTensor[];
   let recipientCounts: {[fetchName: string]: number};
-  if (cachedSorted[concatFetchNames] == null) {
+  if (cachedSorted[fetchAndFeedKey] == null) {
     // Cache doesn't contain the desired combination of fetches. Compute
     // topological sort for the combination for the first time.
     const out = getTopologicalSortAndRecipientCounts(fetchArray, feedDict);
@@ -244,13 +248,13 @@ export function execute(
     recipientCounts = out.recipientCounts;
 
     // Store results in cache for future use.
-    cachedSorted[concatFetchNames] = sorted;
-    cachedRecipientCounts[concatFetchNames] = recipientCounts;
+    cachedSorted[fetchAndFeedKey] = sorted;
+    cachedRecipientCounts[fetchAndFeedKey] = recipientCounts;
   }
-  sorted = cachedSorted[concatFetchNames];
+  sorted = cachedSorted[fetchAndFeedKey];
   recipientCounts = {};
   if (!training) {
-    Object.assign(recipientCounts, cachedRecipientCounts[concatFetchNames]);
+    Object.assign(recipientCounts, cachedRecipientCounts[fetchAndFeedKey]);
   }
 
   const internalFeedDict = new FeedDict(feedDict);
@@ -326,9 +330,7 @@ type RecipientMap = {
  * merges their results.
  *
  * @param fetch The array of fetches requested. Must be a non-empty array.
- * @param sorted An Array of SymbolicTensors to be populated in a topologically
- *   sorted order. The items will start from the "leaf nodes" of the graph
- *   and end at the fetches.
+ * @param feedDict The dictionary of fed values.
  * @returns sorted: Topologically-sorted array of SymbolicTensors.
  *   recipientCounts: Recipient counts for all SymbolicTensors in `sorted`.
  */
@@ -392,9 +394,7 @@ function recipientMap2Counts(recipientMap: RecipientMap): RecipientCounts {
  * fetch.
  *
  * @param fetch The single fetch requested.
- * @param sorted An Array of SymbolicTensors to be populated in a topologically
- *   sorted order. The items will start from the "leaf nodes" of the graph
- *   and end at the fetches.
+ * @param feedDict The dictionary of fed values.
  * @returns sorted: Topologically-sorted array of SymbolicTensors.
  *   recipientMap: Recipient names for all SymbolicTensors in `sorted`.
  */
