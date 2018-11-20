@@ -399,7 +399,6 @@ export async function fitTensors(
     throw new Error(
         'Cannot start training because another fit() call is ongoing.');
   }
-  model.stopTraining_ = false;
   model.isTraining = true;
   let inputs: Tensor[];
   let targets: Tensor[];

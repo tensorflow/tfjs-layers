@@ -278,7 +278,6 @@ export async function fitDataset<T extends TensorContainer>(
     throw new Error(
         'Cannot start training because another fit() call is ongoing.');
   }
-  model.stopTraining_ = false;
   model.isTraining = true;
 
   try {
@@ -329,6 +328,7 @@ export async function fitDataset<T extends TensorContainer>(
     model.history = history;
 
     await callbackList.onTrainBegin();
+    model.stopTraining_ = false;
     let epoch = config.initialEpoch == null ? 0 : config.initialEpoch;
     const epochLogs: UnresolvedLogs = {};
 
