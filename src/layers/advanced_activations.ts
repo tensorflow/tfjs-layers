@@ -12,7 +12,7 @@
  *  Advanced activation layers.
  */
 
-import {elu, leakyRelu, relu, serialization, Tensor, clipByValue} from '@tensorflow/tfjs-core';
+import {elu, leakyRelu, relu, prelu, serialization, Tensor, clipByValue} from '@tensorflow/tfjs-core';
 
 import {Softmax as softmaxActivation} from '../activations';
 import {cast} from '../backend/tfjs_backend';
@@ -129,6 +129,45 @@ export class LeakyReLU extends Layer {
 serialization.registerClass(LeakyReLU);
 
 // TODO(cais): Implement PReLU
+export interface PReLULayerConfig extends LayerConfig {
+  /**
+   * Float `>= 0`. Negative slope coefficient. Defaults to `0.3`.
+   */
+  alpha?: number;
+}
+
+export class PReLU extends Layer {
+  static className = 'PReLU';
+  readonly alpha: number;
+
+  readonly DEFAULT_ALPHA = 0.3;
+
+  constructor(config?: PReLULayerConfig) {
+    super(config == null ? {} : config);
+    if (config == null) {
+      config = {};
+    }
+
+    this.alpha = config.alpha == null ? this.DEFAULT_ALPHA : config.alpha;
+  }
+
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+    const x = getExactlyOneTensor(inputs);
+    return prelu(x, this.alpha);
+  }
+
+  computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
+    return inputShape;
+  }
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {alpha: this.alpha};
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+}
+serialization.SerializationMap.register(PReLU);
 
 export interface ELULayerConfig extends LayerConfig {
   /**
