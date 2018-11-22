@@ -78,6 +78,31 @@ describeMathCPUAndGPU('leakyReLU: Tensor', () => {
   });
 });
 
+describeMathCPU('PReLU: Symbolic', () => {
+  it('Correct output shape', () => {
+    const layer = tfl.layers.pReLU({alpha: 0.1});
+    const x = new tfl.SymbolicTensor('float32', [2, 3, 4], null, null, null);
+    const y = layer.apply(x) as tfl.SymbolicTensor;
+    expect(y.shape).toEqual(x.shape);
+  });
+});
+
+describeMathCPUAndGPU('PReLU: Tensor', () => {
+  it('alpha = default 0.3', () => {
+    const layer = tfl.layers.pReLU();
+    const x = tensor2d([[-1, -2], [0, 3]], [2, 2]);
+    const y = layer.apply(x) as Tensor;
+    expectTensorsClose(y, tensor2d([[-0.3, -0.6], [0, 3]], [2, 2]));
+  });
+
+  it('alpha = 0.1', () => {
+    const layer = tfl.layers.pReLU({alpha: 0.1});
+    const x = tensor2d([[-1, -2], [0, 3]], [2, 2]);
+    const y = layer.apply(x) as Tensor;
+    expectTensorsClose(y, tensor2d([[-0.1, -0.2], [0, 3]], [2, 2]));
+  });
+});
+
 describeMathCPU('elu: Symbolic', () => {
   it('Correct output shape', () => {
     const layer = tfl.layers.elu();

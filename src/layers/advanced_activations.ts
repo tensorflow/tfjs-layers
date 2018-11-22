@@ -128,7 +128,6 @@ export class LeakyReLU extends Layer {
 }
 serialization.registerClass(LeakyReLU);
 
-// TODO(cais): Implement PReLU
 export interface PReLULayerConfig extends LayerConfig {
   /**
    * Float `>= 0`. Negative slope coefficient. Defaults to `0.3`.
