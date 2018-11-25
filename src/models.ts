@@ -769,6 +769,25 @@ export class Sequential extends Model {
     // TODO(cais): Add sampleWeights.
   }
 
+ /**
+   * Runs a single gradient update on a single batch of data.
+   *
+   * @param x Input data. It could be one of the following:
+   *   - A `tf.Tensor`, or an Array of `tf.Tensor`s (in case the model has
+   *     multiple inputs).
+   *   - An Object mapping input names to corresponding `tf.Tensor` (if the
+   *     model has named inputs).
+   * @param y Target darta. It could be either a `tf.Tensor` a multiple
+   *   `tf.Tensor`s. It should be consistent with `x`.
+   * @returns Scalar training loss or losses (in case the model has
+   *   multiple outputs).
+   */
+  trainOnBatch(
+    x: Tensor|Tensor[]|{[inputName: string]: Tensor},
+    y: Tensor|Tensor[]|{[inputName: string]: Tensor}): Scalar|Scalar[] {
+    return this.model.trainOnBatch(x, y);
+  }
+
   /**
    * Trains the model for a fixed number of epochs (iterations on a dataset).
    *
