@@ -769,7 +769,7 @@ export class Sequential extends Model {
     // TODO(cais): Add sampleWeights.
   }
 
- /**
+  /**
    * Runs a single gradient update on a single batch of data.
    *
    * @param x Input data. It could be one of the following:

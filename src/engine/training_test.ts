@@ -2042,6 +2042,7 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
       loss: ['meanSquaredError', 'binaryCrossentropy'],
       optimizer: 'sgd'
     });
+    model.summary();  // DEBUG
 
     const batchSize = 4;
     const xs1 = tfc.ones([batchSize, 2]);

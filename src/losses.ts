@@ -10,7 +10,7 @@
 
 /* Original Source: losses.py */
 import * as tfc from '@tensorflow/tfjs-core';
-import {scalar, Tensor, Tensor1D, tidy} from '@tensorflow/tfjs-core';
+import {scalar, Tensor, Tensor1D, tidy, util} from '@tensorflow/tfjs-core';
 
 import {epsilon} from './backend/common';
 import {getScalar} from './backend/state';
@@ -232,18 +232,35 @@ export function sparseCategoricalCrossentropy(
  * equivalent formulation
  *    max(x, 0) - x * z + log(1 + exp(-abs(x)))
  *
- * @param target The labels.
- * @param output The logits.
+ * @param labels The labels.
+ * @param logits The logits.
  */
 export function sigmoidCrossEntropyWithLogits(
-    target: Tensor, output: Tensor): Tensor {
+    labels: Tensor, logits: Tensor): Tensor {
+  if (!util.arraysEqual(labels.shape, logits.shape)) {
+    throw new ValueError(
+        `logits and labels must have the same shape, but got shapes ` +
+        `${JSON.stringify(labels.shape)} and ${JSON.stringify(logits.shape)}`);
+  }
   return tidy(() => {
-    const maxOutput = tfc.maximum(output, tfc.zerosLike(output));
-    const outputXTarget = tfc.mul(output, target);
-    const sigmoidOutput =
-        tfc.log(tfc.add(getScalar(1), tfc.exp(tfc.neg(tfc.abs(output)))));
-    const result = tfc.add(tfc.sub(maxOutput, outputXTarget), sigmoidOutput);
-    return result;
+    // The logistic loss formula from above is
+    //   x - x * z + log(1 + exp(-x))
+    // For x < 0, a more numerically stable formula is
+    //   -x * z + log(1 + exp(x))
+    // Note that these two expressions can be combined into the following:
+    //   max(x, 0) - x * z + log(1 + exp(-abs(x)))
+    // To allow computing gradients at zero, we define custom versions of max
+    // and abs functions. TODO(cais): Confirm this. DO NOT SUBMIT.
+    const reluLogits = logits.relu();
+    const negAbsLogits = logits.abs().neg();
+    return reluLogits.sub(logits.mul(labels)).add(negAbsLogits.exp().log1p());
+    // TODO(cais): Remove.
+    // const maxOutput = tfc.maximum(output, tfc.zerosLike(output));
+    // const outputXTarget = tfc.mul(output, target);
+    // const sigmoidOutput =
+    //     tfc.log(tfc.add(getScalar(1), tfc.exp(tfc.neg(tfc.abs(output)))));
+    // const result = tfc.add(tfc.sub(maxOutput, outputXTarget), sigmoidOutput);
+    // return result;
   });
 }
 
@@ -251,7 +268,7 @@ export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     let y: Tensor;
     y = tfc.clipByValue(yPred, epsilon(), 1 - epsilon());
-    y = tfc.log(tfc.div(y, tfc.sub(tfc.onesLike(y), y)));
+    y = tfc.log(tfc.div(y, tfc.sub(getScalar(1), y)));
     return tfc.mean(sigmoidCrossEntropyWithLogits(yTrue, y), -1);
   });
 }

@@ -217,6 +217,49 @@ describeMathCPUAndGPU('sigmoidCrossEntropyWithLogits', () => {
     const result = losses.sigmoidCrossEntropyWithLogits(target, x);
     expectTensorsClose(result, expected);
   });
+
+  // Python TensorFlow reference code:
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // tf.enable_eager_execution()
+  //
+  // logits = np.array([[-10, -10, -10],
+  //                    [-5, -5, -5],
+  //                    [0, 0, 0],
+  //                    [0.5, 0.5, 0.5],
+  //                    [2, 2, 2]], dtype=np.float32)
+  // labels = np.array([[0, 0.5, 1],
+  //                    [0, 0.5, 1],
+  //                    [0, 0.5, 1],
+  //                    [0, 0.5, 1],
+  //                    [0, 0.5, 1]], dtype=np.float32)
+  //
+  // print(tf.nn.sigmoid_cross_entropy_with_logits(
+  //     logits=logits, labels=labels))
+  // ```
+  it('Comparison with TensorFlow references values', () => {
+    const logits = tensor2d(
+        [[-10, -10, -10],
+         [-5, -5, -5],
+         [0, 0, 0],
+         [0.5, 0.5, 0.5],
+         [2, 2, 2]]);
+    const labels = tensor2d(
+        [[0, 0.5, 1],
+         [0, 0.5, 1],
+         [0, 0.5, 1],
+         [0, 0.5, 1],
+         [0, 0.5, 1]]);
+    const outputs = losses.sigmoidCrossEntropyWithLogits(labels, logits);
+    expectTensorsClose(outputs, tensor2d(
+        [[4.5398901e-05, 5.0000453e+00, 1.0000046e+01],
+         [6.7153485e-03, 2.5067153e+00, 5.0067153e+00],
+         [6.9314718e-01, 6.9314718e-01, 6.9314718e-01],
+         [9.7407699e-01, 7.2407699e-01, 4.7407699e-01],
+         [2.1269281e+00, 1.1269280e+00, 1.2692800e-01]]));
+  });
 });
 
 
