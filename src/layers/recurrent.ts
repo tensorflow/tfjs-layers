@@ -329,7 +329,7 @@ export interface RNNLayerConfig extends BaseRNNLayerConfig {
  *   3D tensor with shape `[batchSize, timeSteps, inputDim]`.
  *
  * Output shape:
- *   - if `returnState`, an Array of tensors (i.e., `Tensor`s). The first
+ *   - if `returnState`, an Array of tensors (i.e., `tf.Tensor`s). The first
  *     tensor is the output. The remaining tensors are the states at the
  *     last time step, each with shape `[batchSize, units]`.
  *   - if `returnSequences`, the output will have shape
@@ -484,9 +484,19 @@ export class RNN extends Layer {
     }
   }
 
-  computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
-    throw new NotImplementedError(
-        'computeMask has not been implemented for RNN yet');
+  computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor
+      |Tensor[] {
+    if (Array.isArray(mask)) {
+      mask = mask[0];
+    }
+    const outputMask = this.returnSequences ? mask : null;
+
+    if (this.returnState) {
+      const stateMask = this.states.map(s => null);
+      return [outputMask].concat(stateMask);
+    } else {
+      return outputMask;
+    }
   }
 
   public build(inputShape: Shape|Shape[]): void {
@@ -543,7 +553,24 @@ export class RNN extends Layer {
     }
   }
 
-  resetStates(states?: Tensor|Tensor[]): void {
+  /**
+   * Reset the state tensors of the RNN.
+   *
+   * If the `states` argument is `undefined` or `null`, will set the
+   * state tensor(s) of the RNN to all-zero tensors of the appropriate
+   * shape(s).
+   *
+   * If `states` is provided, will set the state tensors of the RNN to its
+   * value.
+   *
+   * @param states Optional externally-provided initial states.
+   * @param training Whether this call is done during training. For stateful
+   *   RNNs, this affects whether the old states are kept or discarded. In
+   *   particular, if `training` is `true`, the old states will be kept so
+   *   that subsequent backpropgataion through time (BPTT) may work properly.
+   *   Else, the old states will be discarded.
+   */
+  resetStates(states?: Tensor|Tensor[], training = false): void {
     tidy(() => {
       if (!this.stateful) {
         throw new AttributeError(
@@ -583,12 +610,6 @@ export class RNN extends Layer {
           this.states[0] = tfc.zeros([batchSize, this.cell.stateSize]);
         }
       } else {
-        // Store old state tensors for complete disposal later, i.e., during
-        // the next no-arg call to this method. We do not dispose the old
-        // states immediately because that BPTT (among other things) require
-        // them.
-        this.keptStates.push(this.states.slice());
-
         if (!Array.isArray(states)) {
           states = [states];
         }
@@ -598,6 +619,17 @@ export class RNN extends Layer {
               `but it received ${states.length} state value(s). Input ` +
               `received: ${states}`);
         }
+
+        if (training === true) {
+          // Store old state tensors for complete disposal later, i.e., during
+          // the next no-arg call to this method. We do not dispose the old
+          // states immediately because that BPTT (among other things) require
+          // them.
+          this.keptStates.push(this.states.slice());
+        } else {
+          tfc.dispose(this.states);
+        }
+
         for (let index = 0; index < this.states.length; ++index) {
           const value = states[index];
           const dim = Array.isArray(this.cell.stateSize) ?
@@ -636,8 +668,8 @@ export class RNN extends Layer {
     constants = standardized.constants;
 
     // If any of `initial_state` or `constants` are specified and are
-    // `SymbolicTensor`s, then add them to the inputs and temporarily modify the
-    // input_spec to include them.
+    // `tf.SymbolicTensor`s, then add them to the inputs and temporarily modify
+    // the input_spec to include them.
 
     let additionalInputs: Array<Tensor|SymbolicTensor> = [];
     let additionalSpecs: InputSpec[] = [];
@@ -718,7 +750,7 @@ export class RNN extends Layer {
       // TODO(cais): Add support for constants.
       const step = (inputs: Tensor, states: Tensor[]) => {
         // `inputs` and `states` are concatenated to form a single `Array` of
-        // `Tensor`s as the input to `cell.call()`.
+        // `tf.Tensor`s as the input to `cell.call()`.
         const outputs =
             this.cell.call([inputs].concat(states), cellCallKwargs) as Tensor[];
         // Marshall the return value into output and new states.
@@ -736,7 +768,7 @@ export class RNN extends Layer {
       const states = rnnOutputs[2];
 
       if (this.stateful) {
-        this.resetStates(states);
+        this.resetStates(states, training);
       }
 
       const output = this.returnSequences ? outputs : lastOutput;
@@ -1348,6 +1380,9 @@ export interface GRUCellLayerConfig extends SimpleRNNCellLayerConfig {
    * Mode 2 will batch them into fewer, larger operations. These modes will
    * have different performance profiles on different hardware and
    * for different applications.
+   *
+   * Note: For superior performance, TensorFlow.js always uses implementation
+   * 2, regardless of the actual value of this configuration field.
    */
   implementation?: number;
 }
@@ -1508,6 +1543,9 @@ export class GRUCell extends RNNCell {
       let hTMinus1 = inputs[1];  // Previous memory state.
       inputs = inputs[0];
 
+      // Note: For superior performance, TensorFlow.js always uses
+      // implementation 2, regardless of the actual value of
+      // config.implementation.
       if (0 < this.dropout && this.dropout < 1 && this.dropoutMask == null) {
         this.dropoutMask = generateDropoutMask(
                                () => tfc.onesLike(inputs as Tensor),
@@ -1525,94 +1563,32 @@ export class GRUCell extends RNNCell {
       let z: Tensor;
       let r: Tensor;
       let hh: Tensor;
-      if (this.implementation === 1) {
-        const kernelZ = K.sliceAlongLastAxis(this.kernel.read(), 0, this.units);
-        const kernelR =
-            K.sliceAlongLastAxis(this.kernel.read(), this.units, this.units);
-        const kernelH = K.sliceAlongLastAxis(
-            this.kernel.read(), this.units * 2, this.units);
-        const recurrentKernelZ =
-            K.sliceAlongLastAxis(this.recurrentKernel.read(), 0, this.units);
-        const recurrentKernelR = K.sliceAlongLastAxis(
-            this.recurrentKernel.read(), this.units, this.units);
-        const recurrentKernelH = K.sliceAlongLastAxis(
-            this.recurrentKernel.read(), this.units * 2, this.units);
 
-        let inputsZ: Tensor, inputsR: Tensor, inputsH: Tensor;
-        if (0 < this.dropout && this.dropout < 1) {
-          inputsZ = tfc.mul(inputs, dpMask[0]);
-          inputsR = tfc.mul(inputs, dpMask[1]);
-          inputsH = tfc.mul(inputs, dpMask[2]);
-        } else {
-          inputsZ = inputs;
-          inputsR = inputs;
-          inputsH = inputs;
-        }
-
-        let xZ = K.dot(inputsZ, kernelZ);
-        let xR = K.dot(inputsR, kernelR);
-        let xH = K.dot(inputsH, kernelH);
-        if (this.useBias) {
-          const biasZ = K.sliceAlongFirstAxis(this.bias.read(), 0, this.units);
-          const biasR =
-              K.sliceAlongFirstAxis(this.bias.read(), this.units, this.units);
-          const biasH = K.sliceAlongFirstAxis(
-              this.bias.read(), this.units * 2, this.units);
-          xZ = K.biasAdd(xZ, biasZ);
-          xR = K.biasAdd(xR, biasR);
-          xH = K.biasAdd(xH, biasH);
-        }
-
-        let hTMinus1Z: Tensor;
-        let hTMinus1R: Tensor;
-        let hTMinus1H: Tensor;
-        if (0 < this.recurrentDropout && this.recurrentDropout < 1) {
-          hTMinus1Z = tfc.mul(hTMinus1, recDpMask[0]);
-          hTMinus1R = tfc.mul(hTMinus1, recDpMask[1]);
-          hTMinus1H = tfc.mul(hTMinus1, recDpMask[2]);
-        } else {
-          hTMinus1Z = hTMinus1;
-          hTMinus1R = hTMinus1;
-          hTMinus1H = hTMinus1;
-        }
-        z = this.recurrentActivation.apply(
-            tfc.add(xZ, K.dot(hTMinus1Z, recurrentKernelZ)));
-        r = this.recurrentActivation.apply(
-            tfc.add(xR, K.dot(hTMinus1R, recurrentKernelR)));
-        hh = this.activation.apply(
-            tfc.add(xH, K.dot(tfc.mul(r, hTMinus1H), recurrentKernelH)));
-      } else {
-        if (0 < this.dropout && this.dropout < 1) {
-          inputs = tfc.mul(inputs, dpMask[0]);
-        }
-        let matrixX = K.dot(inputs, this.kernel.read());
-        if (this.useBias) {
-          matrixX = K.biasAdd(matrixX, this.bias.read());
-        }
-        if (0 < this.dropout && this.dropout < 1) {
-          hTMinus1 = tfc.mul(hTMinus1, recDpMask[0]);
-        }
-        const matrixInner = K.dot(
-            hTMinus1,
-            K.sliceAlongLastAxis(
-                this.recurrentKernel.read(), 0, 2 * this.units));
-
-        const xZ = K.sliceAlongLastAxis(matrixX, 0, this.units);
-        const xR = K.sliceAlongLastAxis(matrixX, this.units, this.units);
-        const recurrentZ = K.sliceAlongLastAxis(matrixInner, 0, this.units);
-        const recurrentR =
-            K.sliceAlongLastAxis(matrixInner, this.units, this.units);
-
-        z = this.recurrentActivation.apply(tfc.add(xZ, recurrentZ));
-        r = this.recurrentActivation.apply(tfc.add(xR, recurrentR));
-
-        const xH = K.sliceAlongLastAxis(matrixX, 2 * this.units, this.units);
-        const recurrentH = K.dot(
-            tfc.mul(r, hTMinus1),
-            K.sliceAlongLastAxis(
-                this.recurrentKernel.read(), 2 * this.units, this.units));
-        hh = this.activation.apply(tfc.add(xH, recurrentH));
+      if (0 < this.dropout && this.dropout < 1) {
+        inputs = tfc.mul(inputs, dpMask[0]);
       }
+      let matrixX = K.dot(inputs, this.kernel.read());
+      if (this.useBias) {
+        matrixX = K.biasAdd(matrixX, this.bias.read());
+      }
+      if (0 < this.recurrentDropout && this.recurrentDropout < 1) {
+        hTMinus1 = tfc.mul(hTMinus1, recDpMask[0]);
+      }
+
+      const recurrentKernelValue = this.recurrentKernel.read();
+      const [rk1, rk2] = tfc.split(
+          recurrentKernelValue, [2 * this.units, this.units],
+          recurrentKernelValue.rank - 1);
+      const matrixInner = K.dot(hTMinus1, rk1);
+
+      const [xZ, xR, xH] = tfc.split(matrixX, 3, matrixX.rank - 1);
+      const [recurrentZ, recurrentR] =
+          tfc.split(matrixInner, 2, matrixInner.rank - 1);
+      z = this.recurrentActivation.apply(tfc.add(xZ, recurrentZ));
+      r = this.recurrentActivation.apply(tfc.add(xR, recurrentR));
+
+      const recurrentH = K.dot(tfc.mul(r, hTMinus1), rk2);
+      hh = this.activation.apply(tfc.add(xH, recurrentH));
 
       const h = tfc.add(
           tfc.mul(z, hTMinus1), tfc.mul(tfc.add(getScalar(1), tfc.neg(z)), hh));
@@ -1669,6 +1645,9 @@ export interface GRULayerConfig extends SimpleRNNLayerConfig {
    * Mode 2 will batch them into fewer, larger operations. These modes will
    * have different performance profiles on different hardware and
    * for different applications.
+   *
+   * Note: For superior performance, TensorFlow.js always uses implementation
+   * 2, regardless of the actual value of this configuration field.
    */
   implementation?: number;
 }
@@ -1856,8 +1835,11 @@ export interface LSTMCellLayerConfig extends SimpleRNNCellLayerConfig {
    * Mode 2 will batch them into fewer, larger operations. These modes will
    * have different performance profiles on different hardware and
    * for different applications.
+   *
+   * Note: For superior performance, TensorFlow.js always uses implementation
+   * 2, regardless of the actual value of this configuration field.
    */
-  implementation?: 1|2;
+  implementation?: number;
 }
 
 /**
@@ -2052,107 +2034,31 @@ export class LSTMCell extends RNNCell {
       const recDpMask =
           this.recurrentDropoutMask as [Tensor, Tensor, Tensor, Tensor];
 
+      // Note: For superior performance, TensorFlow.js always uses
+      // implementation 2 regardless of the actual value of
+      // config.implementation.
       let i: Tensor;
       let f: Tensor;
       let c: Tensor;
       let o: Tensor;
-      if (this.implementation === 1) {
-        const kernelI = K.sliceAlongLastAxis(this.kernel.read(), 0, this.units);
-        const kernelF =
-            K.sliceAlongLastAxis(this.kernel.read(), this.units, this.units);
-        const kernelC = K.sliceAlongLastAxis(
-            this.kernel.read(), this.units * 2, this.units);
-        const kernelO = K.sliceAlongLastAxis(
-            this.kernel.read(), this.units * 3, this.units);
-        const recurrentKernelI =
-            K.sliceAlongLastAxis(this.recurrentKernel.read(), 0, this.units);
-        const recurrentKernelF = K.sliceAlongLastAxis(
-            this.recurrentKernel.read(), this.units, this.units);
-        const recurrentKernelC = K.sliceAlongLastAxis(
-            this.recurrentKernel.read(), this.units * 2, this.units);
-        const recurrentKernelO = K.sliceAlongLastAxis(
-            this.recurrentKernel.read(), this.units * 3, this.units);
-
-        let inputsI: Tensor, inputsF: Tensor, inputsC: Tensor, inputsO: Tensor;
-        if (0 < this.dropout && this.dropout < 1) {
-          inputsI = tfc.mul(inputs, dpMask[0]);
-          inputsF = tfc.mul(inputs, dpMask[1]);
-          inputsC = tfc.mul(inputs, dpMask[2]);
-          inputsO = tfc.mul(inputs, dpMask[3]);
-        } else {
-          inputsI = inputs;
-          inputsF = inputs;
-          inputsC = inputs;
-          inputsO = inputs;
-        }
-
-        let xI = K.dot(inputsI, kernelI);
-        let xF = K.dot(inputsF, kernelF);
-        let xC = K.dot(inputsC, kernelC);
-        let xO = K.dot(inputsO, kernelO);
-        if (this.useBias) {
-          const biasI = K.sliceAlongFirstAxis(this.bias.read(), 0, this.units);
-          const biasF =
-              K.sliceAlongFirstAxis(this.bias.read(), this.units, this.units);
-          const biasC = K.sliceAlongFirstAxis(
-              this.bias.read(), this.units * 2, this.units);
-          const biasO = K.sliceAlongFirstAxis(
-              this.bias.read(), this.units * 3, this.units);
-          xI = K.biasAdd(xI, biasI);
-          xF = K.biasAdd(xF, biasF);
-          xC = K.biasAdd(xC, biasC);
-          xO = K.biasAdd(xO, biasO);
-        }
-
-        let hTMinus1I: Tensor, hTMinus1F: Tensor, hTMinus1C: Tensor,
-            hTMinus1O: Tensor;
-        if (0 < this.recurrentDropout && this.recurrentDropout < 1) {
-          hTMinus1I = tfc.mul(hTMinus1, recDpMask[0]);
-          hTMinus1F = tfc.mul(hTMinus1, recDpMask[1]);
-          hTMinus1C = tfc.mul(hTMinus1, recDpMask[2]);
-          hTMinus1O = tfc.mul(hTMinus1, recDpMask[3]);
-        } else {
-          hTMinus1I = hTMinus1;
-          hTMinus1F = hTMinus1;
-          hTMinus1C = hTMinus1;
-          hTMinus1O = hTMinus1;
-        }
-        i = this.recurrentActivation.apply(
-            tfc.add(xI, K.dot(hTMinus1I, recurrentKernelI)));
-        f = this.recurrentActivation.apply(
-            tfc.add(xF, K.dot(hTMinus1F, recurrentKernelF)));
-        c = tfc.add(
-            tfc.mul(f, cTMinus1),
-            tfc.mul(
-                i,
-                this.activation.apply(
-                    tfc.add(xC, K.dot(hTMinus1C, recurrentKernelC)))));
-        o = this.recurrentActivation.apply(
-            tfc.add(xO, K.dot(hTMinus1O, recurrentKernelO)));
-      } else {
-        if (0 < this.dropout && this.dropout < 1) {
-          inputs = tfc.mul(inputs, dpMask[0]);
-        }
-        let z = K.dot(inputs, this.kernel.read());
-        if (0 < this.recurrentDropout && this.recurrentDropout < 1) {
-          hTMinus1 = tfc.mul(hTMinus1, recDpMask[0]);
-        }
-        z = tfc.add(z, K.dot(hTMinus1, this.recurrentKernel.read()));
-        if (this.useBias) {
-          z = K.biasAdd(z, this.bias.read());
-        }
-
-        const z0 = K.sliceAlongLastAxis(z, 0, this.units);
-        const z1 = K.sliceAlongLastAxis(z, this.units, this.units);
-        const z2 = K.sliceAlongLastAxis(z, this.units * 2, this.units);
-        const z3 = K.sliceAlongLastAxis(z, this.units * 3, this.units);
-
-        i = this.recurrentActivation.apply(z0);
-        f = this.recurrentActivation.apply(z1);
-        c = tfc.add(
-            tfc.mul(f, cTMinus1), tfc.mul(i, this.activation.apply(z2)));
-        o = this.recurrentActivation.apply(z3);
+      if (0 < this.dropout && this.dropout < 1) {
+        inputs = tfc.mul(inputs, dpMask[0]);
       }
+      let z = K.dot(inputs, this.kernel.read());
+      if (0 < this.recurrentDropout && this.recurrentDropout < 1) {
+        hTMinus1 = tfc.mul(hTMinus1, recDpMask[0]);
+      }
+      z = tfc.add(z, K.dot(hTMinus1, this.recurrentKernel.read()));
+      if (this.useBias) {
+        z = K.biasAdd(z, this.bias.read());
+      }
+
+      const [z0, z1, z2, z3] = tfc.split(z, 4, z.rank - 1);
+
+      i = this.recurrentActivation.apply(z0);
+      f = this.recurrentActivation.apply(z1);
+      c = tfc.add(tfc.mul(f, cTMinus1), tfc.mul(i, this.activation.apply(z2)));
+      o = this.recurrentActivation.apply(z3);
 
       const h = tfc.mul(o, this.activation.apply(c));
       // TODO(cais): Add use_learning_phase flag properly.
@@ -2216,8 +2122,11 @@ export interface LSTMLayerConfig extends SimpleRNNLayerConfig {
    *   batch them into fewer, larger operations. These modes will
    *   have different performance profiles on different hardware and
    *   for different applications.
+   *
+   * Note: For superior performance, TensorFlow.js always uses implementation
+   * 2, regardless of the actual value of this config field.
    */
-  implementation?: 1|2;
+  implementation?: number;
 }
 
 /**
@@ -2531,7 +2440,7 @@ export class StackedRNNCells extends RNNCell {
   /**
    * Retrieve the weights of a the model.
    *
-   * @returns A flat `Array` of `Tensor`s.
+   * @returns A flat `Array` of `tf.Tensor`s.
    */
   getWeights(): Tensor[] {
     const weights: LayerVariable[] = [];
@@ -2544,8 +2453,8 @@ export class StackedRNNCells extends RNNCell {
   /**
    * Set the weights of the model.
    *
-   * @param weights An `Array` of `Tensor`s with shapes and types matching the
-   *   output of `getWeights()`.
+   * @param weights An `Array` of `tf.Tensor`s with shapes and types matching
+   *     the output of `getWeights()`.
    */
   setWeights(weights: Tensor[]): void {
     const tuples: Array<[LayerVariable, Tensor]> = [];

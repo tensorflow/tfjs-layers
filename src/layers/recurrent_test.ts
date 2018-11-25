@@ -787,11 +787,57 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
         y2 = model.predict(x) as Tensor;
         expectArraysClose(y2, tfc.ones([batchSize, units]).mul(scalar2));
       });
-      model.resetStates();
-      // Assert no memory leak.
+      // Assert no memory leak, even without resetStates() being called.
       expect(tfc.memory().numTensors).toEqual(numTensors0);
     });
   }
+
+  it('computeMask: returnSequence = false, returnState = false', () => {
+    const sequenceLength = 3;
+    const rnn = tfl.layers.simpleRNN({
+      units,
+      returnSequences: false,
+      returnState: false,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    });
+    const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+    const m = tfc.ones([sequenceLength, 1]);
+    const mask = rnn.computeMask(x, m);
+    expect(mask).toBeNull();
+  });
+
+  it('computeMask: returnSequence = true, returnState = false', () => {
+    const sequenceLength = 3;
+    const rnn = tfl.layers.simpleRNN({
+      units,
+      returnSequences: true,
+      returnState: false,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    });
+    const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+    const m = tfc.ones([sequenceLength, 1]);
+    const mask = rnn.computeMask(x, m) as Tensor;
+    expectTensorsClose(mask, m);
+  });
+
+  it('computeMask: returnSequence = true, returnState = true', () => {
+    const sequenceLength = 3;
+    const rnn = tfl.layers.simpleRNN({
+      units,
+      returnSequences: true,
+      returnState: true,
+      stateful: true,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    });
+    const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+    rnn.apply(x);
+    rnn.resetStates();  // Let the RNN layer object construct its state first.
+    const m = tfc.ones([sequenceLength, 1]);
+    const masks = rnn.computeMask(x, m) as Tensor[];
+    expect(masks.length).toEqual(2);
+    expectTensorsClose(masks[0], m);
+    expect(masks[1]).toBeNull();
+  });
 
   // The reference values can be obtained with the following PyKeras code:
   // ```python
@@ -971,14 +1017,17 @@ describeMathCPU('GRU Symbolic', () => {
      });
 
 
-  it('Serialization round trip', () => {
-    const layer = tfl.layers.gru({units: 4});
-    const pythonicConfig = convertTsToPythonic(layer.getConfig());
-    // tslint:disable-next-line:no-any
-    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
-    const layerPrime = tfl.layers.gru(tsConfig);
-    expect(layerPrime.getConfig().units).toEqual(4);
-  });
+  for (const implementation of [1, 2]) {
+    it('Serialization round trip', () => {
+      const layer = tfl.layers.gru({units: 4, implementation});
+      const pythonicConfig = convertTsToPythonic(layer.getConfig());
+      // tslint:disable-next-line:no-any
+      const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+      const layerPrime = tfl.layers.gru(tsConfig);
+      expect(layerPrime.getConfig().units).toEqual(4);
+      expect(layerPrime.getConfig().implementation).toEqual(implementation);
+    });
+  }
 });
 
 describeMathCPUAndGPU('GRU Tensor', () => {
@@ -1223,8 +1272,7 @@ describeMathCPUAndGPU('GRU Tensor', () => {
       expectArraysClose(
           y4, tfc.ones([batchSize, units]).mul(tfc.scalar(0.9371182)));
     });
-    model.resetStates();
-    // Assert no memory leak.
+    // Assert no memory leak, even without resetStates() being called.
     expect(tfc.memory().numTensors).toEqual(numTensors0);
   });
 
@@ -1434,14 +1482,17 @@ describeMathCPU('LSTM Symbolic', () => {
      });
 
 
-  it('Serialization round trip', () => {
-    const layer = tfl.layers.lstm({units: 4});
-    const pythonicConfig = convertTsToPythonic(layer.getConfig());
-    // tslint:disable-next-line:no-any
-    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
-    const layerPrime = tfl.layers.lstm(tsConfig);
-    expect(layerPrime.getConfig().units).toEqual(4);
-  });
+  for (const implementation of [1, 2]) {
+    it('Serialization round trip', () => {
+      const layer = tfl.layers.lstm({units: 4, implementation});
+      const pythonicConfig = convertTsToPythonic(layer.getConfig());
+      // tslint:disable-next-line:no-any
+      const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+      const layerPrime = tfl.layers.lstm(tsConfig);
+      expect(layerPrime.getConfig().units).toEqual(4);
+      expect(layerPrime.getConfig().implementation).toEqual(implementation);
+    });
+  }
 });
 
 describeMathCPUAndGPU('LSTM Tensor', () => {
@@ -1694,8 +1745,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         expectArraysClose(
             y2, tfc.ones([batchSize, units]).mul(tfc.scalar(0.99998766)));
       });
-      model.resetStates();
-      // Assert no memory leak.
+      // Assert no memory leak, even without resetStates() being called.
       expect(tfc.memory().numTensors).toEqual(numTensors0);
     });
 
