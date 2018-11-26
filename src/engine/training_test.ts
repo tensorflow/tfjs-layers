@@ -2095,6 +2095,56 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
     expectTensorsClose(losses[1], tfc.scalar(0.45212176));
     expectTensorsClose(losses[2], tfc.scalar(0.66861194));
   });
+
+  // Reference Python Keras code.
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Dense(
+  //     3, input_shape=[2], activation='softmax', kernel_initializer='ones'))
+  // model.compile(loss='categorical_crossentropy', optimizer='sgd')
+  //
+  // xs = np.array([[0.5, 0.5], [1, 1], [0, 1]], dtype=np.float32)
+  // ys = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
+  //
+  // for _ in range(3):
+  //   loss = model.train_on_batch(xs, ys)
+  //   print(loss)
+  // ```
+  it('Categorical: No memory leak', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 3,
+      inputShape: [2],
+      activation: 'softmax',
+      kernelInitializer: 'ones'
+    }));
+    model.compile({loss: 'categoricalCrossentropy', optimizer: 'sgd'});
+
+    const xs = tfc.tensor2d([[0.5, 0.5], [1, 1], [0, 1]]);
+    const ys = tfc.tensor2d([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
+    // Perform burn-in.
+    (model.trainOnBatch(xs, ys) as Scalar).dispose();
+    const numTensors0 = memory().numTensors;
+    for (let i = 0; i < 3; ++i) {
+      const loss = model.trainOnBatch(xs, ys) as Scalar;
+      loss.print();
+      tfc.tidy(() => {
+        if (i === 0) {
+          expectTensorsClose(loss, tfc.scalar(1.0986123));
+        } else if (i === 1) {
+          expectTensorsClose(loss, tfc.scalar(1.0978721));
+        } else {
+          expectTensorsClose(loss, tfc.scalar(1.0971345));
+        }
+      });
+      loss.dispose();
+      // Assert no tensor memory leak.
+      expect(memory().numTensors).toEqual(numTensors0);
+    }
+  });
 });
 
 describeMathCPUAndGPU('Model.evaluate', () => {
