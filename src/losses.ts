@@ -252,13 +252,6 @@ export function sigmoidCrossEntropyWithLogits(
     const reluLogits = logits.relu();
     const negAbsLogits = logits.abs().neg();
     return reluLogits.sub(logits.mul(labels)).add(negAbsLogits.exp().log1p());
-    // TODO(cais): Remove.
-    // const maxOutput = tfc.maximum(output, tfc.zerosLike(output));
-    // const outputXTarget = tfc.mul(output, target);
-    // const sigmoidOutput =
-    //     tfc.log(tfc.add(getScalar(1), tfc.exp(tfc.neg(tfc.abs(output)))));
-    // const result = tfc.add(tfc.sub(maxOutput, outputXTarget), sigmoidOutput);
-    // return result;
   });
 }
 
