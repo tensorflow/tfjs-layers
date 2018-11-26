@@ -2144,7 +2144,7 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
     }
   });
 
-  it('Sparse categorical: w/ metrics: correctness and no leak', async () => {
+  fit('Sparse categorical: w/ metrics: correctness and no leak', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
@@ -2161,19 +2161,18 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
     const ys = tfc.tensor2d([[2], [1], [0]]);
     
     for (let i = 0; i < 3; ++i) {
-      const out = await model.trainOnBatch(xs, ys) as number[];
-      console.log(out);
+      const [loss, acc] = await model.trainOnBatch(xs, ys) as number[];
       // TODO(cais): Fix the tests. DO NOT SUBMIT.
-      // if (i === 0) {
-      //   expect(loss).toBeCloseTo(1.0986123);
-      //   expect(acc).toBeCloseTo(0.3333333);
-      // } else if (i === 1) {
-      //   expect(loss).toBeCloseTo(1.0953004);
-      //   expect(acc).toBeCloseTo(0.3333333);
-      // } else if (i === 2) {
-      //   expect(loss).toBeCloseTo(1.091198);
-      //   expect(acc).toBeCloseTo(0.3333333);
-      // }
+      if (i === 0) {
+        expect(loss).toBeCloseTo(1.0986123);
+        expect(acc).toBeCloseTo(0.3333333);
+      } else if (i === 1) {
+        expect(loss).toBeCloseTo(1.0953004);
+        expect(acc).toBeCloseTo(0.3333333);
+      } else if (i === 2) {
+        expect(loss).toBeCloseTo(1.091198);
+        expect(acc).toBeCloseTo(0.3333333);
+      }
     }
   });
 });
