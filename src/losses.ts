@@ -249,8 +249,6 @@ export function sigmoidCrossEntropyWithLogits(
     //   -x * z + log(1 + exp(x))
     // Note that these two expressions can be combined into the following:
     //   max(x, 0) - x * z + log(1 + exp(-abs(x)))
-    // To allow computing gradients at zero, we define custom versions of max
-    // and abs functions. TODO(cais): Confirm this. DO NOT SUBMIT.
     const reluLogits = logits.relu();
     const negAbsLogits = logits.abs().neg();
     return reluLogits.sub(logits.mul(labels)).add(negAbsLogits.exp().log1p());
