@@ -2144,7 +2144,7 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
     }
   });
 
-  fit('Sparse categorical: w/ metrics: correctness and no leak', async () => {
+  it('Sparse categorical: w/ metrics: correctness and no leak', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
