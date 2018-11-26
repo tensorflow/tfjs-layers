@@ -1430,6 +1430,14 @@ export class Model extends Container implements tfc.InferenceModel {
 
   /**
    * Runs a single gradient update on a single batch of data.
+   * 
+   * This method differs from `fit()` and `fitDataset()` in the following
+   * regards:
+   *   - It operates on exactly one batch of data.
+   *   - It returns only the loss and matric values, instead of
+   *     returning the batch-by-batch loss and metric values.
+   *   - It doesn't support fine-grained options such as verbosity and
+   *     callbacks.
    *
    * @param x Input data. It could be one of the following:
    *   - A `tf.Tensor`, or an Array of `tf.Tensor`s (in case the model has
@@ -1438,15 +1446,16 @@ export class Model extends Container implements tfc.InferenceModel {
    *     model has named inputs).
    * @param y Target darta. It could be either a `tf.Tensor` a multiple
    *   `tf.Tensor`s. It should be consistent with `x`.
-   * @returns Scalar training loss or losses (in case the model has
-   *   multiple outputs).
+   * @returns Training loss or losses (in case the model has
+   *   multiple outputs), along with metrics (if any), as numbers.
    */
   /**
    * @doc {heading: 'Models', subheading: 'Classes'}
    */
-  trainOnBatch(
+  async trainOnBatch(
     x: Tensor|Tensor[]|{[inputName: string]: Tensor},
-    y: Tensor|Tensor[]|{[inputName: string]: Tensor}): Scalar|Scalar[] {
+    y: Tensor|Tensor[]|{[inputName: string]: Tensor}):
+    Promise<number|number[]> {
     // TODO(cais): Support sampleWeight and classWeight.
     // TODO(cais): Support Dataset objects.
     const standardizeOut = this.standardizeUserData(x, y);
@@ -1454,7 +1463,12 @@ export class Model extends Container implements tfc.InferenceModel {
     const targets = standardizeOut[1];
     const trainFunction = this.makeTrainFunction();
     const losses = trainFunction(inputs.concat(targets));
-    return singletonOrArray(losses);
+    const lossValues: number[] = [];
+    for (const loss of losses) {
+      lossValues.push((await loss.data())[0]);
+    }
+    tfc.dispose(losses);
+    return singletonOrArray(lossValues);
   }
 
   /**

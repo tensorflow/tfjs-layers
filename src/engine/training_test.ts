@@ -1999,7 +1999,7 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
   //   loss = model.train_on_batch(xs, ys)
   //   print(loss)
   // ```
-  it('Sequential MLP: correctness', () => {
+  fit('Sequential MLP: correctness', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 1,
@@ -2011,12 +2011,12 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
     const batchSize = 4;
     const xs = tfc.ones([batchSize, 3]);
     const ys = tfc.ones([batchSize, 1]);
-    let loss = model.trainOnBatch(xs, ys) as Scalar;
-    expectTensorsClose(loss, tfc.scalar(1.0));
-    loss = model.trainOnBatch(xs, ys) as Scalar;
-    expectTensorsClose(loss, tfc.scalar(0.8464));
-    loss = model.trainOnBatch(xs, ys) as Scalar;
-    expectTensorsClose(loss, tfc.scalar(0.716393));
+    let loss = await model.trainOnBatch(xs, ys) as number;
+    expect(loss).toBeCloseTo(1.0);
+    loss = await model.trainOnBatch(xs, ys) as number;
+    expect(loss).toBeCloseTo(0.8464);
+    loss = await model.trainOnBatch(xs, ys) as number;
+    expect(loss).toBeCloseTo(0.716393);
   });
 
   // Reference Python Keras code:
@@ -2050,7 +2050,7 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
   //   losses = model.train_on_batch([xs1, xs2], [ys1, ys2])
   //   print(losses)
   // ```
-  it('Functional two inputs and two outputs: correctness', () => {
+  fit('Functional two inputs and two outputs: correctness', async () => {
     const input1 = tfl.input({shape: [2]});
     const input2 = tfl.input({shape: [2]});
     const y1 = tfl.layers.add().apply([input1, input2]);
@@ -2079,21 +2079,21 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
     const xs2 = tfc.ones([batchSize, 2]);
     const ys1 = tfc.ones([batchSize, 1]);
     const ys2 = tfc.ones([batchSize, 1]);
-    let losses = model.trainOnBatch([xs1, xs2],  [ys1, ys2]) as Scalar[];
+    let losses = await model.trainOnBatch([xs1, xs2],  [ys1, ys2]) as number[];
     expect(losses.length).toEqual(3);
-    expectTensorsClose(losses[0], tfc.scalar(1.6931472));
-    expectTensorsClose(losses[1], tfc.scalar(1.0));
-    expectTensorsClose(losses[2], tfc.scalar(0.6931472));
-    losses = model.trainOnBatch([xs1, xs2],  [ys1, ys2]) as Scalar[];
+    expect(losses[0]).toBeCloseTo(1.6931472);
+    expect(losses[1]).toBeCloseTo(1.0);
+    expect(losses[2]).toBeCloseTo(0.6931472);
+    losses = await model.trainOnBatch([xs1, xs2],  [ys1, ys2]) as number[];
     expect(losses.length).toEqual(3);
-    expectTensorsClose(losses[0], tfc.scalar(1.3531253));
-    expectTensorsClose(losses[1], tfc.scalar(0.6724));
-    expectTensorsClose(losses[2], tfc.scalar(0.68072534));
-    losses = model.trainOnBatch([xs1, xs2],  [ys1, ys2]) as Scalar[];
+    expect(losses[0]).toBeCloseTo(1.3531253);
+    expect(losses[1]).toBeCloseTo(0.6724);
+    expect(losses[2]).toBeCloseTo(0.68072534);
+    losses = await model.trainOnBatch([xs1, xs2],  [ys1, ys2]) as number[];
     expect(losses.length).toEqual(3);
-    expectTensorsClose(losses[0], tfc.scalar(1.1207337));
-    expectTensorsClose(losses[1], tfc.scalar(0.45212176));
-    expectTensorsClose(losses[2], tfc.scalar(0.66861194));
+    expect(losses[0]).toBeCloseTo(1.1207337);
+    expect(losses[1]).toBeCloseTo(0.45212176);
+    expect(losses[2]).toBeCloseTo(0.66861194);
   });
 
   // Reference Python Keras code.
@@ -2113,7 +2113,7 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
   //   loss = model.train_on_batch(xs, ys)
   //   print(loss)
   // ```
-  it('Categorical: No memory leak', () => {
+  fit('Categorical: No memory leak', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
@@ -2126,23 +2126,21 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
     const xs = tfc.tensor2d([[0.5, 0.5], [1, 1], [0, 1]]);
     const ys = tfc.tensor2d([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
     // Perform burn-in.
-    (model.trainOnBatch(xs, ys) as Scalar).dispose();
+    model.trainOnBatch(xs, ys);
     const numTensors0 = memory().numTensors;
     for (let i = 0; i < 3; ++i) {
-      const loss = model.trainOnBatch(xs, ys) as Scalar;
-      loss.print();
+      const loss = await model.trainOnBatch(xs, ys);
       tfc.tidy(() => {
         if (i === 0) {
-          expectTensorsClose(loss, tfc.scalar(1.0986123));
+          expect(loss).toBeCloseTo(1.0986123);
         } else if (i === 1) {
-          expectTensorsClose(loss, tfc.scalar(1.0978721));
+          expect(loss).toBeCloseTo(1.0978721);
         } else {
-          expectTensorsClose(loss, tfc.scalar(1.0971345));
+          expect(loss).toBeCloseTo(1.0971345);
         }
       });
-      loss.dispose();
       // Assert no tensor memory leak.
-      expect(memory().numTensors).toEqual(numTensors0);
+      expect(memory().numTensors).toBeLessThanOrEqual(numTensors0);
     }
   });
 });

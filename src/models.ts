@@ -849,6 +849,14 @@ export class Sequential extends Model {
   /**
    * Runs a single gradient update on a single batch of data.
    *
+   * This method differs from `fit()` and `fitDataset()` in the following
+   * regards:
+   *   - It operates on exactly one batch of data.
+   *   - It returns only the loss and matric values, instead of
+   *     returning the batch-by-batch loss and metric values.
+   *   - It doesn't support fine-grained options such as verbosity and
+   *     callbacks.
+   * 
    * @param x Input data. It could be one of the following:
    *   - A `tf.Tensor`, or an Array of `tf.Tensor`s (in case the model has
    *     multiple inputs).
@@ -856,15 +864,16 @@ export class Sequential extends Model {
    *     model has named inputs).
    * @param y Target darta. It could be either a `tf.Tensor` a multiple
    *   `tf.Tensor`s. It should be consistent with `x`.
-   * @returns Scalar training loss or losses (in case the model has
-   *   multiple outputs).
+   * @returns Training loss or losses (in case the model has
+   *   multiple outputs), along with metrics (if any), as numbers.
    */
   /**
    * @doc {heading: 'Models', subheading: 'Classes'}
    */
-  trainOnBatch(
+  async trainOnBatch(
     x: Tensor|Tensor[]|{[inputName: string]: Tensor},
-    y: Tensor|Tensor[]|{[inputName: string]: Tensor}): Scalar|Scalar[] {
+    y: Tensor|Tensor[]|{[inputName: string]: Tensor}):
+    Promise<number|number[]> {
     return this.model.trainOnBatch(x, y);
   }
 
