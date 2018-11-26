@@ -184,23 +184,29 @@ describeMathCPUAndGPU('categoricalCrossentropy ', () => {
 });
 
 describeMathCPUAndGPU('sparseCategoricalCrossentropy ', () => {
-  it('from logits', () => {
-    const x = tensor2d([[1, 2, 3], [4, 5, 6]], [2, 3]);
-    const target = tensor1d([0, 2]);
-    const expected = tensor1d([
-      -1 * Math.log(Math.exp(1) / (Math.exp(1) + Math.exp(2) + Math.exp(3))),
-      -1 * Math.log(Math.exp(6) / (Math.exp(4) + Math.exp(5) + Math.exp(6)))
-    ]);
-    const result = losses.sparseCategoricalCrossentropy(target, x, true);
-    expectTensorsClose(result, expected);
-  });
-
-  it('from softmax', () => {
+  // Reference Python TensorFlow code:
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // with tf.Session() as sess:
+  //   x = tf.placeholder(tf.float32, [None, 3])
+  //   target = tf.placeholder(tf.float32, [None])
+  //   crossentropy = tf.keras.backend.sparse_categorical_crossentropy(
+  //       target, x)
+  //   out = sess.run(
+  //       crossentropy,
+  //       feed_dict={
+  //           x: np.array([[0.1, 0.2, 0.7], [0.2, 0.3, 0.5]], dtype=np.float32),
+  //           target: np.array([0, 2], dtype=np.float32)
+  //           })
+  //   print(out)
+  // ```
+  it('sparseCategoricalCrossentropy', () => {
     const x = tensor2d([[0.1, 0.2, 0.7], [0.2, 0.3, 0.5]], [2, 3]);
     const target = tensor1d([0, 2]);
-    const expected = tensor1d([-1 * Math.log(0.1), -1 * Math.log(0.5)]);
-    const result = losses.sparseCategoricalCrossentropy(target, x, false);
-    expectTensorsClose(result, expected);
+    const result = losses.sparseCategoricalCrossentropy(target, x);
+    expectTensorsClose(result, tensor1d([2.3025851, 0.6931472]));
   });
 });
 
