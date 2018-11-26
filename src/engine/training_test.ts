@@ -1999,7 +1999,7 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
   //   loss = model.train_on_batch(xs, ys)
   //   print(loss)
   // ```
-  fit('Sequential MLP: correctness', async () => {
+  it('Sequential MLP: correctness', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 1,
@@ -2050,7 +2050,7 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
   //   losses = model.train_on_batch([xs1, xs2], [ys1, ys2])
   //   print(losses)
   // ```
-  fit('Functional two inputs and two outputs: correctness', async () => {
+  it('Functional two inputs and two outputs: correctness', async () => {
     const input1 = tfl.input({shape: [2]});
     const input2 = tfl.input({shape: [2]});
     const y1 = tfl.layers.add().apply([input1, input2]);
@@ -2113,7 +2113,7 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
   //   loss = model.train_on_batch(xs, ys)
   //   print(loss)
   // ```
-  fit('Categorical: No memory leak', async () => {
+  it('Categorical: Correctness and no memory leak', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
@@ -2141,6 +2141,39 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
       });
       // Assert no tensor memory leak.
       expect(memory().numTensors).toBeLessThanOrEqual(numTensors0);
+    }
+  });
+
+  it('Sparse categorical: w/ metrics: correctness and no leak', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 3,
+      inputShape: [2],
+      kernelInitializer: 'ones'
+    }));
+    model.compile({
+      loss: 'sparseCategoricalCrossentropy',
+      optimizer: 'sgd',
+      metrics: ['acc']
+    });
+
+    const xs = tfc.tensor2d([[0, 0.5], [0.5, 1], [0, 1]]);
+    const ys = tfc.tensor2d([[2], [1], [0]]);
+    
+    for (let i = 0; i < 3; ++i) {
+      const out = await model.trainOnBatch(xs, ys) as number[];
+      console.log(out);
+      // TODO(cais): Fix the tests. DO NOT SUBMIT.
+      // if (i === 0) {
+      //   expect(loss).toBeCloseTo(1.0986123);
+      //   expect(acc).toBeCloseTo(0.3333333);
+      // } else if (i === 1) {
+      //   expect(loss).toBeCloseTo(1.0953004);
+      //   expect(acc).toBeCloseTo(0.3333333);
+      // } else if (i === 2) {
+      //   expect(loss).toBeCloseTo(1.091198);
+      //   expect(acc).toBeCloseTo(0.3333333);
+      // }
     }
   });
 });
