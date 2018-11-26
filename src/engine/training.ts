@@ -1441,6 +1441,9 @@ export class Model extends Container implements tfc.InferenceModel {
    * @returns Scalar training loss or losses (in case the model has
    *   multiple outputs).
    */
+  /**
+   * @doc {heading: 'Models', subheading: 'Classes'}
+   */
   trainOnBatch(
     x: Tensor|Tensor[]|{[inputName: string]: Tensor},
     y: Tensor|Tensor[]|{[inputName: string]: Tensor}): Scalar|Scalar[] {
