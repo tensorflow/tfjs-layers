@@ -197,7 +197,8 @@ describeMathCPUAndGPU('sparseCategoricalCrossentropy ', () => {
   //   out = sess.run(
   //       crossentropy,
   //       feed_dict={
-  //           x: np.array([[0.1, 0.2, 0.7], [0.2, 0.3, 0.5]], dtype=np.float32),
+  //           x: np.array([[0.1, 0.2, 0.7], [0.2, 0.3, 0.5]],
+  //                       dtype=np.float32),
   //           target: np.array([0, 2], dtype=np.float32)
   //           })
   //   print(out)
