@@ -225,9 +225,10 @@ export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
  * Sparse categorical accuracy metric function.
  * 
  * ```Example:
- * const x = tensor2d([[0], [1], [2], [1]]);
- * const y = tensor2d([[0], [1], [2], [2]]);
- * const crossentropy = tf.metrics.sparseCategoricalAccuracy(x, y);
+ * const yTrue = tensor1d([1, 1, 2, 2, 0]);
+ * const yPred = tensor2d(
+ *      [[0, 1, 0], [1, 0, 0], [0, 0.4, 0.6], [0, 0.6, 0.4], [0.7, 0.3, 0]]);
+ * const crossentropy = tf.metrics.sparseCategoricalAccuracy(yTrue, yPred);
  * crossentropy.print();
  * ```
  *
