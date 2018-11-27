@@ -2001,11 +2001,8 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
   // ```
   it('Sequential MLP: correctness', async () => {
     const model = tfl.sequential();
-    model.add(tfl.layers.dense({
-      units: 1,
-      inputShape: [3],
-      kernelInitializer: 'zeros'
-    }));
+    model.add(tfl.layers.dense(
+        {units: 1, inputShape: [3], kernelInitializer: 'zeros'}));
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
     const batchSize = 4;
@@ -2055,41 +2052,36 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
     const input2 = tfl.input({shape: [2]});
     const y1 = tfl.layers.add().apply([input1, input2]);
     const y2 = tfl.layers.concatenate().apply([input1, input2]);
-    const output1 = tfl.layers.dense({
-      units: 1,
-      activation: 'linear',
-      kernelInitializer: 'zeros'
-    }).apply(y1) as tfl.SymbolicTensor;
-    const output2 = tfl.layers.dense({
-      units: 1,
-      activation: 'sigmoid',
-      kernelInitializer: 'zeros'
-    }).apply(y2) as tfl.SymbolicTensor;
-    const model = tfl.model({
-      inputs: [input1, input2],
-      outputs: [output1, output2]
-    });
-    model.compile({
-      loss: ['meanSquaredError', 'binaryCrossentropy'],
-      optimizer: 'sgd'
-    });
+    const output1 =
+        tfl.layers
+            .dense({units: 1, activation: 'linear', kernelInitializer: 'zeros'})
+            .apply(y1) as tfl.SymbolicTensor;
+    const output2 =
+        tfl.layers
+            .dense(
+                {units: 1, activation: 'sigmoid', kernelInitializer: 'zeros'})
+            .apply(y2) as tfl.SymbolicTensor;
+    const model =
+        tfl.model({inputs: [input1, input2], outputs: [output1, output2]});
+    model.compile(
+        {loss: ['meanSquaredError', 'binaryCrossentropy'], optimizer: 'sgd'});
 
     const batchSize = 4;
     const xs1 = tfc.ones([batchSize, 2]);
     const xs2 = tfc.ones([batchSize, 2]);
     const ys1 = tfc.ones([batchSize, 1]);
     const ys2 = tfc.ones([batchSize, 1]);
-    let losses = await model.trainOnBatch([xs1, xs2],  [ys1, ys2]) as number[];
+    let losses = await model.trainOnBatch([xs1, xs2], [ys1, ys2]) as number[];
     expect(losses.length).toEqual(3);
     expect(losses[0]).toBeCloseTo(1.6931472);
     expect(losses[1]).toBeCloseTo(1.0);
     expect(losses[2]).toBeCloseTo(0.6931472);
-    losses = await model.trainOnBatch([xs1, xs2],  [ys1, ys2]) as number[];
+    losses = await model.trainOnBatch([xs1, xs2], [ys1, ys2]) as number[];
     expect(losses.length).toEqual(3);
     expect(losses[0]).toBeCloseTo(1.3531253);
     expect(losses[1]).toBeCloseTo(0.6724);
     expect(losses[2]).toBeCloseTo(0.68072534);
-    losses = await model.trainOnBatch([xs1, xs2],  [ys1, ys2]) as number[];
+    losses = await model.trainOnBatch([xs1, xs2], [ys1, ys2]) as number[];
     expect(losses.length).toEqual(3);
     expect(losses[0]).toBeCloseTo(1.1207337);
     expect(losses[1]).toBeCloseTo(0.45212176);
@@ -2144,11 +2136,36 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
     }
   });
 
+  // Reference Python Keras code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Dense(
+  //     units=3,
+  //     input_shape=[2],
+  //     activation='softmax',
+  //     kernel_initializer='ones'
+  // ))
+  // model.compile(
+  //     loss='sparse_categorical_crossentropy',
+  //     optimizer='sgd',
+  //     metrics=['acc'])
+  // model.summary()
+  //
+  // xs = np.array([[0, 0.5], [0.5, 1], [0, 1]], dtype=np.float32)
+  // ys = np.array([[2], [1], [0]], dtype=np.float32)
+  //
+  // for _ in range(3):
+  //   print(model.train_on_batch(xs, ys))
+  // ```
   it('Sparse categorical: w/ metrics: correctness and no leak', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
       inputShape: [2],
+      activation: 'softmax',
       kernelInitializer: 'ones'
     }));
     model.compile({
@@ -2159,19 +2176,18 @@ describeMathCPUAndGPU('Model.trainOnBatch', () => {
 
     const xs = tfc.tensor2d([[0, 0.5], [0.5, 1], [0, 1]]);
     const ys = tfc.tensor2d([[2], [1], [0]]);
-    
+
     for (let i = 0; i < 3; ++i) {
       const [loss, acc] = await model.trainOnBatch(xs, ys) as number[];
-      // TODO(cais): Fix the tests. DO NOT SUBMIT.
       if (i === 0) {
         expect(loss).toBeCloseTo(1.0986123);
         expect(acc).toBeCloseTo(0.3333333);
       } else if (i === 1) {
-        expect(loss).toBeCloseTo(1.0953004);
-        expect(acc).toBeCloseTo(0.3333333);
+        expect(loss).toBeCloseTo(1.0982422);
+        expect(acc).toBeCloseTo(0.6666667);
       } else if (i === 2) {
-        expect(loss).toBeCloseTo(1.091198);
-        expect(acc).toBeCloseTo(0.3333333);
+        expect(loss).toBeCloseTo(1.0978734);
+        expect(acc).toBeCloseTo(0.6666667);
       }
     }
   });
