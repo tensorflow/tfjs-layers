@@ -648,7 +648,7 @@ describeMathCPUAndGPU('Model-dispose', () => {
     expect(() => innerModel.predict(xsInner)).toThrowError(/already disposed/);
   });
 
-  fit('Nested model gets the correct kwargs', async () => {
+  it('Nested model gets the correct kwargs', async () => {
     const innerModel = tfl.sequential();
     const layer = tfl.layers.dense({
       units: 1,inputShape: [5], activation: 'sigmoid'});

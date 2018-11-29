@@ -812,19 +812,6 @@ export abstract class Container extends Layer {
    *   are more than one outputs.
    */
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    // return tidy(() => {
-    //   inputs = generic_utils.toList(inputs);
-    //   let masks: Tensor[];
-
-    //   if ('mask' in kwargs) {
-    //     masks = generic_utils.toList(kwargs['mask']);
-    //   } else {
-    //     masks = generic_utils.pyListRepeat(null, inputs.length);
-    //   }
-    //   // TODO(michaelterry): Add support for caching.
-    //   return this.runInternalGraph(inputs, masks)[0];
-    // });
-    // console.log(`In Container.call(), this.name = ${this.name}`);  // DEBUG
     return tidy(() => {
       inputs = generic_utils.toList(inputs);
       const feedDict = new FeedDict();
