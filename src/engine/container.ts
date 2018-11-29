@@ -22,6 +22,7 @@ import * as types_utils from '../utils/types_utils';
 import {batchSetValue, LayerVariable} from '../variables';
 import {version as layersVersion} from '../version';
 
+import {execute, FeedDict} from './executor';
 import {InputLayer} from './input_layer';
 import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
 
@@ -811,17 +812,30 @@ export abstract class Container extends Layer {
    *   are more than one outputs.
    */
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+    // return tidy(() => {
+    //   inputs = generic_utils.toList(inputs);
+    //   let masks: Tensor[];
+
+    //   if ('mask' in kwargs) {
+    //     masks = generic_utils.toList(kwargs['mask']);
+    //   } else {
+    //     masks = generic_utils.pyListRepeat(null, inputs.length);
+    //   }
+    //   // TODO(michaelterry): Add support for caching.
+    //   return this.runInternalGraph(inputs, masks)[0];
+    // });
+    // console.log(`In Container.call(), this.name = ${this.name}`);  // DEBUG
     return tidy(() => {
       inputs = generic_utils.toList(inputs);
-      let masks: Tensor[];
-
-      if ('mask' in kwargs) {
-        masks = generic_utils.toList(kwargs['mask']);
-      } else {
-        masks = generic_utils.pyListRepeat(null, inputs.length);
+      const feedDict = new FeedDict();
+      for (let i = 0; i < this.inputs.length; ++i) {
+        // console.log('symbolic name:', this.inputs[i].name);
+        // console.log('symbolic shape:', this.inputs[i].shape);
+        // console.log('concrete shape:', inputs[i].shape);
+        feedDict.add(this.inputs[i], inputs[i]);
       }
-      // TODO(michaelterry): Add support for caching.
-      return this.runInternalGraph(inputs, masks)[0];
+      // console.log('Calling execute() from Container.call()');  // DEBUG
+      return execute(this.outputs, feedDict, kwargs) as Tensor | Tensor[];  
     });
   }
 
@@ -1001,6 +1015,8 @@ export abstract class Container extends Layer {
             if (kwargs.mask == null) {
               kwargs['mask'] = computedMask;
             }
+            console.log(`Length =1 call, layer.name = ${layer.name}`);  // DEBUG
+            console.log((layer.input as SymbolicTensor).shape);  // DEBUG
             outputTensors =
                 generic_utils.toList(layer.call(computedTensor, kwargs));
             outputMasks = generic_utils.toList(
@@ -1013,6 +1029,7 @@ export abstract class Container extends Layer {
             if (kwargs.mask == null) {
               kwargs['mask'] = computedMasks;
             }
+            console.log('Length >1 call');  // DEBUG
             outputTensors =
                 generic_utils.toList(layer.call(computedTensors, kwargs));
             outputMasks = generic_utils.toList(
