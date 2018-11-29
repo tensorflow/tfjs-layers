@@ -102,7 +102,6 @@ describeMathCPUAndGPU('TimeDistributed Layer: Tensor', () => {
   // print(ys)
   // ```
   it('Model as constituent layer', () => {
-    console.log('---------- Test begins --------------');  // DEBUG
     const modelAsLayer = tfl.sequential({
       layers: [tfl.layers.dense({
         activation: 'softmax',
