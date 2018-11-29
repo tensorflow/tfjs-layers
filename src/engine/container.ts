@@ -816,12 +816,8 @@ export abstract class Container extends Layer {
       inputs = generic_utils.toList(inputs);
       const feedDict = new FeedDict();
       for (let i = 0; i < this.inputs.length; ++i) {
-        // console.log('symbolic name:', this.inputs[i].name);
-        // console.log('symbolic shape:', this.inputs[i].shape);
-        // console.log('concrete shape:', inputs[i].shape);
         feedDict.add(this.inputs[i], inputs[i]);
       }
-      // console.log('Calling execute() from Container.call()');  // DEBUG
       return execute(this.outputs, feedDict, kwargs) as Tensor | Tensor[];  
     });
   }
@@ -1002,8 +998,6 @@ export abstract class Container extends Layer {
             if (kwargs.mask == null) {
               kwargs['mask'] = computedMask;
             }
-            console.log(`Length =1 call, layer.name = ${layer.name}`);  // DEBUG
-            console.log((layer.input as SymbolicTensor).shape);  // DEBUG
             outputTensors =
                 generic_utils.toList(layer.call(computedTensor, kwargs));
             outputMasks = generic_utils.toList(
@@ -1016,7 +1010,6 @@ export abstract class Container extends Layer {
             if (kwargs.mask == null) {
               kwargs['mask'] = computedMasks;
             }
-            console.log('Length >1 call');  // DEBUG
             outputTensors =
                 generic_utils.toList(layer.call(computedTensors, kwargs));
             outputMasks = generic_utils.toList(
