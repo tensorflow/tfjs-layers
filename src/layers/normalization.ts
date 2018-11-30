@@ -393,13 +393,6 @@ export class BatchNormalization extends Layer {
           input, this.gamma.read(), this.beta.read(), reductionAxes,
           this.epsilon);
 
-      // Debias variance.
-    //   const sampleSize =
-    //       math_utils.arrayProd(reductionAxes.map(axis => input.shape[axis]));
-    //   const varianceDebiased = variance.mul(
-    //       getScalar(sampleSize / (sampleSize - (1 + this.epsilon))));
-      const varianceDebiased = variance;
-
       const doMovingAverage =
           (variable: LayerVariable, value: Tensor, momentum: number): void => {
             tfc.tidy(() => {
@@ -418,7 +411,7 @@ export class BatchNormalization extends Layer {
       //   immediately.
       const updateMovingMeanAndVariance = () => {
         doMovingAverage(this.movingMean, mean, this.momentum);
-        doMovingAverage(this.movingVariance, varianceDebiased, this.momentum);
+        doMovingAverage(this.movingVariance, variance, this.momentum);
       };
       updateMovingMeanAndVariance();
 
