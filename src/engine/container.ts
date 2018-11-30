@@ -818,7 +818,7 @@ export abstract class Container extends Layer {
       for (let i = 0; i < this.inputs.length; ++i) {
         feedDict.add(this.inputs[i], inputs[i]);
       }
-      return execute(this.outputs, feedDict, kwargs) as Tensor | Tensor[];  
+      return execute(this.outputs, feedDict, kwargs) as Tensor | Tensor[];
     });
   }
 
