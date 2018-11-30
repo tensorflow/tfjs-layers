@@ -506,7 +506,7 @@ describeMathCPUAndGPU('BatchNormalization Layers: Tensor', () => {
   // Python reference code:
   // ```python
   // import numpy as np
-  // import tensorflow.keras as keras
+  // from tensorflow import keras
   //
   // model = keras.Sequential()
   // model.add(keras.layers.Conv2D(

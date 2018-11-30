@@ -313,7 +313,6 @@ export class BatchNormalization extends Layer {
     this.gammaConstraint = getConstraint(config.gammaConstraint);
     this.betaRegularizer = getRegularizer(config.betaRegularizer);
     this.gammaRegularizer = getRegularizer(config.gammaRegularizer);
-    // this.stepCount = 0;
   }
 
   public build(inputShape: Shape|Shape[]): void {
