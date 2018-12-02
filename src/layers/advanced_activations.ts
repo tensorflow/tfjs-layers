@@ -132,7 +132,7 @@ serialization.registerClass(LeakyReLU);
  * Parametric version of a rectified linear unit.
  *
  * It allows a small gradient when the unit is not active
- * but alpha is tunable(trainable):
+ * but alpha is tunable(trainable), default is 0.1:
  * `f(x) = alpha * x for x < 0.`
  * `f(x) = x for x >= 0.`
  *
