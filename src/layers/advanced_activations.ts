@@ -128,18 +128,30 @@ export class LeakyReLU extends Layer {
 }
 serialization.registerClass(LeakyReLU);
 
+/**
+ * Parametric version of a rectified linear unit.
+ *
+ * It allows a small gradient when the unit is not active
+ * but alpha is tunable(trainable):
+ * `f(x) = alpha * x for x < 0.`
+ * `f(x) = x for x >= 0.`
+ *
+ * Input shape:
+ *   Arbitrary. Use the configuration `inputShape` when using this layer as the
+ *   first layer in a model.
+ *
+ * Output shape:
+ *   Same shape as the input.
+ */
 export interface PReLULayerConfig extends LayerConfig {
-  /**
-   * Float `>= 0`. Negative slope coefficient. Defaults to `0.3`.
-   */
   alpha?: number;
 }
 
 export class PReLU extends Layer {
   static className = 'PReLU';
   readonly alpha: number;
-
-  readonly DEFAULT_ALPHA = 0.3;
+  readonly alphaTensor: Tensor;
+  readonly DEFAULT_ALPHA = 0.1;
 
   constructor(config?: PReLULayerConfig) {
     super(config == null ? {} : config);
@@ -148,11 +160,12 @@ export class PReLU extends Layer {
     }
 
     this.alpha = config.alpha == null ? this.DEFAULT_ALPHA : config.alpha;
+    this.alphaTensor = getScalar(this.alpha)
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     const x = getExactlyOneTensor(inputs);
-    return prelu(x, this.alpha);
+    return prelu(x, this.alphaTensor)
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
