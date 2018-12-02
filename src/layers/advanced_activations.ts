@@ -12,7 +12,7 @@
  *  Advanced activation layers.
  */
 
-import {elu, leakyRelu, relu, serialization, Tensor, clipByValue} from '@tensorflow/tfjs-core';
+import {elu, leakyRelu, relu, prelu, serialization, Tensor, clipByValue} from '@tensorflow/tfjs-core';
 
 import {Softmax as softmaxActivation} from '../activations';
 import {cast} from '../backend/tfjs_backend';
@@ -128,7 +128,58 @@ export class LeakyReLU extends Layer {
 }
 serialization.registerClass(LeakyReLU);
 
-// TODO(cais): Implement PReLU
+/**
+ * Parametric version of a rectified linear unit.
+ *
+ * It allows a small gradient when the unit is not active
+ * but alpha is tunable(trainable), default is 0.1:
+ * `f(x) = alpha * x for x < 0.`
+ * `f(x) = x for x >= 0.`
+ *
+ * Input shape:
+ *   Arbitrary. Use the configuration `inputShape` when using this layer as the
+ *   first layer in a model.
+ *
+ * Output shape:
+ *   Same shape as the input.
+ */
+export interface PReLULayerConfig extends LayerConfig {
+  alpha?: number;
+}
+
+export class PReLU extends Layer {
+  static className = 'PReLU';
+  readonly alpha: number;
+  readonly alphaTensor: Tensor;
+  readonly DEFAULT_ALPHA = 0.1;
+
+  constructor(config?: PReLULayerConfig) {
+    super(config == null ? {} : config);
+    if (config == null) {
+      config = {};
+    }
+
+    this.alpha = config.alpha == null ? this.DEFAULT_ALPHA : config.alpha;
+    this.alphaTensor = getScalar(this.alpha)
+  }
+
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+    const x = getExactlyOneTensor(inputs);
+    return prelu(x, this.alphaTensor)
+  }
+
+  computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
+    return inputShape;
+  }
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {alpha: this.alpha};
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+}
+serialization.SerializationMap.register(PReLU);
 
 export interface ELULayerConfig extends LayerConfig {
   /**
