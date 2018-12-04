@@ -45,13 +45,10 @@
     "lint": "tslint -p . -t verbose"
   },
   "peerDependencies": {
-<<<<<<< HEAD
     "@tensorflow/tfjs-core": "0.13.11"
   },
   "dependencies": {
     "yarn": "^1.12.3"
-=======
     "@tensorflow/tfjs-core": "0.14.0"
->>>>>>> 8aca50d97c09f7610d4827a28ab63ff3d3f0fb30
   }
 }
