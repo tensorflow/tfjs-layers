@@ -160,12 +160,12 @@ export class PReLU extends Layer {
     }
 
     this.alpha = config.alpha == null ? this.DEFAULT_ALPHA : config.alpha;
-    this.alphaTensor = getScalar(this.alpha)
+    this.alphaTensor = getScalar(this.alpha);
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     const x = getExactlyOneTensor(inputs);
-    return prelu(x, this.alphaTensor)
+    return prelu(x, this.alphaTensor);
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
