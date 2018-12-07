@@ -240,7 +240,6 @@ export function execute(
   if (!training) {
     Object.assign(recipientCounts, cachedRecipientCounts[fetchAndFeedKey]);
   }
-  console.log(recipientCounts['conv2d_55/conv2d_55']);  // DEBUG
 
   const internalFeedDict = new FeedDict(feedDict);
 
@@ -259,8 +258,8 @@ export function execute(
 
     const symbolic = sorted[i];
     // DEBUG
-    console.log(
-        `=== executor at step: ${i}/${sorted.length}, ${symbolic.name}`);
+    // console.log(
+        // `=== executor at step: ${i}/${sorted.length}, ${symbolic.name}`);
     if (symbolic.sourceLayer instanceof InputLayer) {
       continue;
     }
@@ -271,20 +270,20 @@ export function execute(
       const value = internalFeedDict.getValue(input);
       inputValues.push(value);
       if (!training) {
-        console.log(`Decreasing recipient count for ${input.name}: target=${
-            symbolic.name}`);  // DEBUG
+        // console.log(`Decreasing recipient count for ${input.name}: target=${
+        //     symbolic.name}`);  // DEBUG
         recipientCounts[input.name]--;
         if (recipientCounts[input.name] === 0 && !feedDict.hasKey(input) &&
             outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
           // Keep track of Tensors to be disposed at the end of this execution.
-          console.log(`Disposing tensor ${input.name}`);  // DEBUG
+          // console.log(`Disposing tensor ${input.name}`);  // DEBUG
           tensorsToDispose.push(value);  // TODO(cais): Restore.
         }
       }
     }
     const output =
         toList(symbolic.sourceLayer.apply(inputValues, kwargs)) as Tensor[];
-    console.log(`Got output for ${symbolic.name}`);  // DEBUG
+    // console.log(`Got output for ${symbolic.name}`);  // DEBUG
     const layerOutputs = getNodeOutputs(symbolic);
     const outputSymbolicTensors =
         Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
@@ -311,7 +310,7 @@ type RecipientCounts = {
   [fetchName: string]: number
 };
 
-type RecipientMap = {
+export type RecipientMap = {
   [fetchName: string]: Set<string>;
 };
 
@@ -391,7 +390,7 @@ function recipientMap2Counts(recipientMap: RecipientMap): RecipientCounts {
  * @returns sorted: Topologically-sorted array of SymbolicTensors.
  *   recipientMap: Recipient names for all SymbolicTensors in `sorted`.
  */
-function getTopologicalSortAndRecipientCountsForOneFetch(
+export function getTopologicalSortAndRecipientCountsForOneFetch(
     fetch: SymbolicTensor, feedDict: FeedDict):
     {sorted: SymbolicTensor[], recipientMap: RecipientMap} {
   const visited = new Set<string>();
@@ -409,13 +408,19 @@ function getTopologicalSortAndRecipientCountsForOneFetch(
   const marks: number[] = [];
 
   // Initial population of stack and marks.
-  console.log(`fetch.name = ${fetch.name}`);  // DEBUG
+  // console.log(`fetch.name = ${fetch.name}`);  // DEBUG
   stack.push(fetch);
-  visited.add(fetch.name);
+  // visited.add(fetch.name);  // TODO(cais): Decide.
 
   while (stack.length > 0) {
     const top = stack[stack.length - 1];
+    if (visited.has(top.name)) {
+      stack.pop();
+      continue;
+    }
     const topIsMarked = marks[marks.length - 1] === stack.length - 1;
+    // console.log(`top = ${top.name}`);  // DEBUG
+    // console.log(`stack = ${stack.map(item => item.name)}`);  // DEBUG
     if (top.inputs.length === 0 || topIsMarked) {
       // console.log(`====== Pushing to sorted: ${top.name}`);    // DEBUG
       // console.log(`stack = ${stack.map(item => item.name)}`);  // DEBUG
@@ -442,13 +447,13 @@ function getTopologicalSortAndRecipientCountsForOneFetch(
         recipientMap[input.name].add(top.name);
 
         if (visited.has(input.name)) {
-          // console.log(`Avoid repeated visit to ${input.name}`);  // DEBUG
           continue;  // Avoid repeated visits to the same SymbolicTensor.
         }
         stack.push(input);
       }
     }
   }
+  // console.log(`sorted = ${sorted.map(s => s.name)}`);  // DEBUG
   return {sorted, recipientMap};
 }
 
