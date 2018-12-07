@@ -89,7 +89,7 @@ describeMathCPU('FeedDict', () => {
 });
 
 describeMathCPU('getTopologicalSortAndRecipientCountsForOneFetch', () => {
-  fit('Triangular topology', () => {
+  it('Triangular topology', () => {
     const input = tfl.input({shape: [2, 6]});
     const f1 = tfl.layers.flatten().apply(input) as tfl.SymbolicTensor;
     const r1 = tfl.layers.reLU().apply(f1) as tfl.SymbolicTensor;
@@ -105,7 +105,7 @@ describeMathCPU('getTopologicalSortAndRecipientCountsForOneFetch', () => {
     expect(recipientMap[c1.name].size).toEqual(1);
   });
 
-  fit('Double triangular topology', () => {
+  it('Double triangular topology', () => {
     const input = tfl.input({shape: [2, 6]});
     const f1 = tfl.layers.flatten().apply(input) as tfl.SymbolicTensor;
     const r1 = tfl.layers.reLU().apply(f1) as tfl.SymbolicTensor;

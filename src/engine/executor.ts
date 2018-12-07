@@ -257,9 +257,6 @@ export function execute(
     }
 
     const symbolic = sorted[i];
-    // DEBUG
-    // console.log(
-        // `=== executor at step: ${i}/${sorted.length}, ${symbolic.name}`);
     if (symbolic.sourceLayer instanceof InputLayer) {
       continue;
     }
@@ -270,20 +267,15 @@ export function execute(
       const value = internalFeedDict.getValue(input);
       inputValues.push(value);
       if (!training) {
-        // console.log(`Decreasing recipient count for ${input.name}: target=${
-        //     symbolic.name}`);  // DEBUG
         recipientCounts[input.name]--;
         if (recipientCounts[input.name] === 0 && !feedDict.hasKey(input) &&
             outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
-          // Keep track of Tensors to be disposed at the end of this execution.
-          // console.log(`Disposing tensor ${input.name}`);  // DEBUG
-          tensorsToDispose.push(value);  // TODO(cais): Restore.
+          tensorsToDispose.push(value);
         }
       }
     }
     const output =
         toList(symbolic.sourceLayer.apply(inputValues, kwargs)) as Tensor[];
-    // console.log(`Got output for ${symbolic.name}`);  // DEBUG
     const layerOutputs = getNodeOutputs(symbolic);
     const outputSymbolicTensors =
         Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
@@ -335,7 +327,6 @@ function getTopologicalSortAndRecipientCounts(
   let finalSorted: SymbolicTensor[] = [];
   let finalRecipientMap: RecipientMap = {};
   if (fetches.length === 1) {
-    // console.log('fetches.length: 1');  // DEBUG
     // Special-casing 1 fetch for efficiency.
     const out =
         getTopologicalSortAndRecipientCountsForOneFetch(fetches[0], feedDict);
@@ -408,9 +399,7 @@ export function getTopologicalSortAndRecipientCountsForOneFetch(
   const marks: number[] = [];
 
   // Initial population of stack and marks.
-  // console.log(`fetch.name = ${fetch.name}`);  // DEBUG
   stack.push(fetch);
-  // visited.add(fetch.name);  // TODO(cais): Decide.
 
   while (stack.length > 0) {
     const top = stack[stack.length - 1];
@@ -419,18 +408,11 @@ export function getTopologicalSortAndRecipientCountsForOneFetch(
       continue;
     }
     const topIsMarked = marks[marks.length - 1] === stack.length - 1;
-    // console.log(`top = ${top.name}`);  // DEBUG
-    // console.log(`stack = ${stack.map(item => item.name)}`);  // DEBUG
     if (top.inputs.length === 0 || topIsMarked) {
-      // console.log(`====== Pushing to sorted: ${top.name}`);    // DEBUG
-      // console.log(`stack = ${stack.map(item => item.name)}`);  // DEBUG
-      // console.log(`marks = ${marks}`);                         // DEBUG
       // Input SymbolicTensor or all children have been visited.
       stack.pop();
       sorted.push(top);
       visited.add(top.name);
-      // console.log(`top.inputs.length = ${top.inputs.length}`);  // DEBUG
-      // console.log(`topIsMarked = ${topIsMarked}`);              // DEBUG
       if (topIsMarked) {
         marks.pop();
       }
@@ -453,7 +435,6 @@ export function getTopologicalSortAndRecipientCountsForOneFetch(
       }
     }
   }
-  // console.log(`sorted = ${sorted.map(s => s.name)}`);  // DEBUG
   return {sorted, recipientMap};
 }
 
