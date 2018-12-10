@@ -151,12 +151,6 @@ export function rnn(
   const axes = [1, 0].concat(math_utils.range(2, ndim));
   inputs = tfc.transpose(inputs, axes);
 
-  if (mask != null) {
-    throw new NotImplementedError(
-        'The rnn() function of the deeplearn.js backend does not support ' +
-        'masking yet.');
-  }
-
   if (constants != null) {
     throw new NotImplementedError(
         'The rnn() functoin of the deeplearn.js backend does not support ' +
@@ -170,8 +164,19 @@ export function rnn(
         'imperative deeplearn.js backend.');
   }
 
+  if (mask != null) {
+    mask = mask.asType('bool').asType('float32');  // TODO(cais): Unit test.
+    if (mask.rank === ndim - 1) {
+      mask = tfc.expandDims(mask, -1);  // TODO(cais): Converage.
+    }
+    mask = tfc.transpose(mask, axes);
+  }
+
   if (goBackwards) {
     inputs = tfc.reverse(inputs, 0);
+    if (mask != null) {
+      mask = tfc.reverse(mask, 0);
+    }
   }
 
   // Porting Note: PyKeras with TensorFlow backend uses a symbolic loop
@@ -191,7 +196,10 @@ export function rnn(
   let states = initialStates;
   const timeSteps = inputs.shape[0];
   for (let t = 0; t < timeSteps; ++t) {
+    // TODO(cais): Try unstack() for performance. Same below.
     let currentInput = K.sliceAlongFirstAxis(inputs, t, 1);
+
+
     currentInput = currentInput.reshape(currentInput.shape.slice(1));
     const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
     lastOutput = stepOutputs[0];
@@ -206,7 +214,21 @@ export function rnn(
     }
     // TODO(soergel): Call K.concatenate() to perform only one concatenation
     // at the end, once the backend function is available.
-    states = stepOutputs[1];
+
+    if (mask == null) {
+      states = stepOutputs[1];
+    } else {
+      // TODO(cais): Check leak.
+      states = tfc.tidy(() => {
+        const stepMask = K.sliceAlongFirstAxis(mask, t, 1);
+        const negStepMask = tfc.onesLike(stepMask).sub(stepMask);
+        // TODO(cais): Would tfc.where() be faster?
+        return states.map(
+            (state, i) =>
+                state.mulStrict(negStepMask)
+                    .addStrict(stepOutputs[1][i].mulStrict(stepMask)));
+      });
+    }
   }
   return [lastOutput, outputs, states];
 }

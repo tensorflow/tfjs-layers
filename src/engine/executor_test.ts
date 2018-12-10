@@ -246,15 +246,15 @@ describeMathCPUAndGPU('Executor', () => {
   });
 });
 
-
-describeMathCPUAndGPU('Masking', () => {
+// TODO(cais): Change to describeMathCPUAndGPU().
+describeMathCPU('Masking', () => {
   fit('Embedding with maskZero=True', () => {
     const model = tfl.sequential();
     model.add(tfl.layers.embedding({
       inputDim: 10,
       outputDim: 4,
       inputLength: 6,
-      maskZero: true,
+      maskZero: false,
       embeddingsInitializer: 'ones'
     }));
     model.add(tfl.layers.lstm({
