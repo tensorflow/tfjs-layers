@@ -149,6 +149,8 @@ export class Embedding extends Layer {
         return null;
       } else {
         inputs = getExactlyOneTensor(inputs);
+        console.log(  // DEBUG
+            `Embedding.computeMask(): inputs.shape = ${inputs.shape}`);
         return notEqual(inputs, zerosLike(inputs as Tensor));
       }
     });

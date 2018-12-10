@@ -246,7 +246,7 @@ describeMathCPUAndGPU('Executor', () => {
   });
 });
 
-// TODO(cais): Change to describeMathCPUAndGPU().
+// TODO(cais): Change to describeMathCPUAndGPU()
 describeMathCPU('Masking', () => {
   fit('Embedding with maskZero=True', () => {
     const model = tfl.sequential();
@@ -254,7 +254,7 @@ describeMathCPU('Masking', () => {
       inputDim: 10,
       outputDim: 4,
       inputLength: 6,
-      maskZero: false,
+      maskZero: true,
       embeddingsInitializer: 'ones'
     }));
     model.add(tfl.layers.lstm({
@@ -269,7 +269,7 @@ describeMathCPU('Masking', () => {
       biasInitializer: 'zeros'
     }));
 
-    const xs = tensor2d([[1, 2, 0, 0, 0, 0]]);
+    const xs = tensor2d([[1, 2, 0, 0, 0, 0], [1, 2, 3, 0, 0, 0]]);
     const ys = model.predict(xs) as Tensor;
     ys.print();
   });

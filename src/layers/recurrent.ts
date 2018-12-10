@@ -220,13 +220,17 @@ export function rnn(
     } else {
       // TODO(cais): Check leak.
       states = tfc.tidy(() => {
+        console.log(`mask.shape = ${mask.shape}`);  // DEBUG
         const stepMask = K.sliceAlongFirstAxis(mask, t, 1);
         const negStepMask = tfc.onesLike(stepMask).sub(stepMask);
         // TODO(cais): Would tfc.where() be faster?
         return states.map(
-            (state, i) =>
-                state.mulStrict(negStepMask)
-                    .addStrict(stepOutputs[1][i].mulStrict(stepMask)));
+            (state, i) => {
+              console.log(`i = ${i}; state.shape = ${state.shape}`);  // DEBUG
+              console.log(`stepMask.shape = ${stepMask.shape}`);  // DEBUG
+              return state.mulStrict(negStepMask)
+                  .addStrict(stepOutputs[1][i].mulStrict(stepMask))
+            });
       });
     }
   }
@@ -738,7 +742,9 @@ export class RNN extends Layer {
     // Note that the .build() method of subclasses **must** define
     // this.inputSpec and this.stateSpec owith complete input shapes.
     return tidy(() => {
-      const mask = kwargs == null ? null : kwargs['mask'];
+      const mask = kwargs == null ? null : kwargs['mask'] as Tensor;
+      // TODO(cais): Should we check mask is indeed a Tensor (e.g., not
+      //   an array of Tensors)?
       const training = kwargs == null ? null : kwargs['training'];
       let initialState: Tensor[] =
           kwargs == null ? null : kwargs['initialState'];
@@ -750,10 +756,6 @@ export class RNN extends Layer {
         } else {
           initialState = this.getInitialState(inputs);
         }
-      }
-
-      if (mask != null) {
-        throw new NotImplementedError('Masking is not implemented for RNN yet');
       }
 
       const numStates =
@@ -784,7 +786,7 @@ export class RNN extends Layer {
       // TODO(cais): Add support for masks.
 
       const rnnOutputs =
-          rnn(step, inputs, initialState, this.goBackwards, null, null,
+          rnn(step, inputs, initialState, this.goBackwards, mask, null,
               this.unroll, this.returnSequences);
       const lastOutput = rnnOutputs[0];
       const outputs = rnnOutputs[1];

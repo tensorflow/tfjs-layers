@@ -288,14 +288,14 @@ export function execute(
     const inputMasks: Tensor[] = [];
     const tensorsToDispose: Tensor[] = [];
 
-    let anyMasks = false;
+    let maskExists = false;
     for (const input of symbolic.inputs) {
       const value = internalFeedDict.getValue(input);
       const mask = internalFeedDict.getMask(input);
       inputValues.push(value);
       inputMasks.push(mask);
       if (mask != null) {
-        anyMasks = true;
+        maskExists = true;
       }
       if (!training) {
         recipientCounts[input.name]--;
@@ -307,24 +307,23 @@ export function execute(
       }
     }
 
-    if (anyMasks) {
+    if (maskExists) {
       console.log(`Setting kwargs['mask']`);  // DEBUG
       kwargs = kwargs || {};
-      kwargs['mask'] = inputMasks;
+      kwargs['mask'] = inputMasks[0];  // TODO(cais): Confirm using one is fine.
     }
     const outputTensors =
         toList(srcLayer.apply(inputValues, kwargs)) as Tensor[];
     console.log(`inputMasks = ${inputMasks}`);  // DEBUG
     console.log(`Calling computeMask() of ${srcLayer.name}`);
-    const outputMasks =
-        toList(srcLayer.computeMask(inputValues, inputMasks)) as Tensor[];
+    const outputMask = srcLayer.computeMask(inputValues, inputMasks) as Tensor;
     const layerOutputs = getNodeOutputs(symbolic);
     const outputSymbolicTensors =
         Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
     for (let i = 0; i < outputSymbolicTensors.length; ++i) {
       if (!internalFeedDict.hasKey(outputSymbolicTensors[i])) {
         internalFeedDict.add(
-            outputSymbolicTensors[i], outputTensors[i], outputMasks[i]);
+            outputSymbolicTensors[i], outputTensors[i], outputMask);
       }
       const index = outputNames.indexOf(outputSymbolicTensors[i].name);
       if (index !== -1) {
