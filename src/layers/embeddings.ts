@@ -143,6 +143,7 @@ export class Embedding extends Layer {
   protected warnOnIncompatibleInputShape(inputShape: Shape) {}
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
+    console.log('In Embedding.computeMask()');  // DEBUG
     return tidy(() => {
       if (!this.maskZero) {
         return null;

@@ -486,6 +486,7 @@ export class RNN extends Layer {
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor
       |Tensor[] {
+    console.log(`In RNN.computeMask()`);  // DEBUG
     if (Array.isArray(mask)) {
       mask = mask[0];
     }

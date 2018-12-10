@@ -55,6 +55,7 @@ export interface Feed {
  */
 export class FeedDict {
   private id2Value: {[id: number]: Tensor} = {};
+  private id2Mask: {[id: number]: Tensor} = {};
   private name2Id: {[name: string]: number} = {};
 
   /**
@@ -66,6 +67,9 @@ export class FeedDict {
     if (feeds instanceof FeedDict) {
       for (const id in feeds.id2Value) {
         this.id2Value[id] = feeds.id2Value[id];
+        if (id in feeds.id2Mask) {
+          this.id2Mask[id] = feeds.id2Mask[id];
+        }
       }
     } else {
       if (feeds == null) {
@@ -85,10 +89,13 @@ export class FeedDict {
    * @throws ValueError: If the key `SymbolicTensor` already exists in the
    *   `FeedDict`.
    */
-  add(key: SymbolicTensor, value: Tensor): FeedDict {
+  add(key: SymbolicTensor, value: Tensor, mask?: Tensor): FeedDict {
     if (this.id2Value[key.id] == null) {
       this.id2Value[key.id] = assertFeedCompatibility(key, value);
       this.name2Id[key.name] = key.id;
+      if (mask != null) {
+        this.id2Mask[key.id] = mask;
+      }
     } else {
       throw new ValueError(`Duplicate key: name=${key.name}, id=${key.id}`);
     }
@@ -139,6 +146,22 @@ export class FeedDict {
         throw new ValueError(`Feed dict has no SymbolicTensor name: ${key}`);
       }
       return this.id2Value[id];
+    }
+  }
+
+  getMask(key: SymbolicTensor|string): Tensor {
+    if (key instanceof SymbolicTensor) {
+      if (this.id2Value[key.id] == null) {
+        throw new ValueError(`Nonexistent key: ${key.name}`);
+      } else {
+        return this.id2Mask[key.id];
+      }
+    } else {
+      const id = this.name2Id[key];
+      if (id == null) {
+        throw new ValueError(`Feed dict has no SymbolicTensor name: ${key}`);
+      }
+      return this.id2Mask[id];
     }
   }
 }
@@ -257,35 +280,55 @@ export function execute(
     }
 
     const symbolic = sorted[i];
-    if (symbolic.sourceLayer instanceof InputLayer) {
+    const srcLayer = symbolic.sourceLayer;
+    if (srcLayer instanceof InputLayer) {
       continue;
     }
     const inputValues: Tensor[] = [];
+    const inputMasks: Tensor[] = [];
     const tensorsToDispose: Tensor[] = [];
 
+    let anyMasks = false;
     for (const input of symbolic.inputs) {
       const value = internalFeedDict.getValue(input);
+      const mask = internalFeedDict.getMask(input);
       inputValues.push(value);
+      inputMasks.push(mask);
+      if (mask != null) {
+        anyMasks = true;
+      }
       if (!training) {
         recipientCounts[input.name]--;
         if (recipientCounts[input.name] === 0 && !feedDict.hasKey(input) &&
             outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
           tensorsToDispose.push(value);
+          tensorsToDispose.push(mask);
         }
       }
     }
-    const output =
-        toList(symbolic.sourceLayer.apply(inputValues, kwargs)) as Tensor[];
+
+    if (anyMasks) {
+      console.log(`Setting kwargs['mask']`);  // DEBUG
+      kwargs = kwargs || {};
+      kwargs['mask'] = inputMasks;
+    }
+    const outputTensors =
+        toList(srcLayer.apply(inputValues, kwargs)) as Tensor[];
+    console.log(`inputMasks = ${inputMasks}`);  // DEBUG
+    console.log(`Calling computeMask() of ${srcLayer.name}`);
+    const outputMasks =
+        toList(srcLayer.computeMask(inputValues, inputMasks)) as Tensor[];
     const layerOutputs = getNodeOutputs(symbolic);
     const outputSymbolicTensors =
         Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
     for (let i = 0; i < outputSymbolicTensors.length; ++i) {
       if (!internalFeedDict.hasKey(outputSymbolicTensors[i])) {
-        internalFeedDict.add(outputSymbolicTensors[i], output[i]);
+        internalFeedDict.add(
+            outputSymbolicTensors[i], outputTensors[i], outputMasks[i]);
       }
       const index = outputNames.indexOf(outputSymbolicTensors[i].name);
       if (index !== -1) {
-        finalOutputs[index] = output[i];
+        finalOutputs[index] = outputTensors[i];
       }
     }
 

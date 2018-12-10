@@ -245,3 +245,32 @@ describeMathCPUAndGPU('Executor', () => {
     });
   });
 });
+
+
+describeMathCPUAndGPU('Masking', () => {
+  fit('Embedding with maskZero=True', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+
+    const xs = tensor2d([[1, 2, 0, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor;
+    ys.print();
+  });
+});
