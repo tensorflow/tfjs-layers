@@ -243,7 +243,10 @@ export class TimeDistributed extends Wrapper {
     });
   }
 
-  // TODO(cais): Implement computeMask(). DO NOT SUBMIT.
+  computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor|Tensor[] {
+    throw new NotImplementedError(
+        'Masking supporting is not implemented for TimeDistributed yet.');
+  }
 }
 serialization.registerClass(TimeDistributed);
 
