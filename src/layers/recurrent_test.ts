@@ -1930,6 +1930,43 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
   });
 
+  it('BPTT with mask: correctness and no leak', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = tensor2d([[1], [2], [3], [4]]);
+    
+    // Serves as burn-in call for subsequent tracking of memor leak.
+    await model.fit(xs, ys, {epochs: 2, batchSize: 4});
+
+    const numTensors0 = tfc.memory().numTensors;
+    const history = await model.fit(xs, ys, {epochs: 2, batchSize: 4});
+    const numTensors1 = tfc.memory().numTensors;
+    // Assert no memory leak.
+    expect(numTensors1).toEqual(numTensors0);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(0.503677);
+    expect(history.history.loss[1]).toBeCloseTo(0.492173); 
+  });
+
   // Reference Python code:
   // ```py
   // import keras
@@ -2102,15 +2139,21 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
     }));
 
     const xs = tensor2d(
-        [[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
-    // const numTensors0 = tfc.memory().numTensors;
+      [[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
+
+    // Burn-in call for subsequent memory leak check.
+    model.predict(xs);
+
+    const numTensors0 = tfc.memory().numTensors;
     const ys = model.predict(xs) as Tensor;
-    // const numTensors1 = tfc.memory().numTensors;
-    // TODO(cais): Check memory leak.
+    const numTensors1 = tfc.memory().numTensors;
     expectTensorsClose(ys, tensor2d(
-      [[0, 0, 0], [0.75950104, 0.75950104, 0.75950104],
-       [0.96367145, 0.96367145, 0.96367145],
-       [0.9950049, 0.9950049, 0.9950049]]));
+        [[0, 0, 0], [0.75950104, 0.75950104, 0.75950104],
+         [0.96367145, 0.96367145, 0.96367145],
+         [0.9950049, 0.9950049, 0.9950049]]));
+    ys.dispose();
+    // Assert no memory leak.
+    expect(numTensors1).toEqual(numTensors0 + 1);
   });
 
 
