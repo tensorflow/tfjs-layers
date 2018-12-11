@@ -1877,6 +1877,40 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
           dense.getWeights()[0], tensor2d([[1.4559253]], [1, 1]));
     });
   }
+
+  // Reference Python code:
+  // ```py
+
+  // ```
+  fit('With mask', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor;
+    ys.print();
+    // expectTensorsClose(
+    //     ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
+    // TODO(cais): Check returned states by using returnStates=True.
+  });
+
+  // TODO(cais): Test mask + goBackwards=True.
 });
 
 describeMathCPU('LSTM-deserialization', () => {

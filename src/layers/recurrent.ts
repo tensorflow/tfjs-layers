@@ -199,7 +199,6 @@ export function rnn(
     // TODO(cais): Try unstack() for performance. Same below.
     let currentInput = K.sliceAlongFirstAxis(inputs, t, 1);
 
-
     currentInput = currentInput.reshape(currentInput.shape.slice(1));
     const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
     lastOutput = stepOutputs[0];
@@ -224,13 +223,12 @@ export function rnn(
         const stepMask = K.sliceAlongFirstAxis(mask, t, 1);
         const negStepMask = tfc.onesLike(stepMask).sub(stepMask);
         // TODO(cais): Would tfc.where() be faster?
-        return states.map(
-            (state, i) => {
-              console.log(`i = ${i}; state.shape = ${state.shape}`);  // DEBUG
-              console.log(`stepMask.shape = ${stepMask.shape}`);  // DEBUG
-              return state.mulStrict(negStepMask)
-                  .addStrict(stepOutputs[1][i].mulStrict(stepMask))
-            });
+        return states.map((state, i) => {
+          console.log(`i = ${i}; state.shape = ${state.shape}`);  // DEBUG
+          console.log(`stepMask.shape = ${stepMask.shape}`);      // DEBUG
+          return state.mul(negStepMask)
+              .addStrict(stepOutputs[1][i].mul(stepMask));
+        });
       });
     }
   }
