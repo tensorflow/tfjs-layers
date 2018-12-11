@@ -287,7 +287,7 @@ export class Dense extends Layer {
       this.invokeCallHook(inputs, kwargs);
       // Dense layer accepts only a single input.
       const input = getExactlyOneTensor(inputs);
-      console.log(`Dense input: ${input}`);  // DEBUG
+      // console.log(`Dense input: ${input}`);  // DEBUG
       let output = K.dot(input, this.kernel.read());
       if (this.bias != null) {
         output = K.biasAdd(output, this.bias.read());
