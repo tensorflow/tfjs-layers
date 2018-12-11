@@ -2103,10 +2103,10 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
 
     const xs = tensor2d(
         [[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
-    const numTensors0 = tfc.memory().numTensors;
+    // const numTensors0 = tfc.memory().numTensors;
     const ys = model.predict(xs) as Tensor;
-    const numTensors1 = tfc.memory().numTensors;
-    console.log(numTensors0, numTensors1);  // DEBUG
+    // const numTensors1 = tfc.memory().numTensors;
+    // TODO(cais): Check memory leak.
     expectTensorsClose(ys, tensor2d(
       [[0, 0, 0], [0.75950104, 0.75950104, 0.75950104],
        [0.96367145, 0.96367145, 0.96367145],

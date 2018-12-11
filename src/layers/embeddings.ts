@@ -144,14 +144,11 @@ export class Embedding extends Layer {
   protected warnOnIncompatibleInputShape(inputShape: Shape) {}
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
-    console.log('In Embedding.computeMask()');  // DEBUG
     return tidy(() => {
       if (!this.maskZero) {
         return null;
       } else {
         inputs = getExactlyOneTensor(inputs);
-        console.log(  // DEBUG
-            `Embedding.computeMask(): inputs.shape = ${inputs.shape}`);
         return notEqual(inputs, zerosLike(inputs as Tensor));
       }
     });

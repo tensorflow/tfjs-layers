@@ -518,20 +518,19 @@ export class RNN extends Layer {
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor
       |Tensor[] {
-    if (Array.isArray(mask)) {
-      mask = mask[0];
-    }
-    const outputMask = this.returnSequences ? mask : null;
-    // console.log(`RNN.computeMask(): `);  // DEBUG
-    // outputMask.print();  // DEBUG
-    // console.log(`-------------------`);  // DEBUG
+    return tfc.tidy(() => {
+      if (Array.isArray(mask)) {
+        mask = mask[0];
+      }
+      const outputMask = this.returnSequences ? mask : null;
 
-    if (this.returnState) {
-      const stateMask = this.states.map(s => null);
-      return [outputMask].concat(stateMask);
-    } else {
-      return outputMask;
-    }
+      if (this.returnState) {
+        const stateMask = this.states.map(s => null);
+        return [outputMask].concat(stateMask);
+      } else {
+        return outputMask;
+      }
+    });
   }
 
   get states(): Tensor[] {
@@ -829,7 +828,6 @@ export class RNN extends Layer {
       if (this.returnState) {
         return [output].concat(states);
       } else {
-        console.log(output.isDisposed);  // DEBUG
         return output;
       }
     });

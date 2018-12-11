@@ -314,14 +314,15 @@ export function execute(
 
     if (maskExists) {
       kwargs = kwargs || {};
-      kwargs['mask'] = inputMasks[0];  // TODO(cais): Confirm using one is fine.
+      // TODO(cais): Confirm using one is fine. DO NOT SUBMIT.
+      kwargs['mask'] = inputMasks[0];  
     }
     const outputTensors =
         toList(srcLayer.apply(inputValues, kwargs)) as Tensor[];
     // console.log(`inputMasks = ${inputMasks}`);  // DEBUG
-    let outputMask: Tensor = null;
+    let outputMask: Tensor|Tensor[] = null;
     if (srcLayer.supportsMasking) {
-      outputMask = srcLayer.computeMask(inputValues, inputMasks) as Tensor;
+      outputMask = srcLayer.computeMask(inputValues, inputMasks);
     }
     const layerOutputs = getNodeOutputs(symbolic);
     const outputSymbolicTensors =
@@ -329,7 +330,8 @@ export function execute(
     for (let i = 0; i < outputSymbolicTensors.length; ++i) {
       if (!internalFeedDict.hasKey(outputSymbolicTensors[i])) {
         internalFeedDict.add(
-            outputSymbolicTensors[i], outputTensors[i], outputMask);
+            outputSymbolicTensors[i], outputTensors[i],
+            Array.isArray(outputMask) ? outputMask[0] : outputMask);
       }
       const index = outputNames.indexOf(outputSymbolicTensors[i].name);
       if (index !== -1) {
@@ -342,6 +344,9 @@ export function execute(
       dispose(tensorsToDispose);
     }
   }
+  // Unlike intermediate tensors, we don't discard mask tensors as we go,
+  // because these tensors are sometimes passed over a series of mutliple
+  // layers, i.e., not obeying the immediate input relations in the graph.
   internalFeedDict.disposeMasks();
 
   return arrayFetches ? finalOutputs : finalOutputs[0];

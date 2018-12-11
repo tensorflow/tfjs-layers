@@ -538,7 +538,7 @@ export class Bidirectional extends Wrapper {
     this.built = true;
   }
 
-  // TODO(cais): Implement computeMask().
+  // TODO(cais): Implement computeMask(). DO NOT SUBMIT.
 
   get trainableWeights(): LayerVariable[] {
     return this.forwardLayer.trainableWeights.concat(

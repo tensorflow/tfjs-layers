@@ -847,17 +847,33 @@ export class Concatenate extends Merge {
           `Mismatch in the length of mask (${mask.length}) ` +
           `and the legnth of inputs (${inputs.length})`);
     }
-    let allNullMasks = true;
-    mask.forEach(m => {
-      if (m != null) {
-        allNullMasks = false;
-        return;
+    return tfc.tidy(() => { 
+      let allNullMasks = true;
+      mask.forEach(m => {
+        if (m != null) {
+          allNullMasks = false;
+          return;
+        }
+      });
+      if (allNullMasks) {
+        return null;
       }
+      // TODO(cais): Unit test for Concatenate with masking.
+      const outputMasks: Tensor[] = [];
+      for (let i = 0; i < inputs.length; ++i) {
+        if (mask[i] == null) {
+          // Input is unmasked. Append all 1's to masks.
+          outputMasks.push(tfc.onesLike(inputs[i]).asType('bool'));
+        } else if (mask[i].rank < inputs[i].rank) {
+          // Mask is smaller than the input, expand it.
+          outputMasks.push(tfc.expandDims(mask[i], -1));
+        } else {
+          outputMasks.push(mask[i]);
+        }
+      }
+      const concatenatedMasks = tfc.concat(outputMasks, this.axis);
+      return tfc.all(concatenatedMasks, -1, false);
     });
-    if (allNullMasks) {
-      return null;
-    }
-    // TODO(cais): Unit test for Concatenate with masking.
   }
 
   getConfig(): serialization.ConfigDict {
@@ -1169,6 +1185,7 @@ export class Dot extends Merge {
   }
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
+    // TODO(cais): Unit test for Dot layer with masking. DO NOT SUBMIT.
     return null;
   }
 
