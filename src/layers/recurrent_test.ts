@@ -2050,6 +2050,70 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
          [[2.283937], [2.8919387], [2.9851446]]]));
   });
 
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                  4,
+  //                                  input_length=3,
+  //                                  mask_zero=True,
+  //                                  embeddings_initializer='ones'))
+  // model.add(keras.layers.SimpleRNN(3,
+  //                                  return_sequences=True,
+  //                                  recurrent_initializer='ones',
+  //                                  kernel_initializer='ones',
+  //                                  bias_initializer='zeros'))
+  // model.add(keras.layers.LSTM(3,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  //
+  // xs = np.array([[0, 0, 0],
+  //                [1, 0, 0],
+  //                [1, 2, 0],
+  //                [1, 2, 3]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  fit('Stacked RNNs with masking: correctness and no leak', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 3,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.simpleRNN({
+      units: 3,
+      returnSequences: true,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+
+    const xs = tensor2d(
+        [[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
+    const numTensors0 = tfc.memory().numTensors;
+    const ys = model.predict(xs) as Tensor;
+    const numTensors1 = tfc.memory().numTensors;
+    console.log(numTensors0, numTensors1);  // DEBUG
+    expectTensorsClose(ys, tensor2d(
+      [[0, 0, 0], [0.75950104, 0.75950104, 0.75950104],
+       [0.96367145, 0.96367145, 0.96367145],
+       [0.9950049, 0.9950049, 0.9950049]]));
+  });
+
+
   // TODO(cais): Stacked LSTM layers + Test mask.
   // TODO(cais): Test mask + goBackwards=True.
 });

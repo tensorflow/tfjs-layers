@@ -302,7 +302,6 @@ export function execute(
         if (recipientCounts[input.name] === 0 && !feedDict.hasKey(input) &&
             outputNames.indexOf(input.name) === -1 && !value.isDisposed) {
           tensorsToDispose.push(value);
-          tensorsToDispose.push(mask);
         }
       }
     }
