@@ -183,34 +183,30 @@ export function rnn(
   //   This is not idiomatic in TypeScript. The info regarding whether we are
   //   in a learning (i.e., training) phase for RNN is passed in a different
   //   way.
-  //   TODO(cais): Determine in what exact way the learning phase information
-  //     will be passed.
 
-  let outputs: Tensor;
+  const perStepOutputs: Tensor[] = [];
   let lastOutput: Tensor;
   let states = initialStates;
   const timeSteps = inputs.shape[0];
+  const perStepInputs = tfc.unstack(inputs);
   for (let t = 0; t < timeSteps; ++t) {
-    let currentInput = K.sliceAlongFirstAxis(inputs, t, 1);
-    currentInput = currentInput.reshape(currentInput.shape.slice(1));
+    const currentInput = perStepInputs[t];
     const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
     lastOutput = stepOutputs[0];
     if (needPerStepOutputs) {
-      if (t === 0) {
-        outputs = lastOutput.expandDims(1);
-      } else {
-        const newOutputs = tfc.concat([outputs, lastOutput.expandDims(1)], 1);
-        outputs.dispose();
-        outputs = newOutputs;
-      }
+      perStepOutputs.push(lastOutput);
     }
-    // TODO(soergel): Call K.concatenate() to perform only one concatenation
-    // at the end, once the backend function is available.
     states = stepOutputs[1];
   }
+  let outputs: Tensor;
+  if (needPerStepOutputs) {
+    outputs = tfc.stack(perStepOutputs, 1);
+  }
+  perStepOutputs.pop();
+  // The last element is `lastOutput` and shouldn't be disposed.
+  tfc.dispose([perStepInputs, perStepOutputs]);
   return [lastOutput, outputs, states];
 }
-
 
 export interface BaseRNNLayerConfig extends LayerConfig {
   /**
