@@ -1930,6 +1930,36 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
   });
 
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                  4,
+  //                                  input_length=6,
+  //                                  mask_zero=True,
+  //                                 embeddings_initializer='ones'))
+  // model.add(keras.layers.LSTM(3,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  // model.add(keras.layers.Dense(1,
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zero'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //               [1, 0, 0, 0, 0, 0],
+  //               [1, 2, 0, 0, 0, 0],
+  //               [1, 2, 3, 0, 0, 0]])
+  // ys = np.array([[1], [2], [3], [4]])
+  //
+  // model.fit(xs, ys, epochs=2, batch_size=4)
+  // history = model.fit(xs, ys, epochs=2, batch_size=4)
+  // print(history.history)
+  // ```
   it('BPTT with mask: correctness and no leak', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.embedding({
