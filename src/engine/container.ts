@@ -833,6 +833,7 @@ export abstract class Container extends Layer {
    */
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor
       |Tensor[] {
+    console.log('**** In Container.computeMask()');  // DEBUG
     return tidy(() => {
       inputs = generic_utils.toList(inputs);
       let masks: Tensor[];

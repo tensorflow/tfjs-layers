@@ -1936,6 +1936,69 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   // import numpy as np
   //
   // model = keras.Sequential()
+  // model.add(keras.layers.Reshape(target_shape=[6], input_shape=[6]))
+  // nested_model = keras.Sequential()
+  // nested_model.add(keras.layers.Embedding(10,
+  //                                         4,
+  //                                         input_length=6,
+  //                                         mask_zero=True,
+  //                                         embeddings_initializer='ones'))
+  // nested_model.add(keras.layers.LSTM(3,
+  //                                    recurrent_initializer='ones',
+  //                                    kernel_initializer='ones',
+  //                                    bias_initializer='zeros'))
+  // model.add(nested_model)
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='ones',
+  //                              bias_initializer='zero'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //               [1, 0, 0, 0, 0, 0],
+  //               [1, 2, 0, 0, 0, 0],
+  //               [1, 2, 3, 0, 0, 0]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask and a nested model', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.reshape({
+      targetShape: [6],
+      inputShape: [6]
+    }));  // A dummy input layer.
+    const nestedModel = tfl.sequential();
+    nestedModel.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    nestedModel.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(nestedModel);
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+    model.summary();  // DEBUG
+
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(
+        ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
   // model.add(keras.layers.Embedding(10,
   //                                  4,
   //                                  input_length=6,
@@ -2186,9 +2249,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
     expect(numTensors1).toEqual(numTensors0 + 1);
   });
 
-
-  // TODO(cais): Stacked LSTM layers + Test mask.
-  // TODO(cais): Test mask + goBackwards=True.
+  // TODO(cais): Test mask + goBackwards=True. DO NOT SUBMIT.
 });
 
 describeMathCPU('LSTM-deserialization', () => {
