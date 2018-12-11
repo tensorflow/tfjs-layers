@@ -210,17 +210,13 @@ export function rnn(
     } else {
       // TODO(cais): Check leak.
       const maskedOutputs = tfc.tidy(() => {
-        // console.log(`mask.shape = ${mask.shape}`);  // DEBUG
-        // TODO(cais): Use unstack instead?
+        // TODO(cais): Use unstack instead for performance?
         const stepMask = K.sliceAlongFirstAxis(mask, t, 1).squeeze([0]);
-        // console.log(`stepMask.shape = ${stepMask.shape}`);  // DEBUG
         const negStepMask = tfc.onesLike(stepMask).sub(stepMask);
-        // TODO(cais): Would tfc.where() be faster?
+        // TODO(cais): Would tfc.where() be better for performance?
         const output = stepOutputs[0].mul(stepMask)
             .addStrict(states[0].mul(negStepMask));
         const newStates = states.map((state, i) => {
-          // console.log(`i = ${i}; state.shape = ${state.shape}`);  // DEBUG
-          // console.log(`stepMask.shape = ${stepMask.shape}`);      // DEBUG
           return stepOutputs[1][i].mul(stepMask)
               .addStrict(state.mul(negStepMask));
         });
@@ -518,8 +514,6 @@ export class RNN extends Layer {
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor
       |Tensor[] {
-    // DEBUG
-    // console.log(`RNN.computeMask(): mask = ${JSON.stringify(mask)}`);
     return tfc.tidy(() => {
       if (Array.isArray(mask)) {
         mask = mask[0];

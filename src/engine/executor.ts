@@ -318,11 +318,7 @@ export function execute(
     }
     const outputTensors =
         toList(srcLayer.apply(inputValues, kwargs)) as Tensor[];
-    // console.log(`inputMasks = ${inputMasks}`);  // DEBUG
     let outputMask: Tensor|Tensor[] = null;
-    // console.log(
-    //     `srcLayer ${srcLayer.name}: ` +
-    //     `supportsMasking=${srcLayer.supportsMasking}`);  // DEBUG
     if (srcLayer.supportsMasking) {
       outputMask = srcLayer.computeMask(inputValues, inputMasks);
     }

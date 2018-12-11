@@ -13,7 +13,7 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-import {randomNormal, Scalar, scalar, Tensor, tensor2d, tensor3d, tensor4d, test_util} from '@tensorflow/tfjs-core';
+import {randomNormal, Scalar, scalar, Tensor, tensor1d, tensor2d, tensor3d, tensor4d, test_util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
@@ -1933,6 +1933,74 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   // Reference Python code:
   // ```py
   // import keras
+  //  
+  // model = keras.Sequential()
+  // embedding_layer = keras.layers.Embedding(4,
+  //                                          2,
+  //                                          input_length=3,
+  //                                          mask_zero=True)
+  // model.add(embedding_layer)
+  // lstm_layer = keras.layers.LSTM(2, go_backwards=True)
+  // model.add(lstm_layer)
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='ones',
+  //                              bias_initializer='zero'))
+  //
+  // print(embedding_layer.get_weights())
+  // embedding_layer.set_weights([
+  //     np.array([[0.1, 0.2], [0.3, 0.4], [-0.1, -0.2], [-0.3, -0.4]])])
+  // print(lstm_layer.get_weights())
+  // lstm_layer.set_weights([
+  //     np.array([[1, 2, 3, 4, 5, 6, 7, 8],
+  //               [-1, -2, -3, -4, -5, -6, -7, -8]]),
+  //     np.array([[1, 2, 3, 4, 5, 6, 7, 8],
+  //               [-1, -2, -3, -4, -5, -6, -7, -8]]),
+  //     np.array([1, 2, 3, 4, 5, 6, 7, 8])])
+  // 
+  // xs = np.array([[0, 0, 0],
+  //                [1, 0, 0],
+  //                [1, 2, 0],
+  //                [1, 2, 3]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask, goBackwards = true', () => {
+    const model = tfl.sequential();
+    const embeddingLayer = tfl.layers.embedding({
+      inputDim: 4,
+      outputDim: 2,
+      inputLength: 3,
+      maskZero: true
+    });
+    model.add(embeddingLayer);
+    const lstmLayer = tfl.layers.lstm({
+      units: 2,
+      goBackwards: true
+    });
+    model.add(lstmLayer);
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    // Setting weights to asymmetric, so that the effect of goBackwards=true
+    // can show.
+    embeddingLayer.setWeights([
+        tensor2d([[0.1, 0.2], [0.3, 0.4], [-0.1, -0.2], [-0.3, -0.4]])]);
+    lstmLayer.setWeights([
+        tensor2d([[1, 2, 3, 4, 5, 6, 7, 8],
+                  [-1, -2, -3, -4, -5, -6, -7, -8]]),
+        tensor2d([[1, 2, 3, 4, 5, 6, 7, 8],
+                  [-1, -2, -3, -4, -5, -6, -7, -8]]),
+        tensor1d([1, 2, 3, 4, 5, 6, 7, 8])]);
+
+    const xs = tensor2d([[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(
+        ys, tensor2d([[0], [1.2876499], [1.8165315], [1.9599037]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
   // import numpy as np
   //
   // model = keras.Sequential()
@@ -1983,7 +2051,6 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
     model.add(nestedModel);
     model.add(tfl.layers.dense({
         units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
-    model.summary();  // DEBUG
 
     const xs = tensor2d(
         [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
