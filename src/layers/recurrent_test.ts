@@ -1880,9 +1880,31 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
 
   // Reference Python code:
   // ```py
-
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                  4,
+  //                                  input_length=6,
+  //                                  mask_zero=True,
+  //                                  embeddings_initializer='ones'))
+  // model.add(keras.layers.LSTM(3,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='ones',
+  //                              bias_initializer='zero'))
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //                [1, 0, 0, 0, 0, 0],
+  //                [1, 2, 0, 0, 0, 0],
+  //                [1, 2, 3, 0, 0, 0]])
+  // ys = model.predict(xs)
+  // print(ys)
   // ```
-  fit('With mask', () => {
+  it('With mask', () => {
     const model = tfl.sequential();
     model.add(tfl.layers.embedding({
       inputDim: 10,
@@ -1908,6 +1930,46 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
   });
 
+  fit('With mask, returnStates = true', () => {
+    const inp = tfl.input({shape: [6]});
+    let y: tfl.SymbolicTensor|tfl.SymbolicTensor[] = tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }).apply(inp) as tfl.SymbolicTensor;
+    y = tfl.layers.lstm({
+      units: 3,
+      returnState: true,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(y) as tfl.SymbolicTensor[];
+    const model = tfl.model({inputs: inp, outputs: y});
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor[];
+    expect(ys.length).toEqual(3);
+    expectTensorsClose(ys[0], tensor2d([
+        [0, 0, 0],
+        [0.76131237, 0.76131237, 0.76131237],
+        [0.9639796, 0.9639796, 0.9639796],
+        [0.99504817, 0.99504817, 0.99504817]]));
+    expectTensorsClose(ys[1], tensor2d([
+        [0, 0, 0],
+        [0.76131237, 0.76131237, 0.76131237],
+        [0.9639796, 0.9639796, 0.9639796],
+        [0.99504817, 0.99504817, 0.99504817]]));
+    expectTensorsClose(ys[2], tensor2d([
+        [0, 0, 0],
+        [0.9993292, 0.9993292, 0.9993292],
+        [1.9993222, 1.9993222, 1.9993222],
+        [2.9993203,2.9993203,　2.9993203]]));
+  });
+
+  // TODO(cais): Stacked LSTM layers + Test mask.
   // TODO(cais): Test mask + goBackwards=True.
 });
 

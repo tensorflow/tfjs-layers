@@ -210,17 +210,17 @@ export function rnn(
     } else {
       // TODO(cais): Check leak.
       const maskedOutputs = tfc.tidy(() => {
-        console.log(`mask.shape = ${mask.shape}`);  // DEBUG
+        // console.log(`mask.shape = ${mask.shape}`);  // DEBUG
         // TODO(cais): Use unstack instead?
         const stepMask = K.sliceAlongFirstAxis(mask, t, 1).squeeze([0]);
-        console.log(`stepMask.shape = ${stepMask.shape}`);  // DEBUG
+        // console.log(`stepMask.shape = ${stepMask.shape}`);  // DEBUG
         const negStepMask = tfc.onesLike(stepMask).sub(stepMask);
         // TODO(cais): Would tfc.where() be faster?
         const output = stepOutputs[0].mul(stepMask)
             .addStrict(states[0].mul(negStepMask));
         const newStates = states.map((state, i) => {
-          console.log(`i = ${i}; state.shape = ${state.shape}`);  // DEBUG
-          console.log(`stepMask.shape = ${stepMask.shape}`);      // DEBUG
+          // console.log(`i = ${i}; state.shape = ${state.shape}`);  // DEBUG
+          // console.log(`stepMask.shape = ${stepMask.shape}`);      // DEBUG
           return stepOutputs[1][i].mul(stepMask)
               .addStrict(state.mul(negStepMask));
         });
@@ -229,7 +229,6 @@ export function rnn(
       lastOutput = maskedOutputs.output;
       states = maskedOutputs.newStates;
     }
-    console.log(`lastOutput.shape = ${lastOutput.shape}`);  // DEBUG
 
     if (needPerStepOutputs) {
       if (t === 0) {
@@ -422,7 +421,7 @@ export class RNN extends Layer {
   public readonly unroll: boolean;
 
   public stateSpec: InputSpec[];
-  public states: Tensor[];
+  private states_: Tensor[];
 
   // NOTE(cais): For stateful RNNs, the old states cannot be disposed right
   // away when new states are set, because the old states may need to be used
@@ -460,7 +459,7 @@ export class RNN extends Layer {
     this.supportsMasking = true;
     this.inputSpec = [new InputSpec({ndim: 3})];
     this.stateSpec = null;
-    this.states = null;
+    this.states_ = null;
     // TODO(cais): Add constantsSpec and numConstants.
     this.numConstants = null;
     // TODO(cais): Look into the use of initial_state in the kwargs of the
@@ -472,19 +471,19 @@ export class RNN extends Layer {
   // Porting Note: This is the equivalent of `RNN.states` property getter in
   //   PyKeras.
   getStates(): Tensor[] {
-    if (this.states == null) {
+    if (this.states_ == null) {
       const numStates =
           Array.isArray(this.cell.stateSize) ? this.cell.stateSize.length : 1;
       return math_utils.range(0, numStates).map(x => null);
     } else {
-      return this.states;
+      return this.states_;
     }
   }
 
   // Porting Note: This is the equivalent of the `RNN.states` property setter in
   //   PyKeras.
   setStates(states: Tensor[]): void {
-    this.states = states;
+    this.states_ = states;
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
@@ -519,11 +518,13 @@ export class RNN extends Layer {
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor
       |Tensor[] {
-    console.log(`In RNN.computeMask()`);  // DEBUG
     if (Array.isArray(mask)) {
       mask = mask[0];
     }
     const outputMask = this.returnSequences ? mask : null;
+    // console.log(`RNN.computeMask(): `);  // DEBUG
+    // outputMask.print();  // DEBUG
+    // console.log(`-------------------`);  // DEBUG
 
     if (this.returnState) {
       const stateMask = this.states.map(s => null);
@@ -531,6 +532,24 @@ export class RNN extends Layer {
     } else {
       return outputMask;
     }
+  }
+
+  get states(): Tensor[] {
+    if (this.states_ == null) {
+      const numStates = Array.isArray(this.cell.stateSize) ?
+          this.cell.stateSize.length : 1;
+      const output: Tensor[] = [];
+      for (let i = 0; i < numStates; ++i) {
+        output.push(null);
+      }
+      return output;
+    } else {
+      return this.states_;
+    }
+  }
+
+  set states(s: Tensor[]) {
+    this.states_ = s;
   }
 
   public build(inputShape: Shape|Shape[]): void {
@@ -621,16 +640,16 @@ export class RNN extends Layer {
             'passing a `batchShape` option to your Input layer.');
       }
       // Initialize state if null.
-      if (this.states == null) {
+      if (this.states_ == null) {
         if (Array.isArray(this.cell.stateSize)) {
-          this.states =
+          this.states_ =
               this.cell.stateSize.map(dim => tfc.zeros([batchSize, dim]));
         } else {
-          this.states = [tfc.zeros([batchSize, this.cell.stateSize])];
+          this.states_ = [tfc.zeros([batchSize, this.cell.stateSize])];
         }
       } else if (states == null) {
         // Dispose old state tensors.
-        tfc.dispose(this.states);
+        tfc.dispose(this.states_);
         // For stateful RNNs, fully dispose kept old states.
         if (this.keptStates != null) {
           tfc.dispose(this.keptStates);
@@ -638,18 +657,18 @@ export class RNN extends Layer {
         }
 
         if (Array.isArray(this.cell.stateSize)) {
-          this.states =
+          this.states_ =
               this.cell.stateSize.map(dim => tfc.zeros([batchSize, dim]));
         } else {
-          this.states[0] = tfc.zeros([batchSize, this.cell.stateSize]);
+          this.states_[0] = tfc.zeros([batchSize, this.cell.stateSize]);
         }
       } else {
         if (!Array.isArray(states)) {
           states = [states];
         }
-        if (states.length !== this.states.length) {
+        if (states.length !== this.states_.length) {
           throw new ValueError(
-              `Layer ${this.name} expects ${this.states.length} state(s), ` +
+              `Layer ${this.name} expects ${this.states_.length} state(s), ` +
               `but it received ${states.length} state value(s). Input ` +
               `received: ${states}`);
         }
@@ -659,12 +678,12 @@ export class RNN extends Layer {
           // the next no-arg call to this method. We do not dispose the old
           // states immediately because that BPTT (among other things) require
           // them.
-          this.keptStates.push(this.states.slice());
+          this.keptStates.push(this.states_.slice());
         } else {
-          tfc.dispose(this.states);
+          tfc.dispose(this.states_);
         }
 
-        for (let index = 0; index < this.states.length; ++index) {
+        for (let index = 0; index < this.states_.length; ++index) {
           const value = states[index];
           const dim = Array.isArray(this.cell.stateSize) ?
               this.cell.stateSize[index] :
@@ -676,10 +695,10 @@ export class RNN extends Layer {
                 `expected shape=${expectedShape}, received shape=${
                     value.shape}`);
           }
-          this.states[index] = value;
+          this.states_[index] = value;
         }
       }
-      this.states.forEach(state => tfc.keep(state));
+      this.states_.forEach(state => tfc.keep(state));
     });
   }
 
@@ -759,7 +778,7 @@ export class RNN extends Layer {
       inputs = getExactlyOneTensor(inputs);
       if (initialState == null) {
         if (this.stateful) {
-          initialState = this.states;
+          initialState = this.states_;
         } else {
           initialState = this.getInitialState(inputs);
         }

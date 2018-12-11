@@ -308,7 +308,6 @@ export function execute(
     }
 
     if (maskExists) {
-      console.log(`Setting kwargs['mask']`);  // DEBUG
       kwargs = kwargs || {};
       kwargs['mask'] = inputMasks[0];  // TODO(cais): Confirm using one is fine.
     }
