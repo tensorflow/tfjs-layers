@@ -1956,7 +1956,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   // ys = model.predict(xs)
   // print(ys)
   // ```
-  it('With mask, returnStates = true', () => {
+  fit('With mask, returnStates = true', () => {
     const inp = tfl.input({shape: [6]});
     let y: tfl.SymbolicTensor|tfl.SymbolicTensor[] = tfl.layers.embedding({
       inputDim: 10,
@@ -2018,16 +2018,9 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         [[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
     const ys = model.predict(xs) as Tensor;
     expectTensorsClose(ys, tensor3d(
-        [[[0, 0, 0], [0, 0, 0], [0, 0, 0]],
-         [[0.76131237, 0.76131237, 0.76131237],
-          [0.76131237, 0.76131237, 0.76131237],
-          [0.76131237, 0.76131237, 0.76131237]],
-         [[0.76131237, 0.76131237, 0.76131237],
-          [0.9639796, 0.9639796, 0.9639796],
-          [0.9639796, 0.9639796, 0.963979 ]],
-         [[0.76131237, 0.76131237, 0.76131237],
-          [0.9639796, 0.9639796, 0.9639796],
-          [0.99504817, 0.99504817, 0.99504817]]]));
+        [[[0], [0], [0]], [[2.283937], [2.283937], [2.283937]],
+         [[2.283937], [2.8919387], [2.8919387]],
+         [[2.283937], [2.8919387], [2.9851446]]]));
   });
 
   // TODO(cais): Stacked LSTM layers + Test mask.

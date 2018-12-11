@@ -313,7 +313,7 @@ export function execute(
     }
     const outputTensors =
         toList(srcLayer.apply(inputValues, kwargs)) as Tensor[];
-    console.log(`inputMasks = ${inputMasks}`);  // DEBUG
+    // console.log(`inputMasks = ${inputMasks}`);  // DEBUG
     console.log(`Calling computeMask() of ${srcLayer.name}`);
     const outputMask = srcLayer.computeMask(inputValues, inputMasks) as Tensor;
     const layerOutputs = getNodeOutputs(symbolic);

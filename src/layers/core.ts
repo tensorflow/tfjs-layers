@@ -252,6 +252,7 @@ export class Dense extends Layer {
     this.kernelRegularizer = getRegularizer(config.kernelRegularizer);
     this.biasRegularizer = getRegularizer(config.biasRegularizer);
     this.activityRegularizer = getRegularizer(config.activityRegularizer);
+    this.supportsMasking = true;
 
     this.inputSpec = [{minNDim: 2}];
   }
@@ -286,6 +287,7 @@ export class Dense extends Layer {
       this.invokeCallHook(inputs, kwargs);
       // Dense layer accepts only a single input.
       const input = getExactlyOneTensor(inputs);
+      console.log('Dense.call():', input.isDisposed);  // DEBUG
       let output = K.dot(input, this.kernel.read());
       if (this.bias != null) {
         output = K.biasAdd(output, this.bias.read());
