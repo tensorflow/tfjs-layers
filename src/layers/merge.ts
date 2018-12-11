@@ -833,6 +833,7 @@ export class Concatenate extends Merge {
   }
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
+    console.log(`Concatenate.computeMask(): mask = ${JSON.stringify(mask)}`);  // DEBUG
     if (mask == null) {
       return null;
     }
@@ -872,6 +873,8 @@ export class Concatenate extends Merge {
         }
       }
       const concatenatedMasks = tfc.concat(outputMasks, this.axis);
+      // DEBUG
+      console.log(`Concatenate.computeMask(): outputMasks = ${outputMasks}`);
       return tfc.all(concatenatedMasks, -1, false);
     });
   }

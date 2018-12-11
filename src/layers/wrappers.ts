@@ -242,6 +242,8 @@ export class TimeDistributed extends Wrapper {
       return y;
     });
   }
+
+  // TODO(cais): Implement computeMask(). DO NOT SUBMIT.
 }
 serialization.registerClass(TimeDistributed);
 
@@ -538,7 +540,7 @@ export class Bidirectional extends Wrapper {
     this.built = true;
   }
 
-  // TODO(cais): Implement computeMask(). DO NOT SUBMIT.
+  // TODO(cais): Implement computeMask().
 
   get trainableWeights(): LayerVariable[] {
     return this.forwardLayer.trainableWeights.concat(
