@@ -149,6 +149,13 @@ export class FeedDict {
     }
   }
 
+  /**
+   * Get the feed mask for given key.
+   * @param key The SymbolicTensor, or its name (as a string), of which the
+   *     value is sought.
+   * @returns If `key` exists, the corresponding feed mask.
+   * @throws ValueError: If `key` does not exist in this `FeedDict`.
+   */
   getMask(key: SymbolicTensor|string): Tensor {
     if (key instanceof SymbolicTensor) {
       if (this.id2Value[key.id] == null) {
@@ -165,6 +172,7 @@ export class FeedDict {
     }
   }
 
+  /** Dispose all mask Tensors held by this object. */
   disposeMasks() {
     if (this.id2Mask != null) {
       dispose(this.id2Mask);
@@ -342,9 +350,12 @@ export function execute(
       dispose(tensorsToDispose);
     }
   }
-  // Unlike intermediate tensors, we don't discard mask tensors as we go,
-  // because these tensors are sometimes passed over a series of mutliple
-  // layers, i.e., not obeying the immediate input relations in the graph.
+  // 
+  // NOTE(cais): Unlike intermediate tensors, we don't discard mask
+  // tensors as we go, because these tensors are sometimes passed over a
+  // series of mutliple layers, i.e., not obeying the immediate input
+  // relations in the graph. If this becomes a memory-usage concern,
+  // we can improve this in the future.
   internalFeedDict.disposeMasks();
 
   return arrayFetches ? finalOutputs : finalOutputs[0];
