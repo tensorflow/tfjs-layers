@@ -201,7 +201,36 @@ export function rnn(
 
     currentInput = currentInput.reshape(currentInput.shape.slice(1));
     const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
-    lastOutput = stepOutputs[0];
+
+    // TODO(soergel): Call K.concatenate() to perform only one concatenation
+    // at the end, once the backend function is available.
+    if (mask == null) {
+      lastOutput = stepOutputs[0];
+      states = stepOutputs[1];
+    } else {
+      // TODO(cais): Check leak.
+      const maskedOutputs = tfc.tidy(() => {
+        console.log(`mask.shape = ${mask.shape}`);  // DEBUG
+        // TODO(cais): Use unstack instead?
+        const stepMask = K.sliceAlongFirstAxis(mask, t, 1).squeeze([0]);
+        console.log(`stepMask.shape = ${stepMask.shape}`);  // DEBUG
+        const negStepMask = tfc.onesLike(stepMask).sub(stepMask);
+        // TODO(cais): Would tfc.where() be faster?
+        const output = stepOutputs[0].mul(stepMask)
+            .addStrict(states[0].mul(negStepMask));
+        const newStates = states.map((state, i) => {
+          console.log(`i = ${i}; state.shape = ${state.shape}`);  // DEBUG
+          console.log(`stepMask.shape = ${stepMask.shape}`);      // DEBUG
+          return stepOutputs[1][i].mul(stepMask)
+              .addStrict(state.mul(negStepMask));
+        });
+        return {output, newStates};
+      });
+      lastOutput = maskedOutputs.output;
+      states = maskedOutputs.newStates;
+    }
+    console.log(`lastOutput.shape = ${lastOutput.shape}`);  // DEBUG
+
     if (needPerStepOutputs) {
       if (t === 0) {
         outputs = lastOutput.expandDims(1);
@@ -210,26 +239,6 @@ export function rnn(
         outputs.dispose();
         outputs = newOutputs;
       }
-    }
-    // TODO(soergel): Call K.concatenate() to perform only one concatenation
-    // at the end, once the backend function is available.
-
-    if (mask == null) {
-      states = stepOutputs[1];
-    } else {
-      // TODO(cais): Check leak.
-      states = tfc.tidy(() => {
-        console.log(`mask.shape = ${mask.shape}`);  // DEBUG
-        const stepMask = K.sliceAlongFirstAxis(mask, t, 1);
-        const negStepMask = tfc.onesLike(stepMask).sub(stepMask);
-        // TODO(cais): Would tfc.where() be faster?
-        return states.map((state, i) => {
-          console.log(`i = ${i}; state.shape = ${state.shape}`);  // DEBUG
-          console.log(`stepMask.shape = ${stepMask.shape}`);      // DEBUG
-          return state.mul(negStepMask)
-              .addStrict(stepOutputs[1][i].mul(stepMask));
-        });
-      });
     }
   }
   return [lastOutput, outputs, states];

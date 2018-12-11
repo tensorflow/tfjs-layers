@@ -1904,10 +1904,8 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
          [1, 2, 3, 0, 0, 0]]);
     const ys = model.predict(xs) as Tensor;
-    ys.print();
-    // expectTensorsClose(
-    //     ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
-    // TODO(cais): Check returned states by using returnStates=True.
+    expectTensorsClose(
+        ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
   });
 
   // TODO(cais): Test mask + goBackwards=True.
