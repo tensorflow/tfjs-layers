@@ -141,7 +141,6 @@ export function rnn(
     stepFunction: RnnStepFunction, inputs: Tensor, initialStates: Tensor[],
     goBackwards = false, mask?: Tensor, constants?: Tensor[], unroll = false,
     needPerStepOutputs = false): [Tensor, Tensor, Tensor[]] {
-  console.log(`rnn(): mask = ${mask}`);  // DEBUG
   const ndim = inputs.shape.length;
   if (ndim < 3) {
     throw new ValueError(`Input should be at least 3D, but is ${ndim}D.`);
@@ -519,7 +518,8 @@ export class RNN extends Layer {
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor
       |Tensor[] {
-    console.log(`RNN.computeMask(): mask = ${JSON.stringify(mask)}`);  // DEBUG
+    // DEBUG
+    // console.log(`RNN.computeMask(): mask = ${JSON.stringify(mask)}`);
     return tfc.tidy(() => {
       if (Array.isArray(mask)) {
         mask = mask[0];
