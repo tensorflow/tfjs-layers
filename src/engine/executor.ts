@@ -315,7 +315,7 @@ export function execute(
     if (maskExists) {
       kwargs = kwargs || {};
       // TODO(cais): Confirm using one is fine. DO NOT SUBMIT.
-      kwargs['mask'] = inputMasks[0];  
+      kwargs['mask'] = inputMasks[0];
     }
     const outputTensors =
         toList(srcLayer.apply(inputValues, kwargs)) as Tensor[];
