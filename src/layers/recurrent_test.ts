@@ -1995,6 +1995,33 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         [2.9993203,2.9993203,　2.9993203]]));
   });
 
+  // Referernce Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                 4,
+  //                                 input_length=3,
+  //                                 mask_zero=True,
+  //                                 embeddings_initializer='ones'))
+  // model.add(keras.layers.LSTM(3,
+  //                             return_sequences=True,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  // model.add(keras.layers.Dense(1,
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  //
+  // xs = np.array([[0, 0, 0],
+  //               [1, 0, 0],
+  //               [1, 2, 0],
+  //               [1, 2, 3]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
   fit('With mask, returnSequences = true', () => {
     const model = tfl.sequential();
     model.add(tfl.layers.embedding({
