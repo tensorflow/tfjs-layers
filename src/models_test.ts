@@ -2273,7 +2273,7 @@ describeMathCPU('Functional-model saving and loading', () => {
     expectTensorsClose(ys1, ys2);
   });
 
-  it('Load attention model', async () => {
+  fit('Load attention model', async () => {
     // From https://github.com/tensorflow/tfjs/issues/794
     const modelJSON = JSON.parse(
         // tslint:disable-next-line:max-line-length

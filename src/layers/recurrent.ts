@@ -811,11 +811,9 @@ export class RNN extends Layer {
       // TODO(cais): Add support for constants.
       // TODO(cais): Add support for masks.
 
-      console.log('=== RNN.call(): 10');  // DEBUG
       const rnnOutputs =
           rnn(step, inputs, initialState, this.goBackwards, mask, null,
               this.unroll, this.returnSequences);
-      console.log('=== RNN.call(): 20');  // DEBUG
       const lastOutput = rnnOutputs[0];
       const outputs = rnnOutputs[1];
       const states = rnnOutputs[2];
@@ -825,14 +823,12 @@ export class RNN extends Layer {
       }
 
       const output = this.returnSequences ? outputs : lastOutput;
-      console.log('=== RNN.call(): 30');  // DEBUG
 
       // TODO(cais): Porperty set learning phase flag.
 
       if (this.returnState) {
         return [output].concat(states);
       } else {
-        console.log('=== RNN.call(): 40');  // DEBUG
         console.log(output.isDisposed);  // DEBUG
         return output;
       }

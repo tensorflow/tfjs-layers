@@ -164,6 +164,12 @@ export class FeedDict {
       return this.id2Mask[id];
     }
   }
+
+  disposeMasks() {
+    if (this.id2Mask != null) {
+      dispose(this.id2Mask);
+    }
+  }
 }
 
 // Cache for topologically sorted SymbolicTensors for given execution
@@ -313,8 +319,10 @@ export function execute(
     const outputTensors =
         toList(srcLayer.apply(inputValues, kwargs)) as Tensor[];
     // console.log(`inputMasks = ${inputMasks}`);  // DEBUG
-    console.log(`Calling computeMask() of ${srcLayer.name}`);
-    const outputMask = srcLayer.computeMask(inputValues, inputMasks) as Tensor;
+    let outputMask: Tensor = null;
+    if (srcLayer.supportsMasking) {
+      outputMask = srcLayer.computeMask(inputValues, inputMasks) as Tensor;
+    }
     const layerOutputs = getNodeOutputs(symbolic);
     const outputSymbolicTensors =
         Array.isArray(layerOutputs) ? layerOutputs : [layerOutputs];
@@ -334,6 +342,7 @@ export function execute(
       dispose(tensorsToDispose);
     }
   }
+  internalFeedDict.disposeMasks();
 
   return arrayFetches ? finalOutputs : finalOutputs[0];
 }

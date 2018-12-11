@@ -833,9 +833,31 @@ export class Concatenate extends Merge {
   }
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
-    // TODO(cais): Implement computeMask();
-    throw new NotImplementedError(
-        'computeMask has not been implemented for Concatenate yet');
+    if (mask == null) {
+      return null;
+    }
+    if (!Array.isArray(mask)) {
+      throw new ValueError('`mask` should be an array for Concatenate');
+    }
+    if (!Array.isArray(inputs)) {
+      throw new ValueError('`inputs` should be an array for Concatenate');
+    }
+    if (mask.length !== inputs.length) {
+      throw new ValueError(
+          `Mismatch in the length of mask (${mask.length}) ` +
+          `and the legnth of inputs (${inputs.length})`);
+    }
+    let allNullMasks = true;
+    mask.forEach(m => {
+      if (m != null) {
+        allNullMasks = false;
+        return;
+      }
+    });
+    if (allNullMasks) {
+      return null;
+    }
+    // TODO(cais): Unit test for Concatenate with masking.
   }
 
   getConfig(): serialization.ConfigDict {
@@ -1147,9 +1169,7 @@ export class Dot extends Merge {
   }
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
-    // TODO(cais): Implement computeMask();
-    throw new NotImplementedError(
-        'computeMask has not been implemented for Dot yet');
+    return null;
   }
 
   getConfig(): serialization.ConfigDict {

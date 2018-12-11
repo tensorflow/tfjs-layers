@@ -1904,7 +1904,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   // ys = model.predict(xs)
   // print(ys)
   // ```
-  fit('With mask', () => {
+  it('With mask', () => {
     const model = tfl.sequential();
     model.add(tfl.layers.embedding({
       inputDim: 10,
@@ -1956,7 +1956,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   // ys = model.predict(xs)
   // print(ys)
   // ```
-  fit('With mask, returnStates = true', () => {
+  it('With mask, returnStates = true', () => {
     const inp = tfl.input({shape: [6]});
     let y: tfl.SymbolicTensor|tfl.SymbolicTensor[] = tfl.layers.embedding({
       inputDim: 10,
@@ -2022,7 +2022,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   // ys = model.predict(xs)
   // print(ys)
   // ```
-  fit('With mask, returnSequences = true', () => {
+  it('With mask, returnSequences = true', () => {
     const model = tfl.sequential();
     model.add(tfl.layers.embedding({
       inputDim: 10,
@@ -2078,7 +2078,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   // ys = model.predict(xs)
   // print(ys)
   // ```
-  fit('Stacked RNNs with masking: correctness and no leak', () => {
+  it('Stacked RNNs with masking: correctness and no leak', () => {
     const model = tfl.sequential();
     model.add(tfl.layers.embedding({
       inputDim: 10,
