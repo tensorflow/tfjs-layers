@@ -195,6 +195,11 @@ export function rnn(
     let states = initialStates;
     const timeSteps = inputs.shape[0];
     const perStepInputs = tfc.unstack(inputs);
+    let perStepMasks: Tensor[];
+    if (mask != null) {
+      perStepMasks = tfc.unstack(mask);
+    }
+
     for (let t = 0; t < timeSteps; ++t) {
       const currentInput = perStepInputs[t];
       const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
@@ -204,8 +209,7 @@ export function rnn(
         states = stepOutputs[1];
       } else {
         const maskedOutputs = tfc.tidy(() => {
-          // TODO(cais): Use unstack instead for performance?
-          const stepMask = K.sliceAlongFirstAxis(mask, t, 1).squeeze([0]);
+          const stepMask = perStepMasks[t];
           const negStepMask = tfc.onesLike(stepMask).sub(stepMask);
           // TODO(cais): Would tfc.where() be better for performance?
           const output = stepOutputs[0].mul(stepMask)
