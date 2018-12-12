@@ -230,7 +230,8 @@ export function rnn(
     }
     let outputs: Tensor;
     if (needPerStepOutputs) {
-      outputs = tfc.stack(perStepOutputs, 1);
+      const axis = 1;
+      outputs = tfc.stack(perStepOutputs, axis);
     }
     return [lastOutput, outputs, states] as [Tensor, Tensor, Tensor[]];
   });
