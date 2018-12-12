@@ -228,10 +228,6 @@ export function rnn(
     if (needPerStepOutputs) {
       outputs = tfc.stack(perStepOutputs, 1);
     }
-    // The last element is `lastOutput` and shouldn't be disposed.
-    // perStepOutputs.pop();
-    // tfc.dispose([perStepInputs]);
-    // tfc.dispose([perStepInputs, perStepOutputs]);
     return [lastOutput, outputs, states] as [Tensor, Tensor, Tensor[]];
   });
 }
