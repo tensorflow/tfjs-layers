@@ -165,9 +165,9 @@ export function rnn(
   }
 
   if (mask != null) {
-    mask = mask.asType('bool').asType('float32');  // TODO(cais): Unit test.
+    mask = mask.asType('bool').asType('float32');
     if (mask.rank === ndim - 1) {
-      mask = tfc.expandDims(mask, -1);  // TODO(cais): Converage.
+      mask = tfc.expandDims(mask, -1);
     }
     mask = tfc.transpose(mask, axes);
   }
@@ -208,7 +208,6 @@ export function rnn(
       lastOutput = stepOutputs[0];
       states = stepOutputs[1];
     } else {
-      // TODO(cais): Check leak.
       const maskedOutputs = tfc.tidy(() => {
         // TODO(cais): Use unstack instead for performance?
         const stepMask = K.sliceAlongFirstAxis(mask, t, 1).squeeze([0]);
@@ -529,6 +528,12 @@ export class RNN extends Layer {
     });
   }
 
+  /**
+   * Get the current state tensors of the RNN.
+   *
+   * If the state hasn't been set, return an array of `null`s of the correct
+   * length.
+   */
   get states(): Tensor[] {
     if (this.states_ == null) {
       const numStates = Array.isArray(this.cell.stateSize) ?
@@ -764,8 +769,6 @@ export class RNN extends Layer {
     // this.inputSpec and this.stateSpec owith complete input shapes.
     return tidy(() => {
       const mask = kwargs == null ? null : kwargs['mask'] as Tensor;
-      // TODO(cais): Should we check mask is indeed a Tensor (e.g., not
-      //   an array of Tensors)?
       const training = kwargs == null ? null : kwargs['training'];
       let initialState: Tensor[] =
           kwargs == null ? null : kwargs['initialState'];
@@ -804,7 +807,6 @@ export class RNN extends Layer {
       };
 
       // TODO(cais): Add support for constants.
-      // TODO(cais): Add support for masks.
 
       const rnnOutputs =
           rnn(step, inputs, initialState, this.goBackwards, mask, null,

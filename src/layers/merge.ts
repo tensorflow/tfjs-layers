@@ -847,7 +847,7 @@ export class Concatenate extends Merge {
           `Mismatch in the length of mask (${mask.length}) ` +
           `and the legnth of inputs (${inputs.length})`);
     }
-    return tfc.tidy(() => { 
+    return tfc.tidy(() => {
       let allNullMasks = true;
       mask.forEach(m => {
         if (m != null) {
@@ -858,7 +858,6 @@ export class Concatenate extends Merge {
       if (allNullMasks) {
         return null;
       }
-      // TODO(cais): Unit test for Concatenate with masking.
       const outputMasks: Tensor[] = [];
       for (let i = 0; i < inputs.length; ++i) {
         if (mask[i] == null) {

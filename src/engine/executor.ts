@@ -84,7 +84,8 @@ export class FeedDict {
   /**
    * Add a key-value pair to the FeedDict.
    * @param key The key of the feed.
-   * @param value The value of the feed.
+   * @param value The value of the tensor feed.
+   * @param mask The valueof the mask feed.
    * @returns This `FeedDict`.
    * @throws ValueError: If the key `SymbolicTensor` already exists in the
    *   `FeedDict`.
@@ -350,7 +351,6 @@ export function execute(
       dispose(tensorsToDispose);
     }
   }
-  // 
   // NOTE(cais): Unlike intermediate tensors, we don't discard mask
   // tensors as we go, because these tensors are sometimes passed over a
   // series of mutliple layers, i.e., not obeying the immediate input

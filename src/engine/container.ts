@@ -842,8 +842,6 @@ export abstract class Container extends Layer {
         masks = generic_utils.toList(mask);
       }
       // TODO(michaelterry): Add support for mask caching.
-      // TODO(cais): Get rid of runInternalGraphs(). DO NOT SUBMIT.
-      // TODO(cais): Add unit test for masking followed by a submodel.
       return this.runInternalGraph(inputs, masks)[1];
     });
   }

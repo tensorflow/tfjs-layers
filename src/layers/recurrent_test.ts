@@ -1933,7 +1933,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   // Reference Python code:
   // ```py
   // import keras
-  //  
+  //
   // model = keras.Sequential()
   // embedding_layer = keras.layers.Embedding(4,
   //                                          2,
@@ -1946,7 +1946,6 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   //                              kernel_initializer='ones',
   //                              bias_initializer='zero'))
   //
-  // print(embedding_layer.get_weights())
   // embedding_layer.set_weights([
   //     np.array([[0.1, 0.2], [0.3, 0.4], [-0.1, -0.2], [-0.3, -0.4]])])
   // print(lstm_layer.get_weights())
@@ -1956,7 +1955,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   //     np.array([[1, 2, 3, 4, 5, 6, 7, 8],
   //               [-1, -2, -3, -4, -5, -6, -7, -8]]),
   //     np.array([1, 2, 3, 4, 5, 6, 7, 8])])
-  // 
+  //
   // xs = np.array([[0, 0, 0],
   //                [1, 0, 0],
   //                [1, 2, 0],
@@ -2113,8 +2112,8 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
          [1, 2, 3, 0, 0, 0]]);
     const ys = tensor2d([[1], [2], [3], [4]]);
-    
-    // Serves as burn-in call for subsequent tracking of memor leak.
+
+    // Serves as burn-in call for subsequent tracking of memory leak.
     await model.fit(xs, ys, {epochs: 2, batchSize: 4});
 
     const numTensors0 = tfc.memory().numTensors;
@@ -2124,7 +2123,7 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
     expect(numTensors1).toEqual(numTensors0);
     expect(history.history.loss.length).toEqual(2);
     expect(history.history.loss[0]).toBeCloseTo(0.503677);
-    expect(history.history.loss[1]).toBeCloseTo(0.492173); 
+    expect(history.history.loss[1]).toBeCloseTo(0.492173);
   });
 
   // Reference Python code:
@@ -2315,8 +2314,6 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
     // Assert no memory leak.
     expect(numTensors1).toEqual(numTensors0 + 1);
   });
-
-  // TODO(cais): Test mask + goBackwards=True. DO NOT SUBMIT.
 });
 
 describeMathCPU('LSTM-deserialization', () => {
