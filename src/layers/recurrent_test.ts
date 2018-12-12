@@ -2133,10 +2133,10 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   //
   // inp = keras.Input(shape=[6])
   // y = keras.layers.Embedding(10,
-  //                           4,
-  //                           input_length=6,
-  //                           mask_zero=True,
-  //                           embeddings_initializer='ones')(inp)
+  //                            4,
+  //                            input_length=6,
+  //                            mask_zero=True,
+  //                            embeddings_initializer='ones')(inp)
   // y = keras.layers.LSTM(3,
   //                       return_state=True,
   //                       recurrent_initializer='ones',
@@ -2146,9 +2146,9 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
   // model = keras.Model(inputs=inp, outputs=y)
   //
   // xs = np.array([[0, 0, 0, 0, 0, 0],
-  //               [1, 0, 0, 0, 0, 0],
-  //               [1, 2, 0, 0, 0, 0],
-  //               [1, 2, 3, 0, 0, 0]])
+  //                [1, 0, 0, 0, 0, 0],
+  //                [1, 2, 0, 0, 0, 0],
+  //                [1, 2, 3, 0, 0, 0]])
   // ys = model.predict(xs)
   // print(ys)
   // ```
