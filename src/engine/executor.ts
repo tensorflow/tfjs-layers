@@ -83,9 +83,10 @@ export class FeedDict {
 
   /**
    * Add a key-value pair to the FeedDict.
+   *
    * @param key The key of the feed.
    * @param value The value of the tensor feed.
-   * @param mask The valueof the mask feed.
+   * @param mask The value of the mask feed (optional).
    * @returns This `FeedDict`.
    * @throws ValueError: If the key `SymbolicTensor` already exists in the
    *   `FeedDict`.
