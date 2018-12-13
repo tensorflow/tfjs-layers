@@ -466,7 +466,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        expect(epochEndValAccs[1]).toBeCloseTo(1);
      });
 
-  it('logs in onEpochEnd has correct values', async () => {
+  it('Earlier logs are not overwritten', async () => {
     const model = createDenseModel();
     model.compile(
         {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
@@ -491,7 +491,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       yTensorsFunc
     });
 
-    const trainLogs: Array<{}> = [];
+    const trainLogs: Logs[] = [];
     await model.fitDataset(dataset, {
       epochs,
       callbacks: {
@@ -503,8 +503,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expect(trainLogs.length).toEqual(2);
     // Assert that the the first log and the second logs do not overwrite each
     // other.
-    expect((trainLogs[0] as Logs).loss)
-        .not.toEqual((trainLogs[1] as Logs).loss);
+    expect(trainLogs[0].loss).not.toEqual(trainLogs[1].loss);
   });
 
   // Reference Python tf.keras code:
@@ -1789,7 +1788,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
             `input key '${input2.name}'.`);
   });
 
-  fit('Exhausting iterator with batchesPerEpoch throws warning', async () => {
+  it('Exhausting iterator with batchesPerEpoch throws warning', async () => {
     const model = createDenseModel();
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
     const batchSize = 8;
