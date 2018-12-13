@@ -706,6 +706,7 @@ export class RNN extends Layer {
     // TODO(cais): Figure out whether initialState is in kwargs or inputs.
     let initialState: Tensor[]|SymbolicTensor[] =
         kwargs == null ? null : kwargs['initialState'];
+    console.log('initialState:', initialState);  // DEBUG
     let constants: Tensor[]|SymbolicTensor[] =
         kwargs == null ? null : kwargs['constants'];
     if (kwargs == null) {
