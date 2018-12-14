@@ -1444,13 +1444,16 @@ describeMathCPUAndGPU('GRU Tensor', () => {
     expectTensorsClose(ys[0], tensor2d([[1.5, 1.5]]));
     expectTensorsClose(ys[1], tensor2d([[1.4435408, 1.4435408]]));
 
+    // NOTE: Here on down, i.e., the part that tests serialization and
+    // deserialization of the model, has no counterpart in the Python
+    // code snippet above.
     const modelJSON = model.toJSON(null, false);
     const modelPrime =
         await tfl.models.modelFromJSON({modelTopology: modelJSON});
     const ysPrime = modelPrime.predict([xs1, xs2]) as Tensor[];
     expect(ysPrime.length).toEqual(2);
-    expectTensorsClose(ysPrime[0], tensor2d([[1.5, 1.5]]));
-    expectTensorsClose(ysPrime[1], tensor2d([[1.4435408, 1.4435408]]));
+    expectTensorsClose(ysPrime[0], ys[0]);
+    expectTensorsClose(ysPrime[1], ys[1]);
   });
 });
 
