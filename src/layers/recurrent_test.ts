@@ -1412,13 +1412,13 @@ describeMathCPUAndGPU('GRU Tensor', () => {
   //                         kernel_initializer='ones',
   //                         bias_initializer='zeros')(in2, initial_state=out1)
   // model = keras.Model(inputs=[in1, in2], outputs=[out1, out2])
-  // 
+  //
   // xs1 = np.array([[0.1, 0.2, 0.3, 0.4, 0.5]])
   // xs2 = np.array([[[0.1, 0.2, 0.3, 0.4], [-0.1, -0.2, -0.3, -0.4],
   //                 [0.3, 0.4, 0.5, 0.6]]])
   // print(model.predict([xs1, xs2]))
   // ```
-  fit('SymbolicTensor as initialState thru kwargs; Save & Load', async () => {
+  it('SymbolicTensor as initialState thru kwargs; Save & Load', async () => {
     const in1 = tfl.input({shape: [5]});
     const out1 = tfl.layers.dense({
       units: 2,
@@ -1434,8 +1434,7 @@ describeMathCPUAndGPU('GRU Tensor', () => {
     }).apply(in2, {initialState: out1}) as tfl.SymbolicTensor;
 
     const model = tfl.model({inputs: [in1 , in2], outputs: [out1, out2]});
-    model.summary();
-    
+
     const xs1 = tensor2d([[0.1, 0.2, 0.3, 0.4, 0.5]]);
     const xs2 = tensor3d(
         [[[0.1, 0.2, 0.3, 0.4], [-0.1, -0.2, -0.3, -0.4],
@@ -1445,10 +1444,13 @@ describeMathCPUAndGPU('GRU Tensor', () => {
     expectTensorsClose(ys[0], tensor2d([[1.5, 1.5]]));
     expectTensorsClose(ys[1], tensor2d([[1.4435408, 1.4435408]]));
 
-    const modelJSON = model.toJSON();
+    const modelJSON = model.toJSON(null, false);
     const modelPrime =
         await tfl.models.modelFromJSON({modelTopology: modelJSON});
-    modelPrime.summary();  // DEBUG
+    const ysPrime = modelPrime.predict([xs1, xs2]) as Tensor[];
+    expect(ysPrime.length).toEqual(2);
+    expectTensorsClose(ysPrime[0], tensor2d([[1.5, 1.5]]));
+    expectTensorsClose(ysPrime[1], tensor2d([[1.4435408, 1.4435408]]));
   });
 });
 
