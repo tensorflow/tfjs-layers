@@ -22,9 +22,9 @@ import {deserializeKerasObject} from '../utils/generic_utils';
  */
 export function deserialize(
     config: serialization.ConfigDict,
-    customObjects = {} as
-        serialization.ConfigDict): serialization.Serializable {
+    customObjects = {} as serialization.ConfigDict,
+    skipWeightInitialization = false): serialization.Serializable {
   return deserializeKerasObject(
       config, serialization.SerializationMap.getMap().classNameMap,
-      customObjects, 'layer');
+      customObjects, 'layer', skipWeightInitialization);
 }

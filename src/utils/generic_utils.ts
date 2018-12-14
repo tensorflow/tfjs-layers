@@ -155,7 +155,7 @@ export function deserializeKerasObject(
     identifier: string|serialization.ConfigDict,
     moduleObjects = {} as {[objName: string]: any},
     customObjects = {} as {[objName: string]: any},
-    printableModuleName = 'object'): any {
+    printableModuleName = 'object', skipWeightInitialization = false): any {
   // tslint:enable
   if (typeof identifier === 'string') {
     const functionName = identifier;
@@ -232,6 +232,8 @@ export function deserializeKerasObject(
       for (const key of Object.keys(customObjects)) {
         _GLOBAL_CUSTOM_OBJECTS[key] = customObjects[key];
       }
+      console.log(
+          'Calling fromConfig() from deserializeKerasObject()');  // DEBUG
       const returnObj = fromConfig(cls, config.config);
       _GLOBAL_CUSTOM_OBJECTS = {...backupCustomObjects};
 

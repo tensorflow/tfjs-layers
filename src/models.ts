@@ -267,10 +267,14 @@ export async function loadModelFromIOHandler(
   if (modelTopology['model_config'] != null) {
     modelTopology = modelTopology['model_config'] as JsonDict;
   }
+  console.log('Calling deserialize()');  // DEBUG
+  const skipWeightInitialization =
+      artifacts.weightData != null && artifacts.weightSpecs != null;
   const model =
       deserialize(
           convertPythonicToTs(modelTopology) as serialization.ConfigDict,
-          customObjects) as Model;
+          customObjects, skipWeightInitialization) as Model;
+  console.log('DONE Calling deserialize()');  // DEBUG
 
   // If weightData is present, load the weights into the model.
   if (artifacts.weightData != null) {
@@ -283,6 +287,7 @@ export async function loadModelFromIOHandler(
 
     const skipMismatch = false;
     const isNamedTensorMap = true;
+    console.log('Calling loadWeights');  // DEBUG
     model.loadWeights(
         io.decodeWeights(artifacts.weightData, artifacts.weightSpecs),
         skipMismatch, isNamedTensorMap, strict);
@@ -856,7 +861,7 @@ export class Sequential extends Model {
    *     returning the batch-by-batch loss and metric values.
    *   - It doesn't support fine-grained options such as verbosity and
    *     callbacks.
-   * 
+   *
    * @param x Input data. It could be one of the following:
    *   - A `tf.Tensor`, or an Array of `tf.Tensor`s (in case the model has
    *     multiple inputs).
@@ -871,16 +876,16 @@ export class Sequential extends Model {
    * @doc {heading: 'Models', subheading: 'Classes'}
    */
   async trainOnBatch(
-    x: Tensor|Tensor[]|{[inputName: string]: Tensor},
-    y: Tensor|Tensor[]|{[inputName: string]: Tensor}):
-    Promise<number|number[]> {
+      x: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      y: Tensor|Tensor[]|
+      {[inputName: string]: Tensor}): Promise<number|number[]> {
     return this.model.trainOnBatch(x, y);
   }
 
   /* See parent class for JsDoc */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
-      config: serialization.ConfigDict): T {
+      config: serialization.ConfigDict, skipWeightInitialization = false): T {
     let configArray: serialization.ConfigDictArray;
     let extraModelConfig: serialization.ConfigDict = {};
     if (config instanceof Array) {
@@ -907,6 +912,9 @@ export class Sequential extends Model {
 
     for (const conf of configArray) {
       const layer = deserialize(conf as serialization.ConfigDict) as Layer;
+      if (skipWeightInitialization) {
+        layer.useAllZeroWeightInitialization(true);
+      }
       model.add(layer);
     }
     return model;

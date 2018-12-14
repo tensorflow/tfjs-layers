@@ -89,7 +89,8 @@ describeMathCPUAndGPU('Model.save', () => {
 });
 
 describeMathGPU('Save-load round trips', () => {
-  it('Sequential model, Local storage', async () => {
+  fit('Sequential model, Local storage', async () => {
+    console.log('=== BEGINS ===');  // DEBUG
     const model1 = tfl.sequential();
     model1.add(
         tfl.layers.dense({units: 2, inputShape: [2], activation: 'relu'}));
@@ -102,6 +103,7 @@ describeMathGPU('Save-load round trips', () => {
     const modelURL = `localstorage://${path}`;
     await model1.save(modelURL);
     // Once the saving succeeds, load the model back.
+    console.log('Calling loadModel()');  // DBUG
     const model2 = await tfl.loadModel(modelURL);
     // Verify that the topology of the model is correct.
     expect(model2.toJSON(null, false)).toEqual(model1.toJSON(null, false));
@@ -113,6 +115,7 @@ describeMathGPU('Save-load round trips', () => {
     for (let i = 0; i < weights1.length; ++i) {
       expectTensorsClose(weights1[i], weights2[i]);
     }
+    console.log('=== ENDS ===');  // DEBUG
   });
 
   it('Functional model, IndexedDB', async () => {

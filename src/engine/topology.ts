@@ -16,7 +16,7 @@ import {getNextUniqueTensorId, getUid} from '../backend/state';
 import {getScopedTensorName, getUniqueTensorName, nameScope} from '../common';
 import {Constraint} from '../constraints';
 import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
-import {Initializer} from '../initializers';
+import {getInitializer, Initializer} from '../initializers';
 import {Regularizer} from '../regularizers';
 import {Kwargs, RegularizerFn, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -968,6 +968,13 @@ export abstract class Layer extends serialization.Serializable {
         for (const xElem of generic_utils.toList(inputs)) {
           inputShapes.push(xElem.shape);
         }
+        console.log('Calling build() from apply()');  // DEBUG
+        // try {
+        //   // Code throwing an exception
+        //   throw new Error();
+        // } catch (e) {
+        //   console.log(e.stack);
+        // }  // DEBUG
         this.build(generic_utils.singletonOrArray(inputShapes));
         this.built = true;
 
@@ -1260,6 +1267,12 @@ export abstract class Layer extends serialization.Serializable {
     if (dtype == null) {
       dtype = 'float32';
     }
+
+    console.log(`addWeights(): ${this.initializeWeightAsAllZeros}`);  // DEBUG
+    if (this.initializeWeightAsAllZeros) {
+      console.log('Using all zero initialization!');
+      initializer = getInitializer('zeros');
+    }
     const weight = new LayerVariable(
         initializer.apply(shape, dtype), dtype, name, trainable, constraint);
     // Request backend not to dispose the weights of the model on scope() exit.
@@ -1275,6 +1288,11 @@ export abstract class Layer extends serialization.Serializable {
       this._nonTrainableWeights.push(weight);
     }
     return weight;
+  }
+
+  private initializeWeightAsAllZeros = false;
+  useAllZeroWeightInitialization(use: boolean) {
+    this.initializeWeightAsAllZeros = use;
   }
 
   /**
