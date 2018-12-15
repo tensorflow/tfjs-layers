@@ -1249,8 +1249,13 @@ export abstract class Container extends Layer {
 
   /**
    * Instantiates a Model from its config (output of `get_config()`).
-   * @param cls: the class to create
-   * @param config: Model config dictionary.
+   * @param cls the class to create
+   * @param config Model config dictionary.
+   * @param customObjects An optional dictionary of custom objects.
+   * @param fastWeightInit Optional flag to use fast weight initialization
+   *   during deserialization. This is applicable to cases in which
+   *   the initialization will be immediately overwritten by loaded weight
+   *   values. Default: `false`.
    * @returns A model instance.
    * @throws ValueError: In case of improperly formatted config dict.
    */

@@ -274,6 +274,12 @@ export async function loadModelFromIOHandler(
   if (modelTopology['model_config'] != null) {
     modelTopology = modelTopology['model_config'] as JsonDict;
   }
+
+  // If weights are provided and the weight-loading mode is strict, use
+  // fast weight initialization. This skips costly initializers such as
+  // 'orthogonal' and saves unnecessary computation in cases where
+  // the initialized weight values will immediately be overwritten by
+  // loaded weight values.
   const fastWeightInit =
       artifacts.weightData != null && artifacts.weightSpecs != null && strict;
   const model =
@@ -917,7 +923,8 @@ export class Sequential extends Model {
     }
     for (const conf of configArray) {
       const layer = deserialize(
-          conf as serialization.ConfigDict, undefined, fastWeightInit) as Layer;
+                        conf as serialization.ConfigDict, undefined,
+                        fastWeightInit) as Layer;
       if (fastWeightInit) {
         layer.setFastWeightInitDuringBuild(true);
       }
