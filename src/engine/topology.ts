@@ -443,7 +443,11 @@ export abstract class Layer extends serialization.Serializable {
 
   protected _refCount: number|null;
 
-  // TODO(cais): Doc string;
+  // A flag for whether fast (i.e., all-zero) weight initialization is to
+  // be used during `build()` call. This speeds up weight initialization
+  // by saving unnecessary calls to expensive initializers in cases where
+  // the initialized values will be overwritten by loaded weight values
+  // during model loading.
   private fastWeightInitDuringBuild: boolean;
 
   constructor(config: LayerConfig) {
@@ -1286,6 +1290,16 @@ export abstract class Layer extends serialization.Serializable {
     return weight;
   }
 
+  /**
+   * Set the fast-weight-initialization flag.
+   *
+   * In cases where the initialized weight values will be immediately
+   * overwritten by loaded weight values during model loading, setting
+   * the flag to `true` saves unnecessary calls to potentially expensive
+   * initializers and speeds up the loading process.
+   *
+   * @param value Target value of the flag.
+   */
   setFastWeightInitDuringBuild(value: boolean) {
     this.fastWeightInitDuringBuild = value;
   }
