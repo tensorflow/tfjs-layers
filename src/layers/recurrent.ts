@@ -2019,7 +2019,6 @@ export class LSTMCell extends RNNCell {
   }
 
   public build(inputShape: Shape|Shape[]): void {
-    console.log('In LSTMCell.build()');  // DEBUG
     inputShape = getExactlyOneShape(inputShape);
     const inputDim = inputShape[inputShape.length - 1];
     this.kernel = this.addWeight(

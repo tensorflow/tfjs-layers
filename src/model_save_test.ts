@@ -256,10 +256,11 @@ describeMathGPU('Save-load round trips', () => {
       biasInitializer: 'randomNormal',
     }));
     let savedArtifacts: io.ModelArtifacts;
-    await model.save(io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
-      savedArtifacts = artifacts;
-      return {modelArtifactsInfo: null};
-    }));
+    await model.save(io.withSaveHandler(
+        async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return {modelArtifactsInfo: null};
+        }));
     const weights = model.getWeights();
 
     const getInitSpy = spyOn(Initializers, 'getInitializer').and.callThrough();
@@ -289,10 +290,11 @@ describeMathGPU('Save-load round trips', () => {
       })
     }));
     let savedArtifacts: io.ModelArtifacts;
-    await model.save(io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
-      savedArtifacts = artifacts;
-      return {modelArtifactsInfo: null};
-    }));
+    await model.save(io.withSaveHandler(
+        async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return {modelArtifactsInfo: null};
+        }));
     const weights = model.getWeights();
 
     const getInitSpy = spyOn(Initializers, 'getInitializer').and.callThrough();
@@ -312,7 +314,6 @@ describeMathGPU('Save-load round trips', () => {
   });
 
   it('Loading model: Fast init w/ weights: bidirectional', async () => {
-    console.log('=== BEGIN ===');  // DEBUG
     const model = tfl.sequential();
     model.add(tfl.layers.bidirectional({
       inputShape: [3, 4],
@@ -325,19 +326,18 @@ describeMathGPU('Save-load round trips', () => {
       }) as tfl.RNN
     }));
     let savedArtifacts: io.ModelArtifacts;
-    await model.save(io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
-      savedArtifacts = artifacts;
-      return {modelArtifactsInfo: null};
-    }));
+    await model.save(io.withSaveHandler(
+        async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return {modelArtifactsInfo: null};
+        }));
     const weights = model.getWeights();
 
     const getInitSpy = spyOn(Initializers, 'getInitializer').and.callThrough();
     const gramSchmidtSpy = spyOn(linalg,  'gramSchmidt').and.callThrough();
-    console.log('=== Start loading ===');  // DEBUG
     const modelPrime = await tfl.loadModel(io.fromMemory(
         savedArtifacts.modelTopology, savedArtifacts.weightSpecs,
         savedArtifacts.weightData));
-    modelPrime.summary();  // DEBUG
     const weightsPrime = modelPrime.getWeights();
     expect(weightsPrime.length).toEqual(weights.length);
     for (let i = 0; i < weights.length; ++i) {
@@ -362,10 +362,11 @@ describeMathGPU('Save-load round trips', () => {
     }).apply(y) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: [input1, input2], outputs: y});
     let savedArtifacts: io.ModelArtifacts;
-    await model.save(io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
-      savedArtifacts = artifacts;
-      return {modelArtifactsInfo: null};
-    }));
+    await model.save(io.withSaveHandler(
+        async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return {modelArtifactsInfo: null};
+        }));
     const weights = model.getWeights();
 
     const getInitSpy = spyOn(Initializers, 'getInitializer').and.callThrough();
@@ -396,7 +397,6 @@ describeMathGPU('Save-load round trips', () => {
     const modelJSON = model.toJSON(null, false);
 
     const gramSchmidtSpy = spyOn(linalg, 'gramSchmidt').and.callThrough();
-    console.log('=== Start loading ===');  // DEBUG
     const modelPrime =
         await tfl.models.modelFromJSON({modelTopology: modelJSON});
     // Make sure modelPrime builds.
@@ -405,8 +405,39 @@ describeMathGPU('Save-load round trips', () => {
     expect(gramSchmidtSpy).toHaveBeenCalled();
   });
 
+  it('Partial non-strict load calls weight initializers', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.lstm({
+      units: 2,
+      inputShape: [3, 4],
+      recurrentInitializer: 'orthogonal',
+      kernelInitializer: 'orthogonal',
+      biasInitializer: 'randomNormal',
+    }));
+    let savedArtifacts: io.ModelArtifacts;
+    await model.save(io.withSaveHandler(
+        async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return {modelArtifactsInfo: null};
+        }));
+    const weights = model.getWeights();
+
+    expect(savedArtifacts.weightSpecs.length).toEqual(3);
+    savedArtifacts.weightSpecs = savedArtifacts.weightSpecs.slice(0, 1);
+
+    const gramSchmidtSpy = spyOn(linalg,  'gramSchmidt').and.callThrough();
+    const strict = false;
+    const modelPrime = await tfl.loadModel(io.fromMemory(
+        savedArtifacts.modelTopology, savedArtifacts.weightSpecs,
+        savedArtifacts.weightData), strict);
+    modelPrime.summary();
+    const weightsPrime = modelPrime.getWeights();
+    expect(weightsPrime.length).toEqual(weights.length);
+    expectTensorsClose(weightsPrime[0], weights[0]);
+    // Assert the orthogonal initializer has been called.
+    expect(gramSchmidtSpy).toHaveBeenCalled();
+  });
+
   // TODO(cais): Test fast initialization of models consisting of
   //   StackedRNN layers.
-  // TODO(cais): Test loading with partial weights calls
-  // correct initializers().
 });

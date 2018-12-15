@@ -232,10 +232,6 @@ export function deserializeKerasObject(
       for (const key of Object.keys(customObjects)) {
         _GLOBAL_CUSTOM_OBJECTS[key] = customObjects[key];
       }
-      // console.log(
-      //     'Calling fromConfig() from deserializeKerasObject(): ' +
-      //     `fastWeightInit = ${fastWeightInit}, ${cls.className}`);  // DEBUG
-      // TODO(cais): Confirm.
       const returnObj = fromConfig(
           cls, config.config, customObjects, fastWeightInit);
       _GLOBAL_CUSTOM_OBJECTS = {...backupCustomObjects};

@@ -562,8 +562,6 @@ export class Bidirectional extends Wrapper {
   // TODO(cais): Implement constraints().
 
   setFastWeightInitDuringBuild(value: boolean) {
-    console.log(  // DEBUG
-        `In Bidirectional.setFastWeightInitDuringBuild(): value = ${value}`);
     super.setFastWeightInitDuringBuild(value);
     if (this.forwardLayer != null) {
       this.forwardLayer.setFastWeightInitDuringBuild(value);

@@ -1255,7 +1255,6 @@ export abstract class Layer extends serialization.Serializable {
       name: string, shape: Shape, dtype?: DataType, initializer?: Initializer,
       regularizer?: Regularizer, trainable?: boolean,
       constraint?: Constraint): LayerVariable {
-    console.log(`In addWeight(): initializer = ${initializer}`);  // DEBUG
     // Reject duplicate weight names.
     if (this._addedWeightNames.indexOf(name) !== -1) {
       throw new ValueError(
@@ -1268,8 +1267,6 @@ export abstract class Layer extends serialization.Serializable {
     }
 
     if (this.fastWeightInitDuringBuild) {
-      // console.log('Using all zero initialization!');
-      console.log('**** Overriding initializer with zeros');  // DEBUG
       initializer = getInitializer('zeros');
     }
     const weight = new LayerVariable(
@@ -1290,11 +1287,7 @@ export abstract class Layer extends serialization.Serializable {
   }
 
   setFastWeightInitDuringBuild(value: boolean) {
-    console.log(`In setFastWeightInitDuringBuild(): ` +
-        `${this.name}: value = ${value}`);  // DEBUG
     this.fastWeightInitDuringBuild = value;
-    console.log(`After setFastWeightInitDuringBuild(): ` +
-        `${this.name}: ${this.fastWeightInitDuringBuild}`);  // DEBUG
   }
 
   /**

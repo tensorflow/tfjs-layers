@@ -1259,8 +1259,6 @@ export abstract class Container extends Layer {
       config: serialization.ConfigDict,
       customObjects = {} as serialization.ConfigDict,
       fastWeightInit = false): T {
-    // DEBUG
-    console.log(`In Container.fromConfig: fastWeightInit = ${fastWeightInit}`);
     // Layer instances created during
     // the graph reconstruction process
     const createdLayers: {[layerName: string]: Layer} = {};
