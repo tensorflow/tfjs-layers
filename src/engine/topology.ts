@@ -1255,6 +1255,7 @@ export abstract class Layer extends serialization.Serializable {
       name: string, shape: Shape, dtype?: DataType, initializer?: Initializer,
       regularizer?: Regularizer, trainable?: boolean,
       constraint?: Constraint): LayerVariable {
+    console.log(`In addWeight(): initializer = ${initializer}`);  // DEBUG
     // Reject duplicate weight names.
     if (this._addedWeightNames.indexOf(name) !== -1) {
       throw new ValueError(
@@ -1266,7 +1267,6 @@ export abstract class Layer extends serialization.Serializable {
       dtype = 'float32';
     }
 
-    console.log(`addWeight(): ${this.name}: ${name}: ${this.fastWeightInitDuringBuild}`);
     if (this.fastWeightInitDuringBuild) {
       // console.log('Using all zero initialization!');
       console.log('**** Overriding initializer with zeros');  // DEBUG

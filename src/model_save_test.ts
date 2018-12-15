@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {io, linalg, randomNormal, Tensor} from '@tensorflow/tfjs-core';
+import {io, linalg, randomNormal, Tensor, zeros} from '@tensorflow/tfjs-core';
 
 import * as Initializers from './initializers';
 import * as tfl from './index';
@@ -349,7 +349,7 @@ describeMathGPU('Save-load round trips', () => {
     expect(gramSchmidtSpy).not.toHaveBeenCalled();
   });
 
-  fit('Loading model: Fast init w/ weights: functional model', async () => {
+  it('Loading model: Fast init w/ weights: functional model', async () => {
     const input1 = tfl.input({shape: [3, 2]});
     const input2 = tfl.input({shape: [3, 2]});
     let y = tfl.layers.concatenate()
@@ -369,8 +369,7 @@ describeMathGPU('Save-load round trips', () => {
     const weights = model.getWeights();
 
     const getInitSpy = spyOn(Initializers, 'getInitializer').and.callThrough();
-    const gramSchmidtSpy = spyOn(linalg,  'gramSchmidt').and.callThrough();
-    console.log('=== Start loading ===');  // DEBUG
+    const gramSchmidtSpy = spyOn(linalg, 'gramSchmidt').and.callThrough();
     const modelPrime = await tfl.loadModel(io.fromMemory(
         savedArtifacts.modelTopology, savedArtifacts.weightSpecs,
         savedArtifacts.weightData));
@@ -385,8 +384,29 @@ describeMathGPU('Save-load round trips', () => {
     expect(gramSchmidtSpy).not.toHaveBeenCalled();
   });
 
+  it('modelFromJSON calls correct weight initializers', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.lstm({
+      units: 2,
+      inputShape: [3, 4],
+      recurrentInitializer: 'orthogonal',
+      kernelInitializer: 'orthogonal',
+      biasInitializer: 'randomNormal',
+    }));
+    const modelJSON = model.toJSON(null, false);
+
+    const gramSchmidtSpy = spyOn(linalg, 'gramSchmidt').and.callThrough();
+    console.log('=== Start loading ===');  // DEBUG
+    const modelPrime =
+        await tfl.models.modelFromJSON({modelTopology: modelJSON});
+    // Make sure modelPrime builds.
+    modelPrime.predict(zeros([2, 3, 4]));
+    // Assert the orthogonal initializer has been called.
+    expect(gramSchmidtSpy).toHaveBeenCalled();
+  });
+
   // TODO(cais): Test fast initialization of models consisting of
   //   StackedRNN layers.
-  // TODO(cais): Test loading without weights and loadModelFromJSON calls
+  // TODO(cais): Test loading with partial weights calls
   // correct initializers().
 });
