@@ -443,6 +443,9 @@ export abstract class Layer extends serialization.Serializable {
 
   protected _refCount: number|null;
 
+  // TODO(cais): Doc string;
+  private fastWeightInitDuringBuild: boolean;
+
   constructor(config: LayerConfig) {
     super();
     this.id = _nextLayerID++;
@@ -513,6 +516,8 @@ export abstract class Layer extends serialization.Serializable {
     // The value of `_refCount` is initialized to null. When the layer is used
     // in a symbolic way for the first time, it will be set to 1.
     this._refCount = null;
+
+    this.fastWeightInitDuringBuild = false;
   }
 
   /**
@@ -968,13 +973,6 @@ export abstract class Layer extends serialization.Serializable {
         for (const xElem of generic_utils.toList(inputs)) {
           inputShapes.push(xElem.shape);
         }
-        console.log('Calling build() from apply()');  // DEBUG
-        // try {
-        //   // Code throwing an exception
-        //   throw new Error();
-        // } catch (e) {
-        //   console.log(e.stack);
-        // }  // DEBUG
         this.build(generic_utils.singletonOrArray(inputShapes));
         this.built = true;
 
@@ -1268,9 +1266,10 @@ export abstract class Layer extends serialization.Serializable {
       dtype = 'float32';
     }
 
-    console.log(`addWeights(): ${this.initializeWeightAsAllZeros}`);  // DEBUG
-    if (this.initializeWeightAsAllZeros) {
-      console.log('Using all zero initialization!');
+    console.log(`addWeight(): ${this.name}: ${name}: ${this.fastWeightInitDuringBuild}`);
+    if (this.fastWeightInitDuringBuild) {
+      // console.log('Using all zero initialization!');
+      console.log('**** Overriding initializer with zeros');  // DEBUG
       initializer = getInitializer('zeros');
     }
     const weight = new LayerVariable(
@@ -1290,9 +1289,12 @@ export abstract class Layer extends serialization.Serializable {
     return weight;
   }
 
-  private initializeWeightAsAllZeros = false;
-  useAllZeroWeightInitialization(use: boolean) {
-    this.initializeWeightAsAllZeros = use;
+  setFastWeightInitDuringBuild(value: boolean) {
+    console.log(`In setFastWeightInitDuringBuild(): ` +
+        `${this.name}: value = ${value}`);  // DEBUG
+    this.fastWeightInitDuringBuild = value;
+    console.log(`After setFastWeightInitDuringBuild(): ` +
+        `${this.name}: ${this.fastWeightInitDuringBuild}`);  // DEBUG
   }
 
   /**

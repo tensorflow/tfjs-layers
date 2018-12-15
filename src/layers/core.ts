@@ -258,7 +258,6 @@ export class Dense extends Layer {
   }
 
   public build(inputShape: Shape|Shape[]): void {
-    console.log('In Dense.build()');  // DEBUG
     inputShape = getExactlyOneShape(inputShape);
     const inputLastDim = inputShape[inputShape.length - 1];
     if (this.kernel == null) {

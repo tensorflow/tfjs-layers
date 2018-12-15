@@ -253,6 +253,13 @@ export async function loadModelInternal(
 
 /**
  * Load a model and optionally its weights, using an IOHandler object.
+ *
+ * @param handler The instance of `IOHandler` to be used during the model
+ *   loading.
+ * @param customObjects Any optional custom objects to be used during model
+ *   loading.
+ * @param strict Whether the weight loading will be done in strict mode.
+ *   Default: `true`.
  */
 export async function loadModelFromIOHandler(
     handler: io.IOHandler, customObjects?: serialization.ConfigDict,
@@ -267,14 +274,12 @@ export async function loadModelFromIOHandler(
   if (modelTopology['model_config'] != null) {
     modelTopology = modelTopology['model_config'] as JsonDict;
   }
-  console.log('Calling deserialize()');  // DEBUG
-  const skipWeightInitialization =
-      artifacts.weightData != null && artifacts.weightSpecs != null;
+  const fastWeightInit =
+      artifacts.weightData != null && artifacts.weightSpecs != null && strict;
   const model =
       deserialize(
           convertPythonicToTs(modelTopology) as serialization.ConfigDict,
-          customObjects, skipWeightInitialization) as Model;
-  console.log('DONE Calling deserialize()');  // DEBUG
+          customObjects, fastWeightInit) as Model;
 
   // If weightData is present, load the weights into the model.
   if (artifacts.weightData != null) {
@@ -287,7 +292,6 @@ export async function loadModelFromIOHandler(
 
     const skipMismatch = false;
     const isNamedTensorMap = true;
-    console.log('Calling loadWeights');  // DEBUG
     model.loadWeights(
         io.decodeWeights(artifacts.weightData, artifacts.weightSpecs),
         skipMismatch, isNamedTensorMap, strict);
@@ -885,7 +889,9 @@ export class Sequential extends Model {
   /* See parent class for JsDoc */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
-      config: serialization.ConfigDict, skipWeightInitialization = false): T {
+      config: serialization.ConfigDict,
+      customObjects = {} as serialization.ConfigDict,
+      fastWeightInit = false): T {
     let configArray: serialization.ConfigDictArray;
     let extraModelConfig: serialization.ConfigDict = {};
     if (config instanceof Array) {
@@ -909,11 +915,11 @@ export class Sequential extends Model {
       throw new NotImplementedError(
           `Sequential.fromConfig called on non-Sequential input: ${model}`);
     }
-
     for (const conf of configArray) {
-      const layer = deserialize(conf as serialization.ConfigDict) as Layer;
-      if (skipWeightInitialization) {
-        layer.useAllZeroWeightInitialization(true);
+      const layer = deserialize(
+          conf as serialization.ConfigDict, undefined, fastWeightInit) as Layer;
+      if (fastWeightInit) {
+        layer.setFastWeightInitDuringBuild(true);
       }
       model.add(layer);
     }
