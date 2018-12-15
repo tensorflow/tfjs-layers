@@ -430,7 +430,6 @@ describeMathGPU('Save-load round trips', () => {
     const modelPrime = await tfl.loadModel(io.fromMemory(
         savedArtifacts.modelTopology, savedArtifacts.weightSpecs,
         savedArtifacts.weightData), strict);
-    modelPrime.summary();
     const weightsPrime = modelPrime.getWeights();
     expect(weightsPrime.length).toEqual(weights.length);
     expectTensorsClose(weightsPrime[0], weights[0]);
