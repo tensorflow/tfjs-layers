@@ -103,7 +103,6 @@ describeMathGPU('Save-load round trips', () => {
     const modelURL = `localstorage://${path}`;
     await model1.save(modelURL);
     // Once the saving succeeds, load the model back.
-    console.log('Calling loadModel()');  // DBUG
     const model2 = await tfl.loadModel(modelURL);
     // Verify that the topology of the model is correct.
     expect(model2.toJSON(null, false)).toEqual(model1.toJSON(null, false));
