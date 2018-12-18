@@ -10,7 +10,7 @@
 
 import {io, linalg, randomNormal, Tensor, zeros} from '@tensorflow/tfjs-core';
 
-import * as Initializers from './initializers';
+import * as initializers from './initializers';
 import * as tfl from './index';
 
 // tslint:disable-next-line:max-line-length
@@ -262,7 +262,7 @@ describeMathGPU('Save-load round trips', () => {
         }));
     const weights = model.getWeights();
 
-    const getInitSpy = spyOn(Initializers, 'getInitializer').and.callThrough();
+    const getInitSpy = spyOn(initializers, 'getInitializer').and.callThrough();
     const gramSchmidtSpy = spyOn(linalg,  'gramSchmidt').and.callThrough();
     const modelPrime = await tfl.loadModel(io.fromMemory(
         savedArtifacts.modelTopology, savedArtifacts.weightSpecs,
@@ -296,7 +296,7 @@ describeMathGPU('Save-load round trips', () => {
         }));
     const weights = model.getWeights();
 
-    const getInitSpy = spyOn(Initializers, 'getInitializer').and.callThrough();
+    const getInitSpy = spyOn(initializers, 'getInitializer').and.callThrough();
     const gramSchmidtSpy = spyOn(linalg,  'gramSchmidt').and.callThrough();
     const modelPrime = await tfl.loadModel(io.fromMemory(
         savedArtifacts.modelTopology, savedArtifacts.weightSpecs,
@@ -332,7 +332,7 @@ describeMathGPU('Save-load round trips', () => {
         }));
     const weights = model.getWeights();
 
-    const getInitSpy = spyOn(Initializers, 'getInitializer').and.callThrough();
+    const getInitSpy = spyOn(initializers, 'getInitializer').and.callThrough();
     const gramSchmidtSpy = spyOn(linalg,  'gramSchmidt').and.callThrough();
     const modelPrime = await tfl.loadModel(io.fromMemory(
         savedArtifacts.modelTopology, savedArtifacts.weightSpecs,
@@ -368,7 +368,7 @@ describeMathGPU('Save-load round trips', () => {
         }));
     const weights = model.getWeights();
 
-    const getInitSpy = spyOn(Initializers, 'getInitializer').and.callThrough();
+    const getInitSpy = spyOn(initializers, 'getInitializer').and.callThrough();
     const gramSchmidtSpy = spyOn(linalg, 'gramSchmidt').and.callThrough();
     const modelPrime = await tfl.loadModel(io.fromMemory(
         savedArtifacts.modelTopology, savedArtifacts.weightSpecs,

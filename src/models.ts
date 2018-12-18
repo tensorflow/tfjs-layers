@@ -922,8 +922,9 @@ export class Sequential extends Model {
           `Sequential.fromConfig called on non-Sequential input: ${model}`);
     }
     for (const conf of configArray) {
+      const customObjects = undefined;
       const layer = deserialize(
-                        conf as serialization.ConfigDict, undefined,
+                        conf as serialization.ConfigDict, customObjects,
                         fastWeightInit) as Layer;
       if (fastWeightInit) {
         layer.setFastWeightInitDuringBuild(true);

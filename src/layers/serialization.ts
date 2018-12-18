@@ -21,7 +21,7 @@ import {deserializeKerasObject} from '../utils/generic_utils';
  * @param fastWeightInit Optional flag to use fast weight initialization
  *   during deserialization. This is applicable to cases in which
  *   the initialization will be immediately overwritten by loaded weight
- *   values. Default: `false`.*
+ *   values. Default: `false`.
  * @returns Layer instance (may be Model, Sequential, Layer...)
  */
 export function deserialize(
