@@ -10,14 +10,12 @@
 
 /* Original Source: losses.py */
 import * as tfc from '@tensorflow/tfjs-core';
-import {scalar, Tensor, Tensor1D, tidy, util} from '@tensorflow/tfjs-core';
-
+import {scalar, Tensor, Tensor1D, tidy} from '@tensorflow/tfjs-core';
 import {epsilon} from './backend/common';
 import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {ValueError} from './errors';
 import {LossOrMetricFn} from './types';
-
 
 /**
  * Normalizes a tensor wrt the L2 norm alongside the specified axis.
@@ -95,8 +93,7 @@ export function meanAbsolutePercentageError(
     yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const diff = tfc.sub(yTrue, yPred);
-    const clippedTrue =
-        tfc.clipByValue(tfc.abs(yTrue), epsilon(), Number.MAX_VALUE);
+    const clippedTrue = tfc.abs(yTrue).add(epsilon());
     const absResult = tfc.abs(tfc.div(diff, clippedTrue));
     return tfc.mul(getScalar(100.0), tfc.mean(absResult, -1));
   });
@@ -107,10 +104,10 @@ export function meanSquaredLogarithmicError(
   return tidy(() => {
     const one = getScalar(1.0);
 
-    const clippedPred = tfc.clipByValue(yPred, epsilon(), Number.MAX_VALUE);
+    const clippedPred = yPred.add(epsilon());
     const firstLog = tfc.log(tfc.add(one, clippedPred));
 
-    const clippedTrue = tfc.clipByValue(yTrue, epsilon(), Number.MAX_VALUE);
+    const clippedTrue = yTrue.add(epsilon());
     const secondLog = tfc.log(tfc.add(one, clippedTrue));
 
     return tfc.mean(K.square(tfc.sub(firstLog, secondLog)), -1);
@@ -172,88 +169,28 @@ export function logcosh(yTrue: Tensor, yPred: Tensor): Tensor {
  * Categorical crossentropy between an output tensor and a target tensor.
  *
  * @param target A tensor of the same shape as `output`.
- * @param output A tensor resulting from a softmax (unless `fromLogits` is
- *  `true`, in which case `output` is expected to be the logits).
- * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
- *   a tensor of logits.
+ * @param output A tensor resulting from a softmax.
  */
 export function categoricalCrossentropy(
-    target: Tensor, output: Tensor, fromLogits = false): Tensor {
-  return tidy(() => {
-    if (fromLogits) {
-      output = tfc.softmax(output);
-    } else {
-      // scale preds so that the class probabilities of each sample sum to 1.
-      const outputSum = tfc.sum(output, output.shape.length - 1, true);
-      output = tfc.div(output, outputSum);
-    }
-    output = tfc.clipByValue(output, epsilon(), 1 - epsilon());
-    return tfc.neg(tfc.sum(
-        tfc.mul(target.toFloat(), tfc.log(output)), output.shape.length - 1));
-  });
+    target: Tensor, output: Tensor): Tensor {
+  return tidy(() => target.mul(output.add(epsilon()).log()).sum(-1).neg());
 }
 
 /**
  * Categorical crossentropy with integer targets.
  *
  * @param target An integer tensor.
- * @param output A tensor resulting from a softmax (unless `fromLogits` is
- *  `true`, in which case `output` is expected to be the logits).
- * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
- *   a tensor of logits.
+ * @param output A tensor resulting from a softmax.
  */
 export function sparseCategoricalCrossentropy(
     target: Tensor, output: Tensor): Tensor {
   return tidy(() => {
     const flatTarget = tfc.floor(K.flatten(target)).toInt() as Tensor1D;
-    output = tfc.clipByValue(output, epsilon(), 1 - epsilon());
     const outputShape = output.shape;
     const oneHotTarget =
         tfc.oneHot(flatTarget, outputShape[outputShape.length - 1])
             .reshape(outputShape);
-    const fromLogits = false;
-    return categoricalCrossentropy(oneHotTarget, output, fromLogits);
-  });
-}
-
-/**
- * From TensorFlow's implementation in nn_impl.py:
- *
- * For brevity, let `x = logits`, `z = labels`.  The logistic loss is
- *      z * -log(sigmoid(x)) + (1 - z) * -log(1 - sigmoid(x))
- *    = z * -log(1 / (1 + exp(-x))) + (1 - z) * -log(exp(-x) / (1 + exp(-x)))
- *    = z * log(1 + exp(-x)) + (1 - z) * (-log(exp(-x)) + log(1 + exp(-x)))
- *    = z * log(1 + exp(-x)) + (1 - z) * (x + log(1 + exp(-x))
- *    = (1 - z) * x + log(1 + exp(-x))
- *    = x - x * z + log(1 + exp(-x))
- * For x < 0, to avoid overflow in exp(-x), we reformulate the above
- *      x - x * z + log(1 + exp(-x))
- *    = log(exp(x)) - x * z + log(1 + exp(-x))
- *    = - x * z + log(1 + exp(x))
- * Hence, to ensure stability and avoid overflow, the implementation uses this
- * equivalent formulation
- *    max(x, 0) - x * z + log(1 + exp(-abs(x)))
- *
- * @param labels The labels.
- * @param logits The logits.
- */
-export function sigmoidCrossEntropyWithLogits(
-    labels: Tensor, logits: Tensor): Tensor {
-  if (!util.arraysEqual(labels.shape, logits.shape)) {
-    throw new ValueError(
-        `logits and labels must have the same shape, but got shapes ` +
-        `${JSON.stringify(labels.shape)} and ${JSON.stringify(logits.shape)}`);
-  }
-  return tidy(() => {
-    // The logistic loss formula from above is
-    //   x - x * z + log(1 + exp(-x))
-    // For x < 0, a more numerically stable formula is
-    //   -x * z + log(1 + exp(x))
-    // Note that these two expressions can be combined into the following:
-    //   max(x, 0) - x * z + log(1 + exp(-abs(x)))
-    const reluLogits = logits.relu();
-    const negAbsLogits = logits.abs().neg();
-    return reluLogits.sub(logits.mul(labels)).add(negAbsLogits.exp().log1p());
+    return categoricalCrossentropy(oneHotTarget, output);
   });
 }
 
@@ -261,18 +198,17 @@ export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     let y: Tensor;
     y = tfc.clipByValue(yPred, epsilon(), 1 - epsilon());
-    y = tfc.log(tfc.div(y, tfc.sub(getScalar(1), y)));
-    return tfc.mean(sigmoidCrossEntropyWithLogits(yTrue, y), -1);
+    y = y.log().sub(getScalar(1).sub(y).log());
+    return tfc.losses.sigmoidCrossEntropy(yTrue, y).mean(-1);
   });
 }
 
 export function kullbackLeiblerDivergence(
     yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
-    const clippedTrue = tfc.clipByValue(yTrue, epsilon(), 1);
-    const clippedPred = tfc.clipByValue(yPred, epsilon(), 1);
-    return tfc.sum(
-        tfc.mul(yTrue, tfc.log(tfc.div(clippedTrue, clippedPred))), -1);
+    yTrue = yTrue.add(epsilon());
+    yPred = yPred.add(epsilon());
+    return yTrue.mul(yTrue.log().sub(yPred.log())).sum(-1);
   });
 }
 

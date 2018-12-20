@@ -71,7 +71,8 @@ describeMathCPUAndGPU('sparseCategoricalAccuracy', () => {
 });
 
 describeMathCPUAndGPU('binaryCrossentropy', () => {
-  it('2D single-value yTrue', () => {
+  // tslint:disable-next-line:ban
+  fit('2D single-value yTrue', () => {
     // Use the following Python code to generate the reference values:
     // ```python
     // import keras
