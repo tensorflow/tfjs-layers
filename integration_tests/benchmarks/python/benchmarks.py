@@ -20,8 +20,10 @@ import json
 import os
 import time
 
+from tensorflow import keras
 import numpy as np
 import tensorflow as tf
+# Comparing TF Eager vs TF.js for a fair comparison.
 tf.enable_eager_execution()
 from tensorflow.python.client import device_lib
 import tensorflowjs as tfjs
@@ -152,23 +154,23 @@ def _get_random_inputs_and_outputs(model, batch_size):
 
 def dense_tiny_model_fn(input_shape, target_shape):
   assert len(target_shape) == 1
-  input_layer = tf.keras.Input(input_shape)
-  dense_1 = tf.keras.layers.Dense(200, activation='relu')
-  dense_2 = tf.keras.layers.Dense(target_shape[0])
+  input_layer = keras.Input(input_shape)
+  dense_1 = keras.layers.Dense(200, activation='relu')
+  dense_2 = keras.layers.Dense(target_shape[0])
   output = dense_2(dense_1(input_layer))
-  model = tf.keras.Model(input_layer, output)
+  model = keras.Model(input_layer, output)
   return model
 
 
 def dense_large_model_fn(input_shape, target_shape):
   assert len(target_shape) == 1
-  input_layer = tf.keras.Input(input_shape)
-  dense_1 = tf.keras.layers.Dense(4000, activation='relu')
-  dense_2 = tf.keras.layers.Dense(1000, activation='relu')
-  dense_3 = tf.keras.layers.Dense(500, activation='relu')
-  dense_4 = tf.keras.layers.Dense(target_shape[0])
+  input_layer = keras.Input(input_shape)
+  dense_1 = keras.layers.Dense(4000, activation='relu')
+  dense_2 = keras.layers.Dense(1000, activation='relu')
+  dense_3 = keras.layers.Dense(500, activation='relu')
+  dense_4 = keras.layers.Dense(target_shape[0])
   output = dense_4(dense_3(dense_2(dense_1(input_layer))))
-  model = tf.keras.Model(input_layer, output)
+  model = keras.Model(input_layer, output)
   return model
 
 
@@ -179,27 +181,27 @@ def convolutional_model_fn(num_filters, input_shape, target_shape):
   assert len(target_shape) == 1
   num_classes = target_shape[0]
   layers = [
-      tf.keras.layers.Conv2D(num_filters, kernel_size,
+      keras.layers.Conv2D(num_filters, kernel_size,
                           padding='valid',
                           input_shape=input_shape),
-      tf.keras.layers.Activation('relu'),
-      tf.keras.layers.Conv2D(num_filters, kernel_size),
-      tf.keras.layers.Activation('relu'),
-      tf.keras.layers.MaxPooling2D(pool_size=pool_size),
-      tf.keras.layers.Flatten(),
-      tf.keras.layers.Dense(128),
-      tf.keras.layers.Activation('relu'),
-      tf.keras.layers.Dense(num_classes),
-      tf.keras.layers.Activation('softmax')
+      keras.layers.Activation('relu'),
+      keras.layers.Conv2D(num_filters, kernel_size),
+      keras.layers.Activation('relu'),
+      keras.layers.MaxPooling2D(pool_size=pool_size),
+      keras.layers.Flatten(),
+      keras.layers.Dense(128),
+      keras.layers.Activation('relu'),
+      keras.layers.Dense(num_classes),
+      keras.layers.Activation('softmax')
   ]
-  model = tf.keras.models.Sequential(layers)
+  model = keras.models.Sequential(layers)
   return model
 
 
 def mobilenet_model_fn(input_shape, target_shape):
   """MobileNet: A ConvNet from Keras Applications."""
   del input_shape, target_shape  # Unused.
-  model = tf.keras.applications.MobileNet(alpha=0.5)
+  model = keras.applications.MobileNet(alpha=0.5)
   return model
 
 
@@ -207,14 +209,14 @@ def attention_model_fn(input_shape, target_shape):
   """Attention-based translation model."""
   del input_shape, target_shape  # Unused.
   model_json = '{"class_name":"Model","config":{"input_layers":[["input_1",0,0],["s0",0,0],["c0",0,0]],"name":"model_1","layers":[{"class_name":"InputLayer","inbound_nodes":[],"name":"input_1","config":{"dtype":"float32","name":"input_1","sparse":false,"batch_input_shape":[null,30,38]}},{"class_name":"InputLayer","inbound_nodes":[],"name":"s0","config":{"dtype":"float32","name":"s0","sparse":false,"batch_input_shape":[null,64]}},{"class_name":"Bidirectional","inbound_nodes":[[["input_1",0,0,{}]]],"name":"bidirectional_1","config":{"trainable":true,"name":"bidirectional_1","merge_mode":"concat","layer":{"class_name":"LSTM","config":{"stateful":false,"units":32,"activation":"tanh","recurrent_activation":"hard_sigmoid","dropout":0,"recurrent_dropout":0,"use_bias":true,"trainable":true,"recurrent_initializer":{"class_name":"Orthogonal","config":{"seed":null,"gain":1}},"bias_constraint":null,"unroll":false,"kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"unit_forget_bias":true,"bias_initializer":{"class_name":"Zeros","config":{}},"kernel_constraint":null,"activity_regularizer":null,"return_sequences":true,"recurrent_constraint":null,"recurrent_regularizer":null,"bias_regularizer":null,"go_backwards":false,"implementation":1,"name":"attLSTM_2","kernel_regularizer":null,"return_state":false}}}},{"class_name":"RepeatVector","inbound_nodes":[[["s0",0,0,{}]],[["attLSTM_1",0,0,{}]],[["attLSTM_1",1,0,{}]],[["attLSTM_1",2,0,{}]],[["attLSTM_1",3,0,{}]],[["attLSTM_1",4,0,{}]],[["attLSTM_1",5,0,{}]],[["attLSTM_1",6,0,{}]],[["attLSTM_1",7,0,{}]],[["attLSTM_1",8,0,{}]]],"name":"repeat_vector_1","config":{"n":30,"trainable":true,"name":"repeat_vector_1"}},{"class_name":"Concatenate","inbound_nodes":[[["bidirectional_1",0,0,{}],["repeat_vector_1",0,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",1,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",2,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",3,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",4,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",5,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",6,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",7,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",8,0,{}]],[["bidirectional_1",0,0,{}],["repeat_vector_1",9,0,{}]]],"name":"concatenate_1","config":{"trainable":true,"name":"concatenate_1","axis":-1}},{"class_name":"Dense","inbound_nodes":[[["concatenate_1",0,0,{}]],[["concatenate_1",1,0,{}]],[["concatenate_1",2,0,{}]],[["concatenate_1",3,0,{}]],[["concatenate_1",4,0,{}]],[["concatenate_1",5,0,{}]],[["concatenate_1",6,0,{}]],[["concatenate_1",7,0,{}]],[["concatenate_1",8,0,{}]],[["concatenate_1",9,0,{}]]],"name":"attDense_1","config":{"bias_constraint":null,"kernel_constraint":null,"units":10,"activity_regularizer":null,"use_bias":true,"bias_regularizer":null,"trainable":true,"activation":"tanh","name":"attDense_1","kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"kernel_regularizer":null,"bias_initializer":{"class_name":"Zeros","config":{}}}},{"class_name":"Dense","inbound_nodes":[[["attDense_1",0,0,{}]],[["attDense_1",1,0,{}]],[["attDense_1",2,0,{}]],[["attDense_1",3,0,{}]],[["attDense_1",4,0,{}]],[["attDense_1",5,0,{}]],[["attDense_1",6,0,{}]],[["attDense_1",7,0,{}]],[["attDense_1",8,0,{}]],[["attDense_1",9,0,{}]]],"name":"attDense_2","config":{"bias_constraint":null,"kernel_constraint":null,"units":1,"activity_regularizer":null,"use_bias":true,"bias_regularizer":null,"trainable":true,"activation":"relu","name":"attDense_2","kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"kernel_regularizer":null,"bias_initializer":{"class_name":"Zeros","config":{}}}},{"class_name":"Activation","inbound_nodes":[[["attDense_2",0,0,{}]],[["attDense_2",1,0,{}]],[["attDense_2",2,0,{}]],[["attDense_2",3,0,{}]],[["attDense_2",4,0,{}]],[["attDense_2",5,0,{}]],[["attDense_2",6,0,{}]],[["attDense_2",7,0,{}]],[["attDense_2",8,0,{}]],[["attDense_2",9,0,{}]]],"name":"attention_weights","config":{"trainable":true,"activation":"softmax","name":"attention_weights"}},{"class_name":"Dot","inbound_nodes":[[["attention_weights",0,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",1,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",2,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",3,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",4,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",5,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",6,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",7,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",8,0,{}],["bidirectional_1",0,0,{}]],[["attention_weights",9,0,{}],["bidirectional_1",0,0,{}]]],"name":"dot_1","config":{"trainable":true,"name":"dot_1","normalize":false,"axes":1}},{"class_name":"InputLayer","inbound_nodes":[],"name":"c0","config":{"dtype":"float32","name":"c0","sparse":false,"batch_input_shape":[null,64]}},{"class_name":"LSTM","inbound_nodes":[[["dot_1",0,0,{}],["s0",0,0,{}],["c0",0,0,{}]],[["dot_1",1,0,{}],["attLSTM_1",0,0,{}],["attLSTM_1",0,2,{}]],[["dot_1",2,0,{}],["attLSTM_1",1,0,{}],["attLSTM_1",1,2,{}]],[["dot_1",3,0,{}],["attLSTM_1",2,0,{}],["attLSTM_1",2,2,{}]],[["dot_1",4,0,{}],["attLSTM_1",3,0,{}],["attLSTM_1",3,2,{}]],[["dot_1",5,0,{}],["attLSTM_1",4,0,{}],["attLSTM_1",4,2,{}]],[["dot_1",6,0,{}],["attLSTM_1",5,0,{}],["attLSTM_1",5,2,{}]],[["dot_1",7,0,{}],["attLSTM_1",6,0,{}],["attLSTM_1",6,2,{}]],[["dot_1",8,0,{}],["attLSTM_1",7,0,{}],["attLSTM_1",7,2,{}]],[["dot_1",9,0,{}],["attLSTM_1",8,0,{}],["attLSTM_1",8,2,{}]]],"name":"attLSTM_1","config":{"stateful":false,"units":64,"activation":"tanh","recurrent_activation":"hard_sigmoid","dropout":0,"recurrent_dropout":0,"use_bias":true,"trainable":true,"recurrent_initializer":{"class_name":"Orthogonal","config":{"seed":null,"gain":1}},"bias_constraint":null,"unroll":false,"kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"unit_forget_bias":true,"bias_initializer":{"class_name":"Zeros","config":{}},"kernel_constraint":null,"activity_regularizer":null,"return_sequences":false,"recurrent_constraint":null,"recurrent_regularizer":null,"bias_regularizer":null,"go_backwards":false,"implementation":1,"name":"attLSTM_1","kernel_regularizer":null,"return_state":true}},{"class_name":"Dense","inbound_nodes":[[["attLSTM_1",0,0,{}]],[["attLSTM_1",1,0,{}]],[["attLSTM_1",2,0,{}]],[["attLSTM_1",3,0,{}]],[["attLSTM_1",4,0,{}]],[["attLSTM_1",5,0,{}]],[["attLSTM_1",6,0,{}]],[["attLSTM_1",7,0,{}]],[["attLSTM_1",8,0,{}]],[["attLSTM_1",9,0,{}]]],"name":"attDense_3","config":{"bias_constraint":null,"kernel_constraint":null,"units":11,"activity_regularizer":null,"use_bias":true,"bias_regularizer":null,"trainable":true,"activation":"softmax","name":"attDense_3","kernel_initializer":{"class_name":"VarianceScaling","config":{"seed":null,"distribution":"uniform","mode":"fan_avg","scale":1}},"kernel_regularizer":null,"bias_initializer":{"class_name":"Zeros","config":{}}}}],"output_layers":[["attDense_3",0,0],["attDense_3",1,0],["attDense_3",2,0],["attDense_3",3,0],["attDense_3",4,0],["attDense_3",5,0],["attDense_3",6,0],["attDense_3",7,0],["attDense_3",8,0],["attDense_3",9,0]]}}';
-  model = tf.keras.models.model_from_json(model_json)
+  model = keras.models.model_from_json(model_json)
   return model
 
 
 _RNN_TYPE_MAP = {
-    'SimpleRNN': tf.keras.layers.SimpleRNN,
-    'GRU': tf.keras.layers.GRU,
-    'LSTM': tf.keras.layers.LSTM
+    'SimpleRNN': keras.layers.SimpleRNN,
+    'GRU': keras.layers.GRU,
+    'LSTM': keras.layers.LSTM
 }
 
 
@@ -222,14 +224,14 @@ def rnn_model_fn(rnn_type, input_shape, target_shape):
   """Recurrent neural network model."""
   rnnConstructor = _RNN_TYPE_MAP[rnn_type]
   layers = [rnnConstructor(target_shape[0], input_shape=input_shape)]
-  model = tf.keras.models.Sequential(layers)
+  model = keras.models.Sequential(layers)
   return model
 
 
 def main():
   benchmarks = dict()
   benchmarks['metadata'] = {
-      'keras_version': tf.keras.__version__,
+      'keras_version': keras.__version__,
       'tensorflow_version': tf.__version__,
       'tensorflow_uses_gpu': any(
           'gpu' in d.name.lower() for d in device_lib.list_local_devices())
