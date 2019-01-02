@@ -12,8 +12,9 @@
  * TensorFlow.js Layers: Basic Layers.
  */
 
-import {Scalar, serialization, Tensor, tidy, transpose, util} from '@tensorflow/tfjs-core';
-
+// import {Scalar, serialization, Tensor, tidy, transpose, util, fused} from
+// '@tensorflow/tfjs-core';
+import {fused, Scalar, serialization, Tensor, tidy, transpose, util} from '../../../tfjs-core/src/index';
 import {Activation as ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
@@ -286,13 +287,30 @@ export class Dense extends Layer {
       this.invokeCallHook(inputs, kwargs);
       // Dense layer accepts only a single input.
       const input = getExactlyOneTensor(inputs);
-      let output = K.dot(input, this.kernel.read());
-      if (this.bias != null) {
-        output = K.biasAdd(output, this.bias.read());
-      }
+      let activationName: fused.FusableActivation, output: Tensor;
       if (this.activation != null) {
-        output = this.activation.apply(output);
+        for (let [key, value] of fused.activationMap) {
+          if (this.activation.constructor.name === value.layersKey) {
+            activationName = key;
+            break;
+          }
+        }
       }
+
+      if (activationName != null) {
+        output = K.dot(
+            input, this.kernel.read(), activationName,
+            this.bias ? this.bias.read() : null);
+      } else {
+        output = K.dot(input, this.kernel.read());
+        if (this.activation != null) {
+          output = this.activation.apply(output);
+        }
+        if (this.bias != null) {
+          output = K.biasAdd(output, this.bias.read());
+        }
+      }
+
       return output;
     });
   }

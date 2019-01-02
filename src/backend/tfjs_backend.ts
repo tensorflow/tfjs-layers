@@ -12,9 +12,10 @@
  * deeplearn.js backend.
  */
 
-import * as tfc from '@tensorflow/tfjs-core';
+// import * as tfc from '@tensorflow/tfjs-core';
 import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
 
+import * as tfc from '../../../tfjs-core/src/index';
 import {disposeScalarCache, getScalar} from '../backend/state';
 import {checkDataFormat, DataFormat} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
@@ -378,7 +379,10 @@ export function randomNormal(
  * @param y A tensor of at least rank 2.
  * @return Result of the dot operation.
  */
-export function dot(x: Tensor, y: Tensor): Tensor {
+export function dot(
+    x: Tensor, y: Tensor, activation?: tfc.fused.FusableActivation,
+    bias?: Tensor): Tensor {
+  const {kernelKey} = tfc.fused.activationMap.get(activation);
   if ((x.rank < 2) || (y.rank < 2)) {
     throw new NotImplementedError(
         `dot requires both inputs to be rank >= 2` +
@@ -397,7 +401,9 @@ export function dot(x: Tensor, y: Tensor): Tensor {
   }
   // Handle basic 2D x 2D case.
   if ((x.rank === 2) && (y.rank === 2)) {
-    return tfc.matMul(x as Tensor2D, y as Tensor2D);
+    return tfc.fused.matMul(
+        x as Tensor2D, y as Tensor2D, false, false, kernelKey,
+        reshapeBias(x.rank, bias, imageDataFormat()));
   } else {
     // Reshape x into the analogous 2D Tensor.
     const xFirstDims = x.shape.slice();  // Holds all but the last dim of x.
@@ -424,7 +430,11 @@ export function dot(x: Tensor, y: Tensor): Tensor {
 
     // Multiply x and y as 2D Tensors, and then reshape back to original.
     const outputShape = [...xFirstDims, ...yOtherDims];
-    return tfc.matMul(x as Tensor2D, y as Tensor2D).reshape(outputShape);
+    return tfc.fused
+        .matMul(
+            x as Tensor2D, y as Tensor2D, false, false, kernelKey,
+            reshapeBias(x.rank, bias, imageDataFormat()))
+        .reshape(outputShape);
   }
 }
 
@@ -526,6 +536,65 @@ export function pow(x: Tensor, a: Tensor|number): Tensor {
   });
 }
 
+function reshapeBias(xRank, bias, dataFormat) {
+  const biasShape = bias.shape;
+
+  if (bias.rank !== 1 && bias.rank !== xRank) {
+    throw new ValueError(
+        'Unexpected bias dimensions: ' + bias.rank +
+        '; expected it to be 1 or ' + xRank);
+  }
+
+  if (xRank === 5) {
+    if (dataFormat === 'channelsFirst') {
+      if (biasShape.length === 1) {
+        return bias.reshape([1, biasShape[0], 1, 1, 1])
+      } else {
+        return bias.reshape(
+            [1, biasShape[3], biasShape[0], biasShape[1], biasShape[2]]);
+      }
+    } else if (dataFormat === 'channelsLast') {
+      if (biasShape.length === 1) {
+        return bias.reshape([1, 1, 1, 1, biasShape[0]]);
+      } else {
+        return bias.reshape([1].concat(biasShape));
+      }
+    }
+  } else if (xRank === 4) {
+    if (dataFormat === 'channelsFirst') {
+      if (biasShape.length === 1) {
+        return bias.reshape([1, biasShape[0], 1, 1]);
+      } else {
+        return bias.reshape([1, biasShape[2], biasShape[0], biasShape[1]]);
+      }
+    } else if (dataFormat === 'channelsLast') {
+      if (biasShape.length === 1) {
+        return bias.reshape([1, 1, 1, biasShape[0]]);
+      } else {
+        return bias.reshape([1].concat(biasShape));
+      }
+    }
+  } else if (xRank === 3) {
+    if (dataFormat === 'channelsFirst') {
+      if (biasShape.length === 1) {
+        return bias.reshape([1, biasShape[0], 1]);
+      } else {
+        return bias.reshape([1, biasShape[1], biasShape[0]]);
+      }
+    } else if (dataFormat === 'channelsLast') {
+      if (biasShape.length === 1) {
+        return bias.reshape([1, 1, biasShape[0]]);
+      } else {
+        return bias.reshape([1].concat(biasShape))
+      }
+    }
+  } else if (xRank < 3) {
+    return bias;
+  } else {
+    throw new ValueError(`Unsupported input rank by biasAdd: ${x.rank}`);
+  }
+}
+
 /* Neural-network operations. */
 
 /**
@@ -544,64 +613,7 @@ export function biasAdd(
     }
     checkDataFormat(dataFormat);
 
-    if (bias.rank !== 1 && bias.rank !== x.rank) {
-      throw new ValueError(
-          'Unexpected bias dimensions: ' + bias.rank +
-          '; expected it to be 1 or ' + x.rank);
-    }
-    const biasShape = bias.shape;
-
-    let y: Tensor;
-    if (x.rank === 5) {
-      if (dataFormat === 'channelsFirst') {
-        if (biasShape.length === 1) {
-          y = x.add(bias.reshape([1, biasShape[0], 1, 1, 1]));
-        } else {
-          y = x.add(bias.reshape(
-              [1, biasShape[3], biasShape[0], biasShape[1], biasShape[2]]));
-        }
-      } else if (dataFormat === 'channelsLast') {
-        if (biasShape.length === 1) {
-          y = x.add(bias.reshape([1, 1, 1, 1, biasShape[0]]));
-        } else {
-          y = x.add(bias.reshape([1].concat(biasShape)));
-        }
-      }
-    } else if (x.rank === 4) {
-      if (dataFormat === 'channelsFirst') {
-        if (biasShape.length === 1) {
-          y = x.add(bias.reshape([1, biasShape[0], 1, 1]));
-        } else {
-          y = x.add(
-              bias.reshape([1, biasShape[2], biasShape[0], biasShape[1]]));
-        }
-      } else if (dataFormat === 'channelsLast') {
-        if (biasShape.length === 1) {
-          y = x.add(bias.reshape([1, 1, 1, biasShape[0]]));
-        } else {
-          y = x.add(bias.reshape([1].concat(biasShape)));
-        }
-      }
-    } else if (x.rank === 3) {
-      if (dataFormat === 'channelsFirst') {
-        if (biasShape.length === 1) {
-          y = x.add(bias.reshape([1, biasShape[0], 1]));
-        } else {
-          y = x.add(bias.reshape([1, biasShape[1], biasShape[0]]));
-        }
-      } else if (dataFormat === 'channelsLast') {
-        if (biasShape.length === 1) {
-          y = x.add(bias.reshape([1, 1, biasShape[0]]));
-        } else {
-          y = x.add(bias.reshape([1].concat(biasShape)));
-        }
-      }
-    } else if (x.rank < 3) {
-      y = x.add(bias);
-    } else {
-      throw new ValueError(`Unsupported input rank by biasAdd: ${x.rank}`);
-    }
-    return y;
+    return x.add(reshapeBias(x.rank, bias, dataFormat));
   });
 }
 
