@@ -547,7 +547,7 @@ function reshapeBias(xRank: number, bias: Tensor, dataFormat: string) {
   if (xRank === 5) {
     if (dataFormat === 'channelsFirst') {
       if (biasShape.length === 1) {
-        return bias.reshape([1, biasShape[0], 1, 1, 1])
+        return bias.reshape([1, biasShape[0], 1, 1, 1]);
       } else {
         return bias.reshape(
             [1, biasShape[3], biasShape[0], biasShape[1], biasShape[2]]);
@@ -584,7 +584,7 @@ function reshapeBias(xRank: number, bias: Tensor, dataFormat: string) {
       if (biasShape.length === 1) {
         return bias.reshape([1, 1, biasShape[0]]);
       } else {
-        return bias.reshape([1].concat(biasShape))
+        return bias.reshape([1].concat(biasShape));
       }
     }
   } else if (xRank < 3) {

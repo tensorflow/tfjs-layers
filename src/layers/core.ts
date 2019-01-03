@@ -287,7 +287,7 @@ export class Dense extends Layer {
       const input = getExactlyOneTensor(inputs);
       let activationName: fused.FusableActivation, output: Tensor;
       if (this.activation != null) {
-        for (let [key, value] of fused.activationMap) {
+        for (const [key, value] of fused.activationMap) {
           if (this.activation.constructor.name === value.layersKey) {
             activationName = key;
             break;
