@@ -535,7 +535,7 @@ export function pow(x: Tensor, a: Tensor|number): Tensor {
   });
 }
 
-function reshapeBias(xRank, bias, dataFormat) {
+function reshapeBias(xRank: number, bias: Tensor, dataFormat: string) {
   const biasShape = bias.shape;
 
   if (bias.rank !== 1 && bias.rank !== xRank) {
@@ -589,9 +589,8 @@ function reshapeBias(xRank, bias, dataFormat) {
     }
   } else if (xRank < 3) {
     return bias;
-  } else {
-    throw new ValueError(`Unsupported input rank by biasAdd: ${x.rank}`);
   }
+  throw new ValueError(`Unsupported input rank by biasAdd: ${bias.rank}`);
 }
 
 /* Neural-network operations. */
