@@ -13,7 +13,7 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-import {randomNormal, Scalar, scalar, Tensor, tensor2d, tensor3d, tensor4d, test_util} from '@tensorflow/tfjs-core';
+import {randomNormal, Scalar, scalar, Tensor, tensor1d, tensor2d, tensor3d, tensor4d, test_util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
@@ -1396,6 +1396,65 @@ describeMathCPUAndGPU('GRU Tensor', () => {
         tensor2d([[-1.562513e-02, 0, 2.086183e-07]], [1, 3]));
     expectTensorsClose(dense.getWeights()[0], tensor2d([[1.2187521]], [1, 1]));
   });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // in1 = keras.Input(shape=[5])
+  // out1 = keras.layers.Dense(2,
+  //                           kernel_initializer='ones',
+  //                           bias_initializer='zeros')(in1)
+  // in2 = keras.Input(shape=[3, 4])
+  // out2 = keras.layers.GRU(2,
+  //                         recurrent_initializer='ones',
+  //                         kernel_initializer='ones',
+  //                         bias_initializer='zeros')(in2, initial_state=out1)
+  // model = keras.Model(inputs=[in1, in2], outputs=[out1, out2])
+  //
+  // xs1 = np.array([[0.1, 0.2, 0.3, 0.4, 0.5]])
+  // xs2 = np.array([[[0.1, 0.2, 0.3, 0.4], [-0.1, -0.2, -0.3, -0.4],
+  //                 [0.3, 0.4, 0.5, 0.6]]])
+  // print(model.predict([xs1, xs2]))
+  // ```
+  it('SymbolicTensor as initialState thru kwargs; Save & Load', async () => {
+    const in1 = tfl.input({shape: [5]});
+    const out1 = tfl.layers.dense({
+      units: 2,
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(in1) as tfl.SymbolicTensor;
+    const in2 = tfl.input({shape: [3, 4]});
+    const out2 = tfl.layers.gru({
+      units: 2,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(in2, {initialState: out1}) as tfl.SymbolicTensor;
+
+    const model = tfl.model({inputs: [in1 , in2], outputs: [out1, out2]});
+
+    const xs1 = tensor2d([[0.1, 0.2, 0.3, 0.4, 0.5]]);
+    const xs2 = tensor3d(
+        [[[0.1, 0.2, 0.3, 0.4], [-0.1, -0.2, -0.3, -0.4],
+          [0.3, 0.4, 0.5, 0.6]]]);
+    const ys = model.predict([xs1, xs2]) as Tensor[];
+    expect(ys.length).toEqual(2);
+    expectTensorsClose(ys[0], tensor2d([[1.5, 1.5]]));
+    expectTensorsClose(ys[1], tensor2d([[1.4435408, 1.4435408]]));
+
+    // NOTE: Here on down, i.e., the part that tests serialization and
+    // deserialization of the model, has no counterpart in the Python
+    // code snippet above.
+    const modelJSON = model.toJSON(null, false);
+    const modelPrime =
+        await tfl.models.modelFromJSON({modelTopology: modelJSON});
+    const ysPrime = modelPrime.predict([xs1, xs2]) as Tensor[];
+    expect(ysPrime.length).toEqual(2);
+    expectTensorsClose(ysPrime[0], ys[0]);
+    expectTensorsClose(ysPrime[1], ys[1]);
+  });
 });
 
 describeMathCPU('GRU-deserialization', () => {
@@ -1877,6 +1936,443 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
           dense.getWeights()[0], tensor2d([[1.4559253]], [1, 1]));
     });
   }
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                  4,
+  //                                  input_length=6,
+  //                                  mask_zero=True,
+  //                                  embeddings_initializer='ones'))
+  // model.add(keras.layers.LSTM(3,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='ones',
+  //                              bias_initializer='zero'))
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //                [1, 0, 0, 0, 0, 0],
+  //                [1, 2, 0, 0, 0, 0],
+  //                [1, 2, 3, 0, 0, 0]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(
+        ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  //
+  // model = keras.Sequential()
+  // embedding_layer = keras.layers.Embedding(4,
+  //                                          2,
+  //                                          input_length=3,
+  //                                          mask_zero=True)
+  // model.add(embedding_layer)
+  // lstm_layer = keras.layers.LSTM(2, go_backwards=True)
+  // model.add(lstm_layer)
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='ones',
+  //                              bias_initializer='zero'))
+  //
+  // embedding_layer.set_weights([
+  //     np.array([[0.1, 0.2], [0.3, 0.4], [-0.1, -0.2], [-0.3, -0.4]])])
+  // print(lstm_layer.get_weights())
+  // lstm_layer.set_weights([
+  //     np.array([[1, 2, 3, 4, 5, 6, 7, 8],
+  //               [-1, -2, -3, -4, -5, -6, -7, -8]]),
+  //     np.array([[1, 2, 3, 4, 5, 6, 7, 8],
+  //               [-1, -2, -3, -4, -5, -6, -7, -8]]),
+  //     np.array([1, 2, 3, 4, 5, 6, 7, 8])])
+  //
+  // xs = np.array([[0, 0, 0],
+  //                [1, 0, 0],
+  //                [1, 2, 0],
+  //                [1, 2, 3]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask, goBackwards = true', () => {
+    const model = tfl.sequential();
+    const embeddingLayer = tfl.layers.embedding({
+      inputDim: 4,
+      outputDim: 2,
+      inputLength: 3,
+      maskZero: true
+    });
+    model.add(embeddingLayer);
+    const lstmLayer = tfl.layers.lstm({
+      units: 2,
+      goBackwards: true
+    });
+    model.add(lstmLayer);
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    // Setting weights to asymmetric, so that the effect of goBackwards=true
+    // can show.
+    embeddingLayer.setWeights([
+        tensor2d([[0.1, 0.2], [0.3, 0.4], [-0.1, -0.2], [-0.3, -0.4]])]);
+    lstmLayer.setWeights([
+        tensor2d([[1, 2, 3, 4, 5, 6, 7, 8],
+                  [-1, -2, -3, -4, -5, -6, -7, -8]]),
+        tensor2d([[1, 2, 3, 4, 5, 6, 7, 8],
+                  [-1, -2, -3, -4, -5, -6, -7, -8]]),
+        tensor1d([1, 2, 3, 4, 5, 6, 7, 8])]);
+
+    const xs = tensor2d([[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(
+        ys, tensor2d([[0], [1.2876499], [1.8165315], [1.9599037]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Reshape(target_shape=[6], input_shape=[6]))
+  // nested_model = keras.Sequential()
+  // nested_model.add(keras.layers.Embedding(10,
+  //                                         4,
+  //                                         input_length=6,
+  //                                         mask_zero=True,
+  //                                         embeddings_initializer='ones'))
+  // nested_model.add(keras.layers.LSTM(3,
+  //                                    recurrent_initializer='ones',
+  //                                    kernel_initializer='ones',
+  //                                    bias_initializer='zeros'))
+  // model.add(nested_model)
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='ones',
+  //                              bias_initializer='zero'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //               [1, 0, 0, 0, 0, 0],
+  //               [1, 2, 0, 0, 0, 0],
+  //               [1, 2, 3, 0, 0, 0]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask and a nested model', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.reshape({
+      targetShape: [6],
+      inputShape: [6]
+    }));  // A dummy input layer.
+    const nestedModel = tfl.sequential();
+    nestedModel.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    nestedModel.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(nestedModel);
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(
+        ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                  4,
+  //                                  input_length=6,
+  //                                  mask_zero=True,
+  //                                 embeddings_initializer='ones'))
+  // model.add(keras.layers.LSTM(3,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  // model.add(keras.layers.Dense(1,
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zero'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //               [1, 0, 0, 0, 0, 0],
+  //               [1, 2, 0, 0, 0, 0],
+  //               [1, 2, 3, 0, 0, 0]])
+  // ys = np.array([[1], [2], [3], [4]])
+  //
+  // model.fit(xs, ys, epochs=2, batch_size=4)
+  // history = model.fit(xs, ys, epochs=2, batch_size=4)
+  // print(history.history)
+  // ```
+  it('BPTT with mask: correctness and no leak', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = tensor2d([[1], [2], [3], [4]]);
+
+    // Serves as burn-in call for subsequent tracking of memory leak.
+    await model.fit(xs, ys, {epochs: 2, batchSize: 4});
+
+    const numTensors0 = tfc.memory().numTensors;
+    const history = await model.fit(xs, ys, {epochs: 2, batchSize: 4});
+    const numTensors1 = tfc.memory().numTensors;
+    // Assert no memory leak.
+    expect(numTensors1).toEqual(numTensors0);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(0.503677);
+    expect(history.history.loss[1]).toBeCloseTo(0.492173);
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // inp = keras.Input(shape=[6])
+  // y = keras.layers.Embedding(10,
+  //                            4,
+  //                            input_length=6,
+  //                            mask_zero=True,
+  //                            embeddings_initializer='ones')(inp)
+  // y = keras.layers.LSTM(3,
+  //                       return_state=True,
+  //                       recurrent_initializer='ones',
+  //                       kernel_initializer='ones',
+  //                       bias_initializer='zeros')(y)
+  //
+  // model = keras.Model(inputs=inp, outputs=y)
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //                [1, 0, 0, 0, 0, 0],
+  //                [1, 2, 0, 0, 0, 0],
+  //                [1, 2, 3, 0, 0, 0]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask, returnStates = true', () => {
+    const inp = tfl.input({shape: [6]});
+    let y: tfl.SymbolicTensor|tfl.SymbolicTensor[] = tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }).apply(inp) as tfl.SymbolicTensor;
+    y = tfl.layers.lstm({
+      units: 3,
+      returnState: true,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(y) as tfl.SymbolicTensor[];
+    const model = tfl.model({inputs: inp, outputs: y});
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor[];
+    expect(ys.length).toEqual(3);
+    expectTensorsClose(ys[0], tensor2d([
+        [0, 0, 0],
+        [0.76131237, 0.76131237, 0.76131237],
+        [0.9639796, 0.9639796, 0.9639796],
+        [0.99504817, 0.99504817, 0.99504817]]));
+    expectTensorsClose(ys[1], tensor2d([
+        [0, 0, 0],
+        [0.76131237, 0.76131237, 0.76131237],
+        [0.9639796, 0.9639796, 0.9639796],
+        [0.99504817, 0.99504817, 0.99504817]]));
+    expectTensorsClose(ys[2], tensor2d([
+        [0, 0, 0],
+        [0.9993292, 0.9993292, 0.9993292],
+        [1.9993222, 1.9993222, 1.9993222],
+        [2.9993203,2.9993203,　2.9993203]]));
+  });
+
+  // Referernce Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                 4,
+  //                                 input_length=3,
+  //                                 mask_zero=True,
+  //                                 embeddings_initializer='ones'))
+  // model.add(keras.layers.LSTM(3,
+  //                             return_sequences=True,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  // model.add(keras.layers.Dense(1,
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  //
+  // xs = np.array([[0, 0, 0],
+  //               [1, 0, 0],
+  //               [1, 2, 0],
+  //               [1, 2, 3]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask, returnSequences = true', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 3,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      returnSequences: true,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    const xs = tensor2d(
+        [[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(ys, tensor3d(
+        [[[0], [0], [0]], [[2.283937], [2.283937], [2.283937]],
+         [[2.283937], [2.8919387], [2.8919387]],
+         [[2.283937], [2.8919387], [2.9851446]]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                  4,
+  //                                  input_length=3,
+  //                                  mask_zero=True,
+  //                                  embeddings_initializer='ones'))
+  // model.add(keras.layers.SimpleRNN(3,
+  //                                  return_sequences=True,
+  //                                  recurrent_initializer='ones',
+  //                                  kernel_initializer='ones',
+  //                                  bias_initializer='zeros'))
+  // model.add(keras.layers.LSTM(3,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  //
+  // xs = np.array([[0, 0, 0],
+  //                [1, 0, 0],
+  //                [1, 2, 0],
+  //                [1, 2, 3]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('Stacked RNNs with masking: correctness and no leak', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 3,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.simpleRNN({
+      units: 3,
+      returnSequences: true,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+
+    const xs = tensor2d(
+      [[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
+
+    // Burn-in call for subsequent memory leak check.
+    model.predict(xs);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const ys = model.predict(xs) as Tensor;
+    const numTensors1 = tfc.memory().numTensors;
+    expectTensorsClose(ys, tensor2d(
+        [[0, 0, 0], [0.75950104, 0.75950104, 0.75950104],
+         [0.96367145, 0.96367145, 0.96367145],
+         [0.9950049, 0.9950049, 0.9950049]]));
+    ys.dispose();
+    // Assert no memory leak.
+    expect(numTensors1).toEqual(numTensors0 + 1);
+  });
 });
 
 describeMathCPU('LSTM-deserialization', () => {

@@ -141,76 +141,101 @@ export function rnn(
     stepFunction: RnnStepFunction, inputs: Tensor, initialStates: Tensor[],
     goBackwards = false, mask?: Tensor, constants?: Tensor[], unroll = false,
     needPerStepOutputs = false): [Tensor, Tensor, Tensor[]] {
-  const ndim = inputs.shape.length;
-  if (ndim < 3) {
-    throw new ValueError(`Input should be at least 3D, but is ${ndim}D.`);
-  }
+  return tfc.tidy(() => {
+    const ndim = inputs.shape.length;
+    if (ndim < 3) {
+      throw new ValueError(`Input should be at least 3D, but is ${ndim}D.`);
+    }
 
-  // Transpose to time-major, i.e., from [batch, time, ...] to [time, batch,
-  // ...].
-  const axes = [1, 0].concat(math_utils.range(2, ndim));
-  inputs = tfc.transpose(inputs, axes);
+    // Transpose to time-major, i.e., from [batch, time, ...] to [time, batch,
+    // ...].
+    const axes = [1, 0].concat(math_utils.range(2, ndim));
+    inputs = tfc.transpose(inputs, axes);
 
-  if (mask != null) {
-    throw new NotImplementedError(
-        'The rnn() function of the deeplearn.js backend does not support ' +
-        'masking yet.');
-  }
+    if (constants != null) {
+      throw new NotImplementedError(
+          'The rnn() functoin of the deeplearn.js backend does not support ' +
+          'constants yet.');
+    }
 
-  if (constants != null) {
-    throw new NotImplementedError(
-        'The rnn() functoin of the deeplearn.js backend does not support ' +
-        'constants yet.');
-  }
+    // Porting Note: the unroll option is ignored by the imperative backend.
+    if (unroll) {
+      console.warn(
+          'Backend rnn(): the unroll = true option is not applicable to the ' +
+          'imperative deeplearn.js backend.');
+    }
 
-  // Porting Note: the unroll option is ignored by the imperative backend.
-  if (unroll) {
-    console.warn(
-        'Backend rnn(): the unroll = true option is not applicable to the ' +
-        'imperative deeplearn.js backend.');
-  }
+    if (mask != null) {
+      mask = mask.asType('bool').asType('float32');
+      if (mask.rank === ndim - 1) {
+        mask = tfc.expandDims(mask, -1);
+      }
+      mask = tfc.transpose(mask, axes);
+    }
 
-  if (goBackwards) {
-    inputs = tfc.reverse(inputs, 0);
-  }
-
-  // Porting Note: PyKeras with TensorFlow backend uses a symbolic loop
-  //   (tf.while_loop). But for the imperative deeplearn.js backend, we just
-  //   use the usual TypeScript control flow to iterate over the time steps in
-  //   the inputs.
-  // Porting Note: PyKeras patches a "_use_learning_phase" attribute to
-  // outputs.
-  //   This is not idiomatic in TypeScript. The info regarding whether we are
-  //   in a learning (i.e., training) phase for RNN is passed in a different
-  //   way.
-  //   TODO(cais): Determine in what exact way the learning phase information
-  //     will be passed.
-
-  let outputs: Tensor;
-  let lastOutput: Tensor;
-  let states = initialStates;
-  const timeSteps = inputs.shape[0];
-  for (let t = 0; t < timeSteps; ++t) {
-    let currentInput = K.sliceAlongFirstAxis(inputs, t, 1);
-    currentInput = currentInput.reshape(currentInput.shape.slice(1));
-    const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
-    lastOutput = stepOutputs[0];
-    if (needPerStepOutputs) {
-      if (t === 0) {
-        outputs = lastOutput.expandDims(1);
-      } else {
-        const newOutputs = tfc.concat([outputs, lastOutput.expandDims(1)], 1);
-        outputs.dispose();
-        outputs = newOutputs;
+    if (goBackwards) {
+      inputs = tfc.reverse(inputs, 0);
+      if (mask != null) {
+        mask = tfc.reverse(mask, 0);
       }
     }
-    // TODO(soergel): Call K.concatenate() to perform only one concatenation
-    // at the end, once the backend function is available.
-    states = stepOutputs[1];
-  }
-  return [lastOutput, outputs, states];
-}
 
+    // Porting Note: PyKeras with TensorFlow backend uses a symbolic loop
+    //   (tf.while_loop). But for the imperative deeplearn.js backend, we just
+    //   use the usual TypeScript control flow to iterate over the time steps in
+    //   the inputs.
+    // Porting Note: PyKeras patches a "_use_learning_phase" attribute to
+    // outputs.
+    //   This is not idiomatic in TypeScript. The info regarding whether we are
+    //   in a learning (i.e., training) phase for RNN is passed in a different
+    //   way.
+
+    const perStepOutputs: Tensor[] = [];
+    let lastOutput: Tensor;
+    let states = initialStates;
+    const timeSteps = inputs.shape[0];
+    const perStepInputs = tfc.unstack(inputs);
+    let perStepMasks: Tensor[];
+    if (mask != null) {
+      perStepMasks = tfc.unstack(mask);
+    }
+
+    for (let t = 0; t < timeSteps; ++t) {
+      const currentInput = perStepInputs[t];
+      const stepOutputs = tfc.tidy(() => stepFunction(currentInput, states));
+
+      if (mask == null) {
+        lastOutput = stepOutputs[0];
+        states = stepOutputs[1];
+      } else {
+        const maskedOutputs = tfc.tidy(() => {
+          const stepMask = perStepMasks[t];
+          const negStepMask = tfc.onesLike(stepMask).sub(stepMask);
+          // TODO(cais): Would tfc.where() be better for performance?
+          const output = stepOutputs[0].mul(stepMask)
+              .addStrict(states[0].mul(negStepMask));
+          const newStates = states.map((state, i) => {
+            return stepOutputs[1][i].mul(stepMask)
+                .addStrict(state.mul(negStepMask));
+          });
+          return {output, newStates};
+        });
+        lastOutput = maskedOutputs.output;
+        states = maskedOutputs.newStates;
+      }
+
+      if (needPerStepOutputs) {
+        perStepOutputs.push(lastOutput);
+      }
+    }
+    let outputs: Tensor;
+    if (needPerStepOutputs) {
+      const axis = 1;
+      outputs = tfc.stack(perStepOutputs, axis);
+    }
+    return [lastOutput, outputs, states] as [Tensor, Tensor, Tensor[]];
+  });
+}
 
 export interface BaseRNNLayerConfig extends LayerConfig {
   /**
@@ -389,7 +414,7 @@ export class RNN extends Layer {
   public readonly unroll: boolean;
 
   public stateSpec: InputSpec[];
-  public states: Tensor[];
+  private states_: Tensor[];
 
   // NOTE(cais): For stateful RNNs, the old states cannot be disposed right
   // away when new states are set, because the old states may need to be used
@@ -427,7 +452,7 @@ export class RNN extends Layer {
     this.supportsMasking = true;
     this.inputSpec = [new InputSpec({ndim: 3})];
     this.stateSpec = null;
-    this.states = null;
+    this.states_ = null;
     // TODO(cais): Add constantsSpec and numConstants.
     this.numConstants = null;
     // TODO(cais): Look into the use of initial_state in the kwargs of the
@@ -439,19 +464,19 @@ export class RNN extends Layer {
   // Porting Note: This is the equivalent of `RNN.states` property getter in
   //   PyKeras.
   getStates(): Tensor[] {
-    if (this.states == null) {
+    if (this.states_ == null) {
       const numStates =
           Array.isArray(this.cell.stateSize) ? this.cell.stateSize.length : 1;
       return math_utils.range(0, numStates).map(x => null);
     } else {
-      return this.states;
+      return this.states_;
     }
   }
 
   // Porting Note: This is the equivalent of the `RNN.states` property setter in
   //   PyKeras.
   setStates(states: Tensor[]): void {
-    this.states = states;
+    this.states_ = states;
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
@@ -486,17 +511,43 @@ export class RNN extends Layer {
 
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor
       |Tensor[] {
-    if (Array.isArray(mask)) {
-      mask = mask[0];
-    }
-    const outputMask = this.returnSequences ? mask : null;
+    return tfc.tidy(() => {
+      if (Array.isArray(mask)) {
+        mask = mask[0];
+      }
+      const outputMask = this.returnSequences ? mask : null;
 
-    if (this.returnState) {
-      const stateMask = this.states.map(s => null);
-      return [outputMask].concat(stateMask);
+      if (this.returnState) {
+        const stateMask = this.states.map(s => null);
+        return [outputMask].concat(stateMask);
+      } else {
+        return outputMask;
+      }
+    });
+  }
+
+  /**
+   * Get the current state tensors of the RNN.
+   *
+   * If the state hasn't been set, return an array of `null`s of the correct
+   * length.
+   */
+  get states(): Tensor[] {
+    if (this.states_ == null) {
+      const numStates = Array.isArray(this.cell.stateSize) ?
+          this.cell.stateSize.length : 1;
+      const output: Tensor[] = [];
+      for (let i = 0; i < numStates; ++i) {
+        output.push(null);
+      }
+      return output;
     } else {
-      return outputMask;
+      return this.states_;
     }
+  }
+
+  set states(s: Tensor[]) {
+    this.states_ = s;
   }
 
   public build(inputShape: Shape|Shape[]): void {
@@ -587,16 +638,16 @@ export class RNN extends Layer {
             'passing a `batchShape` option to your Input layer.');
       }
       // Initialize state if null.
-      if (this.states == null) {
+      if (this.states_ == null) {
         if (Array.isArray(this.cell.stateSize)) {
-          this.states =
+          this.states_ =
               this.cell.stateSize.map(dim => tfc.zeros([batchSize, dim]));
         } else {
-          this.states = [tfc.zeros([batchSize, this.cell.stateSize])];
+          this.states_ = [tfc.zeros([batchSize, this.cell.stateSize])];
         }
       } else if (states == null) {
         // Dispose old state tensors.
-        tfc.dispose(this.states);
+        tfc.dispose(this.states_);
         // For stateful RNNs, fully dispose kept old states.
         if (this.keptStates != null) {
           tfc.dispose(this.keptStates);
@@ -604,18 +655,18 @@ export class RNN extends Layer {
         }
 
         if (Array.isArray(this.cell.stateSize)) {
-          this.states =
+          this.states_ =
               this.cell.stateSize.map(dim => tfc.zeros([batchSize, dim]));
         } else {
-          this.states[0] = tfc.zeros([batchSize, this.cell.stateSize]);
+          this.states_[0] = tfc.zeros([batchSize, this.cell.stateSize]);
         }
       } else {
         if (!Array.isArray(states)) {
           states = [states];
         }
-        if (states.length !== this.states.length) {
+        if (states.length !== this.states_.length) {
           throw new ValueError(
-              `Layer ${this.name} expects ${this.states.length} state(s), ` +
+              `Layer ${this.name} expects ${this.states_.length} state(s), ` +
               `but it received ${states.length} state value(s). Input ` +
               `received: ${states}`);
         }
@@ -625,12 +676,12 @@ export class RNN extends Layer {
           // the next no-arg call to this method. We do not dispose the old
           // states immediately because that BPTT (among other things) require
           // them.
-          this.keptStates.push(this.states.slice());
+          this.keptStates.push(this.states_.slice());
         } else {
-          tfc.dispose(this.states);
+          tfc.dispose(this.states_);
         }
 
-        for (let index = 0; index < this.states.length; ++index) {
+        for (let index = 0; index < this.states_.length; ++index) {
           const value = states[index];
           const dim = Array.isArray(this.cell.stateSize) ?
               this.cell.stateSize[index] :
@@ -642,10 +693,10 @@ export class RNN extends Layer {
                 `expected shape=${expectedShape}, received shape=${
                     value.shape}`);
           }
-          this.states[index] = value;
+          this.states_[index] = value;
         }
       }
-      this.states.forEach(state => tfc.keep(state));
+      this.states_.forEach(state => tfc.keep(state));
     });
   }
 
@@ -715,7 +766,7 @@ export class RNN extends Layer {
     // Note that the .build() method of subclasses **must** define
     // this.inputSpec and this.stateSpec owith complete input shapes.
     return tidy(() => {
-      const mask = kwargs == null ? null : kwargs['mask'];
+      const mask = kwargs == null ? null : kwargs['mask'] as Tensor;
       const training = kwargs == null ? null : kwargs['training'];
       let initialState: Tensor[] =
           kwargs == null ? null : kwargs['initialState'];
@@ -723,14 +774,10 @@ export class RNN extends Layer {
       inputs = getExactlyOneTensor(inputs);
       if (initialState == null) {
         if (this.stateful) {
-          initialState = this.states;
+          initialState = this.states_;
         } else {
           initialState = this.getInitialState(inputs);
         }
-      }
-
-      if (mask != null) {
-        throw new NotImplementedError('Masking is not implemented for RNN yet');
       }
 
       const numStates =
@@ -758,10 +805,9 @@ export class RNN extends Layer {
       };
 
       // TODO(cais): Add support for constants.
-      // TODO(cais): Add support for masks.
 
       const rnnOutputs =
-          rnn(step, inputs, initialState, this.goBackwards, null, null,
+          rnn(step, inputs, initialState, this.goBackwards, mask, null,
               this.unroll, this.returnSequences);
       const lastOutput = rnnOutputs[0];
       const outputs = rnnOutputs[1];
@@ -817,6 +863,13 @@ export class RNN extends Layer {
       return this.cell.weights;
     }
     return this.cell.nonTrainableWeights;
+  }
+
+  setFastWeightInitDuringBuild(value: boolean) {
+    super.setFastWeightInitDuringBuild(value);
+    if (this.cell != null) {
+      this.cell.setFastWeightInitDuringBuild(value);
+    }
   }
 
   getConfig(): serialization.ConfigDict {
