@@ -380,7 +380,7 @@ export function randomNormal(
  * @return Result of the dot operation.
  */
 export function dot(
-    x: Tensor, y: Tensor, activation?: tfc.fused.FusableActivation,
+    x: Tensor, y: Tensor, activation = tfc.fused.FusableActivation.LINEAR,
     bias?: Tensor): Tensor {
   const {kernelKey} = tfc.fused.activationMap.get(activation);
   if ((x.rank < 2) || (y.rank < 2)) {
@@ -403,7 +403,7 @@ export function dot(
   if ((x.rank === 2) && (y.rank === 2)) {
     return tfc.fused.matMul(
         x as Tensor2D, y as Tensor2D, false, false, kernelKey,
-        reshapeBias(x.rank, bias, imageDataFormat()));
+        bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null);
   } else {
     // Reshape x into the analogous 2D Tensor.
     const xFirstDims = x.shape.slice();  // Holds all but the last dim of x.
@@ -433,7 +433,7 @@ export function dot(
     return tfc.fused
         .matMul(
             x as Tensor2D, y as Tensor2D, false, false, kernelKey,
-            reshapeBias(x.rank, bias, imageDataFormat()))
+            bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null)
         .reshape(outputShape);
   }
 }
