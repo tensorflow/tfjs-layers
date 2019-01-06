@@ -35,6 +35,7 @@ function createDenseModel(): tfl.Model {
 }
 
 describeMathCPUAndGPU('Model.fitDataset', () => {
+// describeMathCPUAndGPU('Model.fitDataset', () => {
   // Reference Python tf.keras code:
   //
   // ```py

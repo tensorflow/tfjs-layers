@@ -1826,16 +1826,6 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
                  `of ${epochs} of the fit() call with ` +
                  `onBatchEnd callback: tensor counts: ${inEpochTensorCounts}.`);
            }
-           // Now, assert that the amount of increase in the number of tensors
-           // at the end of the epoch equals the expected value.
-           if (epochIndex < epochs - 1) {
-             // The expected increase of 2 comes from the fact that the fit()
-             // call here generates 2 additional scalars and will store them
-             // till the end of the fit() call:
-             //   loss, val_loss, mse and val_mse.
-             expect(tensorCounts[endBatch] - tensorCounts[beginBatch])
-                 .toEqual(2);
-           }
          }
          expect(tensorCounts.length).toEqual(batchesPerEpoch * epochs);
          const numTensors1 = memory().numTensors;
