@@ -196,7 +196,6 @@ export class CallbackList {
       // numbers if and only if custom callbacks exist.
       await resolveScalarsInLogs(logs);
     }
-    // }
     for (const callback of this.callbacks) {
       await callback.onBatchEnd(batch, logs);
     }
