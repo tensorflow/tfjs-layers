@@ -18,6 +18,7 @@ import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimiz
 import * as K from '../backend/tfjs_backend';
 import {CustomCallback, CustomCallbackConfig, ModelTrainingYielder, Params} from '../base_callbacks';
 import * as tfl from '../index';
+import * as baseCallbacks from '../logs';
 import {Logs, UnresolvedLogs} from '../logs';
 import {Regularizer} from '../regularizers';
 import {Kwargs} from '../types';
@@ -2014,6 +2015,20 @@ describeMathGPU('Model.fit: yieldEvery', () => {
     // Due to yieldEvery = 'never', no `await nextFrame()` call should have
     // happened.
     expect(nextFrameCallCount).toEqual(0);
+  });
+
+  it('resolveScalarInLogs is not called if no custom callbacks', async () => {
+    const inputSize = 1;
+    const numExamples = 10;
+    const batchSize = 2;
+    const epochs = 2;
+    const model = createDummyModel(inputSize);
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+
+    const spy = spyOn(baseCallbacks, 'resolveScalarsInLogs').and.callThrough();
+    await model.fit(xs, ys, {epochs, batchSize, yieldEvery: 'never'});
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 
