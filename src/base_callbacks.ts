@@ -179,7 +179,11 @@ export class CallbackList {
     if (logs == null) {
       logs = {};
     }
-    await resolveScalarsInLogs(logs);
+    // DEBUG
+    // console.log(`this.callbacks.length = ${this.callbacks.length}`);
+    if (this.callbacks.length > 2) {  // TODO(cais): Register instead of count.
+      await resolveScalarsInLogs(logs);
+    }
     for (const callback of this.callbacks) {
       await callback.onBatchEnd(batch, logs);
     }
