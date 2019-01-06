@@ -90,6 +90,8 @@ export class CallbackList {
   callbacks: BaseCallback[];
   queueLength: number;
 
+  private hasCustomCallbacks: boolean;
+
   // TODO(cais): When the need arises, uncomment the following lines and
   // implement the queue for time values.
   // private deltaTBatch: number;
@@ -108,12 +110,19 @@ export class CallbackList {
     if (callbacks == null) {
       callbacks = [];
     }
-    this.callbacks = callbacks;
     this.queueLength = queueLength;
+    this.hasCustomCallbacks = false;
+    this.callbacks = [];
+    for (const callback of callbacks) {
+      this.append(callback);
+    }
   }
 
   append(callback: BaseCallback): void {
     this.callbacks.push(callback);
+    if (!(callback instanceof BaseLogger || callback instanceof History)) {
+      this.hasCustomCallbacks = true;
+    }
   }
 
   setParams(params: Params): void {
@@ -179,11 +188,15 @@ export class CallbackList {
     if (logs == null) {
       logs = {};
     }
-    // DEBUG
-    // console.log(`this.callbacks.length = ${this.callbacks.length}`);
-    if (this.callbacks.length > 2) {  // TODO(cais): Register instead of count.
+    if (this.hasCustomCallbacks) {
+      // Built-in callbacks are able to perform operations on
+      // loss and metric values as `tf.Scalar`s. But non-built-in (i.e., custom)
+      // callbacks must be fed loss and metric values as plain numbers, which
+      // is why we use `resolveScalarsInLogs()` to convert the `tf.Scalar`s to
+      // numbers if and only if custom callbacks exist.
       await resolveScalarsInLogs(logs);
     }
+    // }
     for (const callback of this.callbacks) {
       await callback.onBatchEnd(batch, logs);
     }
