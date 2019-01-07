@@ -41,7 +41,6 @@ async function runBenchmark(artifactsDir, modelName, config) {
   if (benchmarkData.train_epochs > 0) {
     const optimizer =
         optimizerMap[benchmarkData.optimizer] || benchmarkData.optimizer;
-    console.log('optimizer=', optimizer);  // DEBUG
     model.compile({
       optimizer,
       loss: lossMap[benchmarkData.loss],
