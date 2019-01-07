@@ -89,7 +89,7 @@ describeMathCPUAndGPU('PReLU: Tensor', () => {
     expectTensorsClose(y, tensor2d([[-100, -200], [0, 300], [200, 200]]));
   });
 
-  it('Training', async () => {
+  it('Training: no sharedAxes', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
@@ -135,7 +135,7 @@ describeMathCPUAndGPU('PReLU: Tensor', () => {
   // print(history.history)
   // print(model.get_weights()[2])
   // ```
-  it('Training', async () => {
+  it('Training: with sharedAxes', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,

@@ -153,7 +153,7 @@ export interface PReLULayerConfig extends LayerConfig {
    * convolution with output shape `[numExamples, height, width, channels]`,
    * and you wish to share parameters across space (height and width) so that
    * each filter channels has only one set of parameters, set
-   * `shared_axes: =[1, 2]`.
+   * `shared_axes: [1, 2]`.
    */
   sharedAxes?: number|number[];
 }
