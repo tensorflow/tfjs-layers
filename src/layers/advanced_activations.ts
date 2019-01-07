@@ -249,6 +249,7 @@ export class PReLU extends Layer {
     return config;
   }
 }
+serialization.registerClass(PReLU);
 
 export interface ELULayerConfig extends LayerConfig {
   /**
