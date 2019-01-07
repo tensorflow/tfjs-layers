@@ -92,7 +92,7 @@ export function leakyReLU(config?: LeakyReLULayerConfig): Layer {
  *   configParamIndices: [0]
  * }
  */
-export function pReLU(config?: PReLULayerConfig): Layer {
+export function prelu(config?: PReLULayerConfig): Layer {
   return new PReLU(config);
 }
 

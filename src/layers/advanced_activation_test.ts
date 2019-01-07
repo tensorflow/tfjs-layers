@@ -55,35 +55,35 @@ describeMathCPUAndGPU('ReLU: Tensor', () => {
 
 describeMathCPU('PReLU: Symbolic', () => {
   it('Correct output shape: no-arg constructor', () => {
-    const layer = tfl.layers.pReLU();
+    const layer = tfl.layers.prelu();
     const x = new tfl.SymbolicTensor('float32', [2, 3, 4], null, null, null);
     const y = layer.apply(x) as tfl.SymbolicTensor;
     expect(y.shape).toEqual(x.shape);
   });
 
   it('Correct output shape: constructor with arg', () => {
-    const layer = tfl.layers.pReLU({});
+    const layer = tfl.layers.prelu({});
     const x = new tfl.SymbolicTensor('float32', [2, 3, 4], null, null, null);
     const y = layer.apply(x) as tfl.SymbolicTensor;
     expect(y.shape).toEqual(x.shape);
   });
 
   it('Serialization round trip', () => {
-    const layer = tfl.layers.pReLU({
+    const layer = tfl.layers.prelu({
       alphaInitializer: 'ones',
       sharedAxes: [1, 2]
     });
     const pythonicConfig = convertTsToPythonic(layer.getConfig());
     // tslint:disable-next-line:no-any
     const tsConfig = convertPythonicToTs(pythonicConfig) as any;
-    const layerPrime = tfl.layers.pReLU(tsConfig);
+    const layerPrime = tfl.layers.prelu(tsConfig);
     expect(layerPrime.getConfig().sharedAxes).toEqual([1, 2]);
   });
 });
 
 describeMathCPUAndGPU('PReLU: Tensor', () => {
   it('Forward pass', () => {
-    const layer = tfl.layers.pReLU({alphaInitializer: 'ones'});
+    const layer = tfl.layers.prelu({alphaInitializer: 'ones'});
     const x = tensor2d([[-100, -200], [0, 300], [200, 200]]);
     const y = layer.apply(x) as Tensor;
     expectTensorsClose(y, tensor2d([[-100, -200], [0, 300], [200, 200]]));
@@ -96,7 +96,7 @@ describeMathCPUAndGPU('PReLU: Tensor', () => {
       kernelInitializer: 'ones',
       inputShape: [4]
     }));
-    model.add(tfl.layers.pReLU({alphaInitializer: 'ones'}));
+    model.add(tfl.layers.prelu({alphaInitializer: 'ones'}));
     model.add(tfl.layers.dense({units: 1, kernelInitializer: 'ones'}));
     model.compile({
       optimizer: 'sgd',
@@ -142,7 +142,7 @@ describeMathCPUAndGPU('PReLU: Tensor', () => {
       kernelInitializer: 'ones',
       inputShape: [4]
     }));
-    model.add(tfl.layers.pReLU({alphaInitializer: 'ones'}));
+    model.add(tfl.layers.prelu({alphaInitializer: 'ones'}));
     model.add(tfl.layers.dense({units: 1, kernelInitializer: 'ones'}));
     model.compile({
       optimizer: 'sgd',
@@ -188,7 +188,7 @@ describeMathCPUAndGPU('PReLU: Tensor', () => {
       kernelInitializer: 'ones',
       inputShape: [2, 2]
     }));
-    model.add(tfl.layers.pReLU({
+    model.add(tfl.layers.prelu({
       alphaInitializer: 'ones',
       sharedAxes: [1]
     }));
