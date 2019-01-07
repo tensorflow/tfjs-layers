@@ -57,16 +57,16 @@ export type NamedTensorMap = {
  * converted to a ConfigDict that has renamed fields (TS naming conventions)
  * and support for Enums.
  */
-export type JsonValue = boolean|number|string|null|JsonArray|JsonDict;
-export interface JsonDict {
-  [key: string]: JsonValue;
+export type PyJsonValue = boolean|number|string|null|PyJsonArray|PyJsonDict;
+export interface PyJsonDict {
+  [key: string]: PyJsonValue;
 }
-export interface JsonArray extends Array<JsonValue> {}
+export interface PyJsonArray extends Array<PyJsonValue> {}
 
 /**
  * Type representing a loosely-typed bundle of keyword arguments.
  *
- * This is a looser type than JsonDict/serialization.ConfigDict as it
+ * This is a looser type than PyJsonDict/serialization.ConfigDict as it
  * can contain arbitrary objects as its values.  It is most appropriate
  * for functions that pass through keyword arguments to other functions
  * without knowledge of the structure.  If the function can place type
