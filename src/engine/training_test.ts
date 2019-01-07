@@ -18,7 +18,7 @@ import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimiz
 import * as K from '../backend/tfjs_backend';
 import {CustomCallback, CustomCallbackConfig, ModelTrainingYielder, Params} from '../base_callbacks';
 import * as tfl from '../index';
-import * as baseCallbacks from '../logs';
+import * as logs from '../logs';
 import {Logs, UnresolvedLogs} from '../logs';
 import {Regularizer} from '../regularizers';
 import {Kwargs} from '../types';
@@ -2026,7 +2026,7 @@ describeMathGPU('Model.fit: yieldEvery', () => {
     const xs = ones([numExamples, inputSize]);
     const ys = ones([numExamples, 1]);
 
-    const spy = spyOn(baseCallbacks, 'resolveScalarsInLogs').and.callThrough();
+    const spy = spyOn(logs, 'resolveScalarsInLogs').and.callThrough();
     await model.fit(xs, ys, {epochs, batchSize, yieldEvery: 'never'});
     expect(spy).not.toHaveBeenCalled();
   });
