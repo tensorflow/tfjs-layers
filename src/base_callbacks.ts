@@ -108,9 +108,8 @@ export class CallbackList {
     if (callbacks == null) {
       callbacks = [];
     }
+    this.callbacks = callbacks;
     this.queueLength = queueLength;
-    this.callbacks = [];
-    callbacks.forEach(callback => this.append(callback));
   }
 
   append(callback: BaseCallback): void {
