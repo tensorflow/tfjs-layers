@@ -24,7 +24,7 @@ export abstract class Regularizer extends serialization.Serializable {
   abstract apply(x: Tensor): Scalar;
 }
 
-export interface Args {
+export interface L1L2Args {
   /** L1 regularization rate. Defaults to 0.01. */
   l1?: number;
   /** L2 regularization rate. Defaults to 0.01. */
@@ -55,7 +55,7 @@ export class L1L2 extends Regularizer {
   private readonly l2: Scalar;
   private readonly hasL1: boolean;
   private readonly hasL2: boolean;
-  constructor(args?: Args) {
+  constructor(args?: L1L2Args) {
     super();
 
     const l1 = args == null || args.l1 == null ? 0.01 : args.l1;

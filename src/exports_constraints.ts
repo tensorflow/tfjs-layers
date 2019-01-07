@@ -7,7 +7,7 @@
  * https://opensource.org/licenses/MIT.
  * =============================================================================
  */
-// tslint:disable-next-line:max-line-lengthMinMaxNormArgs
+// tslint:disable-next-line:max-line-length
 import {Constraint, MaxNorm, MaxNormArgs, MinMaxNorm, MinMaxNormArgs, NonNeg, UnitNorm, UnitNormArgs} from './constraints';
 
 /**

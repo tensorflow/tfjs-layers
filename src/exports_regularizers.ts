@@ -9,7 +9,7 @@
  */
 import * as regularizers from './regularizers';
 // tslint:disable-next-line:max-line-length
-import {Args, L1Args, L1L2, L2Args, Regularizer} from './regularizers';
+import {L1Args, L1L2, L1L2Args, L2Args, Regularizer} from './regularizers';
 
 /**
  * @doc {
@@ -19,7 +19,7 @@ import {Args, L1Args, L1L2, L2Args, Regularizer} from './regularizers';
  *   configParamIndices: [0]
  * }
  */
-export function l1l2(config?: Args): Regularizer {
+export function l1l2(config?: L1L2Args): Regularizer {
   return new L1L2(config);
 }
 
