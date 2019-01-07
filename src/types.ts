@@ -49,18 +49,40 @@ export type NamedTensorMap = {
 };
 
 /**
- * Types to support JSON.
+ * A value within the JSON-serialized form of a serializable object.
+ *
+ * The keys of any nested dicts should be in snake_case (i.e., using Python
+ * naming conventions) for compatibility with Python Keras.
+ *
+ * @see PyJsonDict
+ */
+export type PyJsonValue = boolean|number|string|null|PyJsonArray|PyJsonDict;
+
+/**
+ * A key-value dict within the JSON-serialized form of a serializable object.
  *
  * Serialization/deserialization uses stringified-JSON as the storage
  * representation. Typically this should be used for materialized JSON
- * stored on disk/received over the wire.  Internally this is normally
- * converted to a ConfigDict that has renamed fields (TS naming conventions)
- * and support for Enums.
+ * stored on disk or sent/received over the wire.
+ *
+ * The keys of this dict and of any nested dicts should be in snake_case (i.e.,
+ * using Python naming conventions) for compatibility with Python Keras.
+ *
+ * Internally this is normally converted to a ConfigDict that has CamelCase keys
+ * (using TypeScript naming conventions) and support for Enums.
  */
-export type PyJsonValue = boolean|number|string|null|PyJsonArray|PyJsonDict;
 export interface PyJsonDict {
   [key: string]: PyJsonValue;
 }
+
+/**
+ * An array of values within the JSON-serialized form of a serializable object.
+ *
+ * The keys of any nested dicts should be in snake_case (i.e., using Python
+ * naming conventions) for compatibility with Python Keras.
+ *
+ * @see PyJsonDict
+ */
 export interface PyJsonArray extends Array<PyJsonValue> {}
 
 /**
