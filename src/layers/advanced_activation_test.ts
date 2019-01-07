@@ -89,34 +89,6 @@ describeMathCPUAndGPU('PReLU: Tensor', () => {
     expectTensorsClose(y, tensor2d([[-100, -200], [0, 300], [200, 200]]));
   });
 
-  it('Training: no sharedAxes', async () => {
-    const model = tfl.sequential();
-    model.add(tfl.layers.dense({
-      units: 3,
-      kernelInitializer: 'ones',
-      inputShape: [4]
-    }));
-    model.add(tfl.layers.prelu({alphaInitializer: 'ones'}));
-    model.add(tfl.layers.dense({units: 1, kernelInitializer: 'ones'}));
-    model.compile({
-      optimizer: 'sgd',
-      loss: 'meanSquaredError'
-    });
-
-    const xs = ones([2, 4]).neg();
-    const ys = zeros([2, 1]);
-    const history = await model.fit(xs, ys, {
-      batchSize: 2,
-      epochs: 3
-    });
-    expect(history.history.loss.length).toEqual(3);
-    expect(history.history.loss[0]).toBeCloseTo(144);
-    expect(history.history.loss[1]).toBeCloseTo(0.051329);
-    expect(history.history.loss[2]).toBeCloseTo(0.049144);
-    expectTensorsClose(
-        model.getWeights()[2], tensor1d([0.0410104, 0.0410104, 0.0410104]));
-  });
-
   // Reference Python code:
   // ```py
   // import keras
@@ -135,7 +107,7 @@ describeMathCPUAndGPU('PReLU: Tensor', () => {
   // print(history.history)
   // print(model.get_weights()[2])
   // ```
-  it('Training: with sharedAxes', async () => {
+  it('Training: no sharedAxes', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
