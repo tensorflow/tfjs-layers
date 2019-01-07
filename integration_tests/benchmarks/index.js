@@ -39,8 +39,11 @@ async function runBenchmark(artifactsDir, modelName, config) {
   const [xs, ys] = getRandomInputsAndOutputs(model, benchmarkData.batch_size);
 
   if (benchmarkData.train_epochs > 0) {
+    const optimizer =
+        optimizerMap[benchmarkData.optimizer] || benchmarkData.optimizer;
+    console.log('optimizer=', optimizer);  // DEBUG
     model.compile({
-      optimizer: optimizerMap[benchmarkData.optimizer],
+      optimizer,
       loss: lossMap[benchmarkData.loss],
     });
   }
