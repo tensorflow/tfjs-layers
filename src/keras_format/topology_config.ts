@@ -11,7 +11,7 @@
 import {DataType, Shape} from './types';
 
 /** Constructor arguments for Layer. */
-export interface LayerPrimitiveArgs {
+export interface LayerBaseConfig {
   /**
    * If defined, will be used to create an input layer to insert before this
    * layer. If both `inputShape` and `batchInputShape` are defined,
@@ -48,4 +48,4 @@ export interface LayerPrimitiveArgs {
   inputDType?: DataType;
 }
 
-export type LayerConfig = LayerPrimitiveArgs;
+export type LayerConfig = LayerBaseConfig;
