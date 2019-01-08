@@ -14,24 +14,11 @@ import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
 import {NotImplementedError, ValueError} from './errors';
+import {checkDistribution, checkFanMode, ConstantPrimitiveArgs, Distribution, FanMode, IdentityPrimitiveArgs, OrthogonalPrimitiveArgs, RandomNormalPrimitiveArgs, RandomUniformPrimitiveArgs, SeedOnlyInitializerPrimitiveArgs, TruncatedNormalPrimitiveArgs, VarianceScalingPrimitiveArgs} from './keras_format/initializer_config';
 import {Shape} from './types';
-import {checkStringTypeUnionValue, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
+import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
 
-
-/** @docinline */
-export type FanMode = 'fanIn'|'fanOut'|'fanAvg';
-export const VALID_FAN_MODE_VALUES = ['fanIn', 'fanOut', 'fanAvg'];
-export function checkFanMode(value?: string): void {
-  checkStringTypeUnionValue(VALID_FAN_MODE_VALUES, 'FanMode', value);
-}
-
-/** @docinline */
-export type Distribution = 'normal'|'uniform';
-export const VALID_DISTRIBUTION_VALUES = ['normal', 'uniform'];
-export function checkDistribution(value?: string): void {
-  checkStringTypeUnionValue(VALID_DISTRIBUTION_VALUES, 'Distribution', value);
-}
 
 /**
  * Initializer base class.
@@ -80,10 +67,7 @@ export class Ones extends Initializer {
 }
 serialization.registerClass(Ones);
 
-export interface ConstantArgs {
-  /** The value for each element in the variable. */
-  value: number;
-}
+export type ConstantArgs = ConstantPrimitiveArgs;
 
 /**
  * Initializer that generates values initialized to some constant.
@@ -115,14 +99,7 @@ export class Constant extends Initializer {
 }
 serialization.registerClass(Constant);
 
-export interface RandomUniformArgs {
-  /** Lower bound of the range of random values to generate. */
-  minval?: number;
-  /** Upper bound of the range of random values to generate. */
-  maxval?: number;
-  /** Used to seed the random generator. */
-  seed?: number;
-}
+export type RandomUniformArgs = RandomUniformPrimitiveArgs;
 
 /**
  * Initializer that generates random values initialized to a uniform
@@ -156,14 +133,7 @@ export class RandomUniform extends Initializer {
 }
 serialization.registerClass(RandomUniform);
 
-export interface RandomNormalArgs {
-  /** Mean of the random values to generate. */
-  mean?: number;
-  /** Standard deviation of the random values to generate. */
-  stddev?: number;
-  /** Used to seed the random generator. */
-  seed?: number;
-}
+export type RandomNormalArgs = RandomNormalPrimitiveArgs;
 
 /**
  * Initializer that generates random values initialized to a normal
@@ -200,14 +170,7 @@ export class RandomNormal extends Initializer {
 }
 serialization.registerClass(RandomNormal);
 
-export interface TruncatedNormalArgs {
-  /** Mean of the random values to generate. */
-  mean?: number;
-  /** Standard deviation of the random values to generate. */
-  stddev?: number;
-  /** Used to seed the random generator. */
-  seed?: number;
-}
+export type TruncatedNormalArgs = TruncatedNormalPrimitiveArgs;
 
 /**
  * Initializer that generates random values initialized to a truncated normal.
@@ -248,12 +211,7 @@ export class TruncatedNormal extends Initializer {
 }
 serialization.registerClass(TruncatedNormal);
 
-export interface IdentityArgs {
-  /**
-   * Multiplicative factor to apply to the identity matrix.
-   */
-  gain?: number;
-}
+export type IdentityArgs = IdentityPrimitiveArgs;
 
 /**
  * Initializer that generates the identity matrix.
@@ -320,20 +278,7 @@ function computeFans(
   return [fanIn, fanOut];
 }
 
-export interface VarianceScalingArgs {
-  /** Scaling factor (positive float). */
-  scale: number;
-
-  /** Fanning mode for inputs and outputs. */
-  mode: FanMode;
-
-  /** Probabilistic distribution of the values. */
-  distribution: Distribution;
-
-  /** Random number generator seed. */
-  seed?: number;
-}
-
+export type VarianceScalingArgs = VarianceScalingPrimitiveArgs;
 
 /**
  * Initializer capable of adapting its scale to the shape of weights.
@@ -409,10 +354,7 @@ export class VarianceScaling extends Initializer {
 }
 serialization.registerClass(VarianceScaling);
 
-export interface SeedOnlyInitializerArgs {
-  /** Random number generator seed. */
-  seed?: number;
-}
+export type SeedOnlyInitializerArgs = SeedOnlyInitializerPrimitiveArgs;
 
 /**
  * Glorot uniform initializer, also called Xavier uniform initializer.
@@ -555,12 +497,7 @@ export class LeCunNormal extends VarianceScaling {
 }
 serialization.registerClass(LeCunNormal);
 
-export interface OrthogonalArgs extends SeedOnlyInitializerArgs {
-  /**
-   * Multiplicative factor to apply to the orthogonal matrix. Defaults to 1.
-   */
-  gain?: number;
-}
+export type OrthogonalArgs = OrthogonalPrimitiveArgs;
 
 /**
  * Initializer that generates a random orthogonal matrix.
