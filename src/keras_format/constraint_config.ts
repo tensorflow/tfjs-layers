@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-export interface MaxNormPrimitiveArgs {
+export interface MaxNormBaseConfig {
   /**
    * Maximum norm for incoming weights
    */
@@ -30,9 +30,9 @@ export interface MaxNormPrimitiveArgs {
   axis?: number;
 }
 
-export type MaxNormConfig = MaxNormPrimitiveArgs;
+export type MaxNormConfig = MaxNormBaseConfig;
 
-export interface UnitNormPrimitiveArgs {
+export interface UnitNormBaseConfig {
   /**
    * Axis along which to calculate norms.
    *
@@ -50,9 +50,9 @@ export interface UnitNormPrimitiveArgs {
   axis?: number;
 }
 
-export type UnitNormConfig = UnitNormPrimitiveArgs;
+export type UnitNormConfig = UnitNormBaseConfig;
 
-export interface MinMaxNormPrimitiveArgs {
+export interface MinMaxNormBaseConfig {
   /**
    * Minimum norm for incoming weights
    */
@@ -86,4 +86,4 @@ export interface MinMaxNormPrimitiveArgs {
   rate?: number;
 }
 
-export type MinMaxNormConfig = MinMaxNormPrimitiveArgs;
+export type MinMaxNormConfig = MinMaxNormBaseConfig;
