@@ -11,6 +11,11 @@
 import {checkStringTypeUnionValue} from './validation';
 
 /** @docinline */
+export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
+    'heNormal'|'identity'|'leCunNormal'|'ones'|'orthogonal'|'randomNormal'|
+    'randomUniform'|'truncatedNormal'|'varianceScaling'|'zeros'|string;
+
+/** @docinline */
 export type FanMode = 'fanIn'|'fanOut'|'fanAvg';
 export const VALID_FAN_MODE_VALUES = ['fanIn', 'fanOut', 'fanAvg'];
 export function checkFanMode(value?: string): void {

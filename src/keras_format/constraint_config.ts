@@ -8,6 +8,10 @@
  * =============================================================================
  */
 
+/** @docinline */
+export type ConstraintIdentifier =
+    'maxNorm'|'minMaxNorm'|'nonNeg'|'unitNorm'|string;
+
 export interface MaxNormPrimitiveArgs {
   /**
    * Maximum norm for incoming weights

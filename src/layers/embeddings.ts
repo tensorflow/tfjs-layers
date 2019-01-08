@@ -16,12 +16,15 @@
 import {notEqual, serialization, Tensor, tidy, zerosLike} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
+import {Constraint, getConstraint, serializeConstraint} from '../constraints';
 import {Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
 import {ValueError} from '../errors';
-import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
+import {getInitializer, Initializer, serializeInitializer} from '../initializers';
+import {ConstraintIdentifier} from '../keras_format/constraint_config';
+import {InitializerIdentifier} from '../keras_format/initializer_config';
+import {RegularizerIdentifier} from '../keras_format/regularizer_config';
 import {Shape} from '../keras_format/types';
-import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
+import {getRegularizer, Regularizer, serializeRegularizer} from '../regularizers';
 import {Kwargs} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';

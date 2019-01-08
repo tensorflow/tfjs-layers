@@ -17,7 +17,7 @@ import {Tensor, tensor4d, Tensor4D} from '@tensorflow/tfjs-core';
 
 import {DataFormat, PaddingMode} from '../common';
 import * as tfl from '../index';
-import {InitializerIdentifier} from '../initializers';
+import {InitializerIdentifier} from '../keras_format/initializer_config';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 

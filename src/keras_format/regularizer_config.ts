@@ -8,6 +8,9 @@
  * =============================================================================
  */
 
+/** @docinline */
+export type RegularizerIdentifier = 'l1l2'|string;
+
 export interface L1L2PrimitiveArgs {
   /** L1 regularization rate. Defaults to 0.01. */
   l1?: number;

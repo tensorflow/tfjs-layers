@@ -15,7 +15,7 @@ import {abs, add, Scalar, serialization, sum, Tensor, tidy, zeros} from '@tensor
 
 import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
-import {L1L2PrimitiveArgs, L1PrimitiveArgs, L2PrimitiveArgs} from './keras_format/regularizer_config';
+import {L1L2PrimitiveArgs, L1PrimitiveArgs, L2PrimitiveArgs, RegularizerIdentifier} from './keras_format/regularizer_config';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 
 /**
@@ -108,9 +108,6 @@ export function l1(args?: L1Args) {
 export function l2(args: L2Args) {
   return new L1L2({l2: args != null ? args.l2 : null, l1: 0});
 }
-
-/** @docinline */
-export type RegularizerIdentifier = 'l1l2'|string;
 
 // Maps the JavaScript-like identifier keys to the corresponding keras symbols.
 export const REGULARIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:

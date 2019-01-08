@@ -14,7 +14,7 @@ import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
 import {NotImplementedError, ValueError} from './errors';
-import {checkDistribution, checkFanMode, ConstantPrimitiveArgs, Distribution, FanMode, IdentityPrimitiveArgs, OrthogonalPrimitiveArgs, RandomNormalPrimitiveArgs, RandomUniformPrimitiveArgs, SeedOnlyInitializerPrimitiveArgs, TruncatedNormalPrimitiveArgs, VarianceScalingPrimitiveArgs} from './keras_format/initializer_config';
+import {checkDistribution, checkFanMode, ConstantPrimitiveArgs, Distribution, FanMode, IdentityPrimitiveArgs, InitializerIdentifier, OrthogonalPrimitiveArgs, RandomNormalPrimitiveArgs, RandomUniformPrimitiveArgs, SeedOnlyInitializerPrimitiveArgs, TruncatedNormalPrimitiveArgs, VarianceScalingPrimitiveArgs} from './keras_format/initializer_config';
 import {Shape} from './keras_format/types';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
@@ -555,11 +555,6 @@ export class Orthogonal extends Initializer {
   }
 }
 serialization.registerClass(Orthogonal);
-
-/** @docinline */
-export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
-    'heNormal'|'identity'|'leCunNormal'|'ones'|'orthogonal'|'randomNormal'|
-    'randomUniform'|'truncatedNormal'|'varianceScaling'|'zeros'|string;
 
 // Maps the JavaScript-like identifier keys to the corresponding registry
 // symbols.

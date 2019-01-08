@@ -16,12 +16,15 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, tidy, util} from '@tensorflow/tfjs-core';
 
 import {getScalar} from '../backend/state';
-import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
+import {Constraint, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
+import {getInitializer, Initializer, serializeInitializer} from '../initializers';
+import {ConstraintIdentifier} from '../keras_format/constraint_config';
+import {InitializerIdentifier} from '../keras_format/initializer_config';
+import {RegularizerIdentifier} from '../keras_format/regularizer_config';
 import {Shape} from '../keras_format/types';
-import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
+import {getRegularizer, Regularizer, serializeRegularizer} from '../regularizers';
 import {Kwargs} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';

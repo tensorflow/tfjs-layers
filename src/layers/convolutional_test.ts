@@ -17,7 +17,7 @@ import {scalar, Tensor, tensor1d, tensor3d, Tensor4D, tensor4d, util} from '@ten
 
 import {DataFormat, PaddingMode} from '../common';
 import * as tfl from '../index';
-import {InitializerIdentifier} from '../initializers';
+import {InitializerIdentifier} from '../keras_format/initializer_config';
 import {Shape} from '../keras_format/types';
 import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 

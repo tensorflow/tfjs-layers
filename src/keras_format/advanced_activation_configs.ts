@@ -8,13 +8,9 @@
  * =============================================================================
  */
 
-import {ConstraintIdentifier} from '../constraints';
-import {InitializerIdentifier} from '../initializers';
-import {RegularizerIdentifier} from '../regularizers';
-
-import {ConstraintConfig} from './constraint_config';
-import {InitializerConfig} from './initializer_config';
-import {RegularizerConfig} from './regularizer_config';
+import {ConstraintConfig, ConstraintIdentifier} from './constraint_config';
+import {InitializerConfig, InitializerIdentifier} from './initializer_config';
+import {RegularizerConfig, RegularizerIdentifier} from './regularizer_config';
 import {LayerConfig, LayerPrimitiveArgs} from './topology_config';
 
 export interface ReLULayerPrimitiveArgs extends LayerPrimitiveArgs {

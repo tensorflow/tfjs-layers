@@ -17,7 +17,7 @@ import {mul, ones, scalar, Tensor, tensor2d, tensor3d, tensor4d, zeros} from '@t
 import {ActivationIdentifier} from '../activations';
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
-import {InitializerIdentifier} from '../initializers';
+import {InitializerIdentifier} from '../keras_format/initializer_config';
 import {pyListRepeat} from '../utils/generic_utils';
 import {arrayProd} from '../utils/math_utils';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
@@ -625,18 +625,21 @@ describe('Permute Layer: Symbolic', () => {
   });
 
   it('Non-consecutive dims values leads to Error', () => {
-    expect(() => tfl.layers.permute({dims: [1, 3]}))
-        .toThrowError(/Invalid permutation .*dims/);
+    expect(() => tfl.layers.permute({
+      dims: [1, 3]
+    })).toThrowError(/Invalid permutation .*dims/);
   });
 
   it('Repeating dims values leads to Error', () => {
-    expect(() => tfl.layers.permute({dims: [1, 1, 3]}))
-        .toThrowError(/Invalid permutation .*dims/);
+    expect(() => tfl.layers.permute({
+      dims: [1, 1, 3]
+    })).toThrowError(/Invalid permutation .*dims/);
   });
 
   it('Dims values containing 0 leads to Error', () => {
-    expect(() => tfl.layers.permute({dims: [0, 1, 2]}))
-        .toThrowError(/Invalid permutation .*dims/);
+    expect(() => tfl.layers.permute({
+      dims: [0, 1, 2]
+    })).toThrowError(/Invalid permutation .*dims/);
   });
 
   it('Serialization round-trip', () => {

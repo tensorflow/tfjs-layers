@@ -15,7 +15,7 @@ import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {epsilon} from './backend/common';
 import {getScalar} from './backend/state';
-import {MaxNormPrimitiveArgs, MinMaxNormPrimitiveArgs, UnitNormPrimitiveArgs} from './keras_format/constraint_config';
+import {ConstraintIdentifier, MaxNormPrimitiveArgs, MinMaxNormPrimitiveArgs, UnitNormPrimitiveArgs} from './keras_format/constraint_config';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 
 /**
@@ -167,10 +167,6 @@ export class MinMaxNorm extends Constraint {
   }
 }
 serialization.registerClass(MinMaxNorm);
-
-/** @docinline */
-export type ConstraintIdentifier =
-    'maxNorm'|'minMaxNorm'|'nonNeg'|'unitNorm'|string;
 
 // Maps the JavaScript-like identifier keys to the corresponding registry
 // symbols.
