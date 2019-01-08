@@ -18,7 +18,7 @@ import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {nameScope} from '../common';
-import {InputSpec, Layer, LayerArgs, SymbolicTensor} from '../engine/topology';
+import {InputSpec, Layer, LayerNonSerializableArgs, SymbolicTensor} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {Kwargs, Shape} from '../types';
 import {RegularizerFn, RnnStepFunction} from '../types';
@@ -30,7 +30,8 @@ import {rnn, RNN, standardizeArgs} from './recurrent';
 import {deserialize} from './serialization';
 
 
-export interface WrapperLayerArgs extends LayerArgs {
+export interface WrapperLayerNonSerializableArgs extends
+    LayerNonSerializableArgs {
   /**
    * The layer to be wrapped.
    */
@@ -47,7 +48,7 @@ export interface WrapperLayerArgs extends LayerArgs {
 export abstract class Wrapper extends Layer {
   readonly layer: Layer;
 
-  constructor(args: WrapperLayerArgs) {
+  constructor(args: WrapperLayerNonSerializableArgs) {
     // Porting Note: In PyKeras, `self.layer` is set prior to the calling
     //   `super()`. But we can't do that here due to TypeScript's restriction.
     //   See: https://github.com/Microsoft/TypeScript/issues/8277
@@ -194,7 +195,7 @@ export abstract class Wrapper extends Layer {
  */
 export class TimeDistributed extends Wrapper {
   static className = 'TimeDistributed';
-  constructor(args: WrapperLayerArgs) {
+  constructor(args: WrapperLayerNonSerializableArgs) {
     super(args);
     this.supportsMasking = true;
   }
@@ -261,7 +262,8 @@ export function checkBidirectionalMergeMode(value?: string): void {
       VALID_BIDIRECTIONAL_MERGE_MODES, 'BidirectionalMergeMode', value);
 }
 
-export interface BidirectionalLayerArgs extends WrapperLayerArgs {
+export interface BidirectionalLayerNonSerializableArgs extends
+    WrapperLayerNonSerializableArgs {
   /**
    * The instance of an `RNN` layer to be wrapped.
    */
@@ -285,7 +287,7 @@ export class Bidirectional extends Wrapper {
   private numConstants?: number;
   private _trainable: boolean;
 
-  constructor(args: BidirectionalLayerArgs) {
+  constructor(args: BidirectionalLayerNonSerializableArgs) {
     super(args);
 
     // Note: When creating `this.forwardLayer`, the original Layer object

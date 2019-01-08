@@ -9,6 +9,7 @@
  */
 
 import {eye, memory, ones, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+
 import * as tfl from '../index';
 import * as initializers from '../initializers';
 import {NamedTensorMap, Shape} from '../types';
@@ -16,11 +17,11 @@ import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../uti
 import {LayerVariable, onesVariable, zerosVariable} from '../variables';
 
 import {loadWeightsFromJson, loadWeightsFromNamedTensorMap} from './container';
-import {InputSpec, Layer, LayerArgs, Node} from './topology';
+import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs, Node} from './topology';
 
 class LayerForTest extends tfl.layers.Layer {
   static className = 'LayerForTest';
-  constructor(args: LayerArgs) {
+  constructor(args: LayerNonSerializableArgs) {
     super(args);
   }
 }
