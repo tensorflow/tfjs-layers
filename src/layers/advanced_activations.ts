@@ -18,21 +18,17 @@ import {Softmax as softmaxActivation} from '../activations';
 import {getScalar} from '../backend/state';
 import {cast} from '../backend/tfjs_backend';
 import {Constraint, getConstraint, serializeConstraint} from '../constraints';
-import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
+import {InputSpec, Layer, LayerNonSerializableArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
+import {ELULayerPrimitiveArgs, LeakyReLULayerPrimitiveArgs, PReLULayerPrimitiveArgs, ReLULayerPrimitiveArgs, SoftmaxLayerPrimitiveArgs, ThresholdedReLULayerPrimitiveArgs} from '../keras_format/advanced_activation_configs';
 import {Shape} from '../keras_format/types';
 import {getRegularizer, Regularizer, serializeRegularizer} from '../regularizers';
 import {Kwargs} from '../types';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-export interface ReLULayerArgs extends LayerArgs {
-  /**
-   * Float, the maximum output value.
-   */
-  maxValue?: number;
-}
+export interface ReLULayerArgs extends ReLULayerPrimitiveArgs {}
 
 export type ReLULayerNonSerializableArgs =
     ReLULayerArgs&LayerNonSerializableArgs;
@@ -82,12 +78,7 @@ export class ReLU extends Layer {
 }
 serialization.registerClass(ReLU);
 
-export interface LeakyReLULayerArgs extends LayerArgs {
-  /**
-   * Float `>= 0`. Negative slope coefficient. Defaults to `0.3`.
-   */
-  alpha?: number;
-}
+export interface LeakyReLULayerArgs extends LeakyReLULayerPrimitiveArgs {}
 
 export type LeakyReluLayerNonSerializableArgs =
     LeakyReLULayerArgs&LayerNonSerializableArgs;
@@ -138,7 +129,8 @@ export class LeakyReLU extends Layer {
 }
 serialization.registerClass(LeakyReLU);
 
-export interface PReLULayerArgs extends LayerArgs {
+
+export interface PReLULayerArgs extends PReLULayerPrimitiveArgs {
   /**
    * Initializer for the learnable alpha.
    */
@@ -153,16 +145,6 @@ export interface PReLULayerArgs extends LayerArgs {
    * Constraint for the learnable alpha.
    */
   alphaConstraint?: Constraint;
-
-  /**
-   * The axes along which to share learnable parameters for the activation
-   * function. For example, if the incoming feature maps are from a 2D
-   * convolution with output shape `[numExamples, height, width, channels]`,
-   * and you wish to share parameters across space (height and width) so that
-   * each filter channels has only one set of parameters, set
-   * `shared_axes: [1, 2]`.
-   */
-  sharedAxes?: number|number[];
 }
 
 export type PReLULayerNonSerializableArgs =
@@ -261,12 +243,7 @@ export class PReLU extends Layer {
 }
 serialization.registerClass(PReLU);
 
-export interface ELULayerArgs extends LayerArgs {
-  /**
-   * Float `>= 0`. Negative slope coefficient. Defaults to `1.0`.
-   */
-  alpha?: number;
-}
+export interface ELULayerArgs extends ELULayerPrimitiveArgs {}
 
 export type ELULayerNonSerializableArgs = ELULayerArgs&LayerNonSerializableArgs;
 
@@ -327,12 +304,9 @@ export class ELU extends Layer {
 }
 serialization.registerClass(ELU);
 
-export interface ThresholdedReLULayerArgs extends LayerArgs {
-  /**
-   * Float >= 0. Threshold location of activation.
-   */
-  theta?: number;
-}
+export interface ThresholdedReLULayerArgs extends
+    ThresholdedReLULayerPrimitiveArgs {}
+;
 
 export type ThresholdedReLULayerNonSerializableArgs =
     ThresholdedReLULayerArgs&LayerNonSerializableArgs;
@@ -390,13 +364,7 @@ export class ThresholdedReLU extends Layer {
 }
 serialization.registerClass(ThresholdedReLU);
 
-export interface SoftmaxLayerArgs extends LayerArgs {
-  /**
-   * Integer, axis along which the softmax normalization is applied.
-   * Defaults to `-1` (i.e., the last axis).
-   */
-  axis?: number;
-}
+export interface SoftmaxLayerArgs extends SoftmaxLayerPrimitiveArgs {}
 
 export type SoftmaxLayerNonSerializableArgs =
     SoftmaxLayerArgs&LayerNonSerializableArgs;
