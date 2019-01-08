@@ -783,7 +783,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * model has multiple inputs.
    * @param y `tf.Tensor` of target data, or an `Array` of `tf.Tensor`s if the
    * model has multiple outputs.
-   * @param args A `ModelEvaluateConfig`, containing optional fields.
+   * @param args A `ModelEvaluateArgs`, containing optional fields.
    *
    * @return `Scalar` test loss (if the model has a single output and no
    *   metrics) or `Array` of `Scalar`s (if the model has multiple outputs
@@ -1112,7 +1112,7 @@ export class Model extends Container implements tfc.InferenceModel {
     if (this.optimizer == null) {
       throw new RuntimeError(
           'You must compile a model before training/testing. Use ' +
-          'Model.compile(modelCompileConfig).');
+          'Model.compile(modelCompileArgs).');
     }
     const outputShapes: Shape[] = [];
     for (let i = 0; i < this.feedOutputShapes.length; ++i) {
@@ -1380,7 +1380,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * @param y `tf.Tensor` of target (label) data, or an array of `tf.Tensor`s if
    * the model has multiple outputs. If all outputs in the model are named,
    * you can also pass a dictionary mapping output names to `tf.Tensor`s.
-   * @param args A `ModelFitConfig`, containing optional fields.
+   * @param args A `ModelFitArgs`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
    *   information collected during training.
@@ -1414,7 +1414,7 @@ export class Model extends Container implements tfc.InferenceModel {
    *   inputs and/or multiple outputs.
    *   Of the two items in the array, the first is the input feature(s) and
    *   the second is the output target(s).
-   * @param args A `ModelFitDatasetConfig`, containing optional fields.
+   * @param args A `ModelFitDatasetArgs`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
    *   information collected during training.
