@@ -1017,12 +1017,12 @@ describeMathCPUAndGPU('Model.fit', () => {
         newWeightsValue2, tensor2d(expectedValueArray2, [inputSize2, 1]));
   });
 
-  const isCustomCallbackConfig = [false, true];
+  const isCustomCallbackArgs = [false, true];
   const isCustomCallbackArray = [false, true];
-  for (const isConfig of isCustomCallbackConfig) {
+  for (const isArgs of isCustomCallbackArgs) {
     for (const isArray of isCustomCallbackArray) {
       const testTitle = `Fit with custom callback object: isConfig=${
-          isConfig}, isArray=${isArray}`;
+          isArgs}, isArray=${isArray}`;
       it(testTitle, async () => {
         createDenseModelAndData();
         const trainBeginLogs: Logs[] = [];
@@ -1055,9 +1055,8 @@ describeMathCPUAndGPU('Model.fit', () => {
             batchEndLosses.push(logs['loss']);
           }
         };
-        const customCallback = isConfig ?
-            customCallbackArgs :
-            new CustomCallback(customCallbackArgs);
+        const customCallback = isArgs ? customCallbackArgs :
+                                        new CustomCallback(customCallbackArgs);
         model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
         await model.fit(inputs, targets, {
           batchSize: 2,
