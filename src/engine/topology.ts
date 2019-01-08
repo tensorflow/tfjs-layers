@@ -132,7 +132,7 @@ export class SymbolicTensor {
 /**
  * Constructor arguments for Node.
  */
-export interface NodeArgs {
+export interface NodeNonSerializableArgs {
   /**
    * The layer that takes `inputTensors` and turns them into `outputTensors`.
    * (the node gets created when the `call` method of the layer is called).
@@ -249,7 +249,7 @@ export class Node {
   readonly id: number;
 
   constructor(
-      args: NodeArgs,
+      args: NodeNonSerializableArgs,
       // TODO(michaelterry): Define actual type for this.
       public callArgs?: Kwargs) {
     this.id = _nextNodeID++;

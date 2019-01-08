@@ -15,11 +15,11 @@
 import {io} from '@tensorflow/tfjs-core';
 
 import {BaseCallbackConstructor, CallbackConstructorRegistry} from './base_callbacks';
-import {ContainerArgs} from './engine/container';
+import {ContainerNonSerializableArgs} from './engine/container';
 import {Input, InputConfig,} from './engine/input_layer';
 import {SymbolicTensor} from './engine/topology';
 import {Model} from './engine/training';
-import {loadModelInternal, Sequential, SequentialArgs} from './models';
+import {loadModelInternal, Sequential, SequentialNonSerializableArgs} from './models';
 
 
 // TODO(cais): Add doc string to all the public static functions in this
@@ -69,7 +69,7 @@ import {loadModelInternal, Sequential, SequentialArgs} from './models';
 /**
  * @doc {heading: 'Models', subheading: 'Creation', configParamIndices: [0]}
  */
-export function model(args: ContainerArgs): Model {
+export function model(args: ContainerNonSerializableArgs): Model {
   return new Model(args);
 }
 
@@ -134,7 +134,7 @@ export function model(args: ContainerArgs): Model {
 /**
  * @doc {heading: 'Models', subheading: 'Creation', configParamIndices: [0]}
  */
-export function sequential(config?: SequentialArgs): Sequential {
+export function sequential(config?: SequentialNonSerializableArgs): Sequential {
   return new Sequential(config);
 }
 

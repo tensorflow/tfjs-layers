@@ -14,7 +14,7 @@ import * as tfl from '../index';
 import {Kwargs} from '../types';
 import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {Container, ContainerArgs} from './container';
+import {Container, ContainerNonSerializableArgs} from './container';
 import {execute, FeedDict} from './executor';
 import {CallHook, getSourceInputs, Layer, LayerArgs, SymbolicTensor} from './topology';
 
@@ -27,7 +27,7 @@ class LayerForTest extends tfl.layers.Layer {
 
 class ContainerForTest extends Container {
   static className = 'ContainerForTest';
-  constructor(args: ContainerArgs) {
+  constructor(args: ContainerNonSerializableArgs) {
     super(args);
   }
 }

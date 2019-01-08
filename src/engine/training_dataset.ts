@@ -16,7 +16,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
 
 import {getScalar} from '../backend/state';
-import {BaseCallback, configureCallbacks, CustomCallbackArgs, History, ModelLoggingVerbosity, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
+import {BaseCallback, configureCallbacks, CustomCallbackNonSerializableArgs, History, ModelLoggingVerbosity, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {NotImplementedError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 import {singletonOrArray, toList} from '../utils/generic_utils';
@@ -26,7 +26,7 @@ import {Dataset, LazyIterator, TensorMap, TensorOrTensorMap} from './dataset_stu
 /**
  * Interface for configuring model training based on a dataset object.
  */
-export interface ModelFitDatasetArgs<T extends TensorContainer> {
+export interface ModelFitDatasetNonSerializableArgs<T extends TensorContainer> {
   /**
    * (Optional) Total number of steps (batches of samples) before
    * declaring one epoch finished and starting the next epoch. It should
@@ -62,7 +62,8 @@ export interface ModelFitDatasetArgs<T extends TensorContainer> {
    * Can consist of one or more of the following fields: `onTrainBegin`,
    * `onTrainEnd`, `onEpochBegin`, `onEpochEnd`, `onBatchBegin`, `onBatchEnd`.
    */
-  callbacks?: BaseCallback[]|CustomCallbackArgs|CustomCallbackArgs[];
+  callbacks?: BaseCallback[]|CustomCallbackNonSerializableArgs|
+      CustomCallbackNonSerializableArgs[];
 
   /**
    * Data on which to evaluate the loss and any model
@@ -142,7 +143,7 @@ export interface ModelFitDatasetArgs<T extends TensorContainer> {
 /**
  * Interface for configuring model evaluation based on a dataset object.
  */
-export interface ModelEvaluateDatasetArgs {
+export interface ModelEvaluateDatasetPrimitiveArgs {
   /**
    * Number of batches to draw from the dataset object before ending the
    * evaluation.
@@ -154,6 +155,8 @@ export interface ModelEvaluateDatasetArgs {
    */
   verbose?: ModelLoggingVerbosity;
 }
+
+export type ModelEvaluateDatasetArgs = ModelEvaluateDatasetPrimitiveArgs;
 
 // Default batch size used during tensor-based validation.
 const DEFAULT_VALIDATION_BATCH_SIZE = 32;
@@ -246,7 +249,7 @@ export async function fitDataset<T extends TensorContainer>(
     // Type `model` as `any` here to avoid circular dependency w/ training.ts.
     // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>,
-    args: ModelFitDatasetArgs<T>): Promise<History> {
+    args: ModelFitDatasetNonSerializableArgs<T>): Promise<History> {
   const hasBatchesPerEpoch = args.batchesPerEpoch != null;
   tfc.util.assert(
       model.optimizer != null,

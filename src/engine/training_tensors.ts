@@ -16,7 +16,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {Scalar, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
 
 import {expandDims, gather, sliceAlongFirstAxis} from '../backend/tfjs_backend';
-import {BaseCallback, configureCallbacks, CustomCallbackArgs, History, ModelLoggingVerbosity, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
+import {BaseCallback, configureCallbacks, CustomCallbackNonSerializableArgs, History, ModelLoggingVerbosity, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {NotImplementedError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 import {range} from '../utils/math_utils';
@@ -24,7 +24,7 @@ import {range} from '../utils/math_utils';
 /**
  * Interface configuration model training based on data as `tf.Tensor`s.
  */
-export interface ModelFitArgs {
+export interface ModelFitNonSerializableArgs {
   /**
    * Number of samples per gradient update. If unspecified, it
    * will default to 32.
@@ -52,7 +52,8 @@ export interface ModelFitArgs {
    * Can consist of one or more of the following fields: `onTrainBegin`,
    * `onTrainEnd`, `onEpochBegin`, `onEpochEnd`, `onBatchBegin`, `onBatchEnd`.
    */
-  callbacks?: BaseCallback[]|CustomCallbackArgs|CustomCallbackArgs[];
+  callbacks?: BaseCallback[]|CustomCallbackNonSerializableArgs|
+      CustomCallbackNonSerializableArgs[];
 
   /**
    * Float between 0 and 1: fraction of the training data
@@ -394,7 +395,7 @@ export async function fitTensors(
     // tslint:disable-next-line:no-any
     model: any, x: Tensor|Tensor[]|{[inputName: string]: Tensor},
     y: Tensor|Tensor[]|{[inputName: string]: Tensor},
-    args: ModelFitArgs = {}): Promise<History> {
+    args: ModelFitNonSerializableArgs = {}): Promise<History> {
   if (model.isTraining) {
     throw new Error(
         'Cannot start training because another fit() call is ongoing.');

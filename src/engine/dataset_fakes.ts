@@ -14,7 +14,7 @@ import {Shape} from '../keras_format/types';
 
 import {Dataset, LazyIterator, TensorOrTensorMap,} from './dataset_stub';
 
-export interface FakeDatasetArgs {
+export interface FakeDatasetNonSerializableArgs {
   /**
    * The shape(s) of the features of a single example.
    *
@@ -94,7 +94,7 @@ class FakeNumericIterator extends
   private yTensorValues: tfc.Tensor[]|{[name: string]: tfc.Tensor[]};
   private tensorIndex = 0;
 
-  constructor(args: FakeDatasetArgs) {
+  constructor(args: FakeDatasetNonSerializableArgs) {
     super();
     this.xBatchShape = mergeBatchSizeAndShape(args.batchSize, args.xShape);
     this.yBatchShape = mergeBatchSizeAndShape(args.batchSize, args.yShape);
@@ -175,7 +175,7 @@ class FakeNumericIterator extends
  */
 export class FakeNumericDataset extends
     Dataset<[TensorOrTensorMap, TensorOrTensorMap]> {
-  constructor(readonly args: FakeDatasetArgs) {
+  constructor(readonly args: FakeDatasetNonSerializableArgs) {
     super();
     tfc.util.assert(
         args.batchSize > 0 && Number.isInteger(args.batchSize),

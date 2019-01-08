@@ -18,9 +18,9 @@ import {History} from './base_callbacks';
 import {Dataset} from './engine/dataset_stub';
 import {Input} from './engine/input_layer';
 import {getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
-import {Model, ModelCompileArgs, ModelEvaluateArgs} from './engine/training';
-import {ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './engine/training_dataset';
-import {ModelFitArgs} from './engine/training_tensors';
+import {Model, ModelCompileNonSerializableArgs, ModelEvaluateNonSerialializableArgs} from './engine/training';
+import {ModelEvaluateDatasetArgs, ModelFitDatasetNonSerializableArgs} from './engine/training_dataset';
+import {ModelFitNonSerializableArgs} from './engine/training_tensors';
 import {NotImplementedError, RuntimeError, ValueError} from './errors';
 import {PyJsonDict, Shape} from './keras_format/types';
 import {deserialize} from './layers/serialization';
@@ -140,7 +140,7 @@ export interface ModelAndWeightsConfig {
 }
 
 // TODO(nielsene): Remove after: https://github.com/tensorflow/tfjs/issues/400
-export interface ModelPredictArgs {
+export interface ModelPredictPrimitiveArgs {
   /**
    * Optional. Batch size (Integer). If unspecified, it will default to 32.
    */
@@ -151,6 +151,8 @@ export interface ModelPredictArgs {
    */
   verbose?: boolean;
 }
+
+export type ModelPredictArgs = ModelPredictPrimitiveArgs;
 
 /**
  * Load a model, including its topology and optionally weights.  See the
@@ -311,7 +313,7 @@ export async function loadModelFromIOHandler(
 /**
  * Configuration for a Sequential model.
  */
-export interface SequentialArgs {
+export interface SequentialNonSerializableArgs {
   /** Stack of layers for the model. */
   layers?: Layer[];
 
@@ -348,7 +350,7 @@ export class Sequential extends Model {
   static className = 'Sequential';
   private model: Model;
   private _updatable: boolean;
-  constructor(args?: SequentialArgs) {
+  constructor(args?: SequentialNonSerializableArgs) {
     super({inputs: [], outputs: []});
     args = args || {};
 
@@ -678,7 +680,7 @@ export class Sequential extends Model {
    */
   evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[],
-      args: ModelEvaluateArgs = {}): Scalar|Scalar[] {
+      args: ModelEvaluateNonSerialializableArgs = {}): Scalar|Scalar[] {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before being used.');
@@ -773,7 +775,7 @@ export class Sequential extends Model {
    *
    * @param args
    */
-  compile(args: ModelCompileArgs): void {
+  compile(args: ModelCompileNonSerializableArgs): void {
     this.build();
     this.model.compile(args);
     this.optimizer = this.model.optimizer;
@@ -821,7 +823,7 @@ export class Sequential extends Model {
   async fit(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
-      args: ModelFitArgs = {}): Promise<History> {
+      args: ModelFitNonSerializableArgs = {}): Promise<History> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before ' +
@@ -854,7 +856,8 @@ export class Sequential extends Model {
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
    */
   async fitDataset<T extends TensorContainer>(
-      dataset: Dataset<T>, args: ModelFitDatasetArgs<T>): Promise<History> {
+      dataset: Dataset<T>,
+      args: ModelFitDatasetNonSerializableArgs<T>): Promise<History> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before ' +

@@ -212,7 +212,7 @@ export function loadWeightsFromNamedTensorMap(
 }
 
 /** Constructor config for Container. */
-export interface ContainerArgs {
+export interface ContainerNonSerializableArgs {
   inputs: SymbolicTensor|SymbolicTensor[];
   outputs: SymbolicTensor|SymbolicTensor[];
   name?: string;
@@ -259,7 +259,7 @@ export abstract class Container extends Layer {
   protected feedInputNames: string[];
   protected feedOutputNames: string[];
 
-  constructor(args: ContainerArgs) {
+  constructor(args: ContainerNonSerializableArgs) {
     // No args passed to super's constructor.
     super({});
     this.name = args.name;

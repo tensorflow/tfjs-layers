@@ -469,7 +469,7 @@ export class History extends BaseCallback {
   }
 }
 
-export interface CustomCallbackArgs {
+export interface CustomCallbackNonSerializableArgs {
   onTrainBegin?: (logs?: Logs) => Promise<void>;
   onTrainEnd?: (logs?: Logs) => Promise<void>;
   onEpochBegin?: (epoch: number, logs?: Logs) => Promise<void>;
@@ -489,7 +489,7 @@ export class CustomCallback extends BaseCallback {
   protected readonly batchBegin: (batch: number, logs?: Logs) => Promise<void>;
   protected readonly batchEnd: (batch: number, logs?: Logs) => Promise<void>;
 
-  constructor(args: CustomCallbackArgs) {
+  constructor(args: CustomCallbackNonSerializableArgs) {
     super();
     this.trainBegin = args.onTrainBegin;
     this.trainEnd = args.onTrainEnd;
@@ -545,9 +545,9 @@ export class CustomCallback extends BaseCallback {
 /**
  * Standardize callbacks or configurations of them to an Array of callbacks.
  */
-export function standardizeCallbacks(callbacks: BaseCallback|BaseCallback[]|
-                                     CustomCallbackArgs|
-                                     CustomCallbackArgs[]): BaseCallback[] {
+export function standardizeCallbacks(
+    callbacks: BaseCallback|BaseCallback[]|CustomCallbackNonSerializableArgs|
+    CustomCallbackNonSerializableArgs[]): BaseCallback[] {
   if (callbacks == null) {
     return null;
   }
@@ -559,7 +559,7 @@ export function standardizeCallbacks(callbacks: BaseCallback|BaseCallback[]|
   }
   // Convert custom callback configs to custom callback objects.
   const callbackConfigs =
-      generic_utils.toList(callbacks) as CustomCallbackArgs[];
+      generic_utils.toList(callbacks) as CustomCallbackNonSerializableArgs[];
   return callbackConfigs.map(
       callbackConfig => new CustomCallback(callbackConfig));
 }

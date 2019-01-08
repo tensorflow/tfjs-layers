@@ -17,18 +17,18 @@ import * as metrics from './exports_metrics';
 import * as models from './exports_models';
 import * as regularizers from './exports_regularizers';
 
-export {CallbackList, CustomCallback, CustomCallbackArgs, History} from './base_callbacks';
+export {CallbackList, CustomCallback, CustomCallbackNonSerializableArgs, History} from './base_callbacks';
 export {Callback} from './callbacks';
 export {InputSpec, SymbolicTensor} from './engine/topology';
-export {Model, ModelCompileArgs, ModelEvaluateArgs} from './engine/training';
-export {ModelFitDatasetArgs} from './engine/training_dataset';
-export {ModelFitArgs} from './engine/training_tensors';
+export {Model, ModelCompileNonSerializableArgs as ModelCompileArgs, ModelEvaluateNonSerialializableArgs as ModelEvaluateArgs} from './engine/training';
+export {ModelFitDatasetNonSerializableArgs as ModelFitDatasetArgs} from './engine/training_dataset';
+export {ModelFitNonSerializableArgs as ModelFitArgs} from './engine/training_tensors';
 export {input, loadModel, model, registerCallbackConstructor, sequential} from './exports';
 export {Shape} from './keras_format/types';
 // tslint:disable-next-line:max-line-length
 export {GRUCellLayerArgs, GRULayerArgs, LSTMCellLayerArgs, LSTMLayerArgs, RNN, RNNLayerArgs, SimpleRNNCellLayerArgs, SimpleRNNLayerArgs} from './layers/recurrent';
 export {Logs} from './logs';
-export {ModelAndWeightsConfig, Sequential, SequentialArgs} from './models';
+export {ModelAndWeightsConfig, Sequential, SequentialNonSerializableArgs as SequentialArgs} from './models';
 export {LayerVariable} from './variables';
 export {version as version_layers} from './version';
 export {constraints, initializers, layers, metrics, models, regularizers};

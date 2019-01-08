@@ -29,12 +29,12 @@ import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
 
-import {Container, ContainerArgs} from './container';
+import {Container, ContainerNonSerializableArgs} from './container';
 import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
-import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
-import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
+import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetNonSerializableArgs} from './training_dataset';
+import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitNonSerializableArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
@@ -375,7 +375,7 @@ function collectMetrics(
   }
 }
 
-export interface ModelEvaluateArgs {
+export interface ModelEvaluateNonSerialializableArgs {
   /**
    * Batch size (Integer). If unspecified, it will default to 32.
    */
@@ -403,7 +403,7 @@ export interface ModelEvaluateArgs {
 /**
  * Configuration for calls to `Model.compile()`.
  */
-export interface ModelCompileArgs {
+export interface ModelCompileNonSerializableArgs {
   /**
    * An instance of `tf.train.Optimizer` or a string name for an Optimizer.
    */
@@ -475,7 +475,7 @@ export class Model extends Container implements tfc.InferenceModel {
   //   "knowledge" of the outputs it depends on.
   metricsTensors: Array<[LossOrMetricFn, number]>;
 
-  constructor(args: ContainerArgs) {
+  constructor(args: ContainerNonSerializableArgs) {
     super(args);
     this.isTraining = false;
   }
@@ -539,7 +539,7 @@ export class Model extends Container implements tfc.InferenceModel {
   /**
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [0]}
    */
-  compile(args: ModelCompileArgs): void {
+  compile(args: ModelCompileNonSerializableArgs): void {
     if (args.loss == null) {
       args.loss = [];
     }
@@ -796,7 +796,7 @@ export class Model extends Container implements tfc.InferenceModel {
    */
   evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[],
-      args: ModelEvaluateArgs = {}): Scalar|Scalar[] {
+      args: ModelEvaluateNonSerialializableArgs = {}): Scalar|Scalar[] {
     const batchSize = args.batchSize == null ? 32 : args.batchSize;
     checkBatchSize(batchSize);
 
@@ -1395,7 +1395,7 @@ export class Model extends Container implements tfc.InferenceModel {
   async fit(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
-      args: ModelFitArgs = {}): Promise<History> {
+      args: ModelFitNonSerializableArgs = {}): Promise<History> {
     return fitTensors(this, x, y, args);
   }
 
@@ -1424,7 +1424,8 @@ export class Model extends Container implements tfc.InferenceModel {
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
    */
   async fitDataset<T extends TensorContainer>(
-      dataset: Dataset<T>, args: ModelFitDatasetArgs<T>): Promise<History> {
+      dataset: Dataset<T>,
+      args: ModelFitDatasetNonSerializableArgs<T>): Promise<History> {
     return fitDataset(this, dataset, args);
   }
 
