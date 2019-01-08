@@ -18,6 +18,7 @@ import {Constraint} from '../constraints';
 import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {getInitializer, Initializer} from '../initializers';
 import {InputSpecBaseConfig} from '../keras_format/input_config';
+import {LayerBaseConfig} from '../keras_format/topology_config';
 import {Regularizer} from '../regularizers';
 import {Kwargs, RegularizerFn, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -327,7 +328,7 @@ export class Node {
 }
 
 /** Constructor arguments for Layer. */
-export type LayerArgs = LayerPrimitiveArgs;
+export type LayerArgs = LayerBaseConfig;
 
 export interface LayerNonSerializableArgs extends LayerArgs {
   /**
