@@ -105,3 +105,7 @@ export interface OrthogonalPrimitiveArgs extends
 }
 
 export type OrthogonalConfig = OrthogonalPrimitiveArgs;
+
+export type InitializerConfig = ConstantConfig|RandomUniformConfig|
+    RandomNormalConfig|TruncatedNormalConfig|IdentityConfig|
+    VarianceScalingConfig|SeedOnlyInitializerConfig|OrthogonalConfig;

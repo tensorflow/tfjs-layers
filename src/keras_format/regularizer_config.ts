@@ -30,3 +30,5 @@ export interface L2PrimitiveArgs {
 }
 
 export type L2Config = L2PrimitiveArgs;
+
+export type RegularizerConfig = L1L2Config|L1Config|L2Config;

@@ -87,3 +87,5 @@ export interface MinMaxNormPrimitiveArgs {
 }
 
 export type MinMaxNormConfig = MinMaxNormPrimitiveArgs;
+
+export type ConstraintConfig = MaxNormConfig|UnitNormConfig|MinMaxNormConfig;

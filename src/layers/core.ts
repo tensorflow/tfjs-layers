@@ -14,13 +14,14 @@
 
 import {Scalar, serialization, Tensor, tidy, transpose, util} from '@tensorflow/tfjs-core';
 
-import {Activation as ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
+import {Activation as ActivationFn, getActivation, serializeActivation} from '../activations';
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
+import {InputSpec, Layer, LayerNonSerializableArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
+import {ActivationLayerPrimitiveArgs, DenseLayerPrimitiveArgs, DropoutLayerPrimitiveArgs, PermuteLayerPrimitiveArgs, RepeatVectorLayerPrimitiveArgs, ReshapeLayerPrimitiveArgs} from '../keras_format/core_layers_config';
 import {Shape} from '../keras_format/types';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Kwargs} from '../types';
@@ -29,23 +30,7 @@ import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
 
-export interface DropoutLayerArgs extends LayerArgs {
-  /** Float between 0 and 1. Fraction of the input units to drop. */
-  rate: number;
-
-  /**
-   * Integer array representing the shape of the binary dropout mask that will
-   * be multiplied with the input.
-   *
-   * For instance, if your inputs have shape `(batchSize, timesteps, features)`
-   * and you want the dropout mask to be the same for all timesteps, you can use
-   * `noise_shape=(batch_size, 1, features)`.
-   */
-  noiseShape?: number[];
-
-  /** An integer to use as random seed. */
-  seed?: number;
-}
+export type DropoutLayerArgs = DropoutLayerPrimitiveArgs;
 
 export type DropoutLayerNonSerializableArgs =
     DropoutLayerArgs&LayerNonSerializableArgs;
@@ -130,17 +115,7 @@ export class Dropout extends Layer {
 }
 serialization.registerClass(Dropout);
 
-export interface DenseLayerArgs extends LayerArgs {
-  /** Positive integer, dimensionality of the output space. */
-  units: number;
-  /**
-   * Activation function to use.
-   *
-   * If unspecified, no activation is applied.
-   */
-  activation?: ActivationIdentifier;
-  /** Whether to apply a bias. */
-  useBias?: boolean;
+export interface DenseLayerArgs extends DenseLayerPrimitiveArgs {
   /**
    * Initializer for the dense kernel weights matrix.
    */
@@ -149,10 +124,6 @@ export interface DenseLayerArgs extends LayerArgs {
    * Initializer for the bias vector.
    */
   biasInitializer?: InitializerIdentifier|Initializer;
-  /**
-   * If specified, defines inputShape as `[inputDim]`.
-   */
-  inputDim?: number;
 
   /**
    * Constraint for the kernel weights.
@@ -325,7 +296,9 @@ export class Dense extends Layer {
 }
 serialization.registerClass(Dense);
 
-export type FlattenLayerNonSerializableArgs = LayerNonSerializableArgs;
+export interface FlattenLayerNonSerializableArgs extends
+    LayerNonSerializableArgs {}
+;
 
 /**
  * Flattens the input. Does not affect the batch size.
@@ -374,12 +347,7 @@ export class Flatten extends Layer {
 }
 serialization.registerClass(Flatten);
 
-export interface ActivationLayerArgs extends LayerArgs {
-  /**
-   * Name of the activation function to use.
-   */
-  activation: ActivationIdentifier;
-}
+export type ActivationLayerArgs = ActivationLayerPrimitiveArgs;
 
 export type ActivationLayerNonSerializableArgs =
     ActivationLayerArgs&LayerNonSerializableArgs;
@@ -441,12 +409,7 @@ export class Activation extends Layer {
 }
 serialization.registerClass(Activation);
 
-export interface RepeatVectorLayerArgs extends LayerArgs {
-  /**
-   * The integer number of times to repeat the input.
-   */
-  n: number;
-}
+export type RepeatVectorLayerArgs = RepeatVectorLayerPrimitiveArgs;
 
 export type RepeatVectorLayerNonSerializableArgs =
     RepeatVectorLayerArgs&LayerNonSerializableArgs;
@@ -495,11 +458,7 @@ export class RepeatVector extends Layer {
 }
 serialization.registerClass(RepeatVector);
 
-
-export interface ReshapeLayerArgs extends LayerArgs {
-  /** The target shape. Does not include the batch axis. */
-  targetShape: Shape;
-}
+export type ReshapeLayerArgs = ReshapeLayerPrimitiveArgs;
 
 export type ReshapeLayerNonSerializableArgs =
     ReshapeLayerArgs&LayerNonSerializableArgs;
@@ -628,15 +587,7 @@ export class Reshape extends Layer {
 }
 serialization.registerClass(Reshape);
 
-export interface PermuteLayerArgs extends LayerArgs {
-  /**
-   * Array of integers. Permutation pattern. Does not include the
-   * sample (batch) dimension. Index starts at 1.
-   * For instance, `[2, 1]` permutes the first and second dimensions
-   * of the input.
-   */
-  dims: number[];
-}
+export type PermuteLayerArgs = PermuteLayerPrimitiveArgs;
 
 export type PermuteLayerNonSerializableArgs =
     PermuteLayerArgs&LayerNonSerializableArgs;
