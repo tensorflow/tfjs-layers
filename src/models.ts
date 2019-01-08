@@ -140,7 +140,7 @@ export interface ModelAndWeightsConfig {
 }
 
 // TODO(nielsene): Remove after: https://github.com/tensorflow/tfjs/issues/400
-export interface ModelPredictPrimitiveArgs {
+export interface ModelPredictBaseConfig {
   /**
    * Optional. Batch size (Integer). If unspecified, it will default to 32.
    */
@@ -152,7 +152,7 @@ export interface ModelPredictPrimitiveArgs {
   verbose?: boolean;
 }
 
-export type ModelPredictArgs = ModelPredictPrimitiveArgs;
+export type ModelPredictArgs = ModelPredictBaseConfig;
 
 /**
  * Load a model, including its topology and optionally weights.  See the
