@@ -17,7 +17,7 @@ import {serialization, Tensor, Tensor1D, Tensor2D, Tensor3D, Tensor4D, tidy, uti
 
 import {getScalar} from '../backend/state';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {InputSpec, Layer, LayerArgs} from '../engine/topology';
+import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {Shape} from '../keras_format/types';
@@ -252,6 +252,8 @@ export interface BatchNormalizationLayerArgs extends LayerArgs {
   gammaRegularizer?: RegularizerIdentifier|Regularizer;
 }
 
+export type BatchNormalizationLayerNonSerializableArgs =
+    BatchNormalizationLayerArgs&LayerNonSerializableArgs;
 
 /**
  * Batch normalization layer (Ioffe and Szegedy, 2014).
@@ -292,7 +294,7 @@ export class BatchNormalization extends Layer {
   private movingMean: LayerVariable;
   private movingVariance: LayerVariable;
 
-  constructor(args?: BatchNormalizationLayerArgs) {
+  constructor(args?: BatchNormalizationLayerNonSerializableArgs) {
     if (args == null) {
       args = {};
     }

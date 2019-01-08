@@ -18,7 +18,7 @@ import {serialization, Tensor, Tensor3D, Tensor4D, tidy} from '@tensorflow/tfjs-
 import {imageDataFormat} from '../backend/common';
 import * as K from '../backend/tfjs_backend';
 import {checkDataFormat, checkPaddingMode, checkPoolMode, DataFormat, PaddingMode, PoolMode} from '../common';
-import {InputSpec} from '../engine/topology';
+import {InputSpec, LayerNonSerializableArgs} from '../engine/topology';
 import {Layer, LayerArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {Shape} from '../keras_format/types';
@@ -98,6 +98,9 @@ export interface Pooling1DLayerArgs extends LayerArgs {
   padding?: PaddingMode;
 }
 
+export type Pooling1DLayerNonSerializableArgs =
+    Pooling1DLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Abstract class for different pooling 1D layers.
  */
@@ -112,7 +115,7 @@ export abstract class Pooling1D extends Layer {
    *
    * config.poolSize defaults to 2.
    */
-  constructor(args: Pooling1DLayerArgs) {
+  constructor(args: Pooling1DLayerNonSerializableArgs) {
     if (args.poolSize == null) {
       args.poolSize = 2;
     }
@@ -198,7 +201,7 @@ export abstract class Pooling1D extends Layer {
  */
 export class MaxPooling1D extends Pooling1D {
   static className = 'MaxPooling1D';
-  constructor(args: Pooling1DLayerArgs) {
+  constructor(args: Pooling1DLayerNonSerializableArgs) {
     super(args);
   }
 
@@ -223,7 +226,7 @@ serialization.registerClass(MaxPooling1D);
  */
 export class AveragePooling1D extends Pooling1D {
   static className = 'AveragePooling1D';
-  constructor(args: Pooling1DLayerArgs) {
+  constructor(args: Pooling1DLayerNonSerializableArgs) {
     super(args);
   }
 
@@ -263,6 +266,9 @@ export interface Pooling2DLayerArgs extends LayerArgs {
   dataFormat?: DataFormat;
 }
 
+export type Pooling2DLayerNonSerializableArgs =
+    Pooling2DLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Abstract class for different pooling 2D layers.
  */
@@ -272,7 +278,7 @@ export abstract class Pooling2D extends Layer {
   protected readonly padding: PaddingMode;
   protected readonly dataFormat: DataFormat;
 
-  constructor(args: Pooling2DLayerArgs) {
+  constructor(args: Pooling2DLayerNonSerializableArgs) {
     if (args.poolSize == null) {
       args.poolSize = [2, 2];
     }
@@ -367,7 +373,7 @@ export abstract class Pooling2D extends Layer {
  */
 export class MaxPooling2D extends Pooling2D {
   static className = 'MaxPooling2D';
-  constructor(args: Pooling2DLayerArgs) {
+  constructor(args: Pooling2DLayerNonSerializableArgs) {
     super(args);
   }
 
@@ -404,7 +410,7 @@ serialization.registerClass(MaxPooling2D);
  */
 export class AveragePooling2D extends Pooling2D {
   static className = 'AveragePooling2D';
-  constructor(args: Pooling2DLayerArgs) {
+  constructor(args: Pooling2DLayerNonSerializableArgs) {
     super(args);
   }
 
@@ -422,7 +428,7 @@ serialization.registerClass(AveragePooling2D);
  * Abstract class for different global pooling 1D layers.
  */
 export abstract class GlobalPooling1D extends Layer {
-  constructor(args: LayerArgs) {
+  constructor(args: LayerNonSerializableArgs) {
     super(args);
     this.inputSpec = [new InputSpec({ndim: 3})];
   }
@@ -445,7 +451,7 @@ export abstract class GlobalPooling1D extends Layer {
  */
 export class GlobalAveragePooling1D extends GlobalPooling1D {
   static className = 'GlobalAveragePooling1D';
-  constructor(args: LayerArgs) {
+  constructor(args: LayerNonSerializableArgs) {
     super(args);
   }
 
@@ -467,7 +473,7 @@ serialization.registerClass(GlobalAveragePooling1D);
  */
 export class GlobalMaxPooling1D extends GlobalPooling1D {
   static className = 'GlobalMaxPooling1D';
-  constructor(args: LayerArgs) {
+  constructor(args: LayerNonSerializableArgs) {
     super(args);
   }
 
@@ -492,12 +498,15 @@ export interface GlobalPooling2DLayerArgs extends LayerArgs {
   dataFormat?: DataFormat;
 }
 
+export type GlobalPooling2DLayerNonSerializableArgs =
+    GlobalPooling2DLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Abstract class for different global pooling 2D layers.
  */
 export abstract class GlobalPooling2D extends Layer {
   protected dataFormat: DataFormat;
-  constructor(args: GlobalPooling2DLayerArgs) {
+  constructor(args: GlobalPooling2DLayerNonSerializableArgs) {
     super(args);
     this.dataFormat =
         args.dataFormat == null ? 'channelsLast' : args.dataFormat;

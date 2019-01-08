@@ -25,8 +25,7 @@ export {ModelFitDatasetNonSerializableArgs as ModelFitDatasetArgs} from './engin
 export {ModelFitNonSerializableArgs as ModelFitArgs} from './engine/training_tensors';
 export {input, loadModel, model, registerCallbackConstructor, sequential} from './exports';
 export {Shape} from './keras_format/types';
-// tslint:disable-next-line:max-line-length
-export {GRUCellLayerArgs, GRULayerArgs, LSTMCellLayerArgs, LSTMLayerArgs, RNN, RNNLayerArgs, SimpleRNNCellLayerArgs, SimpleRNNLayerArgs} from './layers/recurrent';
+export {GRUCellLayerNonSerializableArgs, GRULayerArgs, LSTMCellLayerArgs, LSTMLayerArgs, RNN, RNNLayerNonSerializableArgs, SimpleRNNCellLayerNonSerializableArgs, SimpleRNNLayerArgs} from './layers/recurrent';
 export {Logs} from './logs';
 export {ModelAndWeightsConfig, Sequential, SequentialNonSerializableArgs as SequentialArgs} from './models';
 export {LayerVariable} from './variables';

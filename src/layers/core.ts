@@ -18,7 +18,7 @@ import {Activation as ActivationFn, ActivationIdentifier, getActivation, seriali
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {InputSpec, Layer, LayerArgs} from '../engine/topology';
+import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {Shape} from '../keras_format/types';
@@ -47,6 +47,9 @@ export interface DropoutLayerArgs extends LayerArgs {
   seed?: number;
 }
 
+export type DropoutLayerNonSerializableArgs =
+    DropoutLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Applies
  * [dropout](http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf) to
@@ -62,7 +65,7 @@ export class Dropout extends Layer {
   private readonly noiseShape: number[];
   private readonly seed: number;
 
-  constructor(args: DropoutLayerArgs) {
+  constructor(args: DropoutLayerNonSerializableArgs) {
     super(args);
     this.rate = Math.max(Math.min(args.rate, 1), 0);
     this.rateScalar = getScalar(this.rate);
@@ -177,6 +180,9 @@ export interface DenseLayerArgs extends LayerArgs {
   activityRegularizer?: RegularizerIdentifier|Regularizer;
 }
 
+export type DenseLayerNonSerializableArgs =
+    DenseLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Creates a dense (fully connected) layer.
  *
@@ -226,7 +232,7 @@ export class Dense extends Layer {
   private readonly kernelRegularizer?: Regularizer;
   private readonly biasRegularizer?: Regularizer;
 
-  constructor(args: DenseLayerArgs) {
+  constructor(args: DenseLayerNonSerializableArgs) {
     super(args);
     if (args.batchInputShape == null && args.inputShape == null &&
         args.inputDim != null) {
@@ -319,6 +325,8 @@ export class Dense extends Layer {
 }
 serialization.registerClass(Dense);
 
+export type FlattenLayerNonSerializableArgs = LayerNonSerializableArgs;
+
 /**
  * Flattens the input. Does not affect the batch size.
  *
@@ -338,7 +346,7 @@ serialization.registerClass(Dense);
  */
 export class Flatten extends Layer {
   static className = 'Flatten';
-  constructor(args?: LayerArgs) {
+  constructor(args?: FlattenLayerNonSerializableArgs) {
     super(args || {});
     this.inputSpec = [{minNDim: 3}];
   }
@@ -372,6 +380,9 @@ export interface ActivationLayerArgs extends LayerArgs {
    */
   activation: ActivationIdentifier;
 }
+
+export type ActivationLayerNonSerializableArgs =
+    ActivationLayerArgs&LayerNonSerializableArgs;
 
 /**
  * Applies an activation function to an output.
@@ -407,7 +418,7 @@ export class Activation extends Layer {
   static className = 'Activation';
   activation: ActivationFn;
 
-  constructor(args: ActivationLayerArgs) {
+  constructor(args: ActivationLayerNonSerializableArgs) {
     super(args);
     this.supportsMasking = true;
     this.activation = getActivation(args.activation);
@@ -430,17 +441,15 @@ export class Activation extends Layer {
 }
 serialization.registerClass(Activation);
 
-export interface ReshapeLayerArgs extends LayerArgs {
-  /** The target shape. Does not include the batch axis. */
-  targetShape: Shape;
-}
-
 export interface RepeatVectorLayerArgs extends LayerArgs {
   /**
    * The integer number of times to repeat the input.
    */
   n: number;
 }
+
+export type RepeatVectorLayerNonSerializableArgs =
+    RepeatVectorLayerArgs&LayerNonSerializableArgs;
 
 /**
  * Repeats the input n times in a new dimension.
@@ -458,7 +467,7 @@ export class RepeatVector extends Layer {
   static className = 'RepeatVector';
   readonly n: number;
 
-  constructor(args: RepeatVectorLayerArgs) {
+  constructor(args: RepeatVectorLayerNonSerializableArgs) {
     super(args);
     this.n = args.n;
     this.inputSpec = [{ndim: 2}];
@@ -486,6 +495,15 @@ export class RepeatVector extends Layer {
 }
 serialization.registerClass(RepeatVector);
 
+
+export interface ReshapeLayerArgs extends LayerArgs {
+  /** The target shape. Does not include the batch axis. */
+  targetShape: Shape;
+}
+
+export type ReshapeLayerNonSerializableArgs =
+    ReshapeLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Reshapes an input to a certain shape.
  *
@@ -510,7 +528,7 @@ export class Reshape extends Layer {
   static className = 'Reshape';
   private targetShape: Shape;
 
-  constructor(args: ReshapeLayerArgs) {
+  constructor(args: ReshapeLayerNonSerializableArgs) {
     super(args);
     this.targetShape = args.targetShape;
 
@@ -620,6 +638,9 @@ export interface PermuteLayerArgs extends LayerArgs {
   dims: number[];
 }
 
+export type PermuteLayerNonSerializableArgs =
+    PermuteLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Permutes the dimensions of the input according to a given pattern.
  *
@@ -651,7 +672,7 @@ export class Permute extends Layer {
   readonly dims: number[];
   private readonly dimsIncludingBatch: number[];
 
-  constructor(args: PermuteLayerArgs) {
+  constructor(args: PermuteLayerNonSerializableArgs) {
     super(args);
     if (args.dims == null) {
       throw new Error(

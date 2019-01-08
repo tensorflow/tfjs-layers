@@ -17,7 +17,7 @@ import {serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {Layer, LayerArgs, SymbolicTensor} from '../engine/topology';
+import {Layer, LayerArgs, LayerNonSerializableArgs, SymbolicTensor} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {Shape} from '../keras_format/types';
 import {l2Normalize} from '../losses';
@@ -34,7 +34,7 @@ import {getExactlyOneShape} from '../utils/types_utils';
 export abstract class Merge extends Layer {
   protected reshapeRequired: boolean;
 
-  constructor(args?: LayerArgs) {
+  constructor(args?: LayerNonSerializableArgs) {
     super(args || {});
     this.supportsMasking = true;
   }
@@ -279,8 +279,8 @@ export abstract class Merge extends Layer {
  */
 export class Add extends Merge {
   static className = 'Add';
-  constructor(args?: LayerArgs) {
-    super(args as LayerArgs);
+  constructor(args?: LayerNonSerializableArgs) {
+    super(args);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -372,7 +372,7 @@ export function add(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
  */
 export class Multiply extends Merge {
   static className = 'Multiply';
-  constructor(args?: LayerArgs) {
+  constructor(args?: LayerNonSerializableArgs) {
     super(args);
   }
 
@@ -464,7 +464,7 @@ export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
  */
 export class Average extends Merge {
   static className = 'Average';
-  constructor(args?: LayerArgs) {
+  constructor(args?: LayerNonSerializableArgs) {
     super(args);
   }
 
@@ -557,7 +557,7 @@ export function average(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
  */
 export class Maximum extends Merge {
   static className = 'Maximum';
-  constructor(args?: LayerArgs) {
+  constructor(args?: LayerNonSerializableArgs) {
     super(args);
   }
 
@@ -649,7 +649,7 @@ export function maximum(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
  */
 export class Minimum extends Merge {
   static className = 'Minimum';
-  constructor(args?: LayerArgs) {
+  constructor(args?: LayerNonSerializableArgs) {
     super(args);
   }
 
@@ -730,6 +730,9 @@ export interface ConcatenateLayerArgs extends LayerArgs {
   axis?: number;
 }
 
+export type ConcatenateLayerNonSerializableArgs =
+    ConcatenateLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Layer that concatenates an `Array` of inputs.
  *
@@ -753,7 +756,7 @@ export class Concatenate extends Merge {
   readonly DEFAULT_AXIS = -1;
   private readonly axis: number;
 
-  constructor(args?: ConcatenateLayerArgs) {
+  constructor(args?: ConcatenateLayerNonSerializableArgs) {
     super(args);
     if (args == null) {
       args = {};
@@ -1065,6 +1068,8 @@ function batchDot(x: Tensor, y: Tensor, axes: number|[number, number]): Tensor {
   });
 }
 
+export type DotLayerNonSerializableArgs = DotLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Layer that computes a dot product between samples in two tensors.
  *
@@ -1091,7 +1096,7 @@ export class Dot extends Merge {
   private axes: number|[number, number];
   private normalize: boolean;
 
-  constructor(args: DotLayerArgs) {
+  constructor(args: DotLayerNonSerializableArgs) {
     super(args);
     this.axes = args.axes;
     this.normalize = args.normalize == null ? false : args.normalize;

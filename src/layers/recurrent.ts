@@ -19,7 +19,7 @@ import {Activation, ActivationIdentifier, getActivation, serializeActivation} fr
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {InputSpec, SymbolicTensor} from '../engine/topology';
+import {InputSpec, LayerNonSerializableArgs, SymbolicTensor} from '../engine/topology';
 import {Layer, LayerArgs} from '../engine/topology';
 import {AttributeError, NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, Ones, serializeInitializer} from '../initializers';
@@ -344,9 +344,11 @@ export interface BaseRNNLayerConfig extends LayerArgs {
  * `cell` property required. This interface is  to be used with constructors
  * of concrete RNN layer sbutypes.
  */
-export interface RNNLayerArgs extends BaseRNNLayerConfig {
+export interface RNNLayerNonSerializableArgs extends BaseRNNLayerConfig,
+                                                     LayerNonSerializableArgs {
   cell: RNNCell|RNNCell[];
 }
+
 
 /**
  * Base class for recurrent layers.
@@ -426,7 +428,7 @@ export class RNN extends Layer {
 
   private numConstants: number;
 
-  constructor(args: RNNLayerArgs) {
+  constructor(args: RNNLayerNonSerializableArgs) {
     super(args);
     let cell: RNNCell;
     if (args.cell == null) {
@@ -913,7 +915,8 @@ export abstract class RNNCell extends Layer {
   public recurrentDropoutMask: Tensor|Tensor[];
 }
 
-export interface SimpleRNNCellLayerArgs extends LayerArgs {
+export interface SimpleRNNCellLayerNonSerializableArgs extends
+    LayerNonSerializableArgs {
   /**
    * units: Positive integer, dimensionality of the output space.
    */
@@ -1066,7 +1069,7 @@ export class SimpleRNNCell extends RNNCell {
   readonly DEFAULT_RECURRENT_INITIALIZER = 'orthogonal';
   readonly DEFAULT_BIAS_INITIALIZER: InitializerIdentifier = 'zeros';
 
-  constructor(args: SimpleRNNCellLayerArgs) {
+  constructor(args: SimpleRNNCellLayerNonSerializableArgs) {
     super(args);
     this.units = args.units;
     this.activation = getActivation(
@@ -1280,6 +1283,9 @@ export interface SimpleRNNLayerArgs extends BaseRNNLayerConfig {
   recurrentDropout?: number;
 }
 
+export type SimpleRNNLayerNonSerializableArgs =
+    SimpleRNNLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Fully-connected RNN where the output is to be fed back to input.
  *
@@ -1304,9 +1310,9 @@ export interface SimpleRNNLayerArgs extends BaseRNNLayerConfig {
  */
 export class SimpleRNN extends RNN {
   static className = 'SimpleRNN';
-  constructor(args: SimpleRNNLayerArgs) {
+  constructor(args: SimpleRNNLayerNonSerializableArgs) {
     args.cell = new SimpleRNNCell(args);
-    super(args as RNNLayerArgs);
+    super(args as RNNLayerNonSerializableArgs);
     // TODO(cais): Add activityRegularizer.
   }
 
@@ -1414,7 +1420,8 @@ serialization.registerClass(SimpleRNN);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
-export interface GRUCellLayerArgs extends SimpleRNNCellLayerArgs {
+export interface GRUCellLayerNonSerializableArgs extends
+    SimpleRNNCellLayerNonSerializableArgs {
   /**
    * Activation function to use for the recurrent step.
    *
@@ -1519,7 +1526,7 @@ export class GRUCell extends RNNCell {
   recurrentKernel: LayerVariable;
   bias: LayerVariable;
 
-  constructor(args: GRUCellLayerArgs) {
+  constructor(args: GRUCellLayerNonSerializableArgs) {
     super(args);
 
     this.units = args.units;
@@ -1705,6 +1712,8 @@ export interface GRULayerArgs extends SimpleRNNLayerArgs {
   implementation?: number;
 }
 
+export type GRULayerNonSerializableArgs = GRULayerArgs&LayerNonSerializableArgs;
+
 /**
  * Gated Recurrent Unit - Cho et al. 2014.
  *
@@ -1728,14 +1737,14 @@ export interface GRULayerArgs extends SimpleRNNLayerArgs {
  */
 export class GRU extends RNN {
   static className = 'GRU';
-  constructor(args: GRULayerArgs) {
+  constructor(args: GRULayerNonSerializableArgs) {
     if (args.implementation === 0) {
       console.warn(
           '`implementation=0` has been deprecated, and now defaults to ' +
           '`implementation=1`. Please update your layer call.');
     }
     args.cell = new GRUCell(args);
-    super(args as RNNLayerArgs);
+    super(args as RNNLayerNonSerializableArgs);
     // TODO(cais): Add activityRegularizer.
   }
 
@@ -1860,7 +1869,8 @@ serialization.registerClass(GRU);
 
 // Porting Note: Since this is a superset of SimpleRNNLayerConfig, we extend
 //   that interface instead of repeating the fields.
-export interface LSTMCellLayerArgs extends SimpleRNNCellLayerArgs {
+export interface LSTMCellLayerArgs extends
+    SimpleRNNCellLayerNonSerializableArgs {
   /**
    * Activation function to use for the recurrent step.
    *
@@ -1894,6 +1904,9 @@ export interface LSTMCellLayerArgs extends SimpleRNNCellLayerArgs {
    */
   implementation?: number;
 }
+
+export type LSTMCellLayerNonSerializableArgs =
+    LSTMCellLayerArgs&LayerNonSerializableArgs;
 
 /**
  * Cell class for `LSTM`.
@@ -1975,7 +1988,7 @@ export class LSTMCell extends RNNCell {
   recurrentKernel: LayerVariable;
   bias: LayerVariable;
 
-  constructor(args: LSTMCellLayerArgs) {
+  constructor(args: LSTMCellLayerNonSerializableArgs) {
     super(args);
 
     this.units = args.units;
@@ -2182,6 +2195,9 @@ export interface LSTMLayerArgs extends SimpleRNNLayerArgs {
   implementation?: number;
 }
 
+export type LSTMLayerNonSerializableArgs =
+    LSTMLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Long-Short Term Memory layer - Hochreiter 1997.
  *
@@ -2205,14 +2221,14 @@ export interface LSTMLayerArgs extends SimpleRNNLayerArgs {
  */
 export class LSTM extends RNN {
   static className = 'LSTM';
-  constructor(args: LSTMLayerArgs) {
+  constructor(args: LSTMLayerNonSerializableArgs) {
     if (args.implementation as number === 0) {
       console.warn(
           '`implementation=0` has been deprecated, and now defaults to ' +
           '`implementation=1`. Please update your layer call.');
     }
     args.cell = new LSTMCell(args);
-    super(args as RNNLayerArgs);
+    super(args as RNNLayerNonSerializableArgs);
     // TODO(cais): Add activityRegularizer.
   }
 
@@ -2340,7 +2356,8 @@ export class LSTM extends RNN {
 }
 serialization.registerClass(LSTM);
 
-export interface StackedRNNCellsArgs extends LayerArgs {
+export interface StackedRNNCellsNonSerializableArgs extends
+    LayerNonSerializableArgs {
   /**
    * A `Array` of `RNNCell` instances.
    */
@@ -2356,7 +2373,7 @@ export class StackedRNNCells extends RNNCell {
   static className = 'StackedRNNCells';
   protected cells: RNNCell[];
 
-  constructor(args: StackedRNNCellsArgs) {
+  constructor(args: StackedRNNCellsNonSerializableArgs) {
     super(args);
     this.cells = args.cells;
   }

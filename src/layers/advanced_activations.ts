@@ -18,7 +18,7 @@ import {Softmax as softmaxActivation} from '../activations';
 import {getScalar} from '../backend/state';
 import {cast} from '../backend/tfjs_backend';
 import {Constraint, getConstraint, serializeConstraint} from '../constraints';
-import {InputSpec, Layer, LayerArgs} from '../engine/topology';
+import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {Shape} from '../keras_format/types';
@@ -33,6 +33,9 @@ export interface ReLULayerArgs extends LayerArgs {
    */
   maxValue?: number;
 }
+
+export type ReLULayerNonSerializableArgs =
+    ReLULayerArgs&LayerNonSerializableArgs;
 
 /**
  * Rectified Linear Unit activation function.
@@ -49,7 +52,7 @@ export class ReLU extends Layer {
   static className = 'ReLU';
   maxValue: number;
 
-  constructor(args?: ReLULayerArgs) {
+  constructor(args?: ReLULayerNonSerializableArgs) {
     super(args == null ? {} : args);
     this.supportsMasking = true;
     if (args != null) {
@@ -86,6 +89,9 @@ export interface LeakyReLULayerArgs extends LayerArgs {
   alpha?: number;
 }
 
+export type LeakyReluLayerNonSerializableArgs =
+    LeakyReLULayerArgs&LayerNonSerializableArgs;
+
 /**
  * Leaky version of a rectified linear unit.
  *
@@ -106,7 +112,7 @@ export class LeakyReLU extends Layer {
 
   readonly DEFAULT_ALPHA = 0.3;
 
-  constructor(args?: LeakyReLULayerArgs) {
+  constructor(args?: LeakyReluLayerNonSerializableArgs) {
     super(args == null ? {} : args);
     if (args == null) {
       args = {};
@@ -159,6 +165,9 @@ export interface PReLULayerArgs extends LayerArgs {
   sharedAxes?: number|number[];
 }
 
+export type PReLULayerNonSerializableArgs =
+    PReLULayerArgs&LayerNonSerializableArgs;
+
 /**
  * Parameterized version of a leaky rectified linear unit.
  *
@@ -184,7 +193,7 @@ export class PReLU extends Layer {
 
   readonly DEFAULT_ALPHA_INITIALIZER: InitializerIdentifier = 'zeros';
 
-  constructor(args?: PReLULayerArgs) {
+  constructor(args?: PReLULayerNonSerializableArgs) {
     super(args == null ? {} : args);
     if (args == null) {
       args = {};
@@ -259,6 +268,8 @@ export interface ELULayerArgs extends LayerArgs {
   alpha?: number;
 }
 
+export type ELULayerNonSerializableArgs = ELULayerArgs&LayerNonSerializableArgs;
+
 /**
  * Exponetial Linear Unit (ELU).
  *
@@ -283,7 +294,7 @@ export class ELU extends Layer {
 
   readonly DEFAULT_ALPHA = 1.0;
 
-  constructor(args?: ELULayerArgs) {
+  constructor(args?: ELULayerNonSerializableArgs) {
     super(args == null ? {} : args);
     if (args == null) {
       args = {};
@@ -323,6 +334,9 @@ export interface ThresholdedReLULayerArgs extends LayerArgs {
   theta?: number;
 }
 
+export type ThresholdedReLULayerNonSerializableArgs =
+    ThresholdedReLULayerArgs&LayerNonSerializableArgs;
+
 /**
  * Thresholded Rectified Linear Unit.
  *
@@ -348,7 +362,7 @@ export class ThresholdedReLU extends Layer {
 
   readonly DEFAULT_THETA = 1.0;
 
-  constructor(args?: ThresholdedReLULayerArgs) {
+  constructor(args?: ThresholdedReLULayerNonSerializableArgs) {
     super(args == null ? {} : args);
     if (args == null) {
       args = {};
@@ -384,6 +398,9 @@ export interface SoftmaxLayerArgs extends LayerArgs {
   axis?: number;
 }
 
+export type SoftmaxLayerNonSerializableArgs =
+    SoftmaxLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Softmax activation layer.
  *
@@ -400,7 +417,7 @@ export class Softmax extends Layer {
   readonly softmax: (t: Tensor, a?: number) => Tensor;
   readonly DEFAULT_AXIS = 1.0;
 
-  constructor(args?: SoftmaxLayerArgs) {
+  constructor(args?: SoftmaxLayerNonSerializableArgs) {
     super(args == null ? {} : args);
     if (args == null) {
       args = {};

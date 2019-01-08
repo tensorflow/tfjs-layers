@@ -17,7 +17,7 @@ import {notEqual, serialization, Tensor, tidy, zerosLike} from '@tensorflow/tfjs
 
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {Layer, LayerArgs} from '../engine/topology';
+import {Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
 import {ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {Shape} from '../keras_format/types';
@@ -74,6 +74,9 @@ export interface EmbeddingLayerArgs extends LayerArgs {
   inputLength?: number|number[];
 }
 
+export type EmbeddingLayerNonSerializableArgs =
+    EmbeddingLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Maps positive integers (indices) into dense vectors of fixed size.
  * eg. [[4], [20]] -> [[0.25, 0.1], [0.6, -0.2]]
@@ -98,7 +101,7 @@ export class Embedding extends Layer {
   private readonly embeddingsRegularizer?: Regularizer;
   private readonly embeddingsConstraint?: Constraint;
 
-  constructor(args: EmbeddingLayerArgs) {
+  constructor(args: EmbeddingLayerNonSerializableArgs) {
     super(args);
     if (args.batchInputShape == null && args.inputShape == null) {
       // Porting Note: This logic is copied from Layer's constructor, since we

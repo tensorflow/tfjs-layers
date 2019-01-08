@@ -19,6 +19,7 @@ import {imageDataFormat} from '../backend/common';
 import * as K from '../backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from '../common';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
+import {LayerNonSerializableArgs} from '../engine/topology';
 import {ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {Shape} from '../keras_format/types';
@@ -28,7 +29,7 @@ import {convOutputLength} from '../utils/conv_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-import {BaseConv, BaseConvLayerArgs, ConvLayerArgs, preprocessConv2DInput} from './convolutional';
+import {BaseConv, BaseConvLayerArgs, preprocessConv2DInput} from './convolutional';
 
 
 /**
@@ -107,6 +108,9 @@ export interface DepthwiseConv2DLayerArgs extends BaseConvLayerArgs {
   depthwiseRegularizer?: RegularizerIdentifier|Regularizer;
 }
 
+export type DepthwiseConv2DLayerNonSerializableArgs =
+    DepthwiseConv2DLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Depthwise separable 2D convolution.
  *
@@ -124,8 +128,8 @@ export class DepthwiseConv2D extends BaseConv {
 
   private depthwiseKernel: LayerVariable = null;
 
-  constructor(args: DepthwiseConv2DLayerArgs) {
-    super(2, args as ConvLayerArgs);
+  constructor(args: DepthwiseConv2DLayerNonSerializableArgs) {
+    super(2, args);
     this.depthMultiplier =
         args.depthMultiplier == null ? 1 : args.depthMultiplier;
     this.depthwiseInitializer = getInitializer(

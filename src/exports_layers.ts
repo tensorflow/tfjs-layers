@@ -20,8 +20,9 @@ import {Add, Average, Concatenate, ConcatenateLayerArgs, Dot, DotLayerArgs, Maxi
 import {BatchNormalization, BatchNormalizationLayerArgs} from './layers/normalization';
 import {ZeroPadding2D, ZeroPadding2DLayerArgs} from './layers/padding';
 import {AveragePooling1D, AveragePooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerArgs, MaxPooling1D, MaxPooling2D, Pooling1DLayerArgs, Pooling2DLayerArgs} from './layers/pooling';
-import {GRU, GRUCell, GRUCellLayerArgs, GRULayerArgs, LSTM, LSTMCell, LSTMCellLayerArgs, LSTMLayerArgs, RNN, RNNCell, RNNLayerArgs, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerArgs, SimpleRNNLayerArgs, StackedRNNCells, StackedRNNCellsArgs} from './layers/recurrent';
+import {GRU, GRUCell, GRUCellLayerNonSerializableArgs, GRULayerArgs, LSTM, LSTMCell, LSTMCellLayerArgs, LSTMLayerArgs, RNN, RNNCell, RNNLayerNonSerializableArgs, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerNonSerializableArgs, SimpleRNNLayerArgs, StackedRNNCells, StackedRNNCellsNonSerializableArgs} from './layers/recurrent';
 import {Bidirectional, BidirectionalLayerNonSerializableArgs, TimeDistributed, Wrapper, WrapperLayerNonSerializableArgs} from './layers/wrappers';
+
 
 
 // TODO(cais): Add doc string to all the public static functions in this
@@ -592,7 +593,7 @@ export function gru(args: GRULayerArgs): Layer {
  *   configParamIndices: [0]
  * }
  */
-export function gruCell(args: GRUCellLayerArgs): RNNCell {
+export function gruCell(args: GRUCellLayerNonSerializableArgs): RNNCell {
   return new GRUCell(args);
 }
 
@@ -644,7 +645,8 @@ export function simpleRNN(args: SimpleRNNLayerArgs): Layer {
  *   configParamIndices: [0]
  * }
  */
-export function simpleRNNCell(args: SimpleRNNCellLayerArgs): RNNCell {
+export function simpleRNNCell(args: SimpleRNNCellLayerNonSerializableArgs):
+    RNNCell {
   return new SimpleRNNCell(args);
 }
 
@@ -657,7 +659,7 @@ export function simpleRNNCell(args: SimpleRNNCellLayerArgs): RNNCell {
  *   configParamIndices: [0]
  * }
  */
-export function rnn(args: RNNLayerArgs): Layer {
+export function rnn(args: RNNLayerNonSerializableArgs): Layer {
   return new RNN(args);
 }
 
@@ -670,7 +672,8 @@ export function rnn(args: RNNLayerArgs): Layer {
  *   configParamIndices: [0]
  * }
  */
-export function stackedRNNCells(args: StackedRNNCellsArgs): RNNCell {
+export function stackedRNNCells(args: StackedRNNCellsNonSerializableArgs):
+    RNNCell {
   return new StackedRNNCells(args);
 }
 

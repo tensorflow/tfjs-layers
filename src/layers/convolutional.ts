@@ -20,7 +20,7 @@ import {imageDataFormat} from '../backend/common';
 import * as K from '../backend/tfjs_backend';
 import {checkDataFormat, checkPaddingMode, DataFormat, PaddingMode} from '../common';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {InputSpec, Layer, LayerArgs} from '../engine/topology';
+import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {Shape} from '../keras_format/types';
@@ -290,17 +290,8 @@ export interface BaseConvLayerArgs extends LayerArgs {
   activityRegularizer?: RegularizerIdentifier|Regularizer;
 }
 
-/**
- * LayerConfig for non-depthwise convolutional layers.
- * Applies to non-depthwise convolution of all ranks (e.g, Conv1D, Conv2D).
- */
-export interface ConvLayerArgs extends BaseConvLayerArgs {
-  /**
-   * The dimensionality of the output space (i.e. the number of filters in the
-   * convolution).
-   */
-  filters: number;
-}
+export type BaseConvLayerNonSerializableArgs =
+    BaseConvLayerArgs&LayerNonSerializableArgs;
 
 /**
  * Abstract convolution layer.
@@ -329,8 +320,8 @@ export abstract class BaseConv extends Layer {
   readonly DEFAULT_KERNEL_INITIALIZER: InitializerIdentifier = 'glorotNormal';
   readonly DEFAULT_BIAS_INITIALIZER: InitializerIdentifier = 'zeros';
 
-  constructor(rank: number, args: BaseConvLayerArgs) {
-    super(args as LayerArgs);
+  constructor(rank: number, args: BaseConvLayerNonSerializableArgs) {
+    super(args);
     BaseConv.verifyArgs(args);
     this.rank = rank;
     if (this.rank !== 1 && this.rank !== 2) {
@@ -407,6 +398,21 @@ export abstract class BaseConv extends Layer {
 }
 
 /**
+ * LayerConfig for non-depthwise convolutional layers.
+ * Applies to non-depthwise convolution of all ranks (e.g, Conv1D, Conv2D).
+ */
+export interface ConvLayerArgs extends BaseConvLayerArgs {
+  /**
+   * The dimensionality of the output space (i.e. the number of filters in the
+   * convolution).
+   */
+  filters: number;
+}
+
+export type ConvLayerNonSerializableArgs =
+    ConvLayerArgs&LayerNonSerializableArgs;
+
+/**
  * Abstract nD convolution layer.  Ancestor of convolution layers which reduce
  * across channels, i.e., Conv1D and Conv2D, but not DepthwiseConv2D.
  */
@@ -424,8 +430,8 @@ export abstract class Conv extends BaseConv {
   protected readonly kernelConstraint?: Constraint;
   protected readonly kernelRegularizer?: Regularizer;
 
-  constructor(rank: number, args: ConvLayerArgs) {
-    super(rank, args as BaseConvLayerArgs);
+  constructor(rank: number, args: ConvLayerNonSerializableArgs) {
+    super(rank, args);
     Conv.verifyArgs(args);
     this.filters = args.filters;
     this.kernelInitializer = getInitializer(
@@ -534,7 +540,6 @@ export abstract class Conv extends BaseConv {
   }
 }
 
-
 /**
  * 2D convolution layer (e.g. spatial convolution over images).
  *
@@ -553,7 +558,7 @@ export abstract class Conv extends BaseConv {
  */
 export class Conv2D extends Conv {
   static className = 'Conv2D';
-  constructor(args: ConvLayerArgs) {
+  constructor(args: ConvLayerNonSerializableArgs) {
     super(2, args);
     Conv2D.verifyArgs(args);
   }
@@ -612,7 +617,7 @@ export class Conv2DTranspose extends Conv2D {
   static className = 'Conv2DTranspose';
   inputSpec: InputSpec[];
 
-  constructor(args: ConvLayerArgs) {
+  constructor(args: ConvLayerNonSerializableArgs) {
     super(args);
     this.inputSpec = [new InputSpec({ndim: 4})];
 
@@ -796,6 +801,8 @@ export interface SeparableConvLayerArgs extends ConvLayerArgs {
   pointwiseConstraint?: ConstraintIdentifier|Constraint;
 }
 
+export type SeparableConvLayerNonSerializableArgs =
+    SeparableConvLayerArgs&LayerNonSerializableArgs;
 
 export class SeparableConv extends Conv {
   static className = 'SeparableConv';
@@ -817,7 +824,7 @@ export class SeparableConv extends Conv {
   protected depthwiseKernel: LayerVariable = null;
   protected pointwiseKernel: LayerVariable = null;
 
-  constructor(rank: number, config?: SeparableConvLayerArgs) {
+  constructor(rank: number, config?: SeparableConvLayerNonSerializableArgs) {
     super(rank, config);
 
     if (config.filters == null) {
@@ -984,7 +991,7 @@ export class SeparableConv extends Conv {
  */
 export class SeparableConv2D extends SeparableConv {
   static className = 'SeparableConv2D';
-  constructor(args?: SeparableConvLayerArgs) {
+  constructor(args?: SeparableConvLayerNonSerializableArgs) {
     super(2, args);
   }
 }
@@ -1010,7 +1017,7 @@ serialization.registerClass(SeparableConv2D);
  */
 export class Conv1D extends Conv {
   static className = 'Conv1D';
-  constructor(args: ConvLayerArgs) {
+  constructor(args: ConvLayerNonSerializableArgs) {
     super(1, args);
     Conv1D.verifyArgs(args);
     this.inputSpec = [{ndim: 3}];
@@ -1064,6 +1071,9 @@ export interface Cropping2DLayerArgs extends LayerArgs {
   dataFormat?: DataFormat;
 }
 
+export type Cropping2DLayerNonSerializableArgs =
+    Cropping2DLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Cropping layer for 2D input (e.g., image).
  *
@@ -1098,7 +1108,7 @@ export class Cropping2D extends Layer {
   protected readonly cropping: [[number, number], [number, number]];
   protected readonly dataFormat: DataFormat;
 
-  constructor(args: Cropping2DLayerArgs) {
+  constructor(args: Cropping2DLayerNonSerializableArgs) {
     super(args);
     if (typeof args.cropping === 'number')
       this.cropping =
@@ -1183,6 +1193,9 @@ export interface UpSampling2DLayerArgs extends LayerArgs {
   dataFormat?: DataFormat;
 }
 
+export type UpSampling2DLayerNonSerializableArgs =
+    UpSampling2DLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Upsampling layer for 2D inputs.
  *
@@ -1211,7 +1224,7 @@ export class UpSampling2D extends Layer {
   protected readonly size: number[];
   protected readonly dataFormat: DataFormat;
 
-  constructor(args: UpSampling2DLayerArgs) {
+  constructor(args: UpSampling2DLayerNonSerializableArgs) {
     super(args);
     this.inputSpec = [{ndim: 4}];
     this.size = args.size == null ? this.DEFAULT_SIZE : args.size;

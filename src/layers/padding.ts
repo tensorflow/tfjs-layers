@@ -20,7 +20,7 @@ import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {imageDataFormat} from '../backend/common';
 import {DataFormat} from '../common';
-import {InputSpec, Layer, LayerArgs} from '../engine/topology';
+import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs} from '../engine/topology';
 import {ValueError} from '../errors';
 import {Shape} from '../keras_format/types';
 import {Kwargs} from '../types';
@@ -132,6 +132,9 @@ export interface ZeroPadding2DLayerArgs extends LayerArgs {
   dataFormat?: DataFormat;
 }
 
+export type ZeroPadding2DLayerNonSerializableArgs =
+    ZeroPadding2DLayerArgs&LayerNonSerializableArgs;
+
 /**
  * Zero-padding layer for 2D input (e.g., image).
  *
@@ -157,7 +160,7 @@ export class ZeroPadding2D extends Layer {
   readonly dataFormat: DataFormat;
   readonly padding: [[number, number], [number, number]];
 
-  constructor(args?: ZeroPadding2DLayerArgs) {
+  constructor(args?: ZeroPadding2DLayerNonSerializableArgs) {
     if (args == null) {
       args = {};
     }
