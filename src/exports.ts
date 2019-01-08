@@ -146,8 +146,9 @@ export function sequential(config?: SequentialConfig): Sequential {
  * }
  */
 export function loadModel(
-    pathOrIOHandler: string|io.IOHandler, strict = true): Promise<Model> {
-  return loadModelInternal(pathOrIOHandler, strict);
+    pathOrIOHandler: string|io.IOHandler, strict = true,
+    onprogress?: Function): Promise<Model> {
+  return loadModelInternal(pathOrIOHandler, strict, onprogress);
 }
 
 /**

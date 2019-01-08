@@ -231,17 +231,21 @@ export interface ModelPredictConfig {
  * @param strict Require that the provided weights exactly match those required
  *   by the layers.  Default true.  Passing false means that both extra weights
  *   and missing weights will be silently ignored.
+ * @param onprogress Optional, progress callback function, fired periodically
+ *   before the load is completed.
  *
  * @returns A `Promise` of `tf.Model`, with the topology and weights loaded.
  */
 export async function loadModelInternal(
-    pathOrIOHandler: string|io.IOHandler, strict = true): Promise<Model> {
+    pathOrIOHandler: string|io.IOHandler, strict = true,
+    onprogress?: Function): Promise<Model> {
   if (typeof pathOrIOHandler === 'string') {
-    const handlers = io.getLoadHandlers(pathOrIOHandler);
+    const handlers = io.getLoadHandlers(pathOrIOHandler, onprogress);
     if (handlers.length === 0) {
       // For backward compatibility: if no load handler can be found,
       // assume it is a relative http path.
-      handlers.push(io.browserHTTPRequest(pathOrIOHandler));
+      handlers.push(io.browserHTTPRequest(pathOrIOHandler, null, null, null,
+          onprogress));
     } else if (handlers.length > 1) {
       throw new ValueError(
           `Found more than one (${handlers.length}) load handlers for ` +
