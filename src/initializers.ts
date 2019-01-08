@@ -14,8 +14,8 @@ import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
 import {NotImplementedError, ValueError} from './errors';
-import {checkDistribution, checkFanMode, ConstantPrimitiveArgs, Distribution, FanMode, IdentityPrimitiveArgs, OrthogonalPrimitiveArgs, RandomNormalPrimitiveArgs, RandomUniformPrimitiveArgs, SeedOnlyInitializerPrimitiveArgs, TruncatedNormalPrimitiveArgs, VarianceScalingPrimitiveArgs} from './keras_format/initializer_config';
-import {Shape} from './keras_format/types';
+import {checkDistribution, checkFanMode, ConstantBaseConfig, Distribution, FanMode, IdentityBaseConfig, OrthogonalBaseConfig, RandomNormalBaseConfig, RandomUniformBaseConfig, SeedOnlyInitializerBaseConfig, TruncatedNormalBaseConfig, VarianceScalingBaseConfig} from './keras_format/initializer_config';
+import {Shape} from './types';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
 
@@ -67,7 +67,7 @@ export class Ones extends Initializer {
 }
 serialization.registerClass(Ones);
 
-export type ConstantArgs = ConstantPrimitiveArgs;
+export type ConstantArgs = ConstantBaseConfig;
 
 /**
  * Initializer that generates values initialized to some constant.
@@ -99,7 +99,7 @@ export class Constant extends Initializer {
 }
 serialization.registerClass(Constant);
 
-export type RandomUniformArgs = RandomUniformPrimitiveArgs;
+export type RandomUniformArgs = RandomUniformBaseConfig;
 
 /**
  * Initializer that generates random values initialized to a uniform
@@ -133,7 +133,7 @@ export class RandomUniform extends Initializer {
 }
 serialization.registerClass(RandomUniform);
 
-export type RandomNormalArgs = RandomNormalPrimitiveArgs;
+export type RandomNormalArgs = RandomNormalBaseConfig;
 
 /**
  * Initializer that generates random values initialized to a normal
@@ -170,7 +170,7 @@ export class RandomNormal extends Initializer {
 }
 serialization.registerClass(RandomNormal);
 
-export type TruncatedNormalArgs = TruncatedNormalPrimitiveArgs;
+export type TruncatedNormalArgs = TruncatedNormalBaseConfig;
 
 /**
  * Initializer that generates random values initialized to a truncated normal.
@@ -211,7 +211,7 @@ export class TruncatedNormal extends Initializer {
 }
 serialization.registerClass(TruncatedNormal);
 
-export type IdentityArgs = IdentityPrimitiveArgs;
+export type IdentityArgs = IdentityBaseConfig;
 
 /**
  * Initializer that generates the identity matrix.
@@ -278,7 +278,7 @@ function computeFans(
   return [fanIn, fanOut];
 }
 
-export type VarianceScalingArgs = VarianceScalingPrimitiveArgs;
+export type VarianceScalingArgs = VarianceScalingBaseConfig;
 
 /**
  * Initializer capable of adapting its scale to the shape of weights.
@@ -354,7 +354,7 @@ export class VarianceScaling extends Initializer {
 }
 serialization.registerClass(VarianceScaling);
 
-export type SeedOnlyInitializerArgs = SeedOnlyInitializerPrimitiveArgs;
+export type SeedOnlyInitializerArgs = SeedOnlyInitializerBaseConfig;
 
 /**
  * Glorot uniform initializer, also called Xavier uniform initializer.
@@ -497,7 +497,7 @@ export class LeCunNormal extends VarianceScaling {
 }
 serialization.registerClass(LeCunNormal);
 
-export type OrthogonalArgs = OrthogonalPrimitiveArgs;
+export type OrthogonalArgs = OrthogonalBaseConfig;
 
 /**
  * Initializer that generates a random orthogonal matrix.

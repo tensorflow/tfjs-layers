@@ -12,13 +12,12 @@ import {DataType, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {getUid} from '../backend/state';
 import {ValueError} from '../errors';
-import {InputLayerPrimitiveArgs} from '../keras_format/input_config';
-import {Shape} from '../keras_format/types';
-import {Kwargs} from '../types';
+import {InputLayerBaseConfig} from '../keras_format/input_config';
+import {Kwargs, Shape} from '../types';
 
 import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
 
-export type InputLayerArgs = InputLayerPrimitiveArgs;
+export type InputLayerArgs = InputLayerBaseConfig;
 
 /**
  * An input layer is an entry point into a `tf.Model`.

@@ -15,7 +15,7 @@ import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {epsilon} from './backend/common';
 import {getScalar} from './backend/state';
-import {MaxNormPrimitiveArgs, MinMaxNormPrimitiveArgs, UnitNormPrimitiveArgs} from './keras_format/constraint_config';
+import {MaxNormBaseConfig, MinMaxNormBaseConfig, UnitNormBaseConfig} from './keras_format/constraint_config';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 
 /**
@@ -43,7 +43,7 @@ export abstract class Constraint extends serialization.Serializable {
   }
 }
 
-export type MaxNormArgs = MaxNormPrimitiveArgs;
+export type MaxNormArgs = MaxNormBaseConfig;
 
 /**
  * MaxNorm weight constraint.
@@ -84,7 +84,7 @@ export class MaxNorm extends Constraint {
 }
 serialization.registerClass(MaxNorm);
 
-export type UnitNormArgs = UnitNormPrimitiveArgs;
+export type UnitNormArgs = UnitNormBaseConfig;
 
 /**
  * Constrains the weights incident to each hidden unit to have unit norm.
@@ -122,7 +122,7 @@ export class NonNeg extends Constraint {
 }
 serialization.registerClass(NonNeg);
 
-export type MinMaxNormArgs = MinMaxNormPrimitiveArgs;
+export type MinMaxNormArgs = MinMaxNormBaseConfig;
 
 export class MinMaxNorm extends Constraint {
   static readonly className = 'MinMaxNorm';
