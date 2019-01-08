@@ -375,7 +375,7 @@ function collectMetrics(
   }
 }
 
-export interface ModelEvaluateNonSerialializableArgs {
+export interface ModelEvaluateNonSerializableArgs {
   /**
    * Batch size (Integer). If unspecified, it will default to 32.
    */
@@ -796,7 +796,7 @@ export class Model extends Container implements tfc.InferenceModel {
    */
   evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[],
-      args: ModelEvaluateNonSerialializableArgs = {}): Scalar|Scalar[] {
+      args: ModelEvaluateNonSerializableArgs = {}): Scalar|Scalar[] {
     const batchSize = args.batchSize == null ? 32 : args.batchSize;
     checkBatchSize(batchSize);
 

@@ -18,7 +18,7 @@ import {History} from './base_callbacks';
 import {Dataset} from './engine/dataset_stub';
 import {Input} from './engine/input_layer';
 import {getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
-import {Model, ModelCompileNonSerializableArgs, ModelEvaluateNonSerialializableArgs} from './engine/training';
+import {Model, ModelCompileNonSerializableArgs, ModelEvaluateNonSerializableArgs} from './engine/training';
 import {ModelEvaluateDatasetArgs, ModelFitDatasetNonSerializableArgs} from './engine/training_dataset';
 import {ModelFitNonSerializableArgs} from './engine/training_tensors';
 import {NotImplementedError, RuntimeError, ValueError} from './errors';
@@ -680,7 +680,7 @@ export class Sequential extends Model {
    */
   evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[],
-      args: ModelEvaluateNonSerialializableArgs = {}): Scalar|Scalar[] {
+      args: ModelEvaluateNonSerializableArgs = {}): Scalar|Scalar[] {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before being used.');
