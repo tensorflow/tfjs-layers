@@ -21,14 +21,14 @@ import {Constraint, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, Layer, LayerNonSerializableArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
-import {ELULayerPrimitiveArgs, LeakyReLULayerPrimitiveArgs, PReLULayerPrimitiveArgs, ReLULayerPrimitiveArgs, SoftmaxLayerPrimitiveArgs, ThresholdedReLULayerPrimitiveArgs} from '../keras_format/advanced_activation_configs';
+import {ELULayerBaseConfig, LeakyReLULayerBaseConfig, PReLULayerBaseConfig, ReLULayerBaseConfig, SoftmaxLayerBaseConfig, ThresholdedReLULayerBaseConfig} from '../keras_format/advanced_activation_configs';
 import {Shape} from '../keras_format/types';
 import {getRegularizer, Regularizer, serializeRegularizer} from '../regularizers';
 import {Kwargs} from '../types';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-export interface ReLULayerArgs extends ReLULayerPrimitiveArgs {}
+export interface ReLULayerArgs extends ReLULayerBaseConfig {}
 
 export type ReLULayerNonSerializableArgs =
     ReLULayerArgs&LayerNonSerializableArgs;
@@ -78,7 +78,7 @@ export class ReLU extends Layer {
 }
 serialization.registerClass(ReLU);
 
-export interface LeakyReLULayerArgs extends LeakyReLULayerPrimitiveArgs {}
+export interface LeakyReLULayerArgs extends LeakyReLULayerBaseConfig {}
 
 export type LeakyReluLayerNonSerializableArgs =
     LeakyReLULayerArgs&LayerNonSerializableArgs;
@@ -130,7 +130,7 @@ export class LeakyReLU extends Layer {
 serialization.registerClass(LeakyReLU);
 
 
-export interface PReLULayerArgs extends PReLULayerPrimitiveArgs {
+export interface PReLULayerArgs extends PReLULayerBaseConfig {
   /**
    * Initializer for the learnable alpha.
    */
@@ -243,7 +243,7 @@ export class PReLU extends Layer {
 }
 serialization.registerClass(PReLU);
 
-export interface ELULayerArgs extends ELULayerPrimitiveArgs {}
+export interface ELULayerArgs extends ELULayerBaseConfig {}
 
 export type ELULayerNonSerializableArgs = ELULayerArgs&LayerNonSerializableArgs;
 
@@ -305,7 +305,7 @@ export class ELU extends Layer {
 serialization.registerClass(ELU);
 
 export interface ThresholdedReLULayerArgs extends
-    ThresholdedReLULayerPrimitiveArgs {}
+    ThresholdedReLULayerBaseConfig {}
 ;
 
 export type ThresholdedReLULayerNonSerializableArgs =
@@ -364,7 +364,7 @@ export class ThresholdedReLU extends Layer {
 }
 serialization.registerClass(ThresholdedReLU);
 
-export interface SoftmaxLayerArgs extends SoftmaxLayerPrimitiveArgs {}
+export interface SoftmaxLayerArgs extends SoftmaxLayerBaseConfig {}
 
 export type SoftmaxLayerNonSerializableArgs =
     SoftmaxLayerArgs&LayerNonSerializableArgs;
