@@ -11,27 +11,27 @@
 import {ConstraintConfig, ConstraintIdentifier} from './constraint_config';
 import {InitializerConfig, InitializerIdentifier} from './initializer_config';
 import {RegularizerConfig, RegularizerIdentifier} from './regularizer_config';
-import {LayerConfig, LayerPrimitiveArgs} from './topology_config';
+import {LayerBaseConfig, LayerConfig} from './topology_config';
 
-export interface ReLULayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface ReLULayerBaseConfig extends LayerBaseConfig {
   /**
    * Float, the maximum output value.
    */
   maxValue?: number;
 }
 
-export type ReLULayerConfig = ReLULayerPrimitiveArgs;
+export type ReLULayerConfig = ReLULayerBaseConfig;
 
-export interface LeakyReLULayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface LeakyReLULayerBaseConfig extends LayerBaseConfig {
   /**
    * Float `>= 0`. Negative slope coefficient. Defaults to `0.3`.
    */
   alpha?: number;
 }
 
-export type LeakyReLULayerConfig = LeakyReLULayerPrimitiveArgs;
+export type LeakyReLULayerConfig = LeakyReLULayerBaseConfig;
 
-export interface PReLULayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface PReLULayerBaseConfig extends LayerBaseConfig {
   /**
    * The axes along which to share learnable parameters for the activation
    * function. For example, if the incoming feature maps are from a 2D
@@ -60,25 +60,25 @@ export interface PReLULayerConfig extends LayerConfig {
   alphaConstraint?: ConstraintConfig|ConstraintIdentifier;
 }
 
-export interface ELULayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface ELULayerBaseConfig extends LayerBaseConfig {
   /**
    * Float `>= 0`. Negative slope coefficient. Defaults to `1.0`.
    */
   alpha?: number;
 }
 
-export type ELULayerConfig = ELULayerPrimitiveArgs;
+export type ELULayerConfig = ELULayerBaseConfig;
 
-export interface ThresholdedReLULayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface ThresholdedReLULayerBaseConfig extends LayerBaseConfig {
   /**
    * Float >= 0. Threshold location of activation.
    */
   theta?: number;
 }
 
-export type ThresholdedReLULayerConfig = ThresholdedReLULayerPrimitiveArgs;
+export type ThresholdedReLULayerConfig = ThresholdedReLULayerBaseConfig;
 
-export interface SoftmaxLayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface SoftmaxLayerBaseConfig extends LayerBaseConfig {
   /**
    * Integer, axis along which the softmax normalization is applied.
    * Defaults to `-1` (i.e., the last axis).

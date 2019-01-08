@@ -143,7 +143,7 @@ export interface ModelFitDatasetNonSerializableArgs<T extends TensorContainer> {
 /**
  * Interface for configuring model evaluation based on a dataset object.
  */
-export interface ModelEvaluateDatasetPrimitiveArgs {
+export interface ModelEvaluateDatasetBaseConfig {
   /**
    * Number of batches to draw from the dataset object before ending the
    * evaluation.
@@ -156,7 +156,7 @@ export interface ModelEvaluateDatasetPrimitiveArgs {
   verbose?: ModelLoggingVerbosity;
 }
 
-export type ModelEvaluateDatasetArgs = ModelEvaluateDatasetPrimitiveArgs;
+export type ModelEvaluateDatasetArgs = ModelEvaluateDatasetBaseConfig;
 
 // Default batch size used during tensor-based validation.
 const DEFAULT_VALIDATION_BATCH_SIZE = 32;

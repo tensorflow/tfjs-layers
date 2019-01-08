@@ -13,10 +13,10 @@ import {ActivationIdentifier} from '../activations';
 import {ConstraintConfig, ConstraintIdentifier} from './constraint_config';
 import {InitializerConfig, InitializerIdentifier} from './initializer_config';
 import {RegularizerConfig, RegularizerIdentifier} from './regularizer_config';
-import {LayerPrimitiveArgs} from './topology_config';
+import {LayerBaseConfig} from './topology_config';
 import {Shape} from './types';
 
-export interface DropoutLayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface DropoutLayerBaseConfig extends LayerBaseConfig {
   /** Float between 0 and 1. Fraction of the input units to drop. */
   rate: number;
 
@@ -34,9 +34,9 @@ export interface DropoutLayerPrimitiveArgs extends LayerPrimitiveArgs {
   seed?: number;
 }
 
-export type DropoutLayerConfig = DropoutLayerPrimitiveArgs;
+export type DropoutLayerConfig = DropoutLayerBaseConfig;
 
-export interface DenseLayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface DenseLayerBaseConfig extends LayerBaseConfig {
   /** Positive integer, dimensionality of the output space. */
   units: number;
 
@@ -56,7 +56,7 @@ export interface DenseLayerPrimitiveArgs extends LayerPrimitiveArgs {
   inputDim?: number;
 }
 
-export interface DenseLayerConfig extends DenseLayerPrimitiveArgs {
+export interface DenseLayerConfig extends DenseLayerBaseConfig {
   /**
    * If specified, defines inputShape as `[inputDim]`.
    */
@@ -98,33 +98,32 @@ export interface DenseLayerConfig extends DenseLayerPrimitiveArgs {
 }
 
 
-export interface ActivationLayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface ActivationLayerBaseConfig extends LayerBaseConfig {
   /**
    * Name of the activation function to use.
    */
   activation: ActivationIdentifier;
 }
 
-export interface ActivationLayerConfig extends ActivationLayerPrimitiveArgs {}
+export interface ActivationLayerConfig extends ActivationLayerBaseConfig {}
 
-export interface RepeatVectorLayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface RepeatVectorLayerBaseConfig extends LayerBaseConfig {
   /**
    * The integer number of times to repeat the input.
    */
   n: number;
 }
 
-export interface RepeatVectorLayerConfig extends
-    RepeatVectorLayerPrimitiveArgs {}
+export interface RepeatVectorLayerConfig extends RepeatVectorLayerBaseConfig {}
 
-export interface ReshapeLayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface ReshapeLayerBaseConfig extends LayerBaseConfig {
   /** The target shape. Does not include the batch axis. */
   targetShape: Shape;
 }
 
-export interface ReshapeLayerConfig extends ReshapeLayerPrimitiveArgs {}
+export interface ReshapeLayerConfig extends ReshapeLayerBaseConfig {}
 
-export interface PermuteLayerPrimitiveArgs extends LayerPrimitiveArgs {
+export interface PermuteLayerBaseConfig extends LayerBaseConfig {
   /**
    * Array of integers. Permutation pattern. Does not include the
    * sample (batch) dimension. Index starts at 1.

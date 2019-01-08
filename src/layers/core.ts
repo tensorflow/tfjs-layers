@@ -22,7 +22,7 @@ import {InputSpec, Layer, LayerNonSerializableArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, serializeInitializer} from '../initializers';
 import {ConstraintIdentifier} from '../keras_format/constraint_config';
-import {ActivationLayerPrimitiveArgs, DenseLayerPrimitiveArgs, DropoutLayerPrimitiveArgs, PermuteLayerPrimitiveArgs, RepeatVectorLayerPrimitiveArgs, ReshapeLayerPrimitiveArgs} from '../keras_format/core_layers_config';
+import {ActivationLayerBaseConfig, DenseLayerBaseConfig, DropoutLayerBaseConfig, PermuteLayerBaseConfig, RepeatVectorLayerBaseConfig, ReshapeLayerBaseConfig} from '../keras_format/core_layers_config';
 import {InitializerIdentifier} from '../keras_format/initializer_config';
 import {RegularizerIdentifier} from '../keras_format/regularizer_config';
 import {Shape} from '../keras_format/types';
@@ -33,7 +33,7 @@ import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
 
-export type DropoutLayerArgs = DropoutLayerPrimitiveArgs;
+export type DropoutLayerArgs = DropoutLayerBaseConfig;
 
 export type DropoutLayerNonSerializableArgs =
     DropoutLayerArgs&LayerNonSerializableArgs;
@@ -118,7 +118,7 @@ export class Dropout extends Layer {
 }
 serialization.registerClass(Dropout);
 
-export interface DenseLayerArgs extends DenseLayerPrimitiveArgs {
+export interface DenseLayerArgs extends DenseLayerBaseConfig {
   /**
    * Initializer for the dense kernel weights matrix.
    */
@@ -350,7 +350,7 @@ export class Flatten extends Layer {
 }
 serialization.registerClass(Flatten);
 
-export type ActivationLayerArgs = ActivationLayerPrimitiveArgs;
+export type ActivationLayerArgs = ActivationLayerBaseConfig;
 
 export type ActivationLayerNonSerializableArgs =
     ActivationLayerArgs&LayerNonSerializableArgs;
@@ -412,7 +412,7 @@ export class Activation extends Layer {
 }
 serialization.registerClass(Activation);
 
-export type RepeatVectorLayerArgs = RepeatVectorLayerPrimitiveArgs;
+export type RepeatVectorLayerArgs = RepeatVectorLayerBaseConfig;
 
 export type RepeatVectorLayerNonSerializableArgs =
     RepeatVectorLayerArgs&LayerNonSerializableArgs;
@@ -461,7 +461,7 @@ export class RepeatVector extends Layer {
 }
 serialization.registerClass(RepeatVector);
 
-export type ReshapeLayerArgs = ReshapeLayerPrimitiveArgs;
+export type ReshapeLayerArgs = ReshapeLayerBaseConfig;
 
 export type ReshapeLayerNonSerializableArgs =
     ReshapeLayerArgs&LayerNonSerializableArgs;
@@ -590,7 +590,7 @@ export class Reshape extends Layer {
 }
 serialization.registerClass(Reshape);
 
-export type PermuteLayerArgs = PermuteLayerPrimitiveArgs;
+export type PermuteLayerArgs = PermuteLayerBaseConfig;
 
 export type PermuteLayerNonSerializableArgs =
     PermuteLayerArgs&LayerNonSerializableArgs;

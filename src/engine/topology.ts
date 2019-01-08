@@ -17,8 +17,8 @@ import {getScopedTensorName, getUniqueTensorName, nameScope} from '../common';
 import {Constraint} from '../constraints';
 import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {getInitializer, Initializer} from '../initializers';
-import {InputSpecPrimitiveArgs} from '../keras_format/input_config';
-import {LayerPrimitiveArgs} from '../keras_format/topology_config';
+import {InputSpecBaseConfig} from '../keras_format/input_config';
+import {LayerBaseConfig} from '../keras_format/topology_config';
 import {Shape} from '../keras_format/types';
 import {Regularizer} from '../regularizers';
 import {Kwargs, RegularizerFn} from '../types';
@@ -30,7 +30,7 @@ import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 // TODO(michaelterry): This is a stub until it's defined.
 export type Op = (x: LayerVariable) => LayerVariable;
 
-export type InputSpecArgs = InputSpecPrimitiveArgs;
+export type InputSpecArgs = InputSpecBaseConfig;
 
 /**
  * Specifies the ndim, dtype and shape of every input to a layer.
@@ -329,7 +329,7 @@ export class Node {
 }
 
 /** Constructor arguments for Layer. */
-export type LayerArgs = LayerPrimitiveArgs;
+export type LayerArgs = LayerBaseConfig;
 
 export interface LayerNonSerializableArgs extends LayerArgs {
   /**
