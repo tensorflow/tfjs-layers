@@ -17,7 +17,7 @@ import {DataType, Shape} from '../keras_format/types';
  * If only inputShape is provided, then the batchInputShape is determined by
  * the batchSize argument and the inputShape: [batchSize].concat(inputShape).
  */
-export interface InputLayerPrimitiveArgs {
+export interface InputLayerBaseConfig {
   /** Input shape, not including the batch axis. */
   inputShape?: Shape;
   /** Optional input batch size (integer or null). */
@@ -35,12 +35,12 @@ export interface InputLayerPrimitiveArgs {
   name?: string;
 }
 
-export type InputLayerConfig = InputLayerPrimitiveArgs;
+export type InputLayerConfig = InputLayerBaseConfig;
 
 /**
  * Constructor arguments for InputSpec.
  */
-export interface InputSpecPrimitiveArgs {
+export interface InputSpecBaseConfig {
   /** Expected datatype of the input. */
   dtype?: DataType;
   /** Expected shape of the input (may include null for unchecked axes). */
@@ -55,4 +55,4 @@ export interface InputSpecPrimitiveArgs {
   axes?: {[axis: number]: number};
 }
 
-export type InputSpecConfig = InputSpecPrimitiveArgs;
+export type InputSpecConfig = InputSpecBaseConfig;

@@ -20,7 +20,7 @@ import * as regularizers from './exports_regularizers';
 export {CallbackList, CustomCallback, CustomCallbackNonSerializableArgs, History} from './base_callbacks';
 export {Callback} from './callbacks';
 export {InputSpec, SymbolicTensor} from './engine/topology';
-export {Model, ModelCompileNonSerializableArgs as ModelCompileArgs, ModelEvaluateNonSerialializableArgs as ModelEvaluateArgs} from './engine/training';
+export {Model, ModelCompileNonSerializableArgs as ModelCompileArgs, ModelEvaluateNonSerializableArgs as ModelEvaluateArgs} from './engine/training';
 export {ModelFitDatasetNonSerializableArgs as ModelFitDatasetArgs} from './engine/training_dataset';
 export {ModelFitNonSerializableArgs as ModelFitArgs} from './engine/training_tensors';
 export {input, loadModel, model, registerCallbackConstructor, sequential} from './exports';
