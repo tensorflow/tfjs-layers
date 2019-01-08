@@ -19,6 +19,7 @@ import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../
 import {getInitializer, Initializer} from '../initializers';
 import {InputSpecBaseConfig} from '../keras_format/input_config';
 import {LayerBaseConfig} from '../keras_format/topology_config';
+import {Shape} from '../keras_format/types';
 import {Regularizer} from '../regularizers';
 import {Kwargs, RegularizerFn} from '../types';
 import * as generic_utils from '../utils/generic_utils';
