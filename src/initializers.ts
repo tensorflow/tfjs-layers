@@ -15,7 +15,7 @@ import * as K from './backend/tfjs_backend';
 import {checkDataFormat, DataFormat} from './common';
 import {NotImplementedError, ValueError} from './errors';
 import {checkDistribution, checkFanMode, ConstantPrimitiveArgs, Distribution, FanMode, IdentityPrimitiveArgs, OrthogonalPrimitiveArgs, RandomNormalPrimitiveArgs, RandomUniformPrimitiveArgs, SeedOnlyInitializerPrimitiveArgs, TruncatedNormalPrimitiveArgs, VarianceScalingPrimitiveArgs} from './keras_format/initializer_config';
-import {Shape} from './types';
+import {Shape} from './keras_format/types';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
 

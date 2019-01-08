@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {checkStringTypeUnionValue} from '../utils/generic_utils';
+import {checkStringTypeUnionValue} from './validation';
 
 /** @docinline */
 export type FanMode = 'fanIn'|'fanOut'|'fanAvg';

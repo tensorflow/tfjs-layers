@@ -12,12 +12,13 @@ import {eye, memory, ones, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/
 
 import * as tfl from '../index';
 import * as initializers from '../initializers';
-import {NamedTensorMap, Shape} from '../types';
+import {NamedTensorMap} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 import {LayerVariable, onesVariable, zerosVariable} from '../variables';
 
 import {loadWeightsFromJson, loadWeightsFromNamedTensorMap} from './container';
 import {InputSpec, Layer, LayerArgs, LayerNonSerializableArgs, Node} from './topology';
+import {Shape} from '../keras_format/types';
 
 class LayerForTest extends tfl.layers.Layer {
   static className = 'LayerForTest';

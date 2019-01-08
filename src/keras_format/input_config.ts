@@ -8,9 +8,7 @@
  * =============================================================================
  */
 
-import {DataType} from '@tensorflow/tfjs-core';
-
-import {Shape} from '../types';
+import {DataType, Shape} from '../keras_format/types';
 
 /**
  * Constructor arguments for InputLayer.

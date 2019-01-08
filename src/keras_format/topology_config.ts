@@ -1,7 +1,3 @@
-import {DataType} from '@tensorflow/tfjs-core';
-
-import {Shape} from '../types';
-
 /**
  * @license
  * Copyright 2018 Google LLC
@@ -11,6 +7,8 @@ import {Shape} from '../types';
  * https://opensource.org/licenses/MIT.
  * =============================================================================
  */
+
+import {DataType, Shape} from './types';
 
 /** Constructor arguments for Layer. */
 export interface LayerPrimitiveArgs {

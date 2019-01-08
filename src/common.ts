@@ -8,10 +8,12 @@
  * =============================================================================
  */
 
+import {checkStringTypeUnionValue} from './keras_format/validation';
+
 /**
  * Common functions for TensorFlow.js Layers.
  */
-import {checkStringTypeUnionValue} from './utils/generic_utils';
+
 // A map from the requested scoped name of a Tensor to the number of Tensors
 // wanting that name so far.  This allows enforcing name uniqueness by appending
 // an incrementing index, e.g. scope/name, scope/name_1, scope/name_2, etc.

@@ -20,7 +20,9 @@ import * as K from '../backend/tfjs_backend';
 import {nameScope} from '../common';
 import {InputSpec, Layer, LayerNonSerializableArgs, SymbolicTensor} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {Kwargs, Shape} from '../types';
+import {Shape} from '../keras_format/types';
+import {checkStringTypeUnionValue} from '../keras_format/validation';
+import {Kwargs} from '../types';
 import {RegularizerFn, RnnStepFunction} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
@@ -258,7 +260,7 @@ serialization.registerClass(TimeDistributed);
 export type BidirectionalMergeMode = 'sum'|'mul'|'concat'|'ave';
 export const VALID_BIDIRECTIONAL_MERGE_MODES = ['sum', 'mul', 'concat', 'ave'];
 export function checkBidirectionalMergeMode(value?: string): void {
-  generic_utils.checkStringTypeUnionValue(
+  checkStringTypeUnionValue(
       VALID_BIDIRECTIONAL_MERGE_MODES, 'BidirectionalMergeMode', value);
 }
 
