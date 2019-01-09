@@ -11,7 +11,7 @@ Python model is serialized as a JSON object containing the class name and its
 serialized constructor arguments.
 
 Here, we provide a type called `*Serialization` to describe the on-disk JSON
-representation fer uoch class.  It always provides a `class_name` and a `config`
+representation for each class.  It always provides a `class_name` and a `config`
 representing the constructor arguments required to reconstruct a given instance.
 
 The constructor arguments may be primitives, arrays of primitives, or plain
@@ -41,4 +41,13 @@ a DAG).
 As a consequence of this design, our deserialization code requires an `*Args`
 type mirroring each of the `*Serialization` types here.  `*Args` types represent
 the actual arguments passed to a constructor, after any nested objects have been
-deserialized.
+deserialized.  For instance, the above `FooSerialization` will be resolved into
+ `FooArgs` like this:
+
+     FooArgs {
+       bar: string;
+       baz: number[];
+       qux: Qux;
+     }
+
+which can then be passed to the `Foo` constructor.
