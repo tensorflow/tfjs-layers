@@ -10,26 +10,35 @@ design is that the format mirrors the Python API.  Each class instance in a
 Python model is serialized as a JSON object containing the class name and its
 serialized constructor arguments.
 
-The constructor arguments may be primitives, arrays of primitives, or dicts, in
-which case the JSON serialization is straightforward.  If a constructor
-argument is another object, then it is serialized in a nested manner.
+Here, we provide a type called `*Serialization` to describe the on-disk JSON
+representation fer uoch class.  It always provides a `class_name` and a `config`
+representing the constructor arguments required to reconstruct a given instance.
+
+The constructor arguments may be primitives, arrays of primitives, or plain
+key-value dictionaries, in which case the JSON serialization is straightforward.
+
+If a constructor argument is another object, then it is represented by a nested
+`*Serialization`.  This structure is illustrated below:
+
+    FooSerialization {
+      class_name: 'Foo';
+      config: {
+        bar: string;
+        baz: number[];
+        qux: QuxSerialization;
+      }
+    }
+
 Deserializing such a nested object configuration requires recursively
 deserializing any object arguments, and finally calling the top-level
-constructor.  In general this means that deserialization is purely tree-like, so
-instances cannot be reused.  (The deserialization code for Models is an
-exception to this principle, because it allows Layers to refer to each other in
-order to describe a DAG).
+constructor using the reconstructed object arguments.
 
-There are several different kinds of configuration objects, currently
-distinguished primarily by naming conventions.
+In general this means that deserialization is purely tree-like, so instances
+cannot be reused.  (The deserialization code for Models is an exception to this
+principle, because it allows Layers to refer to each other in order to describe
+a DAG).
 
-
-FooBaseConfig
-The subset of constructor arguments to Foo that are primitives (or arrays or dicts of primitives, etc.).  These arguments can be represented as JSON and also can be passed directly to the constructor.
-FooConfig extends FooBaseConfig
-In addition, provide fields for the constructor arguments that are not primitives, in nested JSON form (serialized).  The values of the non-primitive fields will always be *Serialization objects (below).
-FooSerialization {
-  class_name: 'Foo';
-  config: FooConfig;
-}
-Bundle the config together with the class name that it is meant to serialize.
+As a consequence of this design, our deserialization code requires an `*Args`
+type mirroring each of the `*Serialization` types here.  `*Args` types represent
+the actual arguments passed to a constructor, after any nested objects have been
+deserialized.
