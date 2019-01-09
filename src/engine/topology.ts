@@ -17,7 +17,6 @@ import {getScopedTensorName, getUniqueTensorName, nameScope} from '../common';
 import {Constraint} from '../constraints';
 import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {getInitializer, Initializer} from '../initializers';
-import {InputSpecBaseConfig} from '../keras_format/input_config';
 import {Regularizer} from '../regularizers';
 import {Kwargs, RegularizerFn, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -28,7 +27,24 @@ import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 // TODO(michaelterry): This is a stub until it's defined.
 export type Op = (x: LayerVariable) => LayerVariable;
 
-export type InputSpecArgs = InputSpecBaseConfig;
+
+/**
+ * Constructor arguments for InputSpec.
+ */
+export interface InputSpecArgs {
+  /** Expected datatype of the input. */
+  dtype?: DataType;
+  /** Expected shape of the input (may include null for unchecked axes). */
+  shape?: Shape;
+  /** Expected rank of the input. */
+  ndim?: number;
+  /** Maximum rank of the input. */
+  maxNDim?: number;
+  /** Minimum rank of the input. */
+  minNDim?: number;
+  /** Dictionary mapping integer axes to a specific dimension value. */
+  axes?: {[axis: number]: number};
+}
 
 /**
  * Specifies the ndim, dtype and shape of every input to a layer.

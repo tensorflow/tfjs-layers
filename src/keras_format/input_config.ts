@@ -39,22 +39,7 @@ export interface InputLayerBaseConfig {
 
 export type InputLayerConfig = InputLayerBaseConfig;
 
-/**
- * Constructor arguments for InputSpec.
- */
-export interface InputSpecBaseConfig {
-  /** Expected datatype of the input. */
-  dtype?: DataType;
-  /** Expected shape of the input (may include null for unchecked axes). */
-  shape?: Shape;
-  /** Expected rank of the input. */
-  ndim?: number;
-  /** Maximum rank of the input. */
-  maxNDim?: number;
-  /** Minimum rank of the input. */
-  minNDim?: number;
-  /** Dictionary mapping integer axes to a specific dimension value. */
-  axes?: {[axis: number]: number};
+export interface InputLayerSerialization {
+  class_name: 'Input';
+  config: InputLayerConfig;
 }
-
-export type InputSpecConfig = InputSpecBaseConfig;

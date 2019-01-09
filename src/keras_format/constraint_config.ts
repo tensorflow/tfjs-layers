@@ -32,6 +32,11 @@ export interface MaxNormBaseConfig {
 
 export type MaxNormConfig = MaxNormBaseConfig;
 
+export interface MaxNormSerialization {
+  class_name: 'MaxNorm';
+  config: MaxNormConfig;
+}
+
 export interface UnitNormBaseConfig {
   /**
    * Axis along which to calculate norms.
@@ -51,6 +56,15 @@ export interface UnitNormBaseConfig {
 }
 
 export type UnitNormConfig = UnitNormBaseConfig;
+
+export interface UnitNormSerialization {
+  class_name: 'UnitNorm';
+  config: UnitNormConfig;
+}
+
+export interface NonNegSerialization {
+  class_name: 'NonNeg';
+}
 
 export interface MinMaxNormBaseConfig {
   /**
@@ -87,3 +101,11 @@ export interface MinMaxNormBaseConfig {
 }
 
 export type MinMaxNormConfig = MinMaxNormBaseConfig;
+
+export interface MinMaxNormSerialization {
+  class_name: 'MinMaxNorm';
+  config: MinMaxNormConfig;
+}
+
+export type ConstraintSerialization = MaxNormSerialization|NonNegSerialization|
+    UnitNormSerialization|MinMaxNormSerialization;

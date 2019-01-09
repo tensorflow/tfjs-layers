@@ -24,6 +24,15 @@ export function checkDistribution(value?: string): void {
   checkStringTypeUnionValue(VALID_DISTRIBUTION_VALUES, 'Distribution', value);
 }
 
+
+export interface ZerosSerialization {
+  class_name: 'Zeros';
+}
+
+export interface OnesSerialization {
+  class_name: 'Ones';
+}
+
 export interface ConstantBaseConfig {
   /** The value for each element in the variable. */
   value: number;
@@ -31,16 +40,10 @@ export interface ConstantBaseConfig {
 
 export type ConstantConfig = ConstantBaseConfig;
 
-export interface RandomUniformBaseConfig {
-  /** Lower bound of the range of random values to generate. */
-  minval?: number;
-  /** Upper bound of the range of random values to generate. */
-  maxval?: number;
-  /** Used to seed the random generator. */
-  seed?: number;
+export interface ConstantSerialization {
+  class_name: 'Constant';
+  config: ConstantConfig;
 }
-
-export type RandomUniformConfig = RandomUniformBaseConfig;
 
 export interface RandomNormalBaseConfig {
   /** Mean of the random values to generate. */
@@ -53,6 +56,27 @@ export interface RandomNormalBaseConfig {
 
 export type RandomNormalConfig = RandomNormalBaseConfig;
 
+export interface RandomNormalSerialization {
+  class_name: 'RandomNormal';
+  config: RandomNormalConfig;
+}
+
+export interface RandomUniformBaseConfig {
+  /** Lower bound of the range of random values to generate. */
+  minval?: number;
+  /** Upper bound of the range of random values to generate. */
+  maxval?: number;
+  /** Used to seed the random generator. */
+  seed?: number;
+}
+
+export type RandomUniformConfig = RandomUniformBaseConfig;
+
+export interface RandomUniformSerialization {
+  class_name: 'RandomUniform';
+  config: RandomUniformConfig;
+}
+
 export interface TruncatedNormalBaseConfig {
   /** Mean of the random values to generate. */
   mean?: number;
@@ -64,14 +88,10 @@ export interface TruncatedNormalBaseConfig {
 
 export type TruncatedNormalConfig = TruncatedNormalBaseConfig;
 
-export interface IdentityBaseConfig {
-  /**
-   * Multiplicative factor to apply to the identity matrix.
-   */
-  gain?: number;
+export interface TruncatedNormalSerialization {
+  class_name: 'TruncatedNormal';
+  config: TruncatedNormalConfig;
 }
-
-export type IdentityConfig = IdentityBaseConfig;
 
 export interface VarianceScalingBaseConfig {
   /** Scaling factor (positive float). */
@@ -89,12 +109,10 @@ export interface VarianceScalingBaseConfig {
 
 export type VarianceScalingConfig = VarianceScalingBaseConfig;
 
-export interface SeedOnlyInitializerBaseConfig {
-  /** Random number generator seed. */
-  seed?: number;
+export interface VarianceScalingSerialization {
+  class_name: 'VarianceScaling';
+  config: VarianceScalingConfig;
 }
-
-export type SeedOnlyInitializerConfig = SeedOnlyInitializerBaseConfig;
 
 export interface OrthogonalBaseConfig extends SeedOnlyInitializerBaseConfig {
   /**
@@ -104,3 +122,67 @@ export interface OrthogonalBaseConfig extends SeedOnlyInitializerBaseConfig {
 }
 
 export type OrthogonalConfig = OrthogonalBaseConfig;
+
+export interface OrthogonalSerialization {
+  class_name: 'Orthogonal';
+  config: OrthogonalConfig;
+}
+
+export interface IdentityBaseConfig {
+  /**
+   * Multiplicative factor to apply to the identity matrix.
+   */
+  gain?: number;
+}
+
+export type IdentityConfig = IdentityBaseConfig;
+
+export interface IdentitySerialization {
+  class_name: 'Identity';
+  config: IdentityConfig;
+}
+
+export interface SeedOnlyInitializerBaseConfig {
+  /** Random number generator seed. */
+  seed?: number;
+}
+
+export type SeedOnlyInitializerConfig = SeedOnlyInitializerBaseConfig;
+
+export interface LeCunNormalSerialization {
+  class_name: 'lecun_normal';
+  config: SeedOnlyInitializerConfig;
+}
+
+export interface LeCunUniformSerialization {
+  class_name: 'lecun_uniform';
+  config: SeedOnlyInitializerConfig;
+}
+
+export interface GlorotNormalSerialization {
+  class_name: 'glorot_normal';
+  config: SeedOnlyInitializerConfig;
+}
+
+export interface GlorotUniformSerialization {
+  class_name: 'glorot_uniform';
+  config: SeedOnlyInitializerConfig;
+}
+
+export interface HeNormalSerialization {
+  class_name: 'he_normal';
+  config: SeedOnlyInitializerConfig;
+}
+
+export interface HeUniformSerialization {
+  class_name: 'he_uniform';
+  config: SeedOnlyInitializerConfig;
+}
+
+export type InitializerSerialization =
+    ConstantSerialization|RandomUniformSerialization|RandomNormalSerialization|
+    TruncatedNormalSerialization|IdentitySerialization|
+    VarianceScalingSerialization|OrthogonalSerialization|
+    LeCunNormalSerialization|LeCunUniformSerialization|
+    GlorotNormalSerialization|GlorotUniformSerialization|HeNormalSerialization|
+    HeUniformSerialization;
