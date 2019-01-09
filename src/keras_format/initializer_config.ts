@@ -53,10 +53,6 @@ export interface VarianceScalingSerialization {
   };
 }
 
-export interface SeedOnlyInitializerBaseConfig {
-  seed?: number;
-}
-
 export interface OrthogonalSerialization {
   class_name: 'Orthogonal';
   config: {seed?: number; gain?: number;};
