@@ -17,8 +17,6 @@ import {getScopedTensorName, getUniqueTensorName, nameScope} from '../common';
 import {Constraint} from '../constraints';
 import {AttributeError, NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {getInitializer, Initializer} from '../initializers';
-import {InputSpecBaseConfig} from '../keras_format/input_config';
-import {LayerBaseConfig} from '../keras_format/topology_config';
 import {Regularizer} from '../regularizers';
 import {Kwargs, RegularizerFn, Shape} from '../types';
 import * as generic_utils from '../utils/generic_utils';
@@ -29,7 +27,23 @@ import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 // TODO(michaelterry): This is a stub until it's defined.
 export type Op = (x: LayerVariable) => LayerVariable;
 
-export type InputSpecArgs = InputSpecBaseConfig;
+/**
+ * Constructor arguments for InputSpec.
+ */
+export interface InputSpecArgs {
+  /** Expected datatype of the input. */
+  dtype?: DataType;
+  /** Expected shape of the input (may include null for unchecked axes). */
+  shape?: Shape;
+  /** Expected rank of the input. */
+  ndim?: number;
+  /** Maximum rank of the input. */
+  maxNDim?: number;
+  /** Minimum rank of the input. */
+  minNDim?: number;
+  /** Dictionary mapping integer axes to a specific dimension value. */
+  axes?: {[axis: number]: number};
+}
 
 /**
  * Specifies the ndim, dtype and shape of every input to a layer.
@@ -328,13 +342,45 @@ export class Node {
 }
 
 /** Constructor arguments for Layer. */
-export type LayerArgs = LayerBaseConfig;
-
-export interface LayerNonSerializableArgs extends LayerArgs {
+export interface LayerArgs {
+  /**
+   * If defined, will be used to create an input layer to insert before this
+   * layer. If both `inputShape` and `batchInputShape` are defined,
+   * `batchInputShape` will be used. This argument is only applicable to input
+   * layers (the first layer of a model).
+   */
+  inputShape?: Shape;
+  /**
+   * If defined, will be used to create an input layer to insert before this
+   * layer. If both `inputShape` and `batchInputShape` are defined,
+   * `batchInputShape` will be used. This argument is only applicable to input
+   * layers (the first layer of a model).
+   */
+  batchInputShape?: Shape;
+  /**
+   * If `inputShape` is specified and `batchInputShape` is *not* specifiedd,
+   * `batchSize` is used to construct the `batchInputShape`: `[batchSize,
+   * ...inputShape]`
+   */
+  batchSize?: number;
+  /**
+   * The data-type for this layer. Defaults to 'float32'.
+   * This argument is only applicable to input layers (the first layer of a
+   * model).
+   */
+  dtype?: DataType;
+  /** Name for this layer. */
+  name?: string;
+  /** Whether this layer is trainable. Defaults to true. */
+  trainable?: boolean;
+  /** Whether the weights of this layer are updatable by `fit`. */
+  updatable?: boolean;
   /**
    * Initial weight values of the layer.
    */
   weights?: Tensor[];
+  /** Legacy support. Do not use for new code. */
+  inputDType?: DataType;
 }
 
 // If necessary, add `output` arguments to the CallHook function.
@@ -404,7 +450,7 @@ export abstract class Layer extends serialization.Serializable {
   // during model loading.
   private fastWeightInitDuringBuild: boolean;
 
-  constructor(args: LayerNonSerializableArgs) {
+  constructor(args: LayerArgs) {
     super();
     this.id = _nextLayerID++;
 

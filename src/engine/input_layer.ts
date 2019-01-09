@@ -12,12 +12,34 @@ import {DataType, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {getUid} from '../backend/state';
 import {ValueError} from '../errors';
-import {InputLayerBaseConfig} from '../keras_format/input_config';
 import {Kwargs, Shape} from '../types';
 
 import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
 
-export type InputLayerArgs = InputLayerBaseConfig;
+/**
+ * Constructor arguments for InputLayer.
+ *
+ * Note: You should provide only inputShape or batchInputShape (not both).
+ * If only inputShape is provided, then the batchInputShape is determined by
+ * the batchSize argument and the inputShape: [batchSize].concat(inputShape).
+ */
+export interface InputLayerArgs {
+  /** Input shape, not including the batch axis. */
+  inputShape?: Shape;
+  /** Optional input batch size (integer or null). */
+  batchSize?: number;
+  /** Batch input shape, including the batch axis. */
+  batchInputShape?: Shape;
+  /** Datatype of the input.  */
+  dtype?: DataType;
+  /**
+   * Whether the placeholder created is meant to be sparse.
+   */
+  sparse?: boolean;  // TODO(michaelterry): Not clear whether we'll need this.
+
+  /** Name of the layer. */
+  name?: string;
+}
 
 /**
  * An input layer is an entry point into a `tf.Model`.

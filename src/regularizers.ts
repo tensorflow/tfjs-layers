@@ -15,7 +15,6 @@ import {abs, add, Scalar, serialization, sum, Tensor, tidy, zeros} from '@tensor
 
 import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
-import {L1BaseConfig, L1L2BaseConfig, L2BaseConfig} from './keras_format/regularizer_config';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 
 /**
@@ -25,11 +24,22 @@ export abstract class Regularizer extends serialization.Serializable {
   abstract apply(x: Tensor): Scalar;
 }
 
-export type L1L2Args = L1L2BaseConfig;
+export interface L1L2Args {
+  /** L1 regularization rate. Defaults to 0.01. */
+  l1?: number;
+  /** L2 regularization rate. Defaults to 0.01. */
+  l2?: number;
+}
 
-export type L1Args = L1BaseConfig;
+export interface L1Args {
+  /** L1 regularization rate. Defaults to 0.01. */
+  l1: number;
+}
 
-export type L2Args = L2BaseConfig;
+export interface L2Args {
+  /** L2 regularization rate. Defaults to 0.01. */
+  l2: number;
+}
 
 /**
  * Regularizer for L1 and L2 regularization.
