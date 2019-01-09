@@ -12,14 +12,14 @@ import {DataType} from '@tensorflow/tfjs-core';
 
 import {Shape} from '../types';
 
-export interface InputLayerSerialization {
-  class_name: 'Input';
-  config: {
-    inputShape?: Shape;
-    batchSize?: number;
-    batchInputShape?: Shape;
-    dtype?: DataType;
-    sparse?: boolean;
-    name?: string;
-  };
+/** Constructor arguments for Layer. */
+export interface LayerConfig {
+  inputShape?: Shape;
+  batchInputShape?: Shape;
+  batchSize?: number;
+  dtype?: DataType;
+  name?: string;
+  trainable?: boolean;
+  updatable?: boolean;
+  inputDType?: DataType;
 }

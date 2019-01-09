@@ -12,12 +12,34 @@ import {DataType, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {getUid} from '../backend/state';
 import {ValueError} from '../errors';
-import {InputLayerBaseConfig} from '../keras_format/input_config';
 import {Kwargs, Shape} from '../types';
 
 import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
 
-export type InputLayerArgs = InputLayerBaseConfig;
+/**
+ * Constructor arguments for InputLayer.
+ *
+ * Note: You should provide only inputShape or batchInputShape (not both).
+ * If only inputShape is provided, then the batchInputShape is determined by
+ * the batchSize argument and the inputShape: [batchSize].concat(inputShape).
+ */
+export interface InputLayerArgs {
+  /** Input shape, not including the batch axis. */
+  inputShape?: Shape;
+  /** Optional input batch size (integer or null). */
+  batchSize?: number;
+  /** Batch input shape, including the batch axis. */
+  batchInputShape?: Shape;
+  /** Datatype of the input.  */
+  dtype?: DataType;
+  /**
+   * Whether the placeholder created is meant to be sparse.
+   */
+  sparse?: boolean;  // TODO(michaelterry): Not clear whether we'll need this.
+
+  /** Name of the layer. */
+  name?: string;
+}
 
 /**
  * An input layer is an entry point into a `tf.Model`.
@@ -34,7 +56,7 @@ export type InputLayerArgs = InputLayerBaseConfig;
  * model1.add(tf.layers.dense({inputShape: [4], units: 3, activation: 'relu'}));
  * model1.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
  * model1.summary();
- * model1.predict(tf.zeros([1, 4])).print();
+ * model1.preidct(tf.zeros([1, 4])).print();
  *
  * // Construct another model, reusing the second layer of `model1` while
  * // not using the first layer of `model1`. Note that you cannot add the second
@@ -48,7 +70,7 @@ export type InputLayerArgs = InputLayerBaseConfig;
  * model2.add(tf.layers.inputLayer({inputShape: [3]}));
  * model2.add(model1.layers[1]);
  * model2.summary();
- * model2.predict(tf.zeros([1, 3])).print();
+ * model2.preidct(tf.zeros([1, 3])).print();
  * ```
  */
 export class InputLayer extends Layer {

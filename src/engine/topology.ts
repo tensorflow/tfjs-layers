@@ -27,7 +27,6 @@ import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
 // TODO(michaelterry): This is a stub until it's defined.
 export type Op = (x: LayerVariable) => LayerVariable;
 
-
 /**
  * Constructor arguments for InputSpec.
  */

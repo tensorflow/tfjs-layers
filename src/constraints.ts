@@ -15,7 +15,6 @@ import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {epsilon} from './backend/common';
 import {getScalar} from './backend/state';
-import {MaxNormBaseConfig, MinMaxNormBaseConfig, UnitNormBaseConfig} from './keras_format/constraint_config';
 import {deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 
 /**
@@ -43,7 +42,27 @@ export abstract class Constraint extends serialization.Serializable {
   }
 }
 
-export type MaxNormArgs = MaxNormBaseConfig;
+export interface MaxNormArgs {
+  /**
+   * Maximum norm for incoming weights
+   */
+  maxValue?: number;
+  /**
+   * Axis along which to calculate norms.
+   *
+   *  For instance, in a `Dense` layer the weight matrix
+   *  has shape `[inputDim, outputDim]`,
+   *  set `axis` to `0` to constrain each weight vector
+   *  of length `[inputDim,]`.
+   *  In a `Conv2D` layer with `dataFormat="channels_last"`,
+   *  the weight tensor has shape
+   *  `[rows, cols, inputDepth, outputDepth]`,
+   *  set `axis` to `[0, 1, 2]`
+   *  to constrain the weights of each filter tensor of size
+   *  `[rows, cols, inputDepth]`.
+   */
+  axis?: number;
+}
 
 /**
  * MaxNorm weight constraint.
@@ -84,7 +103,23 @@ export class MaxNorm extends Constraint {
 }
 serialization.registerClass(MaxNorm);
 
-export type UnitNormArgs = UnitNormBaseConfig;
+export interface UnitNormArgs {
+  /**
+   * Axis along which to calculate norms.
+   *
+   * For instance, in a `Dense` layer the weight matrix
+   * has shape `[inputDim, outputDim]`,
+   * set `axis` to `0` to constrain each weight vector
+   * of length `[inputDim,]`.
+   * In a `Conv2D` layer with `dataFormat="channels_last"`,
+   * the weight tensor has shape
+   * [rows, cols, inputDepth, outputDepth]`,
+   * set `axis` to `[0, 1, 2]`
+   * to constrain the weights of each filter tensor of size
+   * `[rows, cols, inputDepth]`.
+   */
+  axis?: number;
+}
 
 /**
  * Constrains the weights incident to each hidden unit to have unit norm.
@@ -122,7 +157,39 @@ export class NonNeg extends Constraint {
 }
 serialization.registerClass(NonNeg);
 
-export type MinMaxNormArgs = MinMaxNormBaseConfig;
+export interface MinMaxNormArgs {
+  /**
+   * Minimum norm for incoming weights
+   */
+  minValue?: number;
+  /**
+   * Maximum norm for incoming weights
+   */
+  maxValue?: number;
+  /**
+   * Axis along which to calculate norms.
+   * For instance, in a `Dense` layer the weight matrix
+   * has shape `[inputDim, outputDim]`,
+   * set `axis` to `0` to constrain each weight vector
+   * of length `[inputDim,]`.
+   * In a `Conv2D` layer with `dataFormat="channels_last"`,
+   * the weight tensor has shape
+   * `[rows, cols, inputDepth, outputDepth]`,
+   * set `axis` to `[0, 1, 2]`
+   * to constrain the weights of each filter tensor of size
+   * `[rows, cols, inputDepth]`.
+   */
+  axis?: number;
+  /**
+   * Rate for enforcing the constraint: weights will be rescaled to yield:
+   * `(1 - rate) * norm + rate * norm.clip(minValue, maxValue)`.
+   * Effectively, this means that rate=1.0 stands for strict
+   * enforcement of the constraint, while rate<1.0 means that
+   * weights will be rescaled at each step to slowly move
+   * towards a value inside the desired interval.
+   */
+  rate?: number;
+}
 
 export class MinMaxNorm extends Constraint {
   static readonly className = 'MinMaxNorm';
