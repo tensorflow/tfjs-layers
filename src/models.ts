@@ -22,7 +22,7 @@ import {Model, ModelCompileArgs, ModelEvaluateArgs} from './engine/training';
 import {ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './engine/training_dataset';
 import {ModelFitArgs} from './engine/training_tensors';
 import {NotImplementedError, RuntimeError, ValueError} from './errors';
-import {Shape} from './keras_format/common_serialization';
+import {Shape} from './keras_format/common';
 import {PyJsonDict} from './keras_format/types';
 import {deserialize} from './layers/serialization';
 import {Kwargs, NamedTensorMap} from './types';

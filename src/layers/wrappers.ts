@@ -20,7 +20,7 @@ import * as K from '../backend/tfjs_backend';
 import {nameScope} from '../common';
 import {InputSpec, Layer, LayerArgs, SymbolicTensor} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {BidirectionalMergeMode, Shape, VALID_BIDIRECTIONAL_MERGE_MODES} from '../keras_format/common_serialization';
+import {BidirectionalMergeMode, Shape, VALID_BIDIRECTIONAL_MERGE_MODES} from '../keras_format/common';
 import {Kwargs} from '../types';
 import {RegularizerFn, RnnStepFunction} from '../types';
 import * as generic_utils from '../utils/generic_utils';

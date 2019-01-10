@@ -17,7 +17,7 @@ import {scalar, Tensor, tensor1d, tensor3d, Tensor4D, tensor4d, util} from '@ten
 
 import * as tfl from '../index';
 import {InitializerIdentifier} from '../initializers';
-import {Shape, DataFormat, PaddingMode} from '../keras_format/common_serialization';
+import {Shape, DataFormat, PaddingMode} from '../keras_format/common';
 import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {conv1d, conv1dWithBias, conv2d, conv2dWithBias} from './convolutional';

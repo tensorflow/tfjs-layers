@@ -9,7 +9,7 @@
  */
 
 import {ActivationIdentifier} from '../activation_config';
-import {Shape} from '../common_serialization';
+import {Shape} from '../common';
 import {ConstraintSerialization} from '../constraint_config';
 import {InitializerSerialization} from '../initializer_config';
 import {RegularizerSerialization} from '../regularizer_config';

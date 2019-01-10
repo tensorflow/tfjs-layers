@@ -21,7 +21,7 @@ import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 import {imageDataFormat} from '../backend/common';
 import {InputSpec, Layer, LayerArgs} from '../engine/topology';
 import {ValueError} from '../errors';
-import {DataFormat, Shape} from '../keras_format/common_serialization';
+import {DataFormat, Shape} from '../keras_format/common';
 import {Kwargs} from '../types';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 
