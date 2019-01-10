@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {BidirectionalMergeMode} from '../common_serialization';
+import {BidirectionalMergeMode} from '../common';
 import {LayerConfig} from '../topology_config';
 
 import {LayerSerialization} from './layer_serialization';

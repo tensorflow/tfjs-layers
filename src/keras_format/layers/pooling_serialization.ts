@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {DataFormat, PaddingMode} from '../common_serialization';
+import {DataFormat, PaddingMode} from '../common';
 import {LayerConfig} from '../topology_config';
 
 

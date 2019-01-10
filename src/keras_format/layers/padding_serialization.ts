@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {DataFormat} from '../common_serialization';
+import {DataFormat} from '../common';
 import {LayerConfig} from '../topology_config';
 
 export interface ZeroPadding2DLayerConfig extends LayerConfig {

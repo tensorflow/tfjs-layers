@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {DataFormat, PaddingMode} from '../common_serialization';
+import {DataFormat, PaddingMode} from '../common';
 import {ConstraintSerialization} from '../constraint_config';
 import {InitializerSerialization} from '../initializer_config';
 import {RegularizerSerialization} from '../regularizer_config';
