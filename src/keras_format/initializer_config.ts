@@ -64,32 +64,32 @@ export interface IdentitySerialization {
 }
 
 export interface LeCunNormalSerialization {
-  class_name: 'lecun_normal';
+  class_name: 'LeCunNormal';
   config: {seed?: number;};
 }
 
 export interface LeCunUniformSerialization {
-  class_name: 'lecun_uniform';
+  class_name: 'LeCunUniform';
   config: {seed?: number;};
 }
 
 export interface GlorotNormalSerialization {
-  class_name: 'glorot_normal';
+  class_name: 'GlorotNormal';
   config: {seed?: number;};
 }
 
 export interface GlorotUniformSerialization {
-  class_name: 'glorot_uniform';
+  class_name: 'GlorotUniform';
   config: {seed?: number;};
 }
 
 export interface HeNormalSerialization {
-  class_name: 'he_normal';
+  class_name: 'HeNormal';
   config: {seed?: number;};
 }
 
 export interface HeUniformSerialization {
-  class_name: 'he_uniform';
+  class_name: 'HeUniform';
   config: {seed?: number;};
 }
 
