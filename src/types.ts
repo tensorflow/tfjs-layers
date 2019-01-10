@@ -11,7 +11,7 @@
 /** Defines allowable data types for tensors. */
 
 import {Scalar, Tensor} from '@tensorflow/tfjs-core';
-import {Shape} from './keras_format/types';
+import {Shape} from './keras_format/common_serialization';
 
 export type HasShape = {
   shape: Shape;
