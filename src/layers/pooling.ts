@@ -21,7 +21,7 @@ import {checkDataFormat, checkPaddingMode, checkPoolMode} from '../common';
 import {InputSpec} from '../engine/topology';
 import {Layer, LayerArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {DataFormat, PaddingMode, PoolMode, Shape} from '../keras_format/common_serialization';
+import {DataFormat, PaddingMode, PoolMode, Shape} from '../keras_format/common';
 import {Kwargs} from '../types';
 import {convOutputLength} from '../utils/conv_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';

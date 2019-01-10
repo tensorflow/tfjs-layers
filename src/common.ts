@@ -11,7 +11,7 @@
 /**
  * Common functions for TensorFlow.js Layers.
  */
-import {VALID_DATA_FORMAT_VALUES, VALID_PADDING_MODE_VALUES, VALID_POOL_MODE_VALUES} from './keras_format/common_serialization';
+import {VALID_DATA_FORMAT_VALUES, VALID_PADDING_MODE_VALUES, VALID_POOL_MODE_VALUES} from './keras_format/common';
 import {checkStringTypeUnionValue} from './utils/generic_utils';
 
 // A map from the requested scoped name of a Tensor to the number of Tensors

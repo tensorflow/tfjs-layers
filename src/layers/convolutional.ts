@@ -23,7 +23,7 @@ import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} fr
 import {InputSpec, Layer, LayerArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
-import {DataFormat, PaddingMode, Shape} from '../keras_format/common_serialization';
+import {DataFormat, PaddingMode, Shape} from '../keras_format/common';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Kwargs} from '../types';
 import {convOutputLength, deconvLength, normalizeArray} from '../utils/conv_utils';
