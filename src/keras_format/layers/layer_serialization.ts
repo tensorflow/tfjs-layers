@@ -1,3 +1,13 @@
+/**
+ * @license
+ * Copyright 2018 Google LLC
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ * =============================================================================
+ */
+
 import {AdvancedActivationLayerSerialization} from './advanced_activation_serialization';
 import {DepthwiseConv2DLayerSerialization} from './convolutional_depthwise_serialization';
 import {ConvLayerSerialization} from './convolutional_serialization';
