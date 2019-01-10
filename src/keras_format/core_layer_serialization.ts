@@ -15,7 +15,7 @@ import {RegularizerSerialization} from './regularizer_config';
 import {LayerConfig} from './topology_config';
 import {Shape} from './types';
 
-interface DropoutLayerConfig extends LayerConfig {
+export interface DropoutLayerConfig extends LayerConfig {
   rate: number;
   noiseShape?: number[];
   seed?: number;
@@ -26,7 +26,7 @@ export interface DropoutLayerSerialization {
   config: DropoutLayerConfig;
 }
 
-interface DenseLayerConfig extends LayerConfig {
+export interface DenseLayerConfig extends LayerConfig {
   units: number;
   activation?: ActivationIdentifier;
   useBias?: boolean;
@@ -45,7 +45,7 @@ export interface DenseLayerSerialization {
   config: DenseLayerConfig;
 }
 
-interface ActivationLayerConfig extends LayerConfig {
+export interface ActivationLayerConfig extends LayerConfig {
   activation: ActivationIdentifier;
 }
 
@@ -54,7 +54,7 @@ export interface ActivationLayerSerialization {
   config: ActivationLayerConfig;
 }
 
-interface RepeatVectorLayerConfig extends LayerConfig {
+export interface RepeatVectorLayerConfig extends LayerConfig {
   n: number;
 }
 
@@ -63,7 +63,7 @@ export interface RepeatVectorLayerSerialization {
   config: RepeatVectorLayerConfig;
 }
 
-interface ReshapeLayerConfig extends LayerConfig {
+export interface ReshapeLayerConfig extends LayerConfig {
   targetShape: Shape;
 }
 
@@ -72,7 +72,7 @@ export interface ReshapeLayerSerialization {
   config: ReshapeLayerConfig;
 }
 
-interface PermuteLayerConfig extends LayerConfig {
+export interface PermuteLayerConfig extends LayerConfig {
   dims: number[];
 }
 
