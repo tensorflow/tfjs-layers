@@ -27,76 +27,72 @@ export interface OnesSerialization {
 
 export interface ConstantSerialization {
   class_name: 'Constant';
-  config: {value: number;};
+  config: {
+
+    value: number;
+  };
 }
 
 export interface RandomNormalSerialization {
   class_name: 'RandomNormal';
-  config: {mean?: number; stddev?: number; seed?: number;};
+  config: {
+
+    mean?: number;
+    stddev?: number;
+    seed?: number;
+  };
 }
 
 export interface RandomUniformSerialization {
   class_name: 'RandomUniform';
-  config: {minval?: number; maxval?: number; seed?: number;};
+  config: {
+
+    minval?: number;
+    maxval?: number;
+    seed?: number;
+  };
 }
 
 export interface TruncatedNormalSerialization {
   class_name: 'TruncatedNormal';
-  config: {mean?: number; stddev?: number; seed?: number;};
+  config: {
+
+    mean?: number;
+    stddev?: number;
+    seed?: number;
+  };
 }
 
 export interface VarianceScalingSerialization {
   class_name: 'VarianceScaling';
   config: {
-    scale: number; mode: FanMode; distribution: Distribution;
+
+    scale: number;
+
+    mode: FanMode;
+    distribution: Distribution;
     seed?: number;
   };
 }
 
 export interface OrthogonalSerialization {
   class_name: 'Orthogonal';
-  config: {seed?: number; gain?: number;};
+  config: {
+
+    seed?: number;
+    gain?: number;
+  };
 }
 
 export interface IdentitySerialization {
   class_name: 'Identity';
-  config: {gain?: number;};
-}
+  config: {
 
-export interface LeCunNormalSerialization {
-  class_name: 'LeCunNormal';
-  config: {seed?: number;};
-}
-
-export interface LeCunUniformSerialization {
-  class_name: 'LeCunUniform';
-  config: {seed?: number;};
-}
-
-export interface GlorotNormalSerialization {
-  class_name: 'GlorotNormal';
-  config: {seed?: number;};
-}
-
-export interface GlorotUniformSerialization {
-  class_name: 'GlorotUniform';
-  config: {seed?: number;};
-}
-
-export interface HeNormalSerialization {
-  class_name: 'HeNormal';
-  config: {seed?: number;};
-}
-
-export interface HeUniformSerialization {
-  class_name: 'HeUniform';
-  config: {seed?: number;};
+    gain?: number;
+  };
 }
 
 export type InitializerSerialization =
     ConstantSerialization|RandomUniformSerialization|RandomNormalSerialization|
     TruncatedNormalSerialization|IdentitySerialization|
-    VarianceScalingSerialization|OrthogonalSerialization|
-    LeCunNormalSerialization|LeCunUniformSerialization|
-    GlorotNormalSerialization|GlorotUniformSerialization|HeNormalSerialization|
-    HeUniformSerialization;
+    VarianceScalingSerialization|OrthogonalSerialization;
