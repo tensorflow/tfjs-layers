@@ -13,7 +13,7 @@ import {BaseLayerSerialization, LayerConfig} from '../topology_config';
 
 
 export interface Pooling1DLayerConfig extends LayerConfig {
-  poolSize?: number;
+  pool_size?: number;
   strides?: number;
   padding?: PaddingMode;
 }
@@ -21,17 +21,17 @@ export type Pooling1DLayerSerialization =
     BaseLayerSerialization<'Pooling1D', Pooling1DLayerConfig>;
 
 export interface Pooling2DLayerConfig extends LayerConfig {
-  poolSize?: number|[number, number];
+  pool_size?: number|[number, number];
   strides?: number|[number, number];
   padding?: PaddingMode;
-  dataFormat?: DataFormat;
+  data_format?: DataFormat;
 }
 
 export type Pooling2DLayerSerialization =
     BaseLayerSerialization<'Pooling2D', Pooling2DLayerConfig>;
 
 export interface GlobalPooling2DLayerConfig extends LayerConfig {
-  dataFormat?: DataFormat;
+  data_format?: DataFormat;
 }
 
 export type GlobalPooling2DLayerSerialization =

@@ -17,30 +17,30 @@ import {BaseSerialization} from '../types';
 
 export interface BaseRNNLayerConfig extends LayerConfig {
   cell?: RNNCellSerialization|RNNCellSerialization[];
-  returnSequences?: boolean;
-  returnState?: boolean;
-  goBackwards?: boolean;
+  return_sequences?: boolean;
+  return_state?: boolean;
+  go_backwards?: boolean;
   stateful?: boolean;
   unroll?: boolean;
-  inputDim?: number;
-  inputLength?: number;
+  input_dim?: number;
+  input_length?: number;
 }
 
 export interface SimpleRNNCellConfig extends LayerConfig {
   units: number;
   activation?: ActivationIdentifier;
-  useBias?: boolean;
-  kernelInitializer?: InitializerSerialization;
-  recurrentInitializer?: InitializerSerialization;
-  biasInitializer?: InitializerSerialization;
-  kernelRegularizer?: RegularizerSerialization;
-  recurrentRegularizer?: RegularizerSerialization;
-  biasRegularizer?: RegularizerSerialization;
-  kernelConstraint?: ConstraintSerialization;
-  recurrentConstraint?: ConstraintSerialization;
-  biasConstraint?: ConstraintSerialization;
+  use_bias?: boolean;
+  kernel_initializer?: InitializerSerialization;
+  recurrent_initializer?: InitializerSerialization;
+  bias_initializer?: InitializerSerialization;
+  kernel_regularizer?: RegularizerSerialization;
+  recurrent_regularizer?: RegularizerSerialization;
+  bias_regularizer?: RegularizerSerialization;
+  kernel_constraint?: ConstraintSerialization;
+  recurrent_constraint?: ConstraintSerialization;
+  bias_constraint?: ConstraintSerialization;
   dropout?: number;
-  recurrentDropout?: number;
+  recurrent_dropout?: number;
 }
 
 export type SimpleRNNCellSerialization =
@@ -49,32 +49,32 @@ export type SimpleRNNCellSerialization =
 export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   units: number;
   activation?: ActivationIdentifier;
-  useBias?: boolean;
-  kernelInitializer?: InitializerSerialization;
-  recurrentInitializer?: InitializerSerialization;
-  biasInitializer?: InitializerSerialization;
-  kernelRegularizer?: RegularizerSerialization;
-  recurrentRegularizer?: RegularizerSerialization;
-  biasRegularizer?: RegularizerSerialization;
-  kernelConstraint?: ConstraintSerialization;
-  recurrentConstraint?: ConstraintSerialization;
-  biasConstraint?: ConstraintSerialization;
+  use_bias?: boolean;
+  kernel_initializer?: InitializerSerialization;
+  recurrent_initializer?: InitializerSerialization;
+  bias_initializer?: InitializerSerialization;
+  kernel_regularizer?: RegularizerSerialization;
+  recurrent_regularizer?: RegularizerSerialization;
+  bias_regularizer?: RegularizerSerialization;
+  kernel_constraint?: ConstraintSerialization;
+  recurrent_constraint?: ConstraintSerialization;
+  bias_constraint?: ConstraintSerialization;
   dropout?: number;
-  recurrentDropout?: number;
+  recurrent_dropout?: number;
 }
 
 export type SimpleRNNLayerSerialization =
     BaseLayerSerialization<'SimpleRNN', SimpleRNNLayerConfig>;
 
 export interface GRUCellConfig extends SimpleRNNCellConfig {
-  recurrentActivation?: string;
+  recurrent_activation?: string;
   implementation?: number;
 }
 
 export type GRUCellSerialization = BaseSerialization<'GRUCell', GRUCellConfig>;
 
 export interface GRULayerConfig extends SimpleRNNLayerConfig {
-  recurrentActivation?: string;
+  recurrent_activation?: ActivationIdentifier;
   implementation?: number;
 }
 
@@ -82,8 +82,8 @@ export type GRULayerSerialization =
     BaseLayerSerialization<'GRU', GRULayerConfig>;
 
 export interface LSTMCellConfig extends SimpleRNNCellConfig {
-  recurrentActivation?: ActivationIdentifier;
-  unitForgetBias?: boolean;
+  recurrent_activation?: ActivationIdentifier;
+  unit_forget_bias?: boolean;
   implementation?: number;
 }
 
@@ -91,8 +91,8 @@ export type LSTMCellSerialization =
     BaseSerialization<'LSTMCell', LSTMCellConfig>;
 
 export interface LSTMLayerConfig extends SimpleRNNLayerConfig {
-  recurrentActivation?: string;
-  unitForgetBias?: boolean;
+  recurrent_activation?: ActivationIdentifier;
+  unit_forget_bias?: boolean;
   implementation?: number;
 }
 export type LSTMLayerSerialization =

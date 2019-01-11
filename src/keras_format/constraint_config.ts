@@ -11,7 +11,7 @@
 import {BaseSerialization} from './types';
 
 export type MaxNormConfig = {
-  maxValue?: number;
+  max_value?: number;
   axis?: number;
 };
 
@@ -27,8 +27,8 @@ export type UnitNormSerialization =
 export type NonNegSerialization = BaseSerialization<'NonNeg', null>;
 
 export type MinMaxNormConfig = {
-  minValue?: number;
-  maxValue?: number;
+  min_value?: number;
+  max_value?: number;
   axis?: number;
   rate?: number;
 };

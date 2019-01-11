@@ -19,14 +19,14 @@ export interface BatchNormalizationLayerConfig extends LayerConfig {
   epsilon?: number;
   center?: boolean;
   scale?: boolean;
-  betaInitializer?: InitializerSerialization;
-  gammaInitializer?: InitializerSerialization;
-  movingMeanInitializer?: InitializerSerialization;
-  movingVarianceInitializer?: InitializerSerialization;
-  betaConstraint?: ConstraintSerialization;
-  gammaConstraint?: ConstraintSerialization;
-  betaRegularizer?: RegularizerSerialization;
-  gammaRegularizer?: RegularizerSerialization;
+  beta_initializer?: InitializerSerialization;
+  gamma_initializer?: InitializerSerialization;
+  moving_mean_initializer?: InitializerSerialization;
+  moving_variance_initializer?: InitializerSerialization;
+  beta_constraint?: ConstraintSerialization;
+  gamma_constraint?: ConstraintSerialization;
+  beta_regularizer?: RegularizerSerialization;
+  gamma_regularizer?: RegularizerSerialization;
 }
 
 export type BatchNormalizationLayerSerialization =

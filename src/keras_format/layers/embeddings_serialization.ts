@@ -14,14 +14,14 @@ import {RegularizerSerialization} from '../regularizer_config';
 import {BaseLayerSerialization, LayerConfig} from '../topology_config';
 
 export interface EmbeddingLayerConfig extends LayerConfig {
-  inputDim: number;
-  outputDim: number;
-  embeddingsInitializer?: InitializerSerialization;
-  embeddingsRegularizer?: RegularizerSerialization;
-  activityRegularizer?: RegularizerSerialization;
-  embeddingsConstraint?: ConstraintSerialization;
-  maskZero?: boolean;
-  inputLength?: number|number[];
+  input_dim: number;
+  output_dim: number;
+  embeddings_initializer?: InitializerSerialization;
+  embeddings_regularizer?: RegularizerSerialization;
+  activity_regularizer?: RegularizerSerialization;
+  embeddings_constraint?: ConstraintSerialization;
+  mask_zero?: boolean;
+  input_length?: number|number[];
 }
 
 export type EmbeddingLayerSerialization =

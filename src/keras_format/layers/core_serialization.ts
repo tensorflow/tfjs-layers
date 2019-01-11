@@ -17,7 +17,7 @@ import {BaseLayerSerialization, LayerConfig} from '../topology_config';
 
 export interface DropoutLayerConfig extends LayerConfig {
   rate: number;
-  noiseShape?: number[];
+  noise_shape?: number[];
   seed?: number;
 }
 
@@ -27,15 +27,15 @@ export type DropoutLayerSerialization =
 export interface DenseLayerConfig extends LayerConfig {
   units: number;
   activation?: ActivationIdentifier;
-  useBias?: boolean;
-  inputDim?: number;
-  kernelInitializer?: InitializerSerialization;
-  biasInitializer?: InitializerSerialization;
-  kernelConstraint?: ConstraintSerialization;
-  biasConstraint?: ConstraintSerialization;
-  kernelRegularizer?: RegularizerSerialization;
-  biasRegularizer?: RegularizerSerialization;
-  activityRegularizer?: RegularizerSerialization;
+  use_bias?: boolean;
+  input_dim?: number;
+  kernel_initializer?: InitializerSerialization;
+  bias_initializer?: InitializerSerialization;
+  kernel_constraint?: ConstraintSerialization;
+  bias_constraint?: ConstraintSerialization;
+  kernel_regularizer?: RegularizerSerialization;
+  bias_regularizer?: RegularizerSerialization;
+  activity_regularizer?: RegularizerSerialization;
 }
 
 export type DenseLayerSerialization =

@@ -14,7 +14,7 @@ import {RegularizerSerialization} from '../regularizer_config';
 import {BaseLayerSerialization, LayerConfig} from '../topology_config';
 
 export interface ReLULayerConfig extends LayerConfig {
-  maxValue?: number;
+  max_value?: number;
 }
 
 export type ReLULayerSerialization =
@@ -28,10 +28,10 @@ export type LeakyReLULayerSerialization =
     BaseLayerSerialization<'LeakyReLU', LeakyReLULayerConfig>;
 
 export interface PReLULayerConfig extends LayerConfig {
-  alphaInitializer?: InitializerSerialization;
-  alphaRegularizer?: RegularizerSerialization;
-  alphaConstraint?: ConstraintSerialization;
-  sharedAxes?: number|number[];
+  alpha_initializer?: InitializerSerialization;
+  alpha_regularizer?: RegularizerSerialization;
+  alpha_constraint?: ConstraintSerialization;
+  shared_axes?: number|number[];
 }
 
 export type PReLULayerSerialization =

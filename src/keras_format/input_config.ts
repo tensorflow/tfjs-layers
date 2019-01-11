@@ -14,9 +14,9 @@ import {Shape} from './common';
 import {BaseSerialization} from './types';
 
 export type InputLayerConfig = {
-  inputShape?: Shape;
-  batchSize?: number;
-  batchInputShape?: Shape;
+  input_shape?: Shape;
+  batch_size?: number;
+  batch_input_shape?: Shape;
   dtype?: DataType;
   sparse?: boolean;
   name?: string;

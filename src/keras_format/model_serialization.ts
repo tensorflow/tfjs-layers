@@ -16,8 +16,8 @@ import {BaseSerialization, PyJsonDict} from './types';
 export type ModelConfig = {
   name: string,
   layers: LayerSerialization[],
-  inputLayers: TensorKeyArray[],
-  outputLayers: TensorKeyArray[],
+  input_layers: TensorKeyArray[],
+  output_layers: TensorKeyArray[],
 }&PyJsonDict;
 
 /**
@@ -26,7 +26,7 @@ export type ModelConfig = {
 export interface ModelSerialization extends
     BaseSerialization<'Model', ModelConfig> {
   backend?: string;
-  kerasVersion?: string;
+  keras_version?: string;
 }
 
 export type SequentialConfig = {
@@ -39,7 +39,7 @@ export type SequentialConfig = {
 export interface SequentialSerialization extends
     BaseSerialization<'Sequential', SequentialConfig> {
   backend?: string;
-  kerasVersion?: string;
+  keras_version?: string;
 }
 
 /**
@@ -56,7 +56,7 @@ export type LegacySequentialSerialization = {
 
   config: LayerSerialization[];
   backend?: string;
-  kerasVersion?: string;
+  keras_version?: string;
 }&PyJsonDict;
 
 /**

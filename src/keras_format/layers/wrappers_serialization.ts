@@ -26,5 +26,5 @@ export type BidirectionalLayerSerialization =
 
 export interface BidirectionalLayerConfig extends LayerConfig {
   layer: RecurrentLayerSerialization;
-  mergeMode?: BidirectionalMergeMode;
+  merge_mode?: BidirectionalMergeMode;
 }

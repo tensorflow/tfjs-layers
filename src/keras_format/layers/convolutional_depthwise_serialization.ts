@@ -16,11 +16,11 @@ import {BaseLayerSerialization} from '../topology_config';
 import {BaseConvLayerConfig} from './convolutional_serialization';
 
 export interface DepthwiseConv2DLayerConfig extends BaseConvLayerConfig {
-  kernelSize: number|[number, number];
-  depthMultiplier?: number;
-  depthwiseInitializer?: InitializerSerialization;
-  depthwiseConstraint?: ConstraintSerialization;
-  depthwiseRegularizer?: RegularizerSerialization;
+  kernel_size: number|[number, number];
+  depth_multiplier?: number;
+  depthwise_initializer?: InitializerSerialization;
+  depthwise_constraint?: ConstraintSerialization;
+  depthwise_regularizer?: RegularizerSerialization;
 }
 
 export type DepthwiseConv2DLayerSerialization =
