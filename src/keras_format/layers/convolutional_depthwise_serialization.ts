@@ -11,6 +11,8 @@
 import {ConstraintSerialization} from '../constraint_config';
 import {InitializerSerialization} from '../initializer_config';
 import {RegularizerSerialization} from '../regularizer_config';
+import {BaseLayerSerialization} from '../topology_config';
+
 import {BaseConvLayerConfig} from './convolutional_serialization';
 
 export interface DepthwiseConv2DLayerConfig extends BaseConvLayerConfig {
@@ -21,7 +23,5 @@ export interface DepthwiseConv2DLayerConfig extends BaseConvLayerConfig {
   depthwiseRegularizer?: RegularizerSerialization;
 }
 
-export interface DepthwiseConv2DLayerSerialization {
-  class_name: 'DepthwiseConv2D';
-  config: DepthwiseConv2DLayerConfig;
-}
+export type DepthwiseConv2DLayerSerialization =
+    BaseLayerSerialization<'DepthwiseConv2D', DepthwiseConv2DLayerConfig>;

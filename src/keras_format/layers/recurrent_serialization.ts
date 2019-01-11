@@ -12,7 +12,8 @@ import {ActivationIdentifier} from '../activation_config';
 import {ConstraintSerialization} from '../constraint_config';
 import {InitializerSerialization} from '../initializer_config';
 import {RegularizerSerialization} from '../regularizer_config';
-import {LayerConfig} from '../topology_config';
+import {BaseLayerSerialization, LayerConfig} from '../topology_config';
+import {BaseSerialization} from '../types';
 
 export interface BaseRNNLayerConfig extends LayerConfig {
   cell?: RNNCellSerialization|RNNCellSerialization[];
@@ -42,10 +43,8 @@ export interface SimpleRNNCellConfig extends LayerConfig {
   recurrentDropout?: number;
 }
 
-export interface SimpleRNNCellSerialization {
-  class_name: 'SimpleRNNCell';
-  config: SimpleRNNCellConfig;
-}
+export type SimpleRNNCellSerialization =
+    BaseSerialization<'SimpleRNNCell', SimpleRNNCellConfig>;
 
 export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   units: number;
@@ -64,30 +63,23 @@ export interface SimpleRNNLayerConfig extends BaseRNNLayerConfig {
   recurrentDropout?: number;
 }
 
-export interface SimpleRNNLayerSerialization {
-  class_name: 'SimpleRNN';
-  config: SimpleRNNLayerConfig;
-}
+export type SimpleRNNLayerSerialization =
+    BaseLayerSerialization<'SimpleRNN', SimpleRNNLayerConfig>;
 
 export interface GRUCellConfig extends SimpleRNNCellConfig {
   recurrentActivation?: string;
   implementation?: number;
 }
 
-export interface GRUCellSerialization {
-  class_name: 'GRUCell';
-  config: GRUCellConfig;
-}
+export type GRUCellSerialization = BaseSerialization<'GRUCell', GRUCellConfig>;
 
 export interface GRULayerConfig extends SimpleRNNLayerConfig {
   recurrentActivation?: string;
   implementation?: number;
 }
 
-export interface GRULayerSerialization {
-  class_name: 'GRU';
-  config: GRULayerConfig;
-}
+export type GRULayerSerialization =
+    BaseLayerSerialization<'GRU', GRULayerConfig>;
 
 export interface LSTMCellConfig extends SimpleRNNCellConfig {
   recurrentActivation?: ActivationIdentifier;
@@ -95,20 +87,16 @@ export interface LSTMCellConfig extends SimpleRNNCellConfig {
   implementation?: number;
 }
 
-export interface LSTMCellSerialization {
-  class_name: 'LSTMCell';
-  config: LSTMCellConfig;
-}
+export type LSTMCellSerialization =
+    BaseSerialization<'LSTMCell', LSTMCellConfig>;
 
 export interface LSTMLayerConfig extends SimpleRNNLayerConfig {
   recurrentActivation?: string;
   unitForgetBias?: boolean;
   implementation?: number;
 }
-export interface LSTMLayerSerialization {
-  class_name: 'LSTM';
-  config: LSTMLayerConfig;
-}
+export type LSTMLayerSerialization =
+    BaseLayerSerialization<'LSTM', LSTMLayerConfig>;
 
 export interface StackedRNNCellsConfig extends LayerConfig {
   // TODO(soergel): consider whether we can avoid improperly mixing
@@ -116,10 +104,8 @@ export interface StackedRNNCellsConfig extends LayerConfig {
   cells: RNNCellSerialization[];
 }
 
-export interface StackedRNNCellsSerialization {
-  class_name: 'StackedRNNCells';
-  config: StackedRNNCellsConfig;
-}
+export type StackedRNNCellsSerialization =
+    BaseSerialization<'StackedRNNCells', StackedRNNCellsConfig>;
 
 export type RNNCellSerialization = SimpleRNNCellSerialization|
     GRUCellSerialization|LSTMCellSerialization|StackedRNNCellsSerialization;

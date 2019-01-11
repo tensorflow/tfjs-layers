@@ -13,7 +13,7 @@ import {Shape} from '../common';
 import {ConstraintSerialization} from '../constraint_config';
 import {InitializerSerialization} from '../initializer_config';
 import {RegularizerSerialization} from '../regularizer_config';
-import {LayerConfig} from '../topology_config';
+import {BaseLayerSerialization, LayerConfig} from '../topology_config';
 
 export interface DropoutLayerConfig extends LayerConfig {
   rate: number;
@@ -21,10 +21,8 @@ export interface DropoutLayerConfig extends LayerConfig {
   seed?: number;
 }
 
-export interface DropoutLayerSerialization {
-  class_name: 'Dropout';
-  config: DropoutLayerConfig;
-}
+export type DropoutLayerSerialization =
+    BaseLayerSerialization<'Dropout', DropoutLayerConfig>;
 
 export interface DenseLayerConfig extends LayerConfig {
   units: number;
@@ -40,46 +38,36 @@ export interface DenseLayerConfig extends LayerConfig {
   activityRegularizer?: RegularizerSerialization;
 }
 
-export interface DenseLayerSerialization {
-  class_name: 'Dense';
-  config: DenseLayerConfig;
-}
+export type DenseLayerSerialization =
+    BaseLayerSerialization<'Dense', DenseLayerConfig>;
 
 export interface ActivationLayerConfig extends LayerConfig {
   activation: ActivationIdentifier;
 }
 
-export interface ActivationLayerSerialization {
-  class_name: 'Activation';
-  config: ActivationLayerConfig;
-}
+export type ActivationLayerSerialization =
+    BaseLayerSerialization<'Activation', ActivationLayerConfig>;
 
 export interface RepeatVectorLayerConfig extends LayerConfig {
   n: number;
 }
 
-export interface RepeatVectorLayerSerialization {
-  class_name: 'RepeatVector';
-  config: RepeatVectorLayerConfig;
-}
+export type RepeatVectorLayerSerialization =
+    BaseLayerSerialization<'RepeatVector', RepeatVectorLayerConfig>;
 
 export interface ReshapeLayerConfig extends LayerConfig {
   targetShape: Shape;
 }
 
-export interface ReshapeLayerSerialization {
-  class_name: 'Reshape';
-  config: ReshapeLayerConfig;
-}
+export type ReshapeLayerSerialization =
+    BaseLayerSerialization<'Reshape', ReshapeLayerConfig>;
 
 export interface PermuteLayerConfig extends LayerConfig {
   dims: number[];
 }
 
-export interface PermuteLayerSerialization {
-  class_name: 'Permute';
-  config: PermuteLayerConfig;
-}
+export type PermuteLayerSerialization =
+    BaseLayerSerialization<'Permute', PermuteLayerConfig>;
 
 export type CoreLayerSerialization =
     DropoutLayerSerialization|DenseLayerSerialization|

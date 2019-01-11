@@ -11,7 +11,7 @@
 import {ConstraintSerialization} from '../constraint_config';
 import {InitializerSerialization} from '../initializer_config';
 import {RegularizerSerialization} from '../regularizer_config';
-import {LayerConfig} from '../topology_config';
+import {BaseLayerSerialization, LayerConfig} from '../topology_config';
 
 export interface EmbeddingLayerConfig extends LayerConfig {
   inputDim: number;
@@ -24,7 +24,5 @@ export interface EmbeddingLayerConfig extends LayerConfig {
   inputLength?: number|number[];
 }
 
-export interface EmbeddingLayerSerialization {
-  class_name: 'Embedding';
-  config: EmbeddingLayerConfig;
-}
+export type EmbeddingLayerSerialization =
+    BaseLayerSerialization<'Embedding', EmbeddingLayerConfig>;
