@@ -8,15 +8,8 @@
  * =============================================================================
  */
 
+import {SampleWeightMode} from './common';
 import {BaseSerialization, PyJsonDict} from './types';
-
-/**
- * Configuration of a Keras optimizer, containing both the type of the optimizer
- * and the configuration for the optimizer of that type.
- */
-export type OptimizerSerialization<N extends string,
-                                             C extends OptimizerConfig> =
-    BaseSerialization<N, C>;
 
 /**
  * Because of the limitations in the current Keras spec, there is no clear
@@ -26,6 +19,14 @@ export type OptimizerSerialization<N extends string,
  * See internal issue: b/121033602
  */
 export type OptimizerConfig = PyJsonDict;
+
+/**
+ * Configuration of a Keras optimizer, containing both the type of the optimizer
+ * and the configuration for the optimizer of that type.
+ */
+export type OptimizerSerialization<N extends string,
+                                             C extends OptimizerConfig> =
+    BaseSerialization<N, C>;
 
 /**
  * List of all known loss names, along with a string description.
@@ -51,15 +52,17 @@ export type LossKey = keyof LossOptions;
 // TODO(soergel): flesh out known metrics options
 export type MetricsKey = string;
 
+export type LossWeights = number[]|{[key: string]: number};
+
 /**
- * Configuration of that which is necessary to train a given model and
- * dataset. This includes the configuration to the optimizer, the loss, any
- * metrics to be calculated, etc.
+ * Configuration of the Keras trainer. This includes the configuration to the
+ * optimizer, the loss, any metrics to be calculated, etc.
  */
 export interface TrainingConfig {
-  optimizerConfig: OptimizerSerialization<string, PyJsonDict>;
-  loss: LossKey;
-  metrics: MetricsKey[];
-  sampleWeightMode: string;
-  lossWeights: null;  // TQDQ(soergel): wat
+  optimizer_config: OptimizerSerialization<string, PyJsonDict>;
+  loss: LossKey|LossKey[]|{[key: string]: LossKey};
+  metrics?: MetricsKey[];
+  weighted_metrics?: MetricsKey[];
+  sample_weight_mode?: SampleWeightMode;
+  loss_weights?: LossWeights;
 }
