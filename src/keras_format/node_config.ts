@@ -30,6 +30,7 @@ export type TensorIndex = number;
  */
 // tslint:disable-next-line:no-empty-interface
 export interface NodeArgs extends PyJsonDict {}
+
 /**
  * A reference to a specific Tensor, given by its Layer name, Node index, and
  * output index, including the apply() arguments associated with the Node.
