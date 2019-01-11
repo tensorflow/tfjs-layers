@@ -168,7 +168,7 @@ export function leCunNormal(args: SeedOnlyInitializerArgs): Initializer {
  * @doc {
  *   heading: 'Initializers',
  *   namespace: 'initializers',
- *   useDocsFrom: 'LeCunNormal',
+ *   useDocsFrom: 'LeCunUniform',
  *   configParamIndices: [0]
  * }
  */

@@ -378,7 +378,6 @@ export class VarianceScaling extends Initializer {
       scale /= Math.max(1, (fanIn + fanOut) / 2);
     }
 
-    console.log('100:', this.distribution);  // DEBUG
     if (this.distribution === 'normal') {
       const stddev = Math.sqrt(scale);
       dtype = dtype || 'float32';
@@ -389,7 +388,6 @@ export class VarianceScaling extends Initializer {
       return truncatedNormal(shape, 0, stddev, dtype, this.seed);
     } else {
       const limit = Math.sqrt(3 * scale);
-      console.log(`limit = ${limit}`);  // DEBUG
       return randomUniform(shape, -limit, limit, dtype);
     }
   }
@@ -520,7 +518,7 @@ export class HeNormal extends VarianceScaling {
 serialization.registerClass(HeNormal);
 
 /**
- * He normal initializer.
+ * He uniform initializer.
  *
  * It draws samples from a uniform distribution within [-limit, limit]
  * where `limit` is `sqrt(6 / fan_in)`
@@ -589,10 +587,6 @@ serialization.registerClass(LeCunNormal);
  * It draws samples from a uniform distribution in the interval
  * `[-limit, limit]` with `limit = sqrt(3 / fanIn)`,
  * where `fanIn` is the number of input units in the weight tensor.
- *
- * References:
- *   [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515)
- *   [Efficient Backprop](http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf)
  */
 export class LeCunUniform extends VarianceScaling {
   static className = 'LeCunNormal';
