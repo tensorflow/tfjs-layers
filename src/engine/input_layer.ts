@@ -12,7 +12,8 @@ import {DataType, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {getUid} from '../backend/state';
 import {ValueError} from '../errors';
-import {Kwargs, Shape} from '../types';
+import {Shape} from '../keras_format/common';
+import {Kwargs} from '../types';
 
 import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
 
@@ -23,7 +24,7 @@ import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
  * If only inputShape is provided, then the batchInputShape is determined by
  * the batchSize argument and the inputShape: [batchSize].concat(inputShape).
  */
-export interface InputLayerConfig {
+export interface InputLayerArgs {
   /** Input shape, not including the batch axis. */
   inputShape?: Shape;
   /** Optional input batch size (integer or null). */
@@ -56,7 +57,7 @@ export interface InputLayerConfig {
  * model1.add(tf.layers.dense({inputShape: [4], units: 3, activation: 'relu'}));
  * model1.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
  * model1.summary();
- * model1.preidct(tf.zeros([1, 4])).print();
+ * model1.predict(tf.zeros([1, 4])).print();
  *
  * // Construct another model, reusing the second layer of `model1` while
  * // not using the first layer of `model1`. Note that you cannot add the second
@@ -70,53 +71,53 @@ export interface InputLayerConfig {
  * model2.add(tf.layers.inputLayer({inputShape: [3]}));
  * model2.add(model1.layers[1]);
  * model2.summary();
- * model2.preidct(tf.zeros([1, 3])).print();
+ * model2.predict(tf.zeros([1, 3])).print();
  * ```
  */
 export class InputLayer extends Layer {
   static readonly className = 'InputLayer';
   sparse: boolean;
-  constructor(config: InputLayerConfig) {
+  constructor(args: InputLayerArgs) {
     super({
-      dtype: config.dtype,
-      name: config.name != null ? config.name : getUid('input').toString()
+      dtype: args.dtype,
+      name: args.name != null ? args.name : getUid('input').toString()
     });
     // Normalize config.batchSize and config.sparse
-    if (config.batchSize == null) {
-      config.batchSize = null;
+    if (args.batchSize == null) {
+      args.batchSize = null;
     }
-    if (config.sparse == null) {
-      config.sparse = false;
+    if (args.sparse == null) {
+      args.sparse = false;
     }
 
     this.trainable = false;
     this.built = true;
-    this.sparse = config.sparse;
+    this.sparse = args.sparse;
 
-    if (config.inputShape != null && config.batchInputShape != null) {
+    if (args.inputShape != null && args.batchInputShape != null) {
       throw new ValueError(
           'Only provide the inputShape OR ' +
           'batchInputShape argument to inputLayer, not both at the same time.');
     }
-    let batchInputShape = config.batchInputShape;
+    let batchInputShape = args.batchInputShape;
     if (batchInputShape == null) {
-      if (config.inputShape == null) {
+      if (args.inputShape == null) {
         throw new ValueError(
             'An InputLayer should be passed either a ' +
             '`batchInputShape` or an `inputShape`.');
       } else {
-        batchInputShape = [config.batchSize].concat(config.inputShape);
+        batchInputShape = [args.batchSize].concat(args.inputShape);
       }
     } else {
       // TODO(michaelterry): Backport to PyKeras
-      if (config.batchSize != null) {
+      if (args.batchSize != null) {
         throw new ValueError(
             'Cannot specify batchSize if batchInputShape is' +
             'specified when creating an InputLayer.');
       }
     }
 
-    const dtype = config.dtype || 'float32';
+    const dtype = args.dtype || 'float32';
 
     this.batchInputShape = batchInputShape;
     this.dtype = dtype;

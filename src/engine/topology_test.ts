@@ -9,19 +9,21 @@
  */
 
 import {eye, memory, ones, Tensor, tensor1d, tensor2d, zeros} from '@tensorflow/tfjs-core';
+
 import * as tfl from '../index';
 import * as initializers from '../initializers';
-import {NamedTensorMap, Shape} from '../types';
+import {Shape} from '../keras_format/common';
+import {NamedTensorMap} from '../types';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 import {LayerVariable, onesVariable, zerosVariable} from '../variables';
 
 import {loadWeightsFromJson, loadWeightsFromNamedTensorMap} from './container';
-import {InputSpec, Layer, LayerConfig, Node} from './topology';
+import {InputSpec, Layer, LayerArgs, Node} from './topology';
 
 class LayerForTest extends tfl.layers.Layer {
   static className = 'LayerForTest';
-  constructor(config: LayerConfig) {
-    super(config);
+  constructor(args: LayerArgs) {
+    super(args);
   }
 }
 
@@ -299,8 +301,8 @@ describeMathCPU('Layer', () => {
     it('Layer with duplicate weight names throws error', () => {
       class LayerForTest extends tfl.layers.Layer {
         static className = 'LayerForTest';
-        constructor(config: LayerConfig) {
-          super(config);
+        constructor(args: LayerArgs) {
+          super(args);
           this.addWeight(
               'foo', [1, 2], 'float32', initializers.getInitializer('zeros'));
           this.addWeight(
