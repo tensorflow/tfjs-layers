@@ -52,7 +52,7 @@ export interface SequentialSerialization extends
  */
 export type LegacySequentialSerialization = {
   // Note this cannot extend `BaseSerialization` because of the bug.
-  className: 'Sequential';
+  class_name: 'Sequential';
 
   config: LayerSerialization[];
   backend?: string;

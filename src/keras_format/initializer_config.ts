@@ -10,17 +10,22 @@
 
 import {BaseSerialization} from './types';
 
+
+// TODO(soergel): Move the CamelCase versions back out of keras_format
+// e.g. to src/common.ts.  Maybe even duplicate *all* of these to be pedantic?
 /** @docinline */
 export type FanMode = 'fanIn'|'fanOut'|'fanAvg';
 export const VALID_FAN_MODE_VALUES = ['fanIn', 'fanOut', 'fanAvg'];
+
+export type FanModeSerialization = 'fan_in'|'fan_out'|'fan_avg';
 
 /** @docinline */
 export type Distribution = 'normal'|'uniform';
 export const VALID_DISTRIBUTION_VALUES = ['normal', 'uniform'];
 
-export type ZerosSerialization = BaseSerialization<'Zeros', null>;
+export type ZerosSerialization = BaseSerialization<'Zeros', {}>;
 
-export type OnesSerialization = BaseSerialization<'Ones', null>;
+export type OnesSerialization = BaseSerialization<'Ones', {}>;
 
 export type ConstantConfig = {
   value: number;
@@ -59,7 +64,7 @@ export type TruncatedNormalSerialization =
 export type VarianceScalingConfig = {
   scale: number;
 
-  mode: FanMode;
+  mode: FanModeSerialization;
   distribution: Distribution;
   seed?: number;
 };
@@ -82,7 +87,7 @@ export type IdentityConfig = {
 export type IdentitySerialization =
     BaseSerialization<'Identity', IdentityConfig>;
 
-export type InitializerSerialization =
+export type InitializerSerialization = ZerosSerialization|OnesSerialization|
     ConstantSerialization|RandomUniformSerialization|RandomNormalSerialization|
     TruncatedNormalSerialization|IdentitySerialization|
     VarianceScalingSerialization|OrthogonalSerialization;

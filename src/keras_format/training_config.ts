@@ -30,22 +30,42 @@ export type OptimizerSerialization<
 
 /**
  * List of all known loss names, along with a string description.
+ *
+ * Representing this as a class allows both type-checking using the keys and
+ * generating an appropriate options array for use in select fields.
  */
-export type LossOptions = {
-  mean_squared_error: 'Mean Squared Error',
-  mean_absolute_error: 'Mean Absolute Error',
-  mean_absolute_percentage_error: 'Mean Absolute Percentage Error',
-  mean_squared_logarithmic_error: 'Mean Squared Logarithmic Error',
-  squared_hinge: 'Squared Hinge',
-  hinge: 'Hinge',
-  categorical_hinge: 'Categorical Hinge',
-  logcosh: 'Logcosh',
-  categorical_crossentropy: 'Categorical Cross Entropy',
-  sparse_categorical_crossentropy: 'Sparse Categorical Cross Entropy',
-  kullback_leibler_divergence: 'Kullback-Liebler Divergence',
-  poisson: 'Poisson',
-  cosine_proximity: 'Cosine Proximity',
-};
+export class LossOptions {
+  [key: string]: string;
+  // tslint:disable:variable-name
+  public readonly mean_squared_error = 'Mean Squared Error';
+  public readonly mean_absolute_error = 'Mean Absolute Error';
+  public readonly mean_absolute_percentage_error =
+      'Mean Absolute Percentage Error';
+  public readonly mean_squared_logarithmic_error =
+      'Mean Squared Logarithmic Error';
+  public readonly squared_hinge = 'Squared Hinge';
+  public readonly hinge = 'Hinge';
+  public readonly categorical_hinge = 'Categorical Hinge';
+  public readonly logcosh = 'Logcosh';
+  public readonly categorical_crossentropy = 'Categorical Cross Entropy';
+  public readonly sparse_categorical_crossentropy =
+      'Sparse Categorical Cross Entropy';
+  public readonly kullback_leibler_divergence = 'Kullback-Liebler Divergence';
+  public readonly poisson = 'Poisson';
+  public readonly cosine_proximity = 'Cosine Proximity';
+  // tslint:enable:variable-name
+}
+
+function convertLossOptions(): Array<{value: string, label: string}> {
+  const options = new LossOptions();
+  const result: Array<{value: string, label: string}> = [];
+  for (const key in Object.keys(options)) {
+    result.push({value: key, label: options[key]});
+  }
+  return result;
+}
+
+export const lossOptions = convertLossOptions();
 
 export type LossKey = keyof LossOptions;
 
@@ -59,6 +79,7 @@ export type LossWeights = number[]|{[key: string]: number};
  * optimizer, the loss, any metrics to be calculated, etc.
  */
 export interface TrainingConfig {
+  // tslint:disable-next-line:no-any
   optimizer_config: OptimizerSerialization<string, OptimizerConfig<any>>;
   loss: LossKey|LossKey[]|{[key: string]: LossKey};
   metrics?: MetricsKey[];

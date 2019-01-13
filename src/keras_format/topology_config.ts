@@ -15,8 +15,7 @@ import {NodeConfig} from './node_config';
 import {BaseSerialization, PyJson} from './types';
 
 /** Constructor arguments for Layer. */
-export interface LayerConfig extends
-    PyJson<Extract<keyof LayerConfig, string>> {
+export interface LayerConfig {
   input_shape?: Shape;
   batch_input_shape?: Shape;
   batch_size?: number;
@@ -36,9 +35,10 @@ export interface LayerConfig extends
  * subtypes of `LayerConfig`.  Thus, this `*Serialization` has a type parameter
  * giving the specific type of the wrapped `LayerConfig`.
  */
-export interface BaseLayerSerialization<N extends string, T extends LayerConfig&
-                                        PyJson<Extract<keyof T, string>>>
-    extends BaseSerialization<N, T> {
+export interface BaseLayerSerialization<
+    N extends string, T extends PyJson<Extract<keyof T, string>>> extends
+    BaseSerialization<N, T> {
+  // T should actually extend L;yerConfig, but that is hard to enforce.
   name: string;
   inbound_nodes?: NodeConfig[];
 }
