@@ -19,6 +19,7 @@ import {BaseSerialization, PyJson} from './types';
  * See internal issue: b/121033602
  */
 export type OptimizerConfig<C extends PyJson<Extract<keyof C, string>>> = C;
+// See ./types.ts for an explanation of the PyJson type.
 
 /**
  * Configuration of a Keras optimizer, containing both the type of the
@@ -27,6 +28,7 @@ export type OptimizerConfig<C extends PyJson<Extract<keyof C, string>>> = C;
 export type OptimizerSerialization<
     N extends string, C extends PyJson<Extract<keyof C, string>>> =
     BaseSerialization<N, C>;
+// See ./types.ts for an explanation of the PyJson type.
 
 /**
  * List of all known loss names, along with a string description.
@@ -56,6 +58,9 @@ export class LossOptions {
   // tslint:enable:variable-name
 }
 
+/**
+ * Render the keys and values from the LossOptions class as an array of objects.
+ */
 function convertLossOptions(): Array<{value: string, label: string}> {
   const options = new LossOptions();
   const result: Array<{value: string, label: string}> = [];
@@ -65,13 +70,25 @@ function convertLossOptions(): Array<{value: string, label: string}> {
   return result;
 }
 
+/**
+ * An array of `{value, label}` pairs describing the valid losses.
+ *
+ * The `value` is the serializable string constant, and the `label` is a more
+ * user-friendly description (e.g. for use in UIs).
+ */
 export const lossOptions = convertLossOptions();
 
+/**
+ * A type representing the strings that are valid loss names.
+ */
 export type LossKey = keyof LossOptions;
 
 // TODO(soergel): flesh out known metrics options
 export type MetricsKey = string;
 
+/**
+ * a type for valid values of the `loss_weights` field.
+ */
 export type LossWeights = number[]|{[key: string]: number};
 
 /**

@@ -38,7 +38,8 @@ export interface LayerConfig {
 export interface BaseLayerSerialization<
     N extends string, T extends PyJson<Extract<keyof T, string>>> extends
     BaseSerialization<N, T> {
-  // T should actually extend L;yerConfig, but that is hard to enforce.
+  // See ./types.ts for an explanation of the PyJson type.
+  // T should actually extend LayerConfig, but that is hard to enforce.
   name: string;
   inbound_nodes?: NodeConfig[];
 }
