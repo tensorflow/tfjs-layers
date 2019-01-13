@@ -538,7 +538,7 @@ export function globalMaxPooling1d(args?: LayerArgs): Layer {
  *   configParamIndices: [0]
  * }
  */
-export function globalMaxPooling2d(args?: GlobalPooling2DLayerArgs): Layer {
+export function globalMaxPooling2d(args: GlobalPooling2DLayerArgs): Layer {
   return new GlobalMaxPooling2D(args);
 }
 
