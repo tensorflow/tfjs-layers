@@ -12,10 +12,11 @@ import {DataType} from '@tensorflow/tfjs-core';
 
 import {Shape} from './common';
 import {NodeConfig} from './node_config';
-import {BaseSerialization, PyJsonDict} from './types';
+import {BaseSerialization, PyJson} from './types';
 
 /** Constructor arguments for Layer. */
-export interface LayerConfig extends PyJsonDict {
+export interface LayerConfig extends
+    PyJson<Extract<keyof LayerConfig, string>> {
   input_shape?: Shape;
   batch_input_shape?: Shape;
   batch_size?: number;
@@ -35,7 +36,8 @@ export interface LayerConfig extends PyJsonDict {
  * subtypes of `LayerConfig`.  Thus, this `*Serialization` has a type parameter
  * giving the specific type of the wrapped `LayerConfig`.
  */
-export interface BaseLayerSerialization<N extends string, T extends LayerConfig>
+export interface BaseLayerSerialization<N extends string, T extends LayerConfig&
+                                        PyJson<Extract<keyof T, string>>>
     extends BaseSerialization<N, T> {
   name: string;
   inbound_nodes?: NodeConfig[];

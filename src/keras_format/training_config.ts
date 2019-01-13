@@ -9,7 +9,7 @@
  */
 
 import {SampleWeightMode} from './common';
-import {BaseSerialization, PyJsonDict} from './types';
+import {BaseSerialization, PyJson} from './types';
 
 /**
  * Because of the limitations in the current Keras spec, there is no clear
@@ -18,14 +18,14 @@ import {BaseSerialization, PyJsonDict} from './types';
  *
  * See internal issue: b/121033602
  */
-export type OptimizerConfig = PyJsonDict;
+export type OptimizerConfig<C extends PyJson<Extract<keyof C, string>>> = C;
 
 /**
- * Configuration of a Keras optimizer, containing both the type of the optimizer
- * and the configuration for the optimizer of that type.
+ * Configuration of a Keras optimizer, containing both the type of the
+ * optimizer and the configuration for the optimizer of that type.
  */
-export type OptimizerSerialization<N extends string,
-                                             C extends OptimizerConfig> =
+export type OptimizerSerialization<
+    N extends string, C extends PyJson<Extract<keyof C, string>>> =
     BaseSerialization<N, C>;
 
 /**
@@ -59,7 +59,7 @@ export type LossWeights = number[]|{[key: string]: number};
  * optimizer, the loss, any metrics to be calculated, etc.
  */
 export interface TrainingConfig {
-  optimizer_config: OptimizerSerialization<string, PyJsonDict>;
+  optimizer_config: OptimizerSerialization<string, OptimizerConfig<any>>;
   loss: LossKey|LossKey[]|{[key: string]: LossKey};
   metrics?: MetricsKey[];
   weighted_metrics?: MetricsKey[];
