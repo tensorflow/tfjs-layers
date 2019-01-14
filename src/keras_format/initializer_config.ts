@@ -91,3 +91,5 @@ export type InitializerSerialization = ZerosSerialization|OnesSerialization|
     ConstantSerialization|RandomUniformSerialization|RandomNormalSerialization|
     TruncatedNormalSerialization|IdentitySerialization|
     VarianceScalingSerialization|OrthogonalSerialization;
+
+export type InitializerClassName = InitializerSerialization['class_name'];
