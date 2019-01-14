@@ -35,7 +35,7 @@ export interface LayerConfig extends PyJsonDict {
  *
  * See ./types.ts for an explanation of the PyJson type.
  */
-export type JsonLayer<C extends LayerConfig> =
+export type JsonLayer<C extends LayerConfig> = C&LayerConfig&
     PyJson<Extract<keyof C, string>|Extract<keyof LayerConfig, string>>;
 
 /**
