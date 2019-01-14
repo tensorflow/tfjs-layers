@@ -39,6 +39,8 @@ export type OptimizerSerialization<
 export class LossOptions {
   [key: string]: string;
   // tslint:disable:variable-name
+  // TODO(soergel): consider whether these can be static, given what
+  // convertLossOptions() below needs to do.
   public readonly mean_squared_error = 'Mean Squared Error';
   public readonly mean_absolute_error = 'Mean Absolute Error';
   public readonly mean_absolute_percentage_error =
