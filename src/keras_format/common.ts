@@ -20,7 +20,7 @@ export type DataType = 'float32'|'int32'|'bool'|'complex64'|'string';
 export type DataFormat = 'channelsFirst'|'channelsLast';
 export const VALID_DATA_FORMAT_VALUES = ['channelsFirst', 'channelsLast'];
 
-// This is the only set of constants here with a snake vs. camel distinction.
+// These constants have a snake vs. camel distinction.
 export type DataFormatSerialization = 'channels_first'|'channels_last';
 
 /** @docinline */

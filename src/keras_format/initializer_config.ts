@@ -17,6 +17,7 @@ import {BaseSerialization} from './types';
 export type FanMode = 'fanIn'|'fanOut'|'fanAvg';
 export const VALID_FAN_MODE_VALUES = ['fanIn', 'fanOut', 'fanAvg'];
 
+// These constants have a snake vs. camel distinction.
 export type FanModeSerialization = 'fan_in'|'fan_out'|'fan_avg';
 
 /** @docinline */
