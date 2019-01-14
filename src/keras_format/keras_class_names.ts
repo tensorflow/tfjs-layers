@@ -14,8 +14,8 @@ import {LayerClassName} from './layers/layer_serialization';
 import {RegularizerClassName} from './regularizer_config';
 
 /**
- * A type representing all valid values of `class_name` is a Keras JSON file
- * (regardless of context, which will naturally  further restrict the valid
+ * A type representing all valid values of `class_name` in a Keras JSON file
+ * (regardless of context, which will naturally further restrict the valid
  * values).
  */
 export type KerasClassName = LayerClassName|ConstraintClassName|
