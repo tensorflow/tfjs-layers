@@ -93,7 +93,7 @@ export interface BaseSerialization<
     PyJsonDict {
   // The above type voodoo does this:
   // * `keyof T` obtains the known keys of the specific config type.
-  //   `keyof`returns `string | number | symbol`; see
+  //   `keyof` returns `string | number | symbol`; see
   //   (https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-9.html)
   // * `Extract<keyof T, string>` selects the string values.  This amounts to
   //    assuming that we are dealing with a type with string keys, as opposed to
