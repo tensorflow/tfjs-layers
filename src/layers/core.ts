@@ -18,7 +18,7 @@ import {Activation as ActivationFn, getActivation, serializeActivation} from '..
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {InputSpec, Layer, LayerArgs} from '../engine/topology';
+import {DisposeResult, InputSpec, Layer, LayerArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
 import {ActivationIdentifier} from '../keras_format/activation_config';
@@ -124,6 +124,12 @@ export class Dropout extends Layer {
     const baseConfig = super.getConfig();
     Object.assign(config, baseConfig);
     return config;
+  }
+  
+  dispose(): DisposeResult {
+    const result = super.dispose();
+    this.rateScalar.dispose();
+    return  {refCountAfterDispose: result.refCountAfterDispose, numDisposedVariables: result.numDisposedVariables + 1};
   }
 }
 serialization.registerClass(Dropout);
