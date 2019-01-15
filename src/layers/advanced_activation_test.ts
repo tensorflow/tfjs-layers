@@ -153,7 +153,7 @@ describeMathCPUAndGPU('PReLU: Tensor', () => {
   // print(history.history)
   // print(model.get_weights()[2])
   // ```
-  it('Training, with sharedAxes', async () => {
+  fit('Training, with sharedAxes', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
