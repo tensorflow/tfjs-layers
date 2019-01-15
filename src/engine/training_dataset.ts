@@ -456,6 +456,9 @@ export async function evaluateDataset<T extends TensorContainer>(
     // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>|LazyIterator<T>,
     args: ModelEvaluateDatasetArgs): Promise<tfc.Scalar|tfc.Scalar[]> {
+  if (args == null) {
+    args = {};
+  }
   const hasBatches = args.batches != null;
   const f = model.testFunction;
   const outs: tfc.Scalar[] = [];
