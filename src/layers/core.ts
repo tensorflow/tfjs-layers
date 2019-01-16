@@ -128,8 +128,11 @@ export class Dropout extends Layer {
   
   dispose(): DisposeResult {
     const result = super.dispose();
-    this.rateScalar.dispose();
-    return  {refCountAfterDispose: result.refCountAfterDispose, numDisposedVariables: result.numDisposedVariables + 1};
+    if (!this.rateScalar.isDisposed()) {
+      this.rateScalar.dispose();
+      result.numDisposedVariables++;
+    }
+    return result;
   }
 }
 serialization.registerClass(Dropout);
