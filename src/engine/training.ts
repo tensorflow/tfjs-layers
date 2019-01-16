@@ -1003,10 +1003,7 @@ export class Model extends Container implements tfc.InferenceModel {
       //   iterating over the batches.
 
       const batches = makeBatches(numSamples, batchSize);
-      const outsBatches: Tensor[][] = [];
-      for (let i = 0; i < this.outputs.length; ++i) {
-        outsBatches.push([]);
-      }
+      const outsBatches: Tensor[][] = this.outputs.map(output => []);
 
       // TODO(cais): Can the scope() be pushed down inside the for loop?
       for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
@@ -1029,9 +1026,7 @@ export class Model extends Container implements tfc.InferenceModel {
           const feedDict = new FeedDict(feeds);
           return execute(this.outputs, feedDict) as Tensor[];
         });
-        batchOuts.forEach((batchOut, i) => {
-          outsBatches[i].push(batchOut);
-        });
+        batchOuts.forEach((batchOut, i) => outsBatches[i].push(batchOut));
       }
       return singletonOrArray(
           outsBatches.map(batches => tfc.concat(batches, 0)));
