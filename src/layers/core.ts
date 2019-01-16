@@ -128,7 +128,7 @@ export class Dropout extends Layer {
   
   dispose(): DisposeResult {
     const result = super.dispose();
-    if (!this.rateScalar.isDisposed()) {
+    if (!this.rateScalar.isDisposed) {
       this.rateScalar.dispose();
       result.numDisposedVariables++;
     }

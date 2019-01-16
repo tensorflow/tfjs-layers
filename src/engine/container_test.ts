@@ -675,7 +675,7 @@ describeMathCPUAndGPU('Model-dispose', () => {
     model.add(
         tfl.layers.dense({units: 2, inputShape: [3], activation: 'relu'}));
     model.add(tfl.layers.dense({units: 1}));
-    model.add(tfl.layers.dropout({rate: 0.8}))
+    model.add(tfl.layers.dropout({rate: 0.8}));
     model.build([3, 3]);
 
     const result = model.dispose();
