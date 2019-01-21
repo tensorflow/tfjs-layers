@@ -9,7 +9,8 @@
  */
 
 import {SampleWeightMode} from './common';
-import {BaseSerialization, PyJson} from './types';
+import {OptimizerSerialization} from './optimizer_config';
+import {PyJsonDict} from './types';
 
 /**
  * Because of the limitations in the current Keras spec, there is no clear
@@ -18,16 +19,16 @@ import {BaseSerialization, PyJson} from './types';
  *
  * See internal issue: b/121033602
  */
-export type OptimizerConfig<C extends PyJson<Extract<keyof C, string>>> = C;
+// export type OptimizerConfig<C extends PyJson<Extract<keyof C, string>>> = C;
 // See ./types.ts for an explanation of the PyJson type.
 
 /**
  * Configuration of a Keras optimizer, containing both the type of the
  * optimizer and the configuration for the optimizer of that type.
  */
-export type OptimizerSerialization<
-    N extends string, C extends PyJson<Extract<keyof C, string>>> =
-    BaseSerialization<N, C>;
+// export type OptimizerSerialization<
+//   N extends string, C extends PyJson<Extract<keyof C, string>>> =
+//    BaseSerialization<N, C>;
 // See ./types.ts for an explanation of the PyJson type.
 
 /**
@@ -66,7 +67,7 @@ export class LossOptions {
 function convertLossOptions(): Array<{value: string, label: string}> {
   const options = new LossOptions();
   const result: Array<{value: string, label: string}> = [];
-  for (const key in Object.keys(options)) {
+  for (const key of Object.keys(options)) {
     result.push({value: key, label: options[key]});
   }
   return result;
@@ -97,9 +98,9 @@ export type LossWeights = number[]|{[key: string]: number};
  * Configuration of the Keras trainer. This includes the configuration to the
  * optimizer, the loss, any metrics to be calculated, etc.
  */
-export interface TrainingConfig {
+export interface TrainingConfig extends PyJsonDict {
   // tslint:disable-next-line:no-any
-  optimizer_config: OptimizerSerialization<string, OptimizerConfig<any>>;
+  optimizer_config: OptimizerSerialization;
   loss: LossKey|LossKey[]|{[key: string]: LossKey};
   metrics?: MetricsKey[];
   weighted_metrics?: MetricsKey[];
