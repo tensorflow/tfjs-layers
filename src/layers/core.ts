@@ -12,7 +12,9 @@
  * TensorFlow.js Layers: Basic Layers.
  */
 
-import {fused, Scalar, serialization, Tensor, tidy, transpose, util} from '@tensorflow/tfjs-core';
+// import {fused, Scalar, serialization, Tensor, tidy, transpose, util} from
+// '@tensorflow/tfjs-core';
+import {fused, Scalar, serialization, Tensor, tidy, transpose, util} from '../../../tfjs-core/src/index';
 
 import {Activation as ActivationFn, getActivation, serializeActivation} from '../activations';
 import {getScalar} from '../backend/state';
@@ -29,6 +31,15 @@ import {arrayProd, range} from '../utils/math_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
+function mapActivationToKernel(className: string): fused.FusableActivation|
+    null {
+  if (className === 'relu') {
+    return 'relu';
+  } else if (className === 'linear') {
+    return 'linear';
+  }
+  return null;
+}
 
 export interface DropoutLayerArgs extends LayerArgs {
   /** Float between 0 and 1. Fraction of the input units to drop. */
@@ -298,15 +309,9 @@ export class Dense extends Layer {
       this.invokeCallHook(inputs, kwargs);
       // Dense layer accepts only a single input.
       const input = getExactlyOneTensor(inputs);
-      let activationName: fused.FusableActivation, output: Tensor;
-      if (this.activation != null) {
-        for (const [key, value] of fused.activationMap) {
-          if (this.activation.constructor.name === value.layersKey) {
-            activationName = key;
-            break;
-          }
-        }
-      }
+      const activationName =
+          mapActivationToKernel(this.activation.getClassName());
+      let output: Tensor;
 
       if (activationName != null) {
         output = K.dot(
@@ -314,11 +319,11 @@ export class Dense extends Layer {
             this.bias ? this.bias.read() : null);
       } else {
         output = K.dot(input, this.kernel.read());
-        if (this.activation != null) {
-          output = this.activation.apply(output);
-        }
         if (this.bias != null) {
           output = K.biasAdd(output, this.bias.read());
+        }
+        if (this.activation != null) {
+          output = this.activation.apply(output);
         }
       }
 

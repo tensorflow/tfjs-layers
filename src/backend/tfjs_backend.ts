@@ -12,9 +12,9 @@
  * deeplearn.js backend.
  */
 
-import * as tfc from '@tensorflow/tfjs-core';
-import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
-
+// import * as tfc from '@tensorflow/tfjs-core';
+import * as tfc from '../../../tfjs-core/src/index';
+import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '../../../tfjs-core/src/index';
 import {disposeScalarCache, getScalar} from '../backend/state';
 import {checkDataFormat} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
@@ -380,9 +380,8 @@ export function randomNormal(
  * @return Result of the dot operation.
  */
 export function dot(
-    x: Tensor, y: Tensor, activation = tfc.fused.FusableActivation.LINEAR,
+    x: Tensor, y: Tensor, activation?: tfc.fused.FusableActivation,
     bias?: Tensor): Tensor {
-  const {kernelKey} = tfc.fused.activationMap.get(activation);
   if ((x.rank < 2) || (y.rank < 2)) {
     throw new NotImplementedError(
         `dot requires both inputs to be rank >= 2` +
@@ -402,8 +401,8 @@ export function dot(
   // Handle basic 2D x 2D case.
   if ((x.rank === 2) && (y.rank === 2)) {
     return tfc.fused.matMul(
-        x as Tensor2D, y as Tensor2D, false, false, kernelKey,
-        bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null);
+        x as Tensor2D, y as Tensor2D, false, false,
+        bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null, activation);
   } else {
     // Reshape x into the analogous 2D Tensor.
     const xFirstDims = x.shape.slice();  // Holds all but the last dim of x.
@@ -432,8 +431,9 @@ export function dot(
     const outputShape = [...xFirstDims, ...yOtherDims];
     return tfc.fused
         .matMul(
-            x as Tensor2D, y as Tensor2D, false, false, kernelKey,
-            bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null)
+            x as Tensor2D, y as Tensor2D, false, false,
+            bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null,
+            activation)
         .reshape(outputShape);
   }
 }
