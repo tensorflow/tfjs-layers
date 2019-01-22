@@ -16,9 +16,10 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
 
 import {disposeScalarCache, getScalar} from '../backend/state';
-import {checkDataFormat, DataFormat} from '../common';
+import {checkDataFormat} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
-import {HasShape, Shape} from '../types';
+import {DataFormat, Shape} from '../keras_format/common';
+import {HasShape} from '../types';
 import * as math_utils from '../utils/math_utils';
 
 import {imageDataFormat} from './common';

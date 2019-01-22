@@ -11,9 +11,7 @@
 /** Defines allowable data types for tensors. */
 
 import {Scalar, Tensor} from '@tensorflow/tfjs-core';
-
-/** @docalias number[] */
-export type Shape = number[];
+import {Shape} from './keras_format/common';
 
 export type HasShape = {
   shape: Shape;
@@ -49,24 +47,9 @@ export type NamedTensorMap = {
 };
 
 /**
- * Types to support JSON.
- *
- * Serialization/deserialization uses stringified-JSON as the storage
- * representation. Typically this should be used for materialized JSON
- * stored on disk/received over the wire.  Internally this is normally
- * converted to a ConfigDict that has renamed fields (TS naming conventions)
- * and support for Enums.
- */
-export type JsonValue = boolean|number|string|null|JsonArray|JsonDict;
-export interface JsonDict {
-  [key: string]: JsonValue;
-}
-export interface JsonArray extends Array<JsonValue> {}
-
-/**
  * Type representing a loosely-typed bundle of keyword arguments.
  *
- * This is a looser type than JsonDict/serialization.ConfigDict as it
+ * This is a looser type than PyJsonDict/serialization.ConfigDict as it
  * can contain arbitrary objects as its values.  It is most appropriate
  * for functions that pass through keyword arguments to other functions
  * without knowledge of the structure.  If the function can place type

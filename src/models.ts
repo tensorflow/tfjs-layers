@@ -18,16 +18,18 @@ import {History} from './base_callbacks';
 import {Dataset} from './engine/dataset_stub';
 import {Input} from './engine/input_layer';
 import {getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
-import {Model, ModelCompileConfig, ModelEvaluateConfig} from './engine/training';
-import {ModelEvaluateDatasetConfig, ModelFitDatasetConfig} from './engine/training_dataset';
-import {ModelFitConfig} from './engine/training_tensors';
+import {Model, ModelCompileArgs, ModelEvaluateArgs} from './engine/training';
+import {ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './engine/training_dataset';
+import {ModelFitArgs} from './engine/training_tensors';
 import {NotImplementedError, RuntimeError, ValueError} from './errors';
+import {Shape} from './keras_format/common';
+import {PyJsonDict} from './keras_format/types';
 import {deserialize} from './layers/serialization';
-import {Kwargs, NamedTensorMap, Shape} from './types';
-import {JsonDict} from './types';
+import {Kwargs, NamedTensorMap} from './types';
 import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 import {getExactlyOneShape} from './utils/types_utils';
+
 
 
 /**
@@ -63,21 +65,23 @@ import {getExactlyOneShape} from './utils/types_utils';
  * @doc {heading: 'Models',subheading: 'Loading'}
  */
 export async function modelFromJSON(
-    modelAndWeightsConfig: ModelAndWeightsConfig|JsonDict,
+    modelAndWeightsConfig: ModelAndWeightsConfig|PyJsonDict,
     customObjects?: serialization.ConfigDict): Promise<Model> {
   if (!('modelTopology' in modelAndWeightsConfig)) {
-    modelAndWeightsConfig = {modelTopology: modelAndWeightsConfig as JsonDict};
+    modelAndWeightsConfig = {
+      modelTopology: modelAndWeightsConfig as PyJsonDict
+    };
   }
   modelAndWeightsConfig = modelAndWeightsConfig as ModelAndWeightsConfig;
 
-  let modelTopology = modelAndWeightsConfig.modelTopology as JsonDict;
+  let modelTopology = modelAndWeightsConfig.modelTopology as PyJsonDict;
   if (modelTopology['model_config'] != null) {
     // If the model-topology JSON contains a 'model_config' field, then it is
     // a full model JSON (e.g., from `keras.Model.save()`), which contains
     // not only the model's architecture in its 'model_config' field, but
     // additional information such as the model's optimizer. We use only the
     // 'model_config' field currently.
-    modelTopology = modelTopology['model_config'] as JsonDict;
+    modelTopology = modelTopology['model_config'] as PyJsonDict;
   }
   const tsConfig =
       convertPythonicToTs(modelTopology) as serialization.ConfigDict;
@@ -121,7 +125,7 @@ export interface ModelAndWeightsConfig {
    *     training options and state, i.e., a format consistent with the return
    *     value of `keras.models.save_model()`.
    */
-  modelTopology: JsonDict;
+  modelTopology: PyJsonDict;
 
   /**
    * A weights manifest in TensorFlow.js format.
@@ -137,7 +141,7 @@ export interface ModelAndWeightsConfig {
 }
 
 // TODO(nielsene): Remove after: https://github.com/tensorflow/tfjs/issues/400
-export interface ModelPredictConfig {
+export interface ModelPredictArgs {
   /**
    * Optional. Batch size (Integer). If unspecified, it will default to 32.
    */
@@ -270,9 +274,9 @@ export async function loadModelFromIOHandler(
         'does not have the `load` method implemented.');
   }
   const artifacts = await handler.load();
-  let modelTopology = artifacts.modelTopology as JsonDict;
+  let modelTopology = artifacts.modelTopology as PyJsonDict;
   if (modelTopology['model_config'] != null) {
-    modelTopology = modelTopology['model_config'] as JsonDict;
+    modelTopology = modelTopology['model_config'] as PyJsonDict;
   }
 
   // If weights are provided and the weight-loading mode is strict, use
@@ -308,7 +312,7 @@ export async function loadModelFromIOHandler(
 /**
  * Configuration for a Sequential model.
  */
-export interface SequentialConfig {
+export interface SequentialArgs {
   /** Stack of layers for the model. */
   layers?: Layer[];
 
@@ -345,20 +349,20 @@ export class Sequential extends Model {
   static className = 'Sequential';
   private model: Model;
   private _updatable: boolean;
-  constructor(config?: SequentialConfig) {
+  constructor(args?: SequentialArgs) {
     super({inputs: [], outputs: []});
-    config = config || {};
+    args = args || {};
 
     this.trainable = true;
     this._updatable = true;
     this.built = false;
 
     // Set model name.
-    this.name = (config.name != null) ? config.name : getUid('sequential_');
+    this.name = (args.name != null) ? args.name : getUid('sequential_');
 
     // Add to the model any layers passed to the constructor.
-    if (config.layers != null) {
-      for (const layer of config.layers) {
+    if (args.layers != null) {
+      for (const layer of args.layers) {
         this.add(layer);
       }
     }
@@ -663,7 +667,7 @@ export class Sequential extends Model {
    * model has multiple inputs.
    * @param y `tf.Tensor` of target data, or an `Array` of `tf.Tensor`s if the
    * model has multiple outputs.
-   * @param config A `ModelEvaluateConfig`, containing optional fields.
+   * @param args A `ModelEvaluateConfig`, containing optional fields.
    *
    * @return `Scalar` test loss (if the model has a single output and no
    *   metrics) or `Array` of `Scalar`s (if the model has multiple outputs
@@ -675,12 +679,12 @@ export class Sequential extends Model {
    */
   evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[],
-      config: ModelEvaluateConfig = {}): Scalar|Scalar[] {
+      args: ModelEvaluateArgs = {}): Scalar|Scalar[] {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before being used.');
     }
-    return this.model.evaluate(x, y, config);
+    return this.model.evaluate(x, y, args);
   }
 
   // TODO(cais): Add code snippet below once real dataset objects are
@@ -700,7 +704,7 @@ export class Sequential extends Model {
    *   a sequential model). The latter case is for models with multiple
    *   inputs and/or multiple outputs. Of the two items in the array, the
    *   first is the input feature(s) and the second is the output target(s).
-   * @param config A configuration object for the dataset-based evaluation.
+   * @param args A configuration object for the dataset-based evaluation.
    * @returns Loss and metric values as an Array of `Scalar` objects.
    */
   /**
@@ -708,12 +712,12 @@ export class Sequential extends Model {
    */
   async evaluateDataset<T extends TensorContainer>(
       dataset: Dataset<T>,
-      config: ModelEvaluateDatasetConfig): Promise<Scalar|Scalar[]> {
+      args: ModelEvaluateDatasetArgs): Promise<Scalar|Scalar[]> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before being used.');
     }
-    return this.model.evaluateDataset(dataset, config);
+    return this.model.evaluateDataset(dataset, args);
   }
 
   /**
@@ -744,12 +748,11 @@ export class Sequential extends Model {
   /**
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
    */
-  predict(x: Tensor|Tensor[], config: ModelPredictConfig = {}): Tensor
-      |Tensor[] {
+  predict(x: Tensor|Tensor[], args: ModelPredictArgs = {}): Tensor|Tensor[] {
     if (this.model == null) {
       this.build();
     }
-    return this.model.predict(x, config);
+    return this.model.predict(x, args);
   }
 
   /**
@@ -769,11 +772,11 @@ export class Sequential extends Model {
   /**
    * See `Model.compile`.
    *
-   * @param config
+   * @param args
    */
-  compile(config: ModelCompileConfig): void {
+  compile(args: ModelCompileArgs): void {
     this.build();
-    this.model.compile(config);
+    this.model.compile(args);
     this.optimizer = this.model.optimizer;
     this.loss = this.model.loss;
     this.metrics = this.model.metrics;
@@ -805,7 +808,7 @@ export class Sequential extends Model {
    * @param y `tf.Tensor` of target (label) data, or an array of `tf.Tensor`s if
    * the model has multiple outputs. If all outputs in the model are named, you
    *  can also pass a dictionary mapping output names to `tf.Tensor`s.
-   * @param config  A `ModelFitConfig`, containing optional fields.
+   * @param args  A `ModelFitConfig`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
    *   information collected during training.
@@ -819,13 +822,13 @@ export class Sequential extends Model {
   async fit(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
-      config: ModelFitConfig = {}): Promise<History> {
+      args: ModelFitArgs = {}): Promise<History> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before ' +
           'being used.');
     }
-    return this.model.fit(x, y, config);
+    return this.model.fit(x, y, args);
   }
 
   // TODO(cais): Add code snippet below when it's possible to instantiate
@@ -843,7 +846,7 @@ export class Sequential extends Model {
    *   a sequential model). The latter case is for models with multiple
    *   inputs and/or multiple outputs. Of the two items in the array, the
    *   first is the input feature(s) and the second is the output target(s).
-   * @param config A `ModelFitDatasetConfig`, containing optional fields.
+   * @param args A `ModelFitDatasetArgs`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
    *   information collected during training.
@@ -852,13 +855,13 @@ export class Sequential extends Model {
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
    */
   async fitDataset<T extends TensorContainer>(
-      dataset: Dataset<T>, config: ModelFitDatasetConfig<T>): Promise<History> {
+      dataset: Dataset<T>, args: ModelFitDatasetArgs<T>): Promise<History> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before ' +
           'being used.');
     }
-    return this.model.fitDataset(dataset, config);
+    return this.model.fitDataset(dataset, args);
   }
 
   /**

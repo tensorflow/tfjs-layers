@@ -17,10 +17,11 @@ import {serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {Layer, LayerConfig, SymbolicTensor} from '../engine/topology';
+import {Layer, LayerArgs, SymbolicTensor} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
+import {Shape} from '../keras_format/common';
 import {l2Normalize} from '../losses';
-import {Kwargs, Shape} from '../types';
+import {Kwargs} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as mathUtils from '../utils/math_utils';
 import {getExactlyOneShape} from '../utils/types_utils';
@@ -33,8 +34,8 @@ import {getExactlyOneShape} from '../utils/types_utils';
 export abstract class Merge extends Layer {
   protected reshapeRequired: boolean;
 
-  constructor(config?: LayerConfig) {
-    super(config || {});
+  constructor(args?: LayerArgs) {
+    super(args || {});
     this.supportsMasking = true;
   }
 
@@ -278,8 +279,8 @@ export abstract class Merge extends Layer {
  */
 export class Add extends Merge {
   static className = 'Add';
-  constructor(config?: LayerConfig) {
-    super(config as LayerConfig);
+  constructor(args?: LayerArgs) {
+    super(args as LayerArgs);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -340,7 +341,7 @@ serialization.registerClass(Add);
  * // Gives [[11, 22], [33, 44]].
  *
  */
-export function add(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function add(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Add({});
@@ -371,8 +372,8 @@ export function add(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  */
 export class Multiply extends Merge {
   static className = 'Multiply';
-  constructor(config?: LayerConfig) {
-    super(config);
+  constructor(args?: LayerArgs) {
+    super(args);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -433,7 +434,7 @@ serialization.registerClass(Multiply);
  * // Gives [[10, 40], [90, 160]].
  *
  */
-export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Multiply({});
@@ -463,8 +464,8 @@ export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  */
 export class Average extends Merge {
   static className = 'Average';
-  constructor(config?: LayerConfig) {
-    super(config);
+  constructor(args?: LayerArgs) {
+    super(args);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -526,7 +527,7 @@ serialization.registerClass(Average);
  * // Gives [[5.5, 11], [16.5, 22]].
  *
  */
-export function average(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function average(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Average({});
@@ -556,8 +557,8 @@ export function average(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  */
 export class Maximum extends Merge {
   static className = 'Maximum';
-  constructor(config?: LayerConfig) {
-    super(config);
+  constructor(args?: LayerArgs) {
+    super(args);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -618,7 +619,7 @@ serialization.registerClass(Maximum);
  * // Gives [[10, 20], [30, 40]].
  *
  */
-export function maximum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function maximum(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Maximum({});
@@ -648,8 +649,8 @@ export function maximum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  */
 export class Minimum extends Merge {
   static className = 'Minimum';
-  constructor(config?: LayerConfig) {
-    super(config);
+  constructor(args?: LayerArgs) {
+    super(args);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
@@ -710,7 +711,7 @@ serialization.registerClass(Minimum);
  * // Gives [[1, 2], [3, 4]].
  *
  */
-export function minimum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function minimum(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Minimum({});
@@ -722,7 +723,7 @@ export function minimum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
   }
 }
 
-export interface ConcatenateLayerConfig extends LayerConfig {
+export interface ConcatenateLayerArgs extends LayerArgs {
   /**
    * Axis along which to concatenate.
    */
@@ -752,12 +753,12 @@ export class Concatenate extends Merge {
   readonly DEFAULT_AXIS = -1;
   private readonly axis: number;
 
-  constructor(config?: ConcatenateLayerConfig) {
-    super(config);
-    if (config == null) {
-      config = {};
+  constructor(args?: ConcatenateLayerArgs) {
+    super(args);
+    if (args == null) {
+      args = {};
     }
-    this.axis = config.axis == null ? this.DEFAULT_AXIS : config.axis;
+    this.axis = args.axis == null ? this.DEFAULT_AXIS : args.axis;
     this.supportsMasking = true;
     this.reshapeRequired = false;
   }
@@ -935,8 +936,7 @@ serialization.registerClass(Concatenate);
  *
  */
 export function concatenate(config?: SymbolicTensor[]|Tensor[]|
-                            ConcatenateLayerConfig): Layer|SymbolicTensor|
-    Tensor {
+                            ConcatenateLayerArgs): Layer|SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Concatenate({});
     return layer.apply(config as SymbolicTensor[] | Tensor[]) as
@@ -947,7 +947,7 @@ export function concatenate(config?: SymbolicTensor[]|Tensor[]|
   }
 }
 
-export interface DotLayerConfig extends LayerConfig {
+export interface DotLayerArgs extends LayerArgs {
   /**
    * Axis or axes along which the dot product will be taken.
    *
@@ -1040,8 +1040,8 @@ function batchDot(x: Tensor, y: Tensor, axes: number|[number, number]): Tensor {
         out = x.transpose([1, 0]).mulStrict(y).sum(axesArray[1]);
       }
     } else {
-      const adjX = axesArray[0] === x.shape.length - 1 ? null : true;
-      const adjY = axesArray[1] === y.shape.length - 1 ? true : null;
+      const adjX = axesArray[0] !== x.shape.length - 1;
+      const adjY = axesArray[1] === y.shape.length - 1;
       out = x.matMul(y, adjX, adjY);
     }
 
@@ -1091,10 +1091,10 @@ export class Dot extends Merge {
   private axes: number|[number, number];
   private normalize: boolean;
 
-  constructor(config: DotLayerConfig) {
-    super(config);
-    this.axes = config.axes;
-    this.normalize = config.normalize == null ? false : config.normalize;
+  constructor(args: DotLayerArgs) {
+    super(args);
+    this.axes = args.axes;
+    this.normalize = args.normalize == null ? false : args.normalize;
     this.supportsMasking = true;
     this.reshapeRequired = false;
   }

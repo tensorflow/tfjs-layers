@@ -16,8 +16,9 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {CustomCallback, CustomCallbackConfig, ModelTrainingYielder, Params} from '../base_callbacks';
+import {CustomCallback, CustomCallbackArgs, ModelTrainingYielder, Params} from '../base_callbacks';
 import * as tfl from '../index';
+import * as logs from '../logs';
 import {Logs, UnresolvedLogs} from '../logs';
 import {Regularizer} from '../regularizers';
 import {Kwargs} from '../types';
@@ -1016,12 +1017,12 @@ describeMathCPUAndGPU('Model.fit', () => {
         newWeightsValue2, tensor2d(expectedValueArray2, [inputSize2, 1]));
   });
 
-  const isCustomCallbackConfig = [false, true];
+  const isCustomCallbackArgs = [false, true];
   const isCustomCallbackArray = [false, true];
-  for (const isConfig of isCustomCallbackConfig) {
+  for (const isArgs of isCustomCallbackArgs) {
     for (const isArray of isCustomCallbackArray) {
       const testTitle = `Fit with custom callback object: isConfig=${
-          isConfig}, isArray=${isArray}`;
+          isArgs}, isArray=${isArray}`;
       it(testTitle, async () => {
         createDenseModelAndData();
         const trainBeginLogs: Logs[] = [];
@@ -1032,7 +1033,7 @@ describeMathCPUAndGPU('Model.fit', () => {
         const batchEndBatches: number[] = [];
         const batchEndLosses: number[] = [];
         const epochEndLosses: number[] = [];
-        const customCallbackConfig: CustomCallbackConfig = {
+        const customCallbackArgs: CustomCallbackArgs = {
           onTrainBegin: async (logs?: Logs) => {
             trainBeginLogs.push(logs);
           },
@@ -1054,9 +1055,8 @@ describeMathCPUAndGPU('Model.fit', () => {
             batchEndLosses.push(logs['loss']);
           }
         };
-        const customCallback = isConfig ?
-            customCallbackConfig :
-            new CustomCallback(customCallbackConfig);
+        const customCallback = isArgs ? customCallbackArgs :
+                                        new CustomCallback(customCallbackArgs);
         model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
         await model.fit(inputs, targets, {
           batchSize: 2,
@@ -1826,16 +1826,6 @@ describeMathCPUAndGPU('Model.fit: No memory leak', () => {
                  `of ${epochs} of the fit() call with ` +
                  `onBatchEnd callback: tensor counts: ${inEpochTensorCounts}.`);
            }
-           // Now, assert that the amount of increase in the number of tensors
-           // at the end of the epoch equals the expected value.
-           if (epochIndex < epochs - 1) {
-             // The expected increase of 2 comes from the fact that the fit()
-             // call here generates 2 additional scalars and will store them
-             // till the end of the fit() call:
-             //   loss, val_loss, mse and val_mse.
-             expect(tensorCounts[endBatch] - tensorCounts[beginBatch])
-                 .toEqual(2);
-           }
          }
          expect(tensorCounts.length).toEqual(batchesPerEpoch * epochs);
          const numTensors1 = memory().numTensors;
@@ -2024,6 +2014,20 @@ describeMathGPU('Model.fit: yieldEvery', () => {
     // Due to yieldEvery = 'never', no `await nextFrame()` call should have
     // happened.
     expect(nextFrameCallCount).toEqual(0);
+  });
+
+  it('resolveScalarInLogs is not called if no custom callbacks', async () => {
+    const inputSize = 1;
+    const numExamples = 10;
+    const batchSize = 2;
+    const epochs = 2;
+    const model = createDummyModel(inputSize);
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+
+    const spy = spyOn(logs, 'resolveScalarsInLogs').and.callThrough();
+    await model.fit(xs, ys, {epochs, batchSize, yieldEvery: 'never'});
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 
