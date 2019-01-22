@@ -7,10 +7,10 @@
  * https://opensource.org/licenses/MIT.
  * =============================================================================
  */
-
 import {SampleWeightMode} from './common';
 import {OptimizerSerialization} from './optimizer_config';
 import {PyJsonDict} from './types';
+import {stringDictToArray} from './utils';
 
 /**
  * Because of the limitations in the current Keras spec, there is no clear
@@ -62,24 +62,12 @@ export class LossOptions {
 }
 
 /**
- * Render the keys and values from the LossOptions class as an array of objects.
- */
-function convertLossOptions(): Array<{value: string, label: string}> {
-  const options = new LossOptions();
-  const result: Array<{value: string, label: string}> = [];
-  for (const key of Object.keys(options)) {
-    result.push({value: key, label: options[key]});
-  }
-  return result;
-}
-
-/**
  * An array of `{value, label}` pairs describing the valid losses.
  *
  * The `value` is the serializable string constant, and the `label` is a more
  * user-friendly description (e.g. for use in UIs).
  */
-export const lossOptions = convertLossOptions();
+export const lossOptions = stringDictToArray(new LossOptions());
 
 /**
  * A type representing the strings that are valid loss names.

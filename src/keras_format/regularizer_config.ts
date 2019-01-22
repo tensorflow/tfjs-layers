@@ -9,6 +9,7 @@
  */
 
 import {BaseSerialization} from './types';
+import {stringDictToArray} from './utils';
 
 export type L1L2Config = {
   l1?: number;
@@ -33,3 +34,32 @@ export type RegularizerSerialization =
     L1L2Serialization|L1Serialization|L2Serialization;
 
 export type RegularizerClassName = RegularizerSerialization['class_name'];
+
+/**
+ * List of all known regularizer names, along with a string description.
+ *
+ * Representing this as a class allows both type-checking using the keys and
+ * generating an appropriate options array for use in select fields.
+ */
+export class RegularizerOptions {
+  [key: string]: string;
+  // tslint:disable:variable-name
+  public readonly L1L2 = 'L1L2';
+  public readonly L1 = 'L1';
+  public readonly L2 = 'L2';
+  // tslint:enable:variable-name
+}
+
+/**
+ * An array of `{value, label}` pairs describing the valid regularizers.
+ *
+ * The `value` is the serializable string constant, and the `label` is a more
+ * user-friendly description (e.g. for use in UIs).
+ */
+export const regularizerOptions = stringDictToArray(new RegularizerOptions());
+
+/**
+ * A type representing the strings that are valid regularizer names.
+ */
+// TODO(soergel): test assert this is identical to RegularizerClassName
+// export type RegularizerIdentifier = keyof RegularizerOptions;

@@ -9,6 +9,7 @@
  */
 
 import {BaseSerialization} from './types';
+import {stringDictToArray} from './utils';
 
 
 // TODO(soergel): Move the CamelCase versions back out of keras_format
@@ -94,3 +95,38 @@ export type InitializerSerialization = ZerosSerialization|OnesSerialization|
     VarianceScalingSerialization|OrthogonalSerialization;
 
 export type InitializerClassName = InitializerSerialization['class_name'];
+
+/**
+ * List of all known initializer names, along with a string description.
+ *
+ * Representing this as a class allows both type-checking using the keys and
+ * generating an appropriate options array for use in select fields.
+ */
+export class InitializerOptions {
+  [key: string]: string;
+  // tslint:disable:variable-name
+  public readonly Zeros = 'Zeros';
+  public readonly Ones = 'Ones';
+  public readonly Constant = 'Constant';
+  public readonly RandomNormal = 'Random Normal';
+  public readonly RandomUniform = 'Random Uniform';
+  public readonly TruncatedNormal = 'Truncated Normal';
+  public readonly VarianceScaling = 'Variance Scaling';
+  public readonly Orthogonal = 'Orthogonal';
+  public readonly Identity = 'Identity';
+  // tslint:enable:variable-name
+}
+
+/**
+ * An array of `{value, label}` pairs describing the valid initializers.
+ *
+ * The `value` is the serializable string constant, and the `label` is a more
+ * user-friendly description (e.g. for use in UIs).
+ */
+export const initializerOptions = stringDictToArray(new InitializerOptions());
+
+/**
+ * A type representing the strings that are valid initializer names.
+ */
+// TODO(soergel): test assert this is identical to InitializerClassName
+// export type InitializerIdentifier = keyof InitializerOptions;
