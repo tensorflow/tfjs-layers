@@ -30,10 +30,19 @@ export type L2Config = {
 
 export type L2Serialization = BaseSerialization<'L2', L2Config>;
 
+
+// Update NUM_REGULARIZER_OPTIONS in concert (for testing)
 export type RegularizerSerialization =
     L1L2Serialization|L1Serialization|L2Serialization;
 
+export const NUM_REGULARIZER_OPTIONS = 3;
+
 export type RegularizerClassName = RegularizerSerialization['class_name'];
+
+// This helps guarantee that the Options class below is complete.
+export type RegularizerOptionMap = {
+  [key in RegularizerClassName]: string
+};
 
 /**
  * List of all known regularizer names, along with a string description.
@@ -41,7 +50,7 @@ export type RegularizerClassName = RegularizerSerialization['class_name'];
  * Representing this as a class allows both type-checking using the keys and
  * generating an appropriate options array for use in select fields.
  */
-export class RegularizerOptions {
+export class RegularizerOptions implements RegularizerOptionMap {
   [key: string]: string;
   // tslint:disable:variable-name
   public readonly L1L2 = 'L1L2';
@@ -59,7 +68,8 @@ export class RegularizerOptions {
 export const regularizerOptions = stringDictToArray(new RegularizerOptions());
 
 /**
- * A type representing the strings that are valid regularizer names.
+ * A string array of valid Optimizer class names.
+ *
+ * This is guaranteed to match the `OptimizerClassName` union type.
  */
-// TODO(soergel): test assert this is identical to RegularizerClassName
-// export type RegularizerIdentifier = keyof RegularizerOptions;
+export const regularizerClassNames = regularizerOptions.map((x) => x.value);

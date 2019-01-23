@@ -37,10 +37,18 @@ export type MinMaxNormConfig = {
 export type MinMaxNormSerialization =
     BaseSerialization<'MinMaxNorm', MinMaxNormConfig>;
 
+// Update NUM_CONSTRAINT_OPTIONS in concert (for testing)
 export type ConstraintSerialization = MaxNormSerialization|NonNegSerialization|
     UnitNormSerialization|MinMaxNormSerialization;
 
+export const NUM_CONSTRAINT_OPTIONS = 4;
+
 export type ConstraintClassName = ConstraintSerialization['class_name'];
+
+// This helps guarantee that the Options class below is complete.
+export type ConstraintOptionMap = {
+  [key in ConstraintClassName]: string
+};
 
 /**
  * List of all known constraint names, along with a string description.
@@ -48,7 +56,7 @@ export type ConstraintClassName = ConstraintSerialization['class_name'];
  * Representing this as a class allows both type-checking using the keys and
  * generating an appropriate options array for use in select fields.
  */
-export class ConstraintOptions {
+export class ConstraintOptions implements ConstraintOptionMap {
   [key: string]: string;
   // tslint:disable:variable-name
   public readonly MaxNorm = 'Max Norm';
@@ -67,7 +75,8 @@ export class ConstraintOptions {
 export const constraintOptions = stringDictToArray(new ConstraintOptions());
 
 /**
- * A type representing the strings that are valid loss names.
+ * A string array of valid Optimizer class names.
+ *
+ * This is guaranteed to match the `OptimizerClassName` union type.
  */
-// TODO(soergel): test assert this is identical to ConstraintClassName
-// export type ConstraintIdentifier = keyof ConstraintOptions;
+export const constraintClassNames = constraintOptions.map((x) => x.value);

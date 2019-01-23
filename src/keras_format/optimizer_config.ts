@@ -71,19 +71,27 @@ export type SGDOptimizerConfig = {
 export type SGDSerialization =
     BaseSerialization<'SGDOptimizer', SGDOptimizerConfig>;
 
+// Update NUM_OPTIMIZER_OPTIONS in concert (for testing)
 export type OptimizerSerialization = AdadeltaSerialization|AdagradSerialization|
     AdamSerialization|AdamaxSerialization|MomentumSerialization|
     RMSPropSerialization|SGDSerialization;
 
+export const NUM_OPTIMIZER_OPTIONS = 7;
+
 export type OptimizerClassName = OptimizerSerialization['class_name'];
 
+// This helps guarantee that the Options class below is complete.
+export type OptimizerOptionMap = {
+  [key in OptimizerClassName]: string
+};
+
 /**
- * List of all known initializer names, along with a string description.
+ * List of all known optimizer names, along with a string description.
  *
  * Representing this as a class allows both type-checking using the keys and
  * generating an appropriate options array for use in select fields.
  */
-export class OptimizerOptions {
+export class OptimizerOptions implements OptimizerOptionMap {
   [key: string]: string;
   // tslint:disable:variable-name
   public readonly AdadeltaOptimizer = 'Adadelta';
@@ -104,10 +112,9 @@ export class OptimizerOptions {
  */
 export const optimizerOptions = stringDictToArray(new OptimizerOptions());
 
-export const optimizerClassNames = optimizerOptions.map((x) => x.value);
-
 /**
- * A type representing the strings that are valid optimizer names.
+ * A string array of valid Optimizer class names.
+ *
+ * This is guaranteed to match the `OptimizerClassName` union type.
  */
-// TODO(soergel): test assert this is identical to OptimizerClassName
-// export type OptimizerIdentifier = keyof OptimizerOptions;
+export const optimizerClassNames = optimizerOptions.map((x) => x.value);

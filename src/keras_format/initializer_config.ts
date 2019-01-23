@@ -89,12 +89,20 @@ export type IdentityConfig = {
 export type IdentitySerialization =
     BaseSerialization<'Identity', IdentityConfig>;
 
+// Update NUM_INITIALIZER_OPTIONS in concert (for testing)
 export type InitializerSerialization = ZerosSerialization|OnesSerialization|
     ConstantSerialization|RandomUniformSerialization|RandomNormalSerialization|
     TruncatedNormalSerialization|IdentitySerialization|
     VarianceScalingSerialization|OrthogonalSerialization;
 
+export const NUM_INITIALIZER_OPTIONS = 9;
+
 export type InitializerClassName = InitializerSerialization['class_name'];
+
+// This helps guarantee that the Options class below is complete.
+export type InitializerOptionMap = {
+  [key in InitializerClassName]: string
+};
 
 /**
  * List of all known initializer names, along with a string description.
@@ -102,7 +110,7 @@ export type InitializerClassName = InitializerSerialization['class_name'];
  * Representing this as a class allows both type-checking using the keys and
  * generating an appropriate options array for use in select fields.
  */
-export class InitializerOptions {
+export class InitializerOptions implements InitializerOptionMap {
   [key: string]: string;
   // tslint:disable:variable-name
   public readonly Zeros = 'Zeros';
@@ -126,7 +134,8 @@ export class InitializerOptions {
 export const initializerOptions = stringDictToArray(new InitializerOptions());
 
 /**
- * A type representing the strings that are valid initializer names.
+ * A string array of valid Optimizer class names.
+ *
+ * This is guaranteed to match the `OptimizerClassName` union type.
  */
-// TODO(soergel): test assert this is identical to InitializerClassName
-// export type InitializerIdentifier = keyof InitializerOptions;
+export const initializerClassNames = initializerOptions.map((x) => x.value);

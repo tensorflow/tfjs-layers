@@ -22,6 +22,9 @@ import {RegularizerClassName, RegularizerSerialization} from './regularizer_conf
 export type KerasClassName = LayerClassName|ConstraintClassName|
     InitializerClassName|RegularizerClassName|OptimizerClassName;
 
-
+/**
+ * A type representing all possible Serializations of Keras objects, including
+ * Layers, Constraints, Optimizers, etc.
+ */
 export type KerasSerialization = LayerSerialization|ConstraintSerialization|
     InitializerSerialization|RegularizerSerialization|OptimizerSerialization;

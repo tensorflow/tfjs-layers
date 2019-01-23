@@ -13,25 +13,6 @@ import {PyJsonDict} from './types';
 import {stringDictToArray} from './utils';
 
 /**
- * Because of the limitations in the current Keras spec, there is no clear
- * definition of what may or may not be the configuration of an optimizer.  Thus
- * this empty interface represents a stopgap in the Keras spec.
- *
- * See internal issue: b/121033602
- */
-// export type OptimizerConfig<C extends PyJson<Extract<keyof C, string>>> = C;
-// See ./types.ts for an explanation of the PyJson type.
-
-/**
- * Configuration of a Keras optimizer, containing both the type of the
- * optimizer and the configuration for the optimizer of that type.
- */
-// export type OptimizerSerialization<
-//   N extends string, C extends PyJson<Extract<keyof C, string>>> =
-//    BaseSerialization<N, C>;
-// See ./types.ts for an explanation of the PyJson type.
-
-/**
  * List of all known loss names, along with a string description.
  *
  * Representing this as a class allows both type-checking using the keys and
