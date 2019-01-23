@@ -1,3 +1,13 @@
+/**
+ * @license
+ * Copyright 2018 Google LLC
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ * =============================================================================
+ */
+
 import {constraintClassNames, NUM_CONSTRAINT_OPTIONS} from './constraint_config';
 import {initializerClassNames, NUM_INITIALIZER_OPTIONS} from './initializer_config';
 import {NUM_OPTIMIZER_OPTIONS, optimizerClassNames} from './optimizer_config';
