@@ -11,10 +11,18 @@
 import {BaseSerialization} from './types';
 import {stringDictToArray} from './utils';
 
+// Because of the limitations in the current Keras spec, there is no clear
+// definition of what may or may not be the configuration of an optimizer.
+//
+// For now we'll represent the ones available in TF.js--but it will take more
+// thought to get this right in a cross-platform way.
+//
+// See internal issue: b/121033602
+
 // TODO(soergel): This is a stopgap that needs further thought.
 // Does it belong here?
 // Does it belong in tfjs-core?
-// See https://github.com/tensorflow/tfjs-core/pull/1404
+// See also the dormant https://github.com/tensorflow/tfjs-core/pull/1404
 
 export type AdadeltaOptimizerConfig = {
   learning_rate: number; rho: number; epsilon: number;
@@ -84,16 +92,6 @@ export type OptimizerClassName = OptimizerSerialization['class_name'];
 export type OptimizerOptionMap = {
   [key in OptimizerClassName]: string
 };
-
-/*
- * Because of the limitations in the current Keras spec, there is no clear
- * definition of what may or may not be the configuration of an optimizer.
- *
- * For now we'll represent the ones available in TF.js, but for the cross-
- * platform context it will take more thought.
- *
- * See internal issue: b/121033602
- */
 
 /**
  * List of all known optimizer names, along with a string description.
