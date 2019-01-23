@@ -85,6 +85,16 @@ export type OptimizerOptionMap = {
   [key in OptimizerClassName]: string
 };
 
+/*
+ * Because of the limitations in the current Keras spec, there is no clear
+ * definition of what may or may not be the configuration of an optimizer.
+ *
+ * For now we'll represent the ones available in TF.js, but for the cross-
+ * platform context it will take more thought.
+ *
+ * See internal issue: b/121033602
+ */
+
 /**
  * List of all known optimizer names, along with a string description.
  *

@@ -30,7 +30,6 @@ export type L2Config = {
 
 export type L2Serialization = BaseSerialization<'L2', L2Config>;
 
-
 // Update NUM_REGULARIZER_OPTIONS in concert (for testing)
 export type RegularizerSerialization =
     L1L2Serialization|L1Serialization|L2Serialization;
