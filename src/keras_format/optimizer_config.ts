@@ -9,7 +9,6 @@
  */
 
 import {BaseSerialization} from './types';
-import {stringDictToArray} from './utils';
 
 // Because of the limitations in the current Keras spec, there is no clear
 // definition of what may or may not be the configuration of an optimizer.
@@ -79,50 +78,30 @@ export type SGDOptimizerConfig = {
 export type SGDSerialization =
     BaseSerialization<'SGDOptimizer', SGDOptimizerConfig>;
 
-// Update NUM_OPTIMIZER_OPTIONS in concert (for testing)
+// Update optimizerClassNames below in concert with this.
 export type OptimizerSerialization = AdadeltaSerialization|AdagradSerialization|
     AdamSerialization|AdamaxSerialization|MomentumSerialization|
     RMSPropSerialization|SGDSerialization;
 
-export const NUM_OPTIMIZER_OPTIONS = 7;
-
 export type OptimizerClassName = OptimizerSerialization['class_name'];
 
-// This helps guarantee that the Options class below is complete.
-export type OptimizerOptionMap = {
-  [key in OptimizerClassName]: string
-};
-
-/**
- * List of all known optimizer names, along with a string description.
- *
- * Representing this as a class allows both type-checking using the keys and
- * automatically translating to human readable display names where needed.
- */
-class OptimizerOptions implements OptimizerOptionMap {
-  [key: string]: string;
-  // tslint:disable:variable-name
-  public readonly AdadeltaOptimizer = 'Adadelta';
-  public readonly AdagradOptimizer = 'Adagrad';
-  public readonly AdamOptimizer = 'Adam';
-  public readonly AdamaxOptimizer = 'Adamax';
-  public readonly MomentumOptimizer = 'Momentum';
-  public readonly RMSPropOptimizer = 'RMSProp';
-  public readonly SGDOptimizer = 'SGD';
-  // tslint:enable:variable-name
-}
-
-/**
- * An array of `{value, label}` pairs describing the valid optimizers.
- *
- * The `value` is the serializable string constant, and the `label` is a more
- * user-friendly description (e.g. for use in UIs).
- */
-export const optimizerOptions = stringDictToArray(new OptimizerOptions());
+// We can't easily extract a string[] from the string union type, but we can
+// recapitulate the list, enforcing at compile time that the values are valid
+// and that we have the right number of them.
 
 /**
  * A string array of valid Optimizer class names.
  *
  * This is guaranteed to match the `OptimizerClassName` union type.
  */
-export const optimizerClassNames = optimizerOptions.map((x) => x.value);
+export const optimizerClassNames:
+    [
+      OptimizerClassName, OptimizerClassName, OptimizerClassName,
+      OptimizerClassName, OptimizerClassName, OptimizerClassName,
+      OptimizerClassName
+    ] =
+        [
+          'AdadeltaOptimizer', 'AdagradOptimizer', 'AdamOptimizer',
+          'AdamaxOptimizer', 'MomentumOptimizer', 'RMSPropOptimizer',
+          'SGDOptimizer'
+        ];

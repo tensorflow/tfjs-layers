@@ -9,7 +9,6 @@
  */
 
 import {BaseSerialization} from './types';
-import {stringDictToArray} from './utils';
 
 export type MaxNormConfig = {
   max_value?: number;
@@ -37,46 +36,22 @@ export type MinMaxNormConfig = {
 export type MinMaxNormSerialization =
     BaseSerialization<'MinMaxNorm', MinMaxNormConfig>;
 
-// Update NUM_CONSTRAINT_OPTIONS in concert (for testing)
+// Update constraintClassNames below in concert with this.
 export type ConstraintSerialization = MaxNormSerialization|NonNegSerialization|
     UnitNormSerialization|MinMaxNormSerialization;
 
-export const NUM_CONSTRAINT_OPTIONS = 4;
-
 export type ConstraintClassName = ConstraintSerialization['class_name'];
 
-// This helps guarantee that the Options class below is complete.
-export type ConstraintOptionMap = {
-  [key in ConstraintClassName]: string
-};
+// We can't easily extract a string[] from the string union type, but we can
+// recapitulate the list, enforcing at compile time that the values are valid
+// and that we have the right number of them.
 
 /**
- * List of all known constraint names, along with a string description.
+ * A string array of valid Constraint class names.
  *
- * Representing this as a class allows both type-checking using the keys and
- * automatically translating to human readable display names where needed.
+ * This is guaranteed to match the `ConstraintClassName` union type.
  */
-class ConstraintOptions implements ConstraintOptionMap {
-  [key: string]: string;
-  // tslint:disable:variable-name
-  public readonly MaxNorm = 'Max Norm';
-  public readonly UnitNorm = 'Unit Norm';
-  public readonly NonNeg = 'Non-negative';
-  public readonly MinMaxNorm = 'Min-Max Norm';
-  // tslint:enable:variable-name
-}
-
-/**
- * An array of `{value, label}` pairs describing the valid constraints.
- *
- * The `value` is the serializable string constant, and the `label` is a more
- * user-friendly description (e.g. for use in UIs).
- */
-export const constraintOptions = stringDictToArray(new ConstraintOptions());
-
-/**
- * A string array of valid Optimizer class names.
- *
- * This is guaranteed to match the `OptimizerClassName` union type.
- */
-export const constraintClassNames = constraintOptions.map((x) => x.value);
+export const constraintClassNames: [
+  ConstraintClassName, ConstraintClassName, ConstraintClassName,
+  ConstraintClassName
+] = ['MaxNorm', 'UnitNorm', 'NonNeg', 'MinMaxNorm'];

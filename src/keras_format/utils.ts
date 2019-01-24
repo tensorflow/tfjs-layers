@@ -8,15 +8,7 @@
  * =============================================================================
  */
 
-/**
- * Render the keys and values from a class with string:string attributes as an
- * array of objects.
- */
-export function stringDictToArray(options: {[key: string]: string}):
-    Array<{value: string, label: string}> {
-  const result: Array<{value: string, label: string}> = [];
-  for (const key of Object.keys(options)) {
-    result.push({value: key, label: options[key]});
-  }
-  return result;
+// https://stackoverflow.com/questions/52085454/typescript-define-a-union-type-from-an-array-of-strings/52085658
+export function stringLiteralArray<T extends string>(a: T[]) {
+  return a;
 }

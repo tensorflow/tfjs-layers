@@ -9,8 +9,6 @@
  */
 
 import {BaseSerialization} from './types';
-import {stringDictToArray} from './utils';
-
 
 // TODO(soergel): Move the CamelCase versions back out of keras_format
 // e.g. to src/common.ts.  Maybe even duplicate *all* of these to be pedantic?
@@ -89,53 +87,30 @@ export type IdentityConfig = {
 export type IdentitySerialization =
     BaseSerialization<'Identity', IdentityConfig>;
 
-// Update NUM_INITIALIZER_OPTIONS in concert (for testing)
+// Update initializerClassNames below in concert with this.
 export type InitializerSerialization = ZerosSerialization|OnesSerialization|
     ConstantSerialization|RandomUniformSerialization|RandomNormalSerialization|
     TruncatedNormalSerialization|IdentitySerialization|
     VarianceScalingSerialization|OrthogonalSerialization;
 
-export const NUM_INITIALIZER_OPTIONS = 9;
-
 export type InitializerClassName = InitializerSerialization['class_name'];
 
-// This helps guarantee that the Options class below is complete.
-export type InitializerOptionMap = {
-  [key in InitializerClassName]: string
-};
+// We can't easily extract a string[] from the string union type, but we can
+// recapitulate the list, enforcing at compile time that the values are valid
+// and that we have the right number of them.
 
 /**
- * List of all known initializer names, along with a string description.
+ * A string array of valid Initializer class names.
  *
- * Representing this as a class allows both type-checking using the keys and
- * automatically translating to human readable display names where needed.
+ * This is guaranteed to match the `InitializerClassName` union type.
  */
-class InitializerOptions implements InitializerOptionMap {
-  [key: string]: string;
-  // tslint:disable:variable-name
-  public readonly Zeros = 'Zeros';
-  public readonly Ones = 'Ones';
-  public readonly Constant = 'Constant';
-  public readonly RandomNormal = 'Random Normal';
-  public readonly RandomUniform = 'Random Uniform';
-  public readonly TruncatedNormal = 'Truncated Normal';
-  public readonly VarianceScaling = 'Variance Scaling';
-  public readonly Orthogonal = 'Orthogonal';
-  public readonly Identity = 'Identity';
-  // tslint:enable:variable-name
-}
-
-/**
- * An array of `{value, label}` pairs describing the valid initializers.
- *
- * The `value` is the serializable string constant, and the `label` is a more
- * user-friendly description (e.g. for use in UIs).
- */
-export const initializerOptions = stringDictToArray(new InitializerOptions());
-
-/**
- * A string array of valid Optimizer class names.
- *
- * This is guaranteed to match the `OptimizerClassName` union type.
- */
-export const initializerClassNames = initializerOptions.map((x) => x.value);
+export const initializerClassNames:
+    [
+      InitializerClassName, InitializerClassName, InitializerClassName,
+      InitializerClassName, InitializerClassName, InitializerClassName,
+      InitializerClassName, InitializerClassName, InitializerClassName
+    ] =
+        [
+          'Zeros', 'Ones', 'Constant', 'RandomNormal', 'RandomUniform',
+          'TruncatedNormal', 'VarianceScaling', 'Orthogonal', 'Identity'
+        ];

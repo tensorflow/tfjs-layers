@@ -9,7 +9,6 @@
  */
 
 import {BaseSerialization} from './types';
-import {stringDictToArray} from './utils';
 
 export type L1L2Config = {
   l1?: number;
@@ -30,45 +29,21 @@ export type L2Config = {
 
 export type L2Serialization = BaseSerialization<'L2', L2Config>;
 
-// Update NUM_REGULARIZER_OPTIONS in concert (for testing)
+// Update regularizerClassNames below in concert with this.
 export type RegularizerSerialization =
     L1L2Serialization|L1Serialization|L2Serialization;
 
-export const NUM_REGULARIZER_OPTIONS = 3;
-
 export type RegularizerClassName = RegularizerSerialization['class_name'];
 
-// This helps guarantee that the Options class below is complete.
-export type RegularizerOptionMap = {
-  [key in RegularizerClassName]: string
-};
+// We can't easily extract a string[] from the string union type, but we can
+// recapitulate the list, enforcing at compile time that the values are valid
+// and that we have the right number of them.
 
 /**
- * List of all known regularizer names, along with a string description.
+ * A string array of valid Regularizer class names.
  *
- * Representing this as a class allows both type-checking using the keys and
- * automatically translating to human readable display names where needed.
+ * This is guaranteed to match the `RegularizerClassName` union type.
  */
-class RegularizerOptions implements RegularizerOptionMap {
-  [key: string]: string;
-  // tslint:disable:variable-name
-  public readonly L1L2 = 'L1L2';
-  public readonly L1 = 'L1';
-  public readonly L2 = 'L2';
-  // tslint:enable:variable-name
-}
-
-/**
- * An array of `{value, label}` pairs describing the valid regularizers.
- *
- * The `value` is the serializable string constant, and the `label` is a more
- * user-friendly description (e.g. for use in UIs).
- */
-export const regularizerOptions = stringDictToArray(new RegularizerOptions());
-
-/**
- * A string array of valid Optimizer class names.
- *
- * This is guaranteed to match the `OptimizerClassName` union type.
- */
-export const regularizerClassNames = regularizerOptions.map((x) => x.value);
+export const regularizerClassNames:
+    [RegularizerClassName, RegularizerClassName, RegularizerClassName] =
+        ['L1L2', 'L1', 'L2'];
