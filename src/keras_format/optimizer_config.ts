@@ -94,14 +94,7 @@ export type OptimizerClassName = OptimizerSerialization['class_name'];
  *
  * This is guaranteed to match the `OptimizerClassName` union type.
  */
-export const optimizerClassNames:
-    [
-      OptimizerClassName, OptimizerClassName, OptimizerClassName,
-      OptimizerClassName, OptimizerClassName, OptimizerClassName,
-      OptimizerClassName
-    ] =
-        [
-          'AdadeltaOptimizer', 'AdagradOptimizer', 'AdamOptimizer',
-          'AdamaxOptimizer', 'MomentumOptimizer', 'RMSPropOptimizer',
-          'SGDOptimizer'
-        ];
+export const optimizerClassNames: OptimizerClassName[] = [
+  'AdadeltaOptimizer', 'AdagradOptimizer', 'AdamOptimizer', 'AdamaxOptimizer',
+  'MomentumOptimizer', 'RMSPropOptimizer', 'SGDOptimizer'
+];

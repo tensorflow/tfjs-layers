@@ -51,7 +51,5 @@ export type ConstraintClassName = ConstraintSerialization['class_name'];
  *
  * This is guaranteed to match the `ConstraintClassName` union type.
  */
-export const constraintClassNames: [
-  ConstraintClassName, ConstraintClassName, ConstraintClassName,
-  ConstraintClassName
-] = ['MaxNorm', 'UnitNorm', 'NonNeg', 'MinMaxNorm'];
+export const constraintClassNames: ConstraintClassName[] =
+    ['MaxNorm', 'UnitNorm', 'NonNeg', 'MinMaxNorm'];

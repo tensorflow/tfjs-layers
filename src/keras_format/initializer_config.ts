@@ -104,13 +104,7 @@ export type InitializerClassName = InitializerSerialization['class_name'];
  *
  * This is guaranteed to match the `InitializerClassName` union type.
  */
-export const initializerClassNames:
-    [
-      InitializerClassName, InitializerClassName, InitializerClassName,
-      InitializerClassName, InitializerClassName, InitializerClassName,
-      InitializerClassName, InitializerClassName, InitializerClassName
-    ] =
-        [
-          'Zeros', 'Ones', 'Constant', 'RandomNormal', 'RandomUniform',
-          'TruncatedNormal', 'VarianceScaling', 'Orthogonal', 'Identity'
-        ];
+export const initializerClassNames: InitializerClassName[] = [
+  'Zeros', 'Ones', 'Constant', 'RandomNormal', 'RandomUniform',
+  'TruncatedNormal', 'VarianceScaling', 'Orthogonal', 'Identity'
+];

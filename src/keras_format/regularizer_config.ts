@@ -44,6 +44,5 @@ export type RegularizerClassName = RegularizerSerialization['class_name'];
  *
  * This is guaranteed to match the `RegularizerClassName` union type.
  */
-export const regularizerClassNames:
-    [RegularizerClassName, RegularizerClassName, RegularizerClassName] =
-        ['L1L2', 'L1', 'L2'];
+export const regularizerClassNames: RegularizerClassName[] =
+    ['L1L2', 'L1', 'L2'];
