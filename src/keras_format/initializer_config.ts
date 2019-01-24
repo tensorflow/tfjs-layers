@@ -108,7 +108,7 @@ export type InitializerOptionMap = {
  * List of all known initializer names, along with a string description.
  *
  * Representing this as a class allows both type-checking using the keys and
- * generating an appropriate options array for use in select fields.
+ * automatically translating to human readable display names where needed.
  */
 class InitializerOptions implements InitializerOptionMap {
   [key: string]: string;

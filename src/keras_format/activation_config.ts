@@ -14,7 +14,7 @@ import {stringDictToArray} from './utils';
  * List of all known activation names, along with a string description.
  *
  * Representing this as a class allows both type-checking using the keys and
- * generating an appropriate options array for use in select fields.
+ * automatically translating to human readable display names where needed.
  */
 export class ActivationOptions {
   [key: string]: string;

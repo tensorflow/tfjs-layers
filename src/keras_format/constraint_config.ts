@@ -54,7 +54,7 @@ export type ConstraintOptionMap = {
  * List of all known constraint names, along with a string description.
  *
  * Representing this as a class allows both type-checking using the keys and
- * generating an appropriate options array for use in select fields.
+ * automatically translating to human readable display names where needed.
  */
 class ConstraintOptions implements ConstraintOptionMap {
   [key: string]: string;
