@@ -99,7 +99,7 @@ export type OptimizerOptionMap = {
  * Representing this as a class allows both type-checking using the keys and
  * generating an appropriate options array for use in select fields.
  */
-export class OptimizerOptions implements OptimizerOptionMap {
+class OptimizerOptions implements OptimizerOptionMap {
   [key: string]: string;
   // tslint:disable:variable-name
   public readonly AdadeltaOptimizer = 'Adadelta';

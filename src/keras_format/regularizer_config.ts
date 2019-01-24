@@ -49,7 +49,7 @@ export type RegularizerOptionMap = {
  * Representing this as a class allows both type-checking using the keys and
  * generating an appropriate options array for use in select fields.
  */
-export class RegularizerOptions implements RegularizerOptionMap {
+class RegularizerOptions implements RegularizerOptionMap {
   [key: string]: string;
   // tslint:disable:variable-name
   public readonly L1L2 = 'L1L2';

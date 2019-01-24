@@ -110,7 +110,7 @@ export type InitializerOptionMap = {
  * Representing this as a class allows both type-checking using the keys and
  * generating an appropriate options array for use in select fields.
  */
-export class InitializerOptions implements InitializerOptionMap {
+class InitializerOptions implements InitializerOptionMap {
   [key: string]: string;
   // tslint:disable:variable-name
   public readonly Zeros = 'Zeros';

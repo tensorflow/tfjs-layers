@@ -56,11 +56,11 @@ export type ConstraintOptionMap = {
  * Representing this as a class allows both type-checking using the keys and
  * generating an appropriate options array for use in select fields.
  */
-export class ConstraintOptions implements ConstraintOptionMap {
+class ConstraintOptions implements ConstraintOptionMap {
   [key: string]: string;
   // tslint:disable:variable-name
   public readonly MaxNorm = 'Max Norm';
-  public readonly UnitNorm = 'Unit Norm ';
+  public readonly UnitNorm = 'Unit Norm';
   public readonly NonNeg = 'Non-negative';
   public readonly MinMaxNorm = 'Min-Max Norm';
   // tslint:enable:variable-name
