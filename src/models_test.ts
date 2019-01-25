@@ -554,7 +554,7 @@ describeMathCPU('loadModel from URL', () => {
                 fileBufferMap[path],
                 {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
           });
-        })
+        });
       };
 
   const isModelConfigNestedValues = [false, true];
