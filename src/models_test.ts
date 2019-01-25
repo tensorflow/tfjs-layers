@@ -8,19 +8,21 @@
  * =============================================================================
  */
 
-import {DataType, io, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, zeros, tensor3d} from '@tensorflow/tfjs-core';
+import {DataType, io, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, tensor3d, zeros} from '@tensorflow/tfjs-core';
 import {ConfigDict} from '@tensorflow/tfjs-core/dist/serialization';
 
 import {Model} from './engine/training';
 import * as tfl from './index';
+import {PyJsonDict} from './keras_format/types';
 import {Reshape} from './layers/core';
 import {deserialize} from './layers/serialization';
 import {loadModelInternal, ModelAndWeightsConfig, modelFromJSON} from './models';
 import {convertPythonicToTs, convertTsToPythonic} from './utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 import {version as layersVersion} from './version';
-import {PyJsonDict} from './keras_format/types';
 
+const OCTET_STREAM_TYPE = 'application/octet-stream';
+const JSON_TYPE = 'application/json';
 
 describeMathCPU('Nested model topology', () => {
   it('Nested Sequential model: Sequential as first layer', done => {
@@ -215,7 +217,8 @@ describeMathCPU('Nested model topology', () => {
     const outerModel = tfl.sequential({
       layers: [
         innerModel,
-        tfl.layers.dense({units: 1, kernelInitializer: 'zeros', useBias: false})
+        tfl.layers.dense(
+            {units: 1, kernelInitializer: 'zeros', useBias: false})
       ]
     });
 
@@ -546,8 +549,12 @@ describeMathCPU('loadModel from URL', () => {
       (fileBufferMap:
            {[filename: string]: Float32Array|Int32Array|ArrayBuffer}) => {
         spyOn(window, 'fetch').and.callFake((path: string) => {
-          return new Response(fileBufferMap[path]);
-        });
+          return new Promise((res, rej) => {
+            res(new Response(
+                fileBufferMap[path],
+                {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+          });
+        })
       };
 
   const isModelConfigNestedValues = [false, true];
@@ -623,20 +630,28 @@ describeMathCPU('loadModel from URL', () => {
             [{'name': `dense_6/bias`, 'dtype': 'float32', 'shape': [32]}],
       }
     ];
+
     spyOn(window, 'fetch').and.callFake((path: string) => {
-      if (path === 'model/model.json') {
-        return new Response(JSON.stringify({
-          modelTopology,
-          weightsManifest,
-        }));
-      } else if (path === 'model/weight_0') {
-        return new Response(
-            ones([32, 32], 'float32').dataSync() as Float32Array);
-      } else if (path === 'model/weight_1') {
-        return new Response(zeros([32], 'float32').dataSync() as Float32Array);
-      } else {
-        throw new Error(`Invalid path: ${path}`);
-      }
+      return new Promise((res, rej) => {
+        if (path === 'model/model.json') {
+          res(new Response(
+              JSON.stringify({
+                modelTopology,
+                weightsManifest,
+              }),
+              {'headers': {'Content-Type': JSON_TYPE}}));
+        } else if (path === 'model/weight_0') {
+          res(new Response(
+              ones([32, 32], 'float32').dataSync() as Float32Array,
+              {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+        } else if (path === 'model/weight_1') {
+          res(new Response(
+              zeros([32], 'float32').dataSync() as Float32Array,
+              {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+        } else {
+          rej(new Error(`Invalid path: ${path}`));
+        }
+      });
     });
 
     const model = await loadModelInternal('model/model.json');
@@ -681,25 +696,34 @@ describeMathCPU('loadModel from URL', () => {
          }
        ];
        spyOn(window, 'fetch').and.callFake((path: string) => {
-         if (path === 'model/model.json') {
-           return new Response(JSON.stringify({
-             modelTopology,
-             weightsManifest,
-           }));
-         } else if (path === 'model/weight_0') {
-           return new Response(
-               ones([10, 2], 'float32').dataSync() as Float32Array);
-         } else if (path === 'model/weight_1') {
-           return new Response(
-               zeros([2], 'float32').dataSync() as Float32Array);
-         } else if (path === 'model/weight_2') {
-           return new Response(
-               zeros([2, 1], 'float32').dataSync() as Float32Array);
-         } else if (path === 'model/weight_3') {
-           return new Response(ones([1], 'float32').dataSync() as Float32Array);
-         } else {
-           throw new Error(`Invalid path: ${path}`);
-         }
+         return new Promise((res, rej) => {
+           if (path === 'model/model.json') {
+             res(new Response(
+                 JSON.stringify({
+                   modelTopology,
+                   weightsManifest,
+                 }),
+                 {'headers': {'Content-Type': JSON_TYPE}}));
+           } else if (path === 'model/weight_0') {
+             res(new Response(
+                 ones([10, 2], 'float32').dataSync() as Float32Array,
+                 {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+           } else if (path === 'model/weight_1') {
+             res(new Response(
+                 zeros([2], 'float32').dataSync() as Float32Array,
+                 {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+           } else if (path === 'model/weight_2') {
+             res(new Response(
+                 zeros([2, 1], 'float32').dataSync() as Float32Array,
+                 {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+           } else if (path === 'model/weight_3') {
+             res(new Response(
+                 ones([1], 'float32').dataSync() as Float32Array,
+                 {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+           } else {
+             rej(new Error(`Invalid path: ${path}`));
+           }
+         });
        });
 
        const model = await loadModelInternal('model/model.json');
@@ -741,24 +765,34 @@ describeMathCPU('loadModel from URL', () => {
       }
     ];
     spyOn(window, 'fetch').and.callFake((path: string) => {
-      if (path === 'model/model.json') {
-        return new Response(JSON.stringify({
-          modelTopology,
-          weightsManifest,
-        }));
-      } else if (path === 'model/weight_0') {
-        return new Response(
-            ones([10, 2], 'float32').dataSync() as Float32Array);
-      } else if (path === 'model/weight_1') {
-        return new Response(zeros([2], 'float32').dataSync() as Float32Array);
-      } else if (path === 'model/weight_2') {
-        return new Response(
-            zeros([2, 1], 'float32').dataSync() as Float32Array);
-      } else if (path === 'model/weight_3') {
-        return new Response(ones([1], 'float32').dataSync() as Float32Array);
-      } else {
-        throw new Error(`Invalid path: ${path}`);
-      }
+      return new Promise((res, rej) => {
+        if (path === 'model/model.json') {
+          res(new Response(
+              JSON.stringify({
+                modelTopology,
+                weightsManifest,
+              }),
+              {'headers': {'Content-Type': JSON_TYPE}}));
+        } else if (path === 'model/weight_0') {
+          res(new Response(
+              ones([10, 2], 'float32').dataSync() as Float32Array,
+              {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+        } else if (path === 'model/weight_1') {
+          res(new Response(
+              zeros([2], 'float32').dataSync() as Float32Array,
+              {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+        } else if (path === 'model/weight_2') {
+          res(new Response(
+              zeros([2, 1], 'float32').dataSync() as Float32Array,
+              {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+        } else if (path === 'model/weight_3') {
+          res(new Response(
+              ones([1], 'float32').dataSync() as Float32Array,
+              {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+        } else {
+          rej(new Error(`Invalid path: ${path}`));
+        }
+      });
     });
 
     const model = await loadModelInternal('model/model.json');
@@ -803,20 +837,26 @@ describeMathCPU('loadModel from URL', () => {
                requestHeaders.push(requestInit.headers);
                requestCredentials.push(requestInit.credentials);
              }
-             if (path === 'model/model.json') {
-               return new Response(JSON.stringify({
-                 modelTopology,
-                 weightsManifest,
-               }));
-             } else if (path === 'model/weight_0') {
-               return new Response(
-                   ones([32, 32], 'float32').dataSync() as Float32Array);
-             } else if (path === 'model/weight_1') {
-               return new Response(
-                   zeros([32], 'float32').dataSync() as Float32Array);
-             } else {
-               throw new Error(`Invalid path: ${path}`);
-             }
+             return new Promise((res, rej) => {
+               if (path === 'model/model.json') {
+                 res(new Response(
+                     JSON.stringify({
+                       modelTopology,
+                       weightsManifest,
+                     }),
+                     {'headers': {'Content-Type': JSON_TYPE}}));
+               } else if (path === 'model/weight_0') {
+                 res(new Response(
+                     ones([32, 32], 'float32').dataSync() as Float32Array,
+                     {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+               } else if (path === 'model/weight_1') {
+                 res(new Response(
+                     zeros([32], 'float32').dataSync() as Float32Array,
+                     {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+               } else {
+                 rej(new Error(`Invalid path: ${path}`));
+               }
+             });
            });
 
        const model =
@@ -837,8 +877,14 @@ describeMathCPU('loadModel from URL', () => {
        // Verify that the headers and credentials are sent via
        // `fetch` properly.
        expect(requestHeaders).toEqual([
-         {'header_key_1': 'header_value_1'}, {'header_key_1': 'header_value_1'},
-         {'header_key_1': 'header_value_1'}
+         {'header_key_1': 'header_value_1', 'Accept': 'application/json'}, {
+           'header_key_1': 'header_value_1',
+           'Accept': 'application/octet-stream'
+         },
+         {
+           'header_key_1': 'header_value_1',
+           'Accept': 'application/octet-stream'
+         }
        ]);
        expect(requestCredentials).toEqual(['include', 'include', 'include']);
      });
@@ -852,9 +898,11 @@ describeMathCPU('loadModel from URL', () => {
          const weightsManifest: io.WeightsManifestConfig = [
            {
              'paths': ['weight_0'],
-             'weights': [
-               {'name': `dense_6/kernel`, 'dtype': 'float32', 'shape': [32, 32]}
-             ],
+             'weights': [{
+               'name': `dense_6/kernel`,
+               'dtype': 'float32',
+               'shape': [32, 32]
+             }],
            },
            {
              'paths': ['weight_1'],
@@ -863,20 +911,26 @@ describeMathCPU('loadModel from URL', () => {
            }
          ];
          spyOn(window, 'fetch').and.callFake((path: string) => {
-           if (path === `${protocol}localhost:8888/models/model.json`) {
-             return new Response(JSON.stringify({
-               modelTopology,
-               weightsManifest,
-             }));
-           } else if (path === `${protocol}localhost:8888/models/weight_0`) {
-             return new Response(
-                 ones([32, 32], 'float32').dataSync() as Float32Array);
-           } else if (path === `${protocol}localhost:8888/models/weight_1`) {
-             return new Response(
-                 zeros([32], 'float32').dataSync() as Float32Array);
-           } else {
-             throw new Error(`Invalid path: ${path}`);
-           }
+           return new Promise((res, rej) => {
+             if (path === `${protocol}localhost:8888/models/model.json`) {
+               res(new Response(
+                   JSON.stringify({
+                     modelTopology,
+                     weightsManifest,
+                   }),
+                   {'headers': {'Content-Type': JSON_TYPE}}));
+             } else if (path === `${protocol}localhost:8888/models/weight_0`) {
+               res(new Response(
+                   ones([32, 32], 'float32').dataSync() as Float32Array,
+                   {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+             } else if (path === `${protocol}localhost:8888/models/weight_1`) {
+               res(new Response(
+                   zeros([32], 'float32').dataSync() as Float32Array,
+                   {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
+             } else {
+               rej(new Error(`Invalid path: ${path}`));
+             }
+           });
          });
 
          const model = await loadModelInternal(
@@ -937,9 +991,11 @@ describeMathCPU('loadModel from URL', () => {
       },
       {
         'paths': ['weight_1'],
-        'weights': [
-          {'name': `${denseLayerName}/bias`, 'dtype': 'float32', 'shape': [32]}
-        ],
+        'weights': [{
+          'name': `${denseLayerName}/bias`,
+          'dtype': 'float32',
+          'shape': [32]
+        }],
       }
     ];
     // JSON.parse and stringify to deep copy fakeSequentialModel.
