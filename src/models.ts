@@ -12,6 +12,7 @@
 
 import {io, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
+
 import {getUid} from './backend/state';
 import {History} from './base_callbacks';
 import {Dataset} from './engine/dataset_stub';

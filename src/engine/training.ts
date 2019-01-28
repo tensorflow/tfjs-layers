@@ -13,7 +13,8 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {io, ModelPredictConfig as ModelPredictArgs, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
 import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
-import {getScalar} from '../backend/state';
+
+import {getScalar,} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {History, ModelLoggingVerbosity} from '../base_callbacks';
 import {nameScope} from '../common';
@@ -27,13 +28,13 @@ import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_ut
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
+
 import {Container, ContainerArgs} from './container';
 import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
-
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
