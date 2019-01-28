@@ -380,7 +380,7 @@ export function randomNormal(
  * @return Result of the dot operation.
  */
 export function dot(
-    x: Tensor, y: Tensor, activation?: tfc.fused.FusableActivation,
+    x: Tensor, y: Tensor, activation?: tfc.fused.Activation,
     bias?: Tensor): Tensor {
   if ((x.rank < 2) || (y.rank < 2)) {
     throw new NotImplementedError(

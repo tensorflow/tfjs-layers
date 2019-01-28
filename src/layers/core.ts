@@ -31,8 +31,7 @@ import {arrayProd, range} from '../utils/math_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-function mapActivationToKernel(className: string): fused.FusableActivation|
-    null {
+function mapActivationToKernel(className: string): fused.Activation|null {
   if (className === 'relu') {
     return 'relu';
   } else if (className === 'linear') {
