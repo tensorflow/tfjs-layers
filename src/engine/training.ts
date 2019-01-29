@@ -12,8 +12,6 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {io, ModelPredictConfig as ModelPredictArgs, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
-import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
-
 import {getScalar,} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {History, ModelLoggingVerbosity} from '../base_callbacks';
@@ -590,7 +588,7 @@ export class Model extends Container implements tfc.InferenceModel {
       lossFunctions = theLosses.map(l => losses.get(l));
     } else {
       const lossFunction = losses.get(args.loss);
-      this.outputs.map(layer => {
+      this.outputs.forEach(_ => {
         lossFunctions.push(lossFunction);
       });
     }
@@ -1415,8 +1413,8 @@ export class Model extends Container implements tfc.InferenceModel {
   /**
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
    */
-  async fitDataset<T extends TensorContainer>(
-      dataset: Dataset<T>, args: ModelFitDatasetArgs<T>): Promise<History> {
+  async fitDataset<T>(dataset: Dataset<T>, args: ModelFitDatasetArgs<T>):
+      Promise<History> {
     return fitDataset(this, dataset, args);
   }
 
