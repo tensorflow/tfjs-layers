@@ -708,8 +708,8 @@ export class Sequential extends Model {
   /**
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
    */
-  async evaluateDataset<T extends TensorContainer>(
-      dataset: Dataset<T>,
+  async evaluateDataset(
+      dataset: Dataset<{}>,
       config: ModelEvaluateDatasetConfig): Promise<Scalar|Scalar[]> {
     if (!this.built) {
       throw new RuntimeError(
