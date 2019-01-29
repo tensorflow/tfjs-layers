@@ -12,16 +12,16 @@
  * deeplearn.js backend.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {DataType, dispose, onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, tensor2d, Tensor3D, Tensor4D, tidy, util, variableGrads, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
+import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
 
-import {checkDataFormat, DataFormat, nameScope as commonNameScope} from '../common';
+import {disposeScalarCache, getScalar} from '../backend/state';
+import {checkDataFormat} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
-import {Shape, SymbolicTensor} from '../types';
+import {DataFormat, Shape} from '../keras_format/common';
+import {HasShape} from '../types';
 import * as math_utils from '../utils/math_utils';
-import {LayerVariable} from '../variables';
-import {epsilon as common_epsilon} from './common';
+
 import {imageDataFormat} from './common';
 
 // tslint:enable
@@ -30,17 +30,6 @@ import {imageDataFormat} from './common';
 
 // Default deeplearn.js backend is WebGL (GPU).
 let backend: 'cpu'|'webgl' = 'webgl';
-
-const DEFAULT_DTYPE: DataType = 'float32';
-
-export function disposeScalarCache() {
-  for (const typeKey in scalarCache) {
-    for (const key in scalarCache[typeKey]) {
-      scalarCache[typeKey][key].dispose();
-      delete scalarCache[typeKey][key];
-    }
-  }
-}
 
 export function setBackend(requestedBackend: 'cpu'|'webgl') {
   tfc.setBackend(requestedBackend);
@@ -51,28 +40,6 @@ export function setBackend(requestedBackend: 'cpu'|'webgl') {
 export function getBackend(): 'cpu'|'webgl' {
   return backend;
 }
-
-const scalarCache: {[typeKey: string]: {[key: number]: Scalar}} = {
-  float32: {},
-  int32: {}
-};
-
-/**
- * Get scalar, with caching.
- */
-export function getScalar(value: number, dtype?: DataType): Scalar {
-  if (dtype === undefined) {
-    dtype = DEFAULT_DTYPE;
-  }
-  if (scalarCache[dtype][value] == null) {
-    scalarCache[dtype][value] = scalar(value, dtype);
-    tfc.keep(scalarCache[dtype][value]);
-  }
-  return scalarCache[dtype][value];
-}
-
-/** Returns the value of the fuzz factor used in numeric expressions. */
-export const epsilon = common_epsilon;
 
 /**
  * Indicates whether the backend is operating symbolically.
@@ -85,54 +52,12 @@ export function isBackendSymbolic(): boolean {
   return false;
 }
 
-/* Shapes. */
-
-/**
- * Get the shape of a tensor.
- *
- * @param x The tensor.
- * @return Shape of the tensor.
- */
-export function shape(x: Tensor|SymbolicTensor): Shape {
-  return x.shape;
-}
-
-/**
- * Get the shape of a tensor as an array of numbers.
- *
- * @param x The tensor.
- * @return Shape of the tensor as number[].
- */
-export function intShape(x: Tensor|SymbolicTensor): number[] {
-  return x.shape;
-}
-
-/**
- * Get the number of dimensions (axes).
- *
- * @param x The tensor.
- * @return Number of dimensions of `x`.
- */
-export function ndim(x: Tensor|SymbolicTensor): number {
-  return x.shape.length;
-}
-
-/**
- * Returns the dtype of a tensor or variable.
- *
- * @param x The tensor.
- */
-export function dtype(x: Tensor|SymbolicTensor): DataType {
-  // TODO(michaelterry): Update if additional data types are available.
-  return (x instanceof Tensor) ? DEFAULT_DTYPE : (x as SymbolicTensor).dtype;
-}
-
 /**
  * Get the number of elements in a Tensor.
  * @param x The Tensor.
  * @return Number of elements in `x`.
  */
-export function countParams(x: Tensor|SymbolicTensor): number {
+export function countParams(x: HasShape): number {
   const shape = x.shape;
   if (shape.length > 0) {
     return shape.reduce((a: number, b: number) => a * b);
@@ -148,19 +73,8 @@ export function countParams(x: Tensor|SymbolicTensor): number {
  * @param dtype String: 'float32'|'int32'|'bool'.
  * @returns Tensor of the specified `dtype`.
  */
-export function cast(x: Tensor, dtype: 'float32'|'int32'|'bool'): Tensor {
+export function cast(x: Tensor, dtype: tfc.DataType): Tensor {
   return x.asType(dtype);
-}
-
-/**
- * Reshape tensor to specified shape.
- * @param x Input tensor.
- * @param shape Target shape.
- * @return The resultant tensor of the reshaping.
- */
-export function reshape(x: Tensor, shape: Shape): Tensor {
-  // TODO(cais): Should this call TensorMath.reshape instead for backprop?
-  return x.reshape(shape);
 }
 
 /**
@@ -170,12 +84,12 @@ export function reshape(x: Tensor, shape: Shape): Tensor {
  * @returns Result of the dimension expansion.
  */
 export function expandDims(x: Tensor, axis = -1): Tensor {
-  const outShape = shape(x).slice();
+  const outShape = x.shape.slice();
   if (axis < 0) {
     axis = outShape.length + axis + 1;
   }
   outShape.splice(axis, 0, 1);
-  return reshape(x, outShape);
+  return x.reshape(outShape);
 }
 
 /**
@@ -190,13 +104,15 @@ export function expandDims(x: Tensor, axis = -1): Tensor {
  * @throws ValueError: If input tensor is not 2D.
  */
 export function repeat(x: Tensor, n: number): Tensor {
-  if (x.shape.length !== 2) {
-    throw new ValueError(
-        `repeat() expects a rank-2 tensor, but received a ` +
-        `rank-${x.shape.length} tensor.`);
-  }
-  const y = expandDims(x, 1);
-  return tile(y, [1, n, 1]);
+  return tidy(() => {
+    if (x.shape.length !== 2) {
+      throw new ValueError(
+          `repeat() expects a rank-2 tensor, but received a ` +
+          `rank-${x.shape.length} tensor.`);
+    }
+    const y = expandDims(x, 1);
+    return tile(y, [1, n, 1]);
+  });
 }
 
 /**
@@ -206,7 +122,7 @@ export function repeat(x: Tensor, n: number): Tensor {
  */
 export function flatten(x: Tensor): Tensor {
   const newShape = [math_utils.arrayProd(x.shape)];
-  return reshape(x, newShape);
+  return x.reshape(newShape);
 }
 
 /**
@@ -218,238 +134,146 @@ export function flatten(x: Tensor): Tensor {
  * @return The result of the flattening.
  */
 export function batchFlatten(x: Tensor): Tensor {
-  if (ndim(x) <= 1) {
+  if (x.rank <= 1) {
     throw new ValueError(
-        `batchFlatten requires a minimum rank of 2. Got rank: ${ndim(x)}.`);
+        `batchFlatten requires a minimum rank of 2. Got rank: ${x.rank}.`);
   }
   const newShape = [x.shape[0], math_utils.arrayProd(x.shape, 1)];
-  return reshape(x, newShape);
+  return x.reshape(newShape);
 }
 
 /**
  * Do slicing along the first axis.
- * @param array input `Tensor`.
+ * @param array input `tf.Tensor`.
  * @param start starting index, inclusive.
  * @param size size of the slice along the first axis.
  * @returns result of the slicing.
- * @throws ValueError: If `array` is of an unsupported subtype of `Tensor`.
+ * @throws ValueError: If `array` is of an unsupported subtype of `tf.Tensor`.
  */
 export function sliceAlongFirstAxis(
     array: Tensor, start: number, size: number): Tensor {
-  switch (array.rank) {
-    case 1:
-      return tfc.slice1d(array as Tensor1D, start, size);
-    case 2:
-      return tfc.slice2d(array as Tensor2D, [start, 0], [size, array.shape[1]]);
-    case 3:
-      return tfc.slice3d(
-          array as Tensor3D, [start, 0, 0],
-          [size, array.shape[1], array.shape[2]]);
-    case 4:
-      return tfc.slice4d(
-          array as Tensor4D, [start, 0, 0, 0],
-          [size, array.shape[1], array.shape[2], array.shape[3]]);
-    default:
-      throw new ValueError(
-          `sliceAlongFirstAxis() received an unsupported tensor rank: ` +
-          `${array.rank}`);
-  }
+  return tidy(() => {
+    switch (array.rank) {
+      case 1:
+        return tfc.slice1d(array as Tensor1D, start, size);
+      case 2:
+        return tfc.slice2d(
+            array as Tensor2D, [start, 0], [size, array.shape[1]]);
+      case 3:
+        return tfc.slice3d(
+            array as Tensor3D, [start, 0, 0],
+            [size, array.shape[1], array.shape[2]]);
+      case 4:
+        return tfc.slice4d(
+            array as Tensor4D, [start, 0, 0, 0],
+            [size, array.shape[1], array.shape[2], array.shape[3]]);
+      default:
+        throw new ValueError(
+            `sliceAlongFirstAxis() received an unsupported tensor rank: ` +
+            `${array.rank}`);
+    }
+  });
 }
 
 /**
  * Do slicing along the last axis.
- * @param array input `Tensor`.
+ * @param array input `tf.Tensor`.
  * @param start starting index, inclusive.
  * @param size size of the slice along the last axis.
  * @returns result of the slicing.
- * @throws ValueError: If `array` is of an unsupported subtype of `Tensor`.
+ * @throws ValueError: If `array` is of an unsupported subtype of `tf.Tensor`.
  */
 export function sliceAlongLastAxis(
     array: Tensor, start: number, size: number): Tensor {
-  switch (array.rank) {
-    case 1:
-      return tfc.slice1d(array as Tensor1D, start, size);
-    case 2:
-      return tfc.slice2d(array as Tensor2D, [0, start], [array.shape[0], size]);
-    case 3:
-      return tfc.slice3d(
-          array as Tensor3D, [0, 0, start],
-          [array.shape[0], array.shape[1], size]);
-    case 4:
-      return tfc.slice4d(
-          array as Tensor4D, [0, 0, 0, start],
-          [array.shape[0], array.shape[1], array.shape[2], size]);
-    default:
-      throw new ValueError(
-          `sliceAlongLastAxis() received an unsupported tensor rank: ` +
-          `${array.rank}`);
-  }
+  return tidy(() => {
+    switch (array.rank) {
+      case 1:
+        return tfc.slice1d(array as Tensor1D, start, size);
+      case 2:
+        return tfc.slice2d(
+            array as Tensor2D, [0, start], [array.shape[0], size]);
+      case 3:
+        return tfc.slice3d(
+            array as Tensor3D, [0, 0, start],
+            [array.shape[0], array.shape[1], size]);
+      case 4:
+        return tfc.slice4d(
+            array as Tensor4D, [0, 0, 0, start],
+            [array.shape[0], array.shape[1], array.shape[2], size]);
+      default:
+        throw new ValueError(
+            `sliceAlongLastAxis() received an unsupported tensor rank: ` +
+            `${array.rank}`);
+    }
+  });
 }
 
 /**
  * Do slicing along the sepcified axis.
- * @param array input `Tensor`.
+ * @param array input `tf.Tensor`.
  * @param start starting index, inclusive.
  * @param size of the slice along the chosen axis.
  * @param choose an axis.
  * @returns result of the slicing.
- * @throws ValueError: If `array` is of an unsupported subtype of `Tensor`.
+ * @throws ValueError: If `array` is of an unsupported subtype of `tf.Tensor`.
  */
 export function sliceAlongAxis(
     array: Tensor, start: number, size: number, axis: number): Tensor {
-  switch (array.rank) {
-    case 1:
-      return tfc.slice1d(array as Tensor1D, start, size);
-    case 2:
-      switch (axis) {
-        case 1:
-          return sliceAlongFirstAxis(array, start, size);
-        case 2:
-          return sliceAlongLastAxis(array, start, size);
-        default:
-          throw new ValueError(
-              `The axis is not within the rank of the tensor ` +
-              `${axis}`);
-      }
-    case 3:
-      switch (axis) {
-        case 1:
-          return sliceAlongFirstAxis(array, start, size);
-        case 2:
-          return tfc.slice3d(
-              array as Tensor3D, [0, start, 0],
-              [array.shape[0], size, array.shape[2]]);
-        case 3:
-          return sliceAlongLastAxis(array, start, size);
-        default:
-          throw new ValueError(
-              `The axis is not within the rank of the tensor ` +
-              `${axis}`);
-      }
-    case 4:
-      switch (axis) {
-        case 1:
-          return sliceAlongFirstAxis(array, start, size);
-        case 2:
-          return tfc.slice4d(
-              array as Tensor4D, [0, start, 0, 0],
-              [array.shape[0], size, array.shape[2], array.shape[3]]);
-        case 3:
-          return tfc.slice4d(
-              array as Tensor4D, [0, 0, start, 0],
-              [array.shape[0], array.shape[1], size, array.shape[3]]);
-        case 4:
-          return sliceAlongLastAxis(array, start, size);
-        default:
-          throw new ValueError(
-              `The axis is not within the rank of the tensor ` +
-              `${axis}`);
-      }
-    default:
-      throw new ValueError(
-          `sliceAlongLastAxis() received an unsupported tensor rank: ` +
-          `${array.rank}`);
-  }
-}
-
-
-/**
- * Non-broadcasting batch normalization for use in training (not inference).
- *
- * The input is normalized to zero mean and unit variance along the
- * `reductionAxes`, followed by scaling with `gamma` and shifted by `beta`.
- * The result of that is returned as the first element
- * of the returned `Array`. The other two elements are the mean and variance,
- * respectively.
- *
- * @param x Input tensor to be normalized.
- * @param gamma Tensor by which to scale the input.
- * @param beta Tensor by which to center the input.
- * @param reductionAxes Axes over which to normalize.
- * @param epsilon Fuzz factor.
- * @returns An `Array` of three `Tensors`:
- *   [normalized tensor, mean of input, variance of input].
- */
-function regularNormalizeBatchInTraining(
-    x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
-    epsilon = 1e-3): [Tensor, Tensor, Tensor] {
   return tidy(() => {
-           const meanAndVariance = tfc.moments(x, reductionAxes);
-           const mean = meanAndVariance.mean;
-           const variance = meanAndVariance.variance;
-           const normed =
-               batchNormalization(x, mean, variance, beta, gamma, epsilon);
-           return [normed, mean, variance];
-         }) as [Tensor, Tensor, Tensor];
-}
-
-/**
- * Broadcasting batch normalization for use in training (not inference).
- *
- * The input is normalized to zero mean and unit variance along the
- * `reductionAxes`, followed by scaling with `gamma` and shifted by `beta`.
- * The result of that is returned as the first element
- * of the returned `Array`. The other two elements are the mean and variance,
- * respectively.
- *
- * @param x Input tensor to be normalized.
- * @param gamma Tensor by which to scale the input.
- * @param beta Tensor by which to center the input.
- * @param reductionAxes Axes over which to normalize.
- * @param epsilon Fuzz factor.
- * @returns An `Array` of three `Tensors`:
- *   [normalized tensor, mean of input, variance of input].
- */
-function broadcastNormalizeBatchInTraining(
-    x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
-    epsilon = 1e-3): [Tensor, Tensor, Tensor] {
-  return tidy(() => {
-           const meanAndVariance = tfc.moments(x, reductionAxes);
-           const mean = meanAndVariance.mean;
-           const variance = meanAndVariance.variance;
-           const targetShape: number[] = [];
-           for (const axis of math_utils.range(0, ndim(x))) {
-             if (reductionAxes.indexOf(axis) !== -1) {
-               targetShape.push(1);
-             } else {
-               targetShape.push(x.shape[axis]);
-             }
-           }
-           const broadcastMean = reshape(mean, targetShape);
-           const broadcastVariance = reshape(variance, targetShape);
-           const broadcastGamma =
-               gamma == null ? null : reshape(gamma, targetShape);
-           const broadcastBeta =
-               beta == null ? null : reshape(beta, targetShape);
-           const normed = batchNormalization(
-               x, broadcastMean, broadcastVariance, broadcastBeta,
-               broadcastGamma, epsilon);
-           return [normed, mean, variance];
-         }) as [Tensor, Tensor, Tensor];
-}
-
-/**
- * Batch normalization for use in training (not inference).
- *
- * @param x Input tensor to be normalized.
- * @param gamma Tensor by which to scale the input.
- * @param beta Tensor by which to center the input.
- * @param reductionAxes Axes over which to normalize.
- * @param epsilon Fuzz factor.
- * @returns An `Array` of three `Tensors`:
- *   [normalized tensor, mean of input, variance of input].
- */
-export function normalizeBatchInTraining(
-    x: Tensor, gamma: Tensor, beta: Tensor, reductionAxes: number[],
-    epsilon = 1e-3): [Tensor, Tensor, Tensor] {
-  if (util.arraysEqual(
-          reductionAxes.slice().sort(), math_utils.range(0, ndim(x) - 1))) {
-    return regularNormalizeBatchInTraining(
-        x, gamma, beta, reductionAxes, epsilon);
-  } else {
-    return broadcastNormalizeBatchInTraining(
-        x, gamma, beta, reductionAxes, epsilon);
-  }
+    switch (array.rank) {
+      case 1:
+        return tfc.slice1d(array as Tensor1D, start, size);
+      case 2:
+        switch (axis) {
+          case 1:
+            return sliceAlongFirstAxis(array, start, size);
+          case 2:
+            return sliceAlongLastAxis(array, start, size);
+          default:
+            throw new ValueError(
+                `The axis is not within the rank of the tensor ` +
+                `${axis}`);
+        }
+      case 3:
+        switch (axis) {
+          case 1:
+            return sliceAlongFirstAxis(array, start, size);
+          case 2:
+            return tfc.slice3d(
+                array as Tensor3D, [0, start, 0],
+                [array.shape[0], size, array.shape[2]]);
+          case 3:
+            return sliceAlongLastAxis(array, start, size);
+          default:
+            throw new ValueError(
+                `The axis is not within the rank of the tensor ` +
+                `${axis}`);
+        }
+      case 4:
+        switch (axis) {
+          case 1:
+            return sliceAlongFirstAxis(array, start, size);
+          case 2:
+            return tfc.slice4d(
+                array as Tensor4D, [0, start, 0, 0],
+                [array.shape[0], size, array.shape[2], array.shape[3]]);
+          case 3:
+            return tfc.slice4d(
+                array as Tensor4D, [0, 0, start, 0],
+                [array.shape[0], array.shape[1], size, array.shape[3]]);
+          case 4:
+            return sliceAlongLastAxis(array, start, size);
+          default:
+            throw new ValueError(
+                `The axis is not within the rank of the tensor ` +
+                `${axis}`);
+        }
+      default:
+        throw new ValueError(
+            `sliceAlongLastAxis() received an unsupported tensor rank: ` +
+            `${array.rank}`);
+    }
+  });
 }
 
 /**
@@ -461,14 +285,14 @@ export function normalizeBatchInTraining(
 export function concatenate(tensors: Tensor[], axis = -1): Tensor {
   let rank: number;
   if (axis < 0) {
-    rank = ndim(tensors[0]);
+    rank = tensors[0].rank;
     if (rank !== 0) {
       axis = rank;
     } else {
       axis = 0;
     }
   }
-  if (axis === ndim(tensors[0])) {
+  if (axis === tensors[0].rank) {
     // Porting Note: This is necessary because tfc.concat() requires axis to be
     //   in the interval [-rank, rank).
     axis = -1;
@@ -479,10 +303,10 @@ export function concatenate(tensors: Tensor[], axis = -1): Tensor {
 
 /**
  * Concatenate two arrays along the first dimension.
- * @param a The 1st `Tensor` to concatenate.
- * @param b The 2nd `Tensor` to concatenate.
+ * @param a The 1st `tf.Tensor` to concatenate.
+ * @param b The 2nd `tf.Tensor` to concatenate.
  * @returns Result of the concatenation.
- * @throws ValueError: If `a` is of an unsupported subtype of `Tensor`.
+ * @throws ValueError: If `a` is of an unsupported subtype of `tf.Tensor`.
  */
 export function concatAlongFirstAxis(a: Tensor, b: Tensor): Tensor {
   switch (a.rank) {
@@ -512,57 +336,12 @@ export function tile(x: Tensor, n: number|number[]): Tensor {
   if (!Array.isArray(n)) {
     n = [n];
   }
-  if (ndim(x) !== n.length) {
+  if (x.rank !== n.length) {
     throw new ValueError(
         `The length of input n (${n.length}) does not match ` +
-        `the number of dimensions in input x (${ndim(x)})`);
+        `the number of dimensions in input x (${x.rank})`);
   }
   return tfc.tile(x, n);
-}
-
-/* Creation and manipulation of tensors and variables */
-
-/**
- * Create a Tensor with the same content as the input.
- *
- * @param x Input.
- * @return Identity output Tensor.
- */
-export function identity(x: Tensor): Tensor {
-  return x.clone();
-}
-
-/**
- * Instantiate an identity matrix and returns it, as a Variable
- *
- * @param size Number of rows/columns.
- * @param dtype Data type of returned Variable.
- * @param name Name of returned Variable.
- * @return A Variable, an identity matrix.
- */
-export function eyeVariable(
-    size: number, dtype?: DataType, name?: string): LayerVariable {
-  return new LayerVariable(tfc.eye(size, size, null, dtype), dtype, name);
-}
-
-/**
- * Multiply a scalar with an Tensor.
- * @param c The Scalar.
- * @param x The Tensor.
- * @returns The result of the multiplication.
- */
-export function scalarTimesArray(c: Scalar, x: Tensor): Tensor {
-  return tfc.mul(c, x);
-}
-
-/**
- * Add a scalar to an Tensor.
- * @param c The Scalar.
- * @param x The Tensor.
- * @returns The result of the addition.
- */
-export function scalarPlusArray(c: Scalar, x: Tensor): Tensor {
-  return tfc.add(c, x);
 }
 
 /* Creation of random tensors. */
@@ -591,149 +370,86 @@ export function randomNormal(
  *
  * For 2D tensors, this is equivalent to matrix multiplication (matMul).
  * For tensors of higher ranks, it follows the Theano behavior,
- * (e.g. `(2, 3) * (4, 3, 5) -> (2, 4, 5)`).
+ * (e.g. `(2, 3) * (4, 3, 5) -> (2, 4, 5)`).  From the Theano documentation:
+ *
+ * For N dimensions it is a sum product over the last axis of x and the
+ * second-to-last of y:
  *
  * @param x A tensor of at least rank 2.
  * @param y A tensor of at least rank 2.
  * @return Result of the dot operation.
  */
 export function dot(x: Tensor, y: Tensor): Tensor {
-  if (ndim(y) !== 2) {
+  if ((x.rank < 2) || (y.rank < 2)) {
     throw new NotImplementedError(
-        `dot support for y other than rank 2 is not yet implemented: ` +
-        `y shape = ${shape}`);
-  } else {
-    if (ndim(x) === 2) {
-      return tfc.matMul(x as Tensor2D, y as Tensor2D);
-    } else if (ndim(x) === 3) {
-      const xShape0 = x.shape[0];
-      const xShape1 = x.shape[1];
-      const xShape2 = x.shape[2];
-      x = x.reshape([xShape0 * xShape1, xShape2]);
-      return tfc.matMul(x as Tensor2D, y as Tensor2D).reshape([
-        xShape0, xShape1, y.shape[1]
-      ]);
-    } else {
+        `dot requires both inputs to be rank >= 2` +
+        ` but got x shape = ${x.shape} and y shape = ${y.shape}`);
+  }
+  if (y.rank >= 3) {
+    const xLastDim = x.shape.slice(-1)[0];
+    const ySecondLastDim = y.shape.slice(-2)[0];
+    if (xLastDim !== ySecondLastDim) {
       throw new NotImplementedError(
-          `dot support for x of rank ${ndim(x)} is not yet implemented: ` +
-          `x shape = ${shape}`);
+          `If rank y >= 3, then the second last dim` +
+          ` of y must equal the last dim of x but got x shape = ${
+              x.shape} and ` +
+          ` y shape = ${y.shape}`);
     }
+  }
+  // Handle basic 2D x 2D case.
+  if ((x.rank === 2) && (y.rank === 2)) {
+    return tfc.matMul(x as Tensor2D, y as Tensor2D);
+  } else {
+    // Reshape x into the analogous 2D Tensor.
+    const xFirstDims = x.shape.slice();  // Holds all but the last dim of x.
+    const xLastDim = xFirstDims.pop();
+    x = x.reshape([-1, xLastDim]);
+
+    // Reshape y into the analogous 2D Tensor, and keep track of the
+    // required dimensions to reproduce the output shape.
+    const yShape = y.shape.slice();
+    const yLastDim = yShape.pop();
+    const ySecondLastDim = yShape.pop();
+    const yOtherDims = [...yShape, yLastDim];
+    // permutation should be like [r-2, 0, 1, 2, ... r-4, r-3, r-1]
+    // where r is the rank of y.
+    const perm = Array.from({length: y.rank}, (_, i) => {
+      if (i === 0) {
+        return y.rank - 2;
+      } else if (i <= y.rank - 2) {
+        return i - 1;
+      }
+      return i;
+    });
+    y = y.transpose(perm).reshape([ySecondLastDim, -1]);
+
+    // Multiply x and y as 2D Tensors, and then reshape back to original.
+    const outputShape = [...xFirstDims, ...yOtherDims];
+    return tfc.matMul(x as Tensor2D, y as Tensor2D).reshape(outputShape);
   }
 }
 
 /**
  * Compute the sign Tensor of an input Tensor.
  *
- * Elements of the input `Tensor` that are === 0 are mapped to 0.
- * Elements of the input `Tensor` that are > 0 are mapped to 1.
- * Elements of the input `Tensor` that are < 0 are mapped to -1.
+ * Elements of the input `tf.Tensor` that are === 0 are mapped to 0.
+ * Elements of the input `tf.Tensor` that are > 0 are mapped to 1.
+ * Elements of the input `tf.Tensor` that are < 0 are mapped to -1.
  *
- * @param x Input `Tensor`.
- * @return The sign `Tensor`.
+ * @param x Input `tf.Tensor`.
+ * @return The sign `tf.Tensor`.
  */
 export function sign(x: Tensor): Tensor {
   // TODO(cais): Move to the core.
-  const zerosLikeX = coreZerosLike(x);
-  const onesLikeX = coreOnesLike(x);
-  return where(
-      tfc.equal(x, zerosLikeX), zerosLikeX,
-      where(
-          tfc.greater(x, coreZerosLike(x)), onesLikeX,
-          scalarTimesArray(getScalar(-1), onesLikeX)));
-}
-
-/**
- * Compute QR decomposition of m-by-n matrix using Householder transformation.
- *
- * Requires `m >= n`.
- *
- * Implementation based on
- *   [http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf]
- * (http://www.cs.cornell.edu/~bindel/class/cs6210-f09/lec18.pdf)
- *
- * @param x The 2D `Tensor` (matrix) to be QR-decomposed. Must have
- *   `x.shape[0] >= x.shape[1]`.
- * @return An `Array` of two `Tensor`s: `[Q, R]`, where `Q` is a unitary
- *   matrix of size `[x.shape[0], x.shape[0]]`. `R` has the same shape as
- *   `x`.
- * @throws ValueError if `x.shape[0] < x.shape[1]`, or if `x`'s rank is not 2.
- */
-export function qr(x: Tensor2D): [Tensor, Tensor] {
-  const [qOuter, rOuter]: [Tensor, Tensor] = tidy((): [Tensor, Tensor] => {
-    // TODO(cais): Extend support to >2D as in `tf.qr` and move this
-    // function to the core.
-    if (x.shape.length !== 2) {
-      throw new ValueError(
-          `qr() requires a 2D Tensor, but got a ${x.shape.length}D Tensor.`);
-    }
-    if (x.shape[0] < x.shape[1]) {
-      throw new ValueError(
-          `qr() requires x.shape[0] >= x.shape[1], but got shape: [${
-              x.shape}]`);
-    }
-
-    const m = x.shape[0];
-    const n = x.shape[1];
-
-    let q = tfc.eye(m) as Tensor2D;  // Orthogonal transform so far.
-    let r = x.clone();               // Transformed matrix so far.
-
-    const one2D = tensor2d([[1]], [1, 1]);
-    let w: Tensor2D = one2D.clone();
-
-    for (let j = 0; j < n; ++j) {
-      // This tidy within the for-loop ensures we clean up temporary
-      // tensors as soon as they are no longer needed.
-      const rTemp = r;
-      const wTemp = w;
-      const qTemp = q;
-      [w, r, q] = tidy((): [Tensor2D, Tensor2D, Tensor2D] => {
-        // Find H = I - tau * w * w', to put zeros below R(j, j).
-        const rjEnd1 = r.slice([j, j], [m - j, 1]);
-        const normX = tfc.norm(rjEnd1);
-        const rjj = r.slice([j, j], [1, 1]);
-        const s = tfc.neg(sign(rjj)) as Tensor2D;
-        const u1 = rjj.sub(tfc.mul(s, normX)) as Tensor2D;
-        const wPre = tfc.div(rjEnd1, u1);
-        if (wPre.shape[0] === 1) {
-          w = one2D.clone();
-        } else {
-          w = one2D.concat(
-                  wPre.slice([1, 0], [wPre.shape[0] - 1, wPre.shape[1]]), 0) as
-              Tensor2D;
-        }
-        const tau = tfc.neg(tfc.div(tfc.matMul(s, u1), normX)) as Tensor2D;
-
-        // -- R := HR, Q := QH.
-        const rjEndAll = r.slice([j, 0], [m - j, n]);
-        const tauTimesW = tau.mul(w) as Tensor2D;
-        if (j === 0) {
-          r = rjEndAll.sub(tauTimesW.matMul(w.transpose().matMul(rjEndAll)));
-        } else {
-          r = r.slice([0, 0], [j, n])
-                  .concat(
-                      rjEndAll.sub(
-                          tauTimesW.matMul(w.transpose().matMul(rjEndAll))),
-                      0) as Tensor2D;
-        }
-        const qAllJEnd = q.slice([0, j], [m, q.shape[1] - j]);
-        if (j === 0) {
-          q = qAllJEnd.sub(qAllJEnd.matMul(w).matMul(tauTimesW.transpose()));
-        } else {
-          q = q.slice([0, 0], [m, j])
-                  .concat(
-                      qAllJEnd.sub(
-                          qAllJEnd.matMul(w).matMul(tauTimesW.transpose())),
-                      1) as Tensor2D;
-        }
-        return [w, r, q];
-      });
-      dispose([rTemp, wTemp, qTemp]);
-    }
-
-    return [q, r];
+  return tidy(() => {
+    const zerosLikeX = coreZerosLike(x);
+    const onesLikeX = coreOnesLike(x);
+    return where(
+        tfc.equal(x, zerosLikeX), zerosLikeX,
+        where(
+            tfc.greater(x, coreZerosLike(x)), onesLikeX,
+            tfc.mul(getScalar(-1), onesLikeX)));
   });
-  return [qOuter, rOuter];
 }
 
 /**
@@ -745,13 +461,15 @@ export function qr(x: Tensor2D): [Tensor, Tensor] {
  *   with shape `(batch_size, dim1, dim2, ... dim(n-1), num_classes)`
  */
 export function oneHot(indices: Tensor, numClasses: number): Tensor {
-  if (ndim(indices) !== 1) {
-    throw new Error(
-        'Only 1D one-hot tensors are supported in the ' +
-        'deeplearn backend, at present.');
-  }
-  indices = indices.toInt();
-  return tfc.oneHot(indices as Tensor1D, numClasses).toFloat();
+  return tidy(() => {
+    if (indices.rank !== 1) {
+      throw new Error(
+          'Only 1D one-hot tensors are supported in the ' +
+          'deeplearn backend, at present.');
+    }
+    indices = indices.toInt();
+    return tfc.oneHot(indices as Tensor1D, numClasses).toFloat();
+  });
 }
 
 /* Elementary math functions. */
@@ -765,12 +483,14 @@ export function oneHot(indices: Tensor, numClasses: number): Tensor {
  */
 export function gather(
     reference: Tensor, indices: number[]|Tensor1D, axis?: number): Tensor {
-  if (Array.isArray(indices)) {
-    indices = tensor1d(indices, 'int32');
-  } else {
-    indices = indices.toInt();
-  }
-  return tfc.gather(reference, indices, axis);
+  return tidy(() => {
+    if (Array.isArray(indices)) {
+      indices = tensor1d(indices, 'int32');
+    } else {
+      indices = indices.toInt();
+    }
+    return tfc.gather(reference, indices, axis);
+  });
 }
 
 /**
@@ -795,58 +515,16 @@ export function square(x: Tensor): Tensor {
  * @returns A tensor of the same shape as `x`.
  */
 export function pow(x: Tensor, a: Tensor|number): Tensor {
-  if (typeof (a) === 'number') {
-    a = scalar(Math.round(a), 'int32');
-  }
-  if (a.dtype !== 'int32') {
-    throw new NotImplementedError(
-        `Non-int32 dtype (${a.dtype}) is not supported by pow() yet`);
-  }
-  return tfc.pow(x, a as Tensor);
-}
-
-/* Normalization operations. */
-
-/**
- * Applies batch normalization on x given mean, var, beta and gamma.
- *
- * I.e. returns:
- *   `output = (x - mean) / (sqrt(var) + epsilon) * gamma + beta`
- *
- * @param x Input tensor.
- * @param mean Mean of batch.
- * @param variance Variance of batch.
- * @param beta Tensor with which to center the input.
- * @param gamma Tensor by which to scale the input.
- * @param epsilon Fuzz factor.
- * @returns The result of the batch normalization.
- */
-export function batchNormalization(
-    x: Tensor, mean: Tensor, variance: Tensor, beta?: Tensor, gamma?: Tensor,
-    epsilon = 1e-3): Tensor {
-  let out: Tensor;
-  if (ndim(x) === 2) {
-    out = tfc.batchNormalization2d(
-        x as Tensor2D, mean as Tensor2D | Tensor1D,
-        variance as Tensor2D | Tensor1D, epsilon, gamma as Tensor2D | Tensor1D,
-        beta as Tensor2D | Tensor1D);
-  } else if (ndim(x) === 3) {
-    // TODO(cais): Check rank; give proper error message.
-    out = tfc.batchNormalization3d(
-        x as Tensor3D, mean as Tensor3D | Tensor1D,
-        variance as Tensor3D | Tensor1D, epsilon, gamma as Tensor3D | Tensor1D,
-        beta as Tensor3D | Tensor1D);
-  } else if (ndim(x) === 4) {
-    out = tfc.batchNormalization4d(
-        x as Tensor4D, mean as Tensor4D | Tensor1D,
-        variance as Tensor4D | Tensor1D, epsilon, gamma as Tensor4D | Tensor1D,
-        beta as Tensor4D | Tensor1D);
-  } else {
-    throw new NotImplementedError(
-        `batchNormalization is not implememnted for array of rank ${ndim(x)} ` +
-        `yet`);
-  }
-  return out;
+  return tidy(() => {
+    if (typeof (a) === 'number') {
+      a = scalar(Math.round(a), 'int32');
+    }
+    if (a.dtype !== 'int32') {
+      throw new NotImplementedError(
+          `Non-int32 dtype (${a.dtype}) is not supported by pow() yet`);
+    }
+    return tfc.pow(x, a as Tensor);
+  });
 }
 
 /* Neural-network operations. */
@@ -861,68 +539,71 @@ export function batchNormalization(
  */
 export function biasAdd(
     x: Tensor, bias: Tensor, dataFormat?: DataFormat): Tensor {
-  if (dataFormat == null) {
-    dataFormat = imageDataFormat();
-  }
-  checkDataFormat(dataFormat);
+  return tidy(() => {
+    if (dataFormat == null) {
+      dataFormat = imageDataFormat();
+    }
+    checkDataFormat(dataFormat);
 
-  if (ndim(bias) !== 1 && ndim(bias) !== ndim(x)) {
-    throw new ValueError(
-        'Unexpected bias dimensions: ' + ndim(bias) +
-        '; expected it to be 1 or ' + ndim(x));
-  }
-  const biasShape = bias.shape;
+    if (bias.rank !== 1 && bias.rank !== x.rank) {
+      throw new ValueError(
+          'Unexpected bias dimensions: ' + bias.rank +
+          '; expected it to be 1 or ' + x.rank);
+    }
+    const biasShape = bias.shape;
 
-  let y: Tensor;
-  if (ndim(x) === 5) {
-    if (dataFormat === 'channelsFirst') {
-      if (biasShape.length === 1) {
-        y = x.add(bias.reshape([1, biasShape[0], 1, 1, 1]));
-      } else {
-        y = x.add(bias.reshape(
-            [1, biasShape[3], biasShape[0], biasShape[1], biasShape[2]]));
+    let y: Tensor;
+    if (x.rank === 5) {
+      if (dataFormat === 'channelsFirst') {
+        if (biasShape.length === 1) {
+          y = x.add(bias.reshape([1, biasShape[0], 1, 1, 1]));
+        } else {
+          y = x.add(bias.reshape(
+              [1, biasShape[3], biasShape[0], biasShape[1], biasShape[2]]));
+        }
+      } else if (dataFormat === 'channelsLast') {
+        if (biasShape.length === 1) {
+          y = x.add(bias.reshape([1, 1, 1, 1, biasShape[0]]));
+        } else {
+          y = x.add(bias.reshape([1].concat(biasShape)));
+        }
       }
-    } else if (dataFormat === 'channelsLast') {
-      if (biasShape.length === 1) {
-        y = x.add(bias.reshape([1, 1, 1, 1, biasShape[0]]));
-      } else {
-        y = x.add(bias.reshape([1].concat(biasShape)));
+    } else if (x.rank === 4) {
+      if (dataFormat === 'channelsFirst') {
+        if (biasShape.length === 1) {
+          y = x.add(bias.reshape([1, biasShape[0], 1, 1]));
+        } else {
+          y = x.add(
+              bias.reshape([1, biasShape[2], biasShape[0], biasShape[1]]));
+        }
+      } else if (dataFormat === 'channelsLast') {
+        if (biasShape.length === 1) {
+          y = x.add(bias.reshape([1, 1, 1, biasShape[0]]));
+        } else {
+          y = x.add(bias.reshape([1].concat(biasShape)));
+        }
       }
+    } else if (x.rank === 3) {
+      if (dataFormat === 'channelsFirst') {
+        if (biasShape.length === 1) {
+          y = x.add(bias.reshape([1, biasShape[0], 1]));
+        } else {
+          y = x.add(bias.reshape([1, biasShape[1], biasShape[0]]));
+        }
+      } else if (dataFormat === 'channelsLast') {
+        if (biasShape.length === 1) {
+          y = x.add(bias.reshape([1, 1, biasShape[0]]));
+        } else {
+          y = x.add(bias.reshape([1].concat(biasShape)));
+        }
+      }
+    } else if (x.rank < 3) {
+      y = x.add(bias);
+    } else {
+      throw new ValueError(`Unsupported input rank by biasAdd: ${x.rank}`);
     }
-  } else if (ndim(x) === 4) {
-    if (dataFormat === 'channelsFirst') {
-      if (biasShape.length === 1) {
-        y = x.add(bias.reshape([1, biasShape[0], 1, 1]));
-      } else {
-        y = x.add(bias.reshape([1, biasShape[2], biasShape[0], biasShape[1]]));
-      }
-    } else if (dataFormat === 'channelsLast') {
-      if (biasShape.length === 1) {
-        y = x.add(bias.reshape([1, 1, 1, biasShape[0]]));
-      } else {
-        y = x.add(bias.reshape([1].concat(biasShape)));
-      }
-    }
-  } else if (ndim(x) === 3) {
-    if (dataFormat === 'channelsFirst') {
-      if (biasShape.length === 1) {
-        y = x.add(bias.reshape([1, biasShape[0], 1]));
-      } else {
-        y = x.add(bias.reshape([1, biasShape[1], biasShape[0]]));
-      }
-    } else if (dataFormat === 'channelsLast') {
-      if (biasShape.length === 1) {
-        y = x.add(bias.reshape([1, 1, biasShape[0]]));
-      } else {
-        y = x.add(bias.reshape([1].concat(biasShape)));
-      }
-    }
-  } else if (ndim(x) < 3) {
-    y = x.add(bias);
-  } else {
-    throw new ValueError(`Unsupported input rank by biasAdd: ${ndim(x)}`);
-  }
-  return y;
+    return y;
+  });
 }
 
 /**
@@ -942,18 +623,6 @@ export function elu(x: Tensor, alpha = 1): Tensor {
 }
 
 /**
- * Softplus of a tensor.
- *
- * Defined as log(exp(x) + 1), element-wise.
- *
- * @param x: Input.
- * @returns Output.
- */
-export function softplus(x: Tensor): Tensor {
-  return tfc.log(tfc.add(getScalar(1), tfc.exp(x)));
-}
-
-/**
  * Softsign of a tensor.
  *
  * Defined as x / (abs(x) + 1), element-wise.
@@ -962,7 +631,7 @@ export function softplus(x: Tensor): Tensor {
  * @returns Output.
  */
 export function softsign(x: Tensor): Tensor {
-  return tfc.div(x, tfc.add(getScalar(1), tfc.abs(x)));
+  return tidy(() => tfc.div(x, tfc.add(getScalar(1), tfc.abs(x))));
 }
 
 /**
@@ -977,160 +646,25 @@ export function softsign(x: Tensor): Tensor {
  */
 export function dropout(
     x: Tensor, level: Scalar, noiseShape?: number[], seed?: number): Tensor {
-  // TODO(cais): Switch to deeplearn.js implementation of dropout when it
-  //   becomes avaialable.
-  if (noiseShape != null && !util.arraysEqual(x.shape, noiseShape)) {
-    throw new NotImplementedError(
-        'Non-default noise shape is not implemented yet: ' +
-        JSON.stringify(noiseShape));
-  }
-  if (seed != null) {
-    throw new NotImplementedError('seed is not implemented for dropout yet.');
-  }
-  let multiplier = tfc.step(tfc.add(
-      tfc.neg(level) as Scalar, tfc.randomUniform(x.shape, 0, 1, 'float32')));
-  // Scale the kept elements, so the expected sum is unchanged.
-  multiplier = tfc.mul(
-      tfc.div(getScalar(1), tfc.sub(getScalar(1), level)) as Scalar,
-      multiplier);
-  return tfc.mul(x, multiplier);
-}
-
-/**
- * Normalizes a tensor wrt the L2 norm alongside the specified axis.
- * @param x
- * @param axis Axis along which to perform normalization.
- */
-export function l2Normalize(x: Tensor, axis?: number): Tensor {
-  const squareSum = tfc.sum(square(x), axis, true);
-  const epsilonTensor = scalarTimesArray(scalar(epsilon()), tfc.onesLike(x));
-  const norm = tfc.sqrt(tfc.maximum(squareSum, epsilonTensor));
-  return tfc.div(x, norm);
-}
-
-/**
- * Replacement for Keras's "with name_scope" construct.
- *
- * @param name The name to use for this name scope.
- * @param fn A function to call within this name scope.
- * @return The value of fn.
- */
-export function nameScope<T>(name: string, fn: () => T): T {
-  return commonNameScope(name, fn);
-}
-
-/**
- * Returns the default float type, as a DType.
- */
-export function floatx(): DataType {
-  return 'float32';
-}
-
-const _uidPrefixes: {[prefix: string]: number} = {};
-
-/**
- * Provides a unique UID given a string prefix.
- *
- * @param prefix
- */
-export function getUid(prefix = ''): string {
-  if (!(prefix in _uidPrefixes)) {
-    _uidPrefixes[prefix] = 0;
-  }
-  _uidPrefixes[prefix] += 1;
-  return prefix + _uidPrefixes[prefix].toString();
-}
-
-/**
- * Categorical crossentropy between an output tensor and a target tensor.
- *
- * @param target A tensor of the same shape as `output`.
- * @param output A tensor resulting from a softmax (unless `fromLogits` is
- *  `true`, in which case `output` is expected to be the logits).
- * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
- *   a tensor of logits.
- */
-export function categoricalCrossentropy(
-    target: Tensor, output: Tensor, fromLogits = false): Tensor {
-  if (fromLogits) {
-    output = tfc.softmax(output);
-  } else {
-    // scale preds so that the class probabilities of each sample sum to 1.
-    const outputSum = tfc.sum(output, shape(output).length - 1, true);
-    output = tfc.div(output, outputSum);
-  }
-  output = tfc.clipByValue(output, epsilon(), 1 - epsilon());
-  return tfc.neg(tfc.sum(
-      tfc.mul(target.toFloat(), tfc.log(output)), shape(output).length - 1));
-}
-
-/**
- * Categorical crossentropy with integer targets.
- *
- * @param target An integer tensor.
- * @param output A tensor resulting from a softmax (unless `fromLogits` is
- *  `true`, in which case `output` is expected to be the logits).
- * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
- *   a tensor of logits.
- */
-export function sparseCategoricalCrossentropy(
-    target: Tensor, output: Tensor, fromLogits = false): Tensor {
-  const flatTarget = tfc.floor(flatten(target)).toInt() as Tensor1D;
-  const outputShape = shape(output);
-  const oneHotTarget = reshape(
-      tfc.oneHot(flatTarget, outputShape[outputShape.length - 1]), outputShape);
-  return categoricalCrossentropy(oneHotTarget, output, fromLogits);
-}
-
-/**
- * Binary crossentropy between an output tensor and a target tensor.
- *
- * @param target A tensor with the same shape as `output`.
- * @param output
- * @param fromLogits Whether `output` is expected to be a logits tensor. By
- *   default, we consider that `output` encodes a probability distribution.
- */
-export function binaryCrossentropy(
-    target: Tensor, output: Tensor, fromLogits = false): Tensor {
-  let y: Tensor;
-  if (!fromLogits) {
-    y = tfc.clipByValue(output, epsilon(), 1 - epsilon());
-    y = tfc.log(tfc.div(y, tfc.sub(tfc.onesLike(y), y)));
-  } else {
-    y = output;
-  }
-  return sigmoidCrossEntropyWithLogits(target, y);
-}
-
-/**
- * From TensorFlow's implementation in nn_impl.py:
- *
- * For brevity, let `x = logits`, `z = labels`.  The logistic loss is
- *      z * -log(sigmoid(x)) + (1 - z) * -log(1 - sigmoid(x))
- *    = z * -log(1 / (1 + exp(-x))) + (1 - z) * -log(exp(-x) / (1 + exp(-x)))
- *    = z * log(1 + exp(-x)) + (1 - z) * (-log(exp(-x)) + log(1 + exp(-x)))
- *    = z * log(1 + exp(-x)) + (1 - z) * (x + log(1 + exp(-x))
- *    = (1 - z) * x + log(1 + exp(-x))
- *    = x - x * z + log(1 + exp(-x))
- * For x < 0, to avoid overflow in exp(-x), we reformulate the above
- *      x - x * z + log(1 + exp(-x))
- *    = log(exp(x)) - x * z + log(1 + exp(-x))
- *    = - x * z + log(1 + exp(x))
- * Hence, to ensure stability and avoid overflow, the implementation uses this
- * equivalent formulation
- *    max(x, 0) - x * z + log(1 + exp(-abs(x)))
- *
- * @param target The labels.
- * @param output The logits.
- */
-export function sigmoidCrossEntropyWithLogits(
-    target: Tensor, output: Tensor): Tensor {
-  const maxOutput = tfc.maximum(output, tfc.zerosLike(output));
-  const outputXTarget = tfc.mul(output, target);
-  const sigmoidOutput =
-      tfc.log(tfc.add(getScalar(1), tfc.exp(tfc.neg(tfc.abs(output)))));
-  const result = tfc.add(tfc.sub(maxOutput, outputXTarget), sigmoidOutput);
-  return result;
+  return tidy(() => {
+    // TODO(cais): Switch to deeplearn.js implementation of dropout when it
+    //   becomes avaialable.
+    if (noiseShape != null && !util.arraysEqual(x.shape, noiseShape)) {
+      throw new NotImplementedError(
+          'Non-default noise shape is not implemented yet: ' +
+          JSON.stringify(noiseShape));
+    }
+    if (seed != null) {
+      throw new NotImplementedError('seed is not implemented for dropout yet.');
+    }
+    let multiplier = tfc.step(tfc.add(
+        tfc.neg(level) as Scalar, tfc.randomUniform(x.shape, 0, 1, 'float32')));
+    // Scale the kept elements, so the expected sum is unchanged.
+    multiplier = tfc.mul(
+        tfc.div(getScalar(1), tfc.sub(getScalar(1), level)) as Scalar,
+        multiplier);
+    return tfc.mul(x, multiplier);
+  });
 }
 
 /**
@@ -1143,10 +677,10 @@ export function sigmoidCrossEntropyWithLogits(
  * @returns Output tensor.
  */
 export function hardSigmoid(x: Tensor): Tensor {
-  // TODO(cais): Maybe avoid creating scalar constants on each invocation by
-  //   turning them into module-level constants.
-  const y = scalarPlusArray(scalar(0.5), scalarTimesArray(scalar(0.2), x));
-  return tfc.clipByValue(y, 0, 1);
+  return tidy(() => {
+    const y = tfc.add(getScalar(0.5), tfc.mul(getScalar(0.2), x));
+    return tfc.clipByValue(y, 0, 1);
+  });
 }
 
 /**
@@ -1163,26 +697,4 @@ export function hardSigmoid(x: Tensor): Tensor {
  */
 export function inTrainPhase<T>(x: () => T, alt: () => T, training = false): T {
   return training ? x() : alt();
-}
-
-/**
- * Control flow.
- */
-
-/**
- * Returns the gradients of `variables` w.r.t. the return value of `lossFn`.
- * @param lossFn A function which returns a Scalar to be used as the function
- *   value (i.e., numerator) for differentiation.
- * @param variables List of variables to be used as the independent variables
- *   (i.e., denominator) for differentiation.
- * @returns An Array of gradients tensors.
- */
-export function gradients(
-    lossFn: () => Scalar, variables: LayerVariable[]): Tensor[] {
-  // TODO(cais): The return type signature can be simplified if deeplearn makes
-  //   the corresponding type public.
-  const variableList =
-      variables.map(variable => variable.read() as tfc.Variable);
-  const valudAndGrads = variableGrads(lossFn, variableList);
-  return variables.map(variable => valudAndGrads.grads[variable.name]);
 }

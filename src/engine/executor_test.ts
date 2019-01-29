@@ -12,13 +12,12 @@
  * Unit tests for executor_test.ts.
  */
 
-// tslint:disable:max-line-length
-import {ones, Tensor, tensor1d, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
+import {dispose, memory, ones, Tensor, tensor1d, tensor2d, tensor3d, zeros} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {execute, FeedDict} from './executor';
+import {execute, ExecutionProbe, FeedDict, getTopologicalSortAndRecipientCountsForOneFetch} from './executor';
 
 // tslint:enable
 
@@ -55,6 +54,14 @@ describeMathCPU('FeedDict', () => {
     expect(feedDict.getValue(x)).toEqual(xValue);
     expect(feedDict.getValue(y)).toEqual(yValue);
   });
+  it('getValue by tensor name', () => {
+    const feedDict = new FeedDict();
+    expect(feedDict.add(x, xValue)).toEqual(feedDict);
+    expect(feedDict.add(y, yValue)).toEqual(feedDict);
+
+    expect(feedDict.getValue(x.name)).toEqual(xValue);
+    expect(feedDict.getValue(y.name)).toEqual(yValue);
+  });
   it('Copy constructor', () => {
     const feedDict1 = new FeedDict().add(x, xValue);
     const feedDict2 = new FeedDict(feedDict1);
@@ -79,33 +86,67 @@ describeMathCPU('FeedDict', () => {
     const feedDict = new FeedDict([{key: s, value: sValue}]);
     expect(feedDict.getValue(s)).toEqual(sValue);
   });
-  it('Feeding incompatible rank leads to error', () => {
-    const s = tfl.input({shape: [null, 4], name: 's', dtype: 'float32'});
-    const sValue = tensor2d([1, 3, 3, 7], [1, 4]);
-    expect(() => new FeedDict([{key: s, value: sValue}]))
-        .toThrowError(/rank of feed .* does not match/);
+});
+
+describeMathCPU('getTopologicalSortAndRecipientCountsForOneFetch', () => {
+  it('Triangular topology', () => {
+    const input = tfl.input({shape: [2, 6]});
+    const f1 = tfl.layers.flatten().apply(input) as tfl.SymbolicTensor;
+    const r1 = tfl.layers.reLU().apply(f1) as tfl.SymbolicTensor;
+    const c1 = tfl.layers.concatenate().apply([f1, r1]) as tfl.SymbolicTensor;
+    const relu2 = tfl.layers.reLU().apply(c1) as tfl.SymbolicTensor;
+
+    const {sorted, recipientMap} =
+        getTopologicalSortAndRecipientCountsForOneFetch(relu2, new FeedDict());
+    expect(sorted).toEqual([input, f1, r1, c1, relu2]);
+    expect(recipientMap[input.name].size).toEqual(1);
+    expect(recipientMap[f1.name].size).toEqual(2);
+    expect(recipientMap[r1.name].size).toEqual(1);
+    expect(recipientMap[c1.name].size).toEqual(1);
   });
-  it('Feeding incompatible dimension leads to error', () => {
-    const s = tfl.input({shape: [null, 4], name: 's', dtype: 'float32'});
-    const sValue = tensor3d([0, 0, 8], [1, 1, 3]);
-    expect(() => new FeedDict([{key: s, value: sValue}]))
-        .toThrowError(/The 2-th dimension of the feed .* is incompatible/);
+
+  it('Double triangular topology', () => {
+    const input = tfl.input({shape: [2, 6]});
+    const f1 = tfl.layers.flatten().apply(input) as tfl.SymbolicTensor;
+    const r1 = tfl.layers.reLU().apply(f1) as tfl.SymbolicTensor;
+    const c1 = tfl.layers.concatenate().apply([f1, r1]) as tfl.SymbolicTensor;
+    const r2 = tfl.layers.reLU().apply(c1) as tfl.SymbolicTensor;
+    const c2 = tfl.layers.concatenate().apply([f1, r2]) as tfl.SymbolicTensor;
+    const r3 = tfl.layers.reLU().apply(c2) as tfl.SymbolicTensor;
+
+    const {sorted, recipientMap} =
+        getTopologicalSortAndRecipientCountsForOneFetch(r3, new FeedDict());
+    expect(sorted).toEqual([input, f1, r1, c1, r2, c2, r3]);
+    expect(recipientMap[input.name].size).toEqual(1);
+    expect(recipientMap[f1.name].size).toEqual(3);
+    expect(recipientMap[r1.name].size).toEqual(1);
+    expect(recipientMap[c1.name].size).toEqual(1);
+    expect(recipientMap[r2.name].size).toEqual(1);
+    expect(recipientMap[c2.name].size).toEqual(1);
   });
 });
 
 describeMathCPUAndGPU('Executor', () => {
-  it('Linear Graph Topology', () => {
-    const x = tfl.input({shape: [2], name: 'fooInput', dtype: 'float32'});
-    const denseLayer1 = tfl.layers.dense(
-        {units: 5, activation: 'linear', kernelInitializer: 'ones'});
-    const y = denseLayer1.apply(x);
-    const u = tfl.input({shape: [2], name: 'footInput', dtype: 'float32'});
-    const denseLayer2 = tfl.layers.dense(
-        {units: 5, activation: 'linear', kernelInitializer: 'ones'});
-    const denseLayer3 = tfl.layers.dense(
-        {units: 3, activation: 'linear', kernelInitializer: 'ones'});
-    const v = denseLayer2.apply(u);
-    const w = denseLayer3.apply(v);
+  describe('Linear Graph Topology', () => {
+    let x: tfl.SymbolicTensor;
+    let y: {};
+    let u: tfl.SymbolicTensor;
+    let v: {};
+    let w: {};
+
+    beforeEach(() => {
+      x = tfl.input({shape: [2], name: 'fooInput', dtype: 'float32'});
+      const denseLayer1 = tfl.layers.dense(
+          {units: 5, activation: 'linear', kernelInitializer: 'ones'});
+      y = denseLayer1.apply(x);
+      u = tfl.input({shape: [2], name: 'footInput', dtype: 'float32'});
+      const denseLayer2 = tfl.layers.dense(
+          {units: 5, activation: 'linear', kernelInitializer: 'ones'});
+      const denseLayer3 = tfl.layers.dense(
+          {units: 3, activation: 'linear', kernelInitializer: 'ones'});
+      v = denseLayer2.apply(u);
+      w = denseLayer3.apply(v as tfl.SymbolicTensor);
+    });
 
     it('Execute Input directly', () => {
       const xValue = ones([2, 2]);
@@ -139,36 +180,55 @@ describeMathCPUAndGPU('Executor', () => {
     it('Calling execute without all Input feeds available leads to error',
        () => {
          const feedDict = new FeedDict();
-         expect(() => execute(y as tfl.SymbolicTensor, feedDict))
-             .toThrowError(/Missing a feed value .* from InputLayer/);
+         expect(() => execute(y as tfl.SymbolicTensor, feedDict)).toThrow();
        });
+
+
+    it('Maximum memory use under linear graph topology', () => {
+      const input = tfl.input({shape: [2, 3]});
+      let y: tfl.SymbolicTensor = input;
+      for (let i = 0; i < 10; ++i) {
+        y = tfl.layers.reshape({targetShape:　i % 2 === 0 ? [6] : [3, 2]})
+                .apply(y) as tfl.SymbolicTensor;
+      }
+      const feedDict = new FeedDict(
+          [{key: input as tfl.SymbolicTensor, value: zeros([4, 2, 3])}]);
+      const numTensors0 = memory().numTensors;
+      const probe: ExecutionProbe = {};
+      dispose(execute(y, feedDict, null, probe));
+      // Assert no memory leak.
+      expect(memory().numTensors).toEqual(numTensors0);
+      // Assert that intermediate tensors are cleaned up properly during
+      // execution.
+      expect(probe.maxNumTensors).toBeLessThanOrEqual(numTensors0 + 1);
+    });
   });
 
-  it('Diamond Graph Topology', () => {
-    const x = tfl.input({shape: [2], name: 'fooInput', dtype: 'float32'});
-    const denseLayer1 = tfl.layers.dense({
-      units: 5,
-      activation: 'linear',
-      kernelInitializer: 'ones',
-      name: 'denseLayer1'
-    });
-    const y = denseLayer1.apply(x);
-    const denseLayer2 = tfl.layers.dense({
-      units: 4,
-      activation: 'linear',
-      kernelInitializer: 'ones',
-      name: 'denseLayer2'
-    });
-    const denseLayer3 = tfl.layers.dense({
-      units: 3,
-      activation: 'linear',
-      kernelInitializer: 'ones',
-      name: 'denseLayer3'
-    });
-    const z1 = denseLayer2.apply(y) as tfl.SymbolicTensor;
-    const z2 = denseLayer3.apply(y) as tfl.SymbolicTensor;
-
+  describe('Diamond Graph Topology', () => {
     it('Calling execute with two fetches and diamond graph works', () => {
+      const x = tfl.input({shape: [2], name: 'fooInput', dtype: 'float32'});
+      const denseLayer1 = tfl.layers.dense({
+        units: 5,
+        activation: 'linear',
+        kernelInitializer: 'ones',
+        name: 'denseLayer1'
+      });
+      const y = denseLayer1.apply(x);
+      const denseLayer2 = tfl.layers.dense({
+        units: 4,
+        activation: 'linear',
+        kernelInitializer: 'ones',
+        name: 'denseLayer2'
+      });
+      const denseLayer3 = tfl.layers.dense({
+        units: 3,
+        activation: 'linear',
+        kernelInitializer: 'ones',
+        name: 'denseLayer3'
+      });
+      const z1 = denseLayer2.apply(y) as tfl.SymbolicTensor;
+      const z2 = denseLayer3.apply(y) as tfl.SymbolicTensor;
+
       const xValue = ones([2, 2]);
       const feedDict = new FeedDict([{key: x, value: xValue}]);
       let callCounter = 0;
@@ -181,9 +241,7 @@ describeMathCPUAndGPU('Executor', () => {
           outputs[0], tensor2d([10, 10, 10, 10, 10, 10, 10, 10], [2, 4]));
       expectTensorsClose(
           outputs[1], tensor2d([10, 10, 10, 10, 10, 10], [2, 3]));
-      // The counter should have been incremented twice, because execute() is
-      // called twice, once on CPU and once on GPU.
-      expect(callCounter).toEqual(2);
+      expect(callCounter).toEqual(1);
     });
   });
 });

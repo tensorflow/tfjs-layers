@@ -10,11 +10,28 @@
 
 /* Original Source: losses.py */
 import * as tfc from '@tensorflow/tfjs-core';
-import {Tensor} from '@tensorflow/tfjs-core';
+import {scalar, Tensor, Tensor1D, tidy, util} from '@tensorflow/tfjs-core';
 
+import {epsilon} from './backend/common';
+import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {ValueError} from './errors';
 import {LossOrMetricFn} from './types';
+
+
+/**
+ * Normalizes a tensor wrt the L2 norm alongside the specified axis.
+ * @param x
+ * @param axis Axis along which to perform normalization.
+ */
+export function l2Normalize(x: Tensor, axis?: number): Tensor {
+  return tidy(() => {
+    const squareSum = tfc.sum(K.square(x), axis, true);
+    const epsilonTensor = tfc.mul(scalar(epsilon()), tfc.onesLike(x));
+    const norm = tfc.sqrt(tfc.maximum(squareSum, epsilonTensor));
+    return tfc.div(x, norm);
+  });
+}
 
 /**
  * Loss or metric function: Mean squared error.
@@ -33,7 +50,7 @@ import {LossOrMetricFn} from './types';
  * @return Mean squared error Tensor.
  */
 export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tfc.mean(K.square(tfc.sub(yPred, yTrue)), -1);
+  return tidy(() => tfc.mean(K.square(tfc.sub(yPred, yTrue)), -1));
 }
 
 /**
@@ -55,7 +72,7 @@ export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
  * @return Mean absolute error Tensor.
  */
 export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tfc.mean(tfc.abs(tfc.sub(yPred, yTrue)), -1);
+  return tidy(() => tfc.mean(tfc.abs(tfc.sub(yPred, yTrue)), -1));
 }
 
 /**
@@ -76,48 +93,58 @@ export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
  */
 export function meanAbsolutePercentageError(
     yTrue: Tensor, yPred: Tensor): Tensor {
-  const diff = tfc.sub(yTrue, yPred);
-  const clippedTrue =
-      tfc.clipByValue(tfc.abs(yTrue), K.epsilon(), Number.MAX_VALUE);
-  const absResult = tfc.abs(tfc.div(diff, clippedTrue));
-  return K.scalarTimesArray(K.getScalar(100.0), tfc.mean(absResult, -1));
+  return tidy(() => {
+    const diff = tfc.sub(yTrue, yPred);
+    const clippedTrue =
+        tfc.clipByValue(tfc.abs(yTrue), epsilon(), Number.MAX_VALUE);
+    const absResult = tfc.abs(tfc.div(diff, clippedTrue));
+    return tfc.mul(getScalar(100.0), tfc.mean(absResult, -1));
+  });
 }
 
 export function meanSquaredLogarithmicError(
     yTrue: Tensor, yPred: Tensor): Tensor {
-  const one = K.getScalar(1.0);
+  return tidy(() => {
+    const one = getScalar(1.0);
 
-  const clippedPred = tfc.clipByValue(yPred, K.epsilon(), Number.MAX_VALUE);
-  const firstLog = tfc.log(K.scalarPlusArray(one, clippedPred));
+    const clippedPred = tfc.clipByValue(yPred, epsilon(), Number.MAX_VALUE);
+    const firstLog = tfc.log(tfc.add(one, clippedPred));
 
-  const clippedTrue = tfc.clipByValue(yTrue, K.epsilon(), Number.MAX_VALUE);
-  const secondLog = tfc.log(K.scalarPlusArray(one, clippedTrue));
+    const clippedTrue = tfc.clipByValue(yTrue, epsilon(), Number.MAX_VALUE);
+    const secondLog = tfc.log(tfc.add(one, clippedTrue));
 
-  return tfc.mean(K.square(tfc.sub(firstLog, secondLog)), -1);
+    return tfc.mean(K.square(tfc.sub(firstLog, secondLog)), -1);
+  });
 }
 
 export function squaredHinge(yTrue: Tensor, yPred: Tensor): Tensor {
-  const zeroTensor = K.getScalar(0.0);
-  const one = K.getScalar(1.0);
-  const maxResult =
-      tfc.maximum(zeroTensor, tfc.sub(one, tfc.mul(yTrue, yPred)));
-  return tfc.mean(K.square(maxResult), -1);
+  return tidy(() => {
+    const zeroTensor = getScalar(0.0);
+    const one = getScalar(1.0);
+    const maxResult =
+        tfc.maximum(zeroTensor, tfc.sub(one, tfc.mul(yTrue, yPred)));
+    return tfc.mean(K.square(maxResult), -1);
+  });
 }
 
 export function hinge(yTrue: Tensor, yPred: Tensor): Tensor {
-  const zeroTensor = K.getScalar(0.0);
-  const one = K.getScalar(1.0);
-  const maxResult =
-      tfc.maximum(zeroTensor, tfc.sub(one, tfc.mul(yTrue, yPred)));
-  return tfc.mean(maxResult, -1);
+  return tidy(() => {
+    const zeroTensor = getScalar(0.0);
+    const one = getScalar(1.0);
+    const maxResult =
+        tfc.maximum(zeroTensor, tfc.sub(one, tfc.mul(yTrue, yPred)));
+    return tfc.mean(maxResult, -1);
+  });
 }
 
 export function categoricalHinge(yTrue: Tensor, yPred: Tensor): Tensor {
-  const zeroTensor = K.getScalar(0.0);
-  const one = K.getScalar(1.0);
-  const pos = tfc.sum(tfc.mul(yTrue, yPred), -1);
-  const neg = tfc.max(tfc.mul(tfc.sub(one, yTrue), yPred), -1);
-  return tfc.maximum(zeroTensor, K.scalarPlusArray(one, tfc.sub(neg, pos)));
+  return tidy(() => {
+    const zeroTensor = getScalar(0.0);
+    const one = getScalar(1.0);
+    const pos = tfc.sum(tfc.mul(yTrue, yPred), -1);
+    const neg = tfc.max(tfc.mul(tfc.sub(one, yTrue), yPred), -1);
+    return tfc.maximum(zeroTensor, tfc.add(one, tfc.sub(neg, pos)));
+  });
 }
 
 /**
@@ -129,40 +156,131 @@ export function categoricalHinge(yTrue: Tensor, yPred: Tensor): Tensor {
  * occasional wildly incorrect prediction.
  */
 export function logcosh(yTrue: Tensor, yPred: Tensor): Tensor {
-  const log2 = K.getScalar(Math.log(2.0));
-  const predictionDiff = tfc.sub(yPred, yTrue);
-  const logcoshResult = tfc.sub(
-      tfc.add(
-          predictionDiff,
-          K.softplus(K.scalarTimesArray(K.getScalar(-2.0), predictionDiff))),
-      log2);
-  return tfc.mean(logcoshResult, -1);
+  return tidy(() => {
+    const log2 = getScalar(Math.log(2.0));
+    const predictionDiff = tfc.sub(yPred, yTrue);
+    const logcoshResult = tfc.sub(
+        tfc.add(
+            predictionDiff,
+            tfc.softplus(tfc.mul(getScalar(-2.0), predictionDiff))),
+        log2);
+    return tfc.mean(logcoshResult, -1);
+  });
 }
 
-export function categoricalCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
-  return K.categoricalCrossentropy(yTrue, yPred);
+/**
+ * Categorical crossentropy between an output tensor and a target tensor.
+ *
+ * @param target A tensor of the same shape as `output`.
+ * @param output A tensor resulting from a softmax (unless `fromLogits` is
+ *  `true`, in which case `output` is expected to be the logits).
+ * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
+ *   a tensor of logits.
+ */
+export function categoricalCrossentropy(
+    target: Tensor, output: Tensor, fromLogits = false): Tensor {
+  return tidy(() => {
+    if (fromLogits) {
+      output = tfc.softmax(output);
+    } else {
+      // scale preds so that the class probabilities of each sample sum to 1.
+      const outputSum = tfc.sum(output, output.shape.length - 1, true);
+      output = tfc.div(output, outputSum);
+    }
+    output = tfc.clipByValue(output, epsilon(), 1 - epsilon());
+    return tfc.neg(tfc.sum(
+        tfc.mul(target.toFloat(), tfc.log(output)), output.shape.length - 1));
+  });
 }
 
+/**
+ * Categorical crossentropy with integer targets.
+ *
+ * @param target An integer tensor.
+ * @param output A tensor resulting from a softmax (unless `fromLogits` is
+ *  `true`, in which case `output` is expected to be the logits).
+ * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
+ *   a tensor of logits.
+ */
 export function sparseCategoricalCrossentropy(
-    yTrue: Tensor, yPred: Tensor): Tensor {
-  return K.sparseCategoricalCrossentropy(yTrue, yPred);
+    target: Tensor, output: Tensor): Tensor {
+  return tidy(() => {
+    const flatTarget = tfc.floor(K.flatten(target)).toInt() as Tensor1D;
+    output = tfc.clipByValue(output, epsilon(), 1 - epsilon());
+    const outputShape = output.shape;
+    const oneHotTarget =
+        tfc.oneHot(flatTarget, outputShape[outputShape.length - 1])
+            .reshape(outputShape);
+    const fromLogits = false;
+    return categoricalCrossentropy(oneHotTarget, output, fromLogits);
+  });
+}
+
+/**
+ * From TensorFlow's implementation in nn_impl.py:
+ *
+ * For brevity, let `x = logits`, `z = labels`.  The logistic loss is
+ *      z * -log(sigmoid(x)) + (1 - z) * -log(1 - sigmoid(x))
+ *    = z * -log(1 / (1 + exp(-x))) + (1 - z) * -log(exp(-x) / (1 + exp(-x)))
+ *    = z * log(1 + exp(-x)) + (1 - z) * (-log(exp(-x)) + log(1 + exp(-x)))
+ *    = z * log(1 + exp(-x)) + (1 - z) * (x + log(1 + exp(-x))
+ *    = (1 - z) * x + log(1 + exp(-x))
+ *    = x - x * z + log(1 + exp(-x))
+ * For x < 0, to avoid overflow in exp(-x), we reformulate the above
+ *      x - x * z + log(1 + exp(-x))
+ *    = log(exp(x)) - x * z + log(1 + exp(-x))
+ *    = - x * z + log(1 + exp(x))
+ * Hence, to ensure stability and avoid overflow, the implementation uses this
+ * equivalent formulation
+ *    max(x, 0) - x * z + log(1 + exp(-abs(x)))
+ *
+ * @param labels The labels.
+ * @param logits The logits.
+ */
+export function sigmoidCrossEntropyWithLogits(
+    labels: Tensor, logits: Tensor): Tensor {
+  if (!util.arraysEqual(labels.shape, logits.shape)) {
+    throw new ValueError(
+        `logits and labels must have the same shape, but got shapes ` +
+        `${JSON.stringify(labels.shape)} and ${JSON.stringify(logits.shape)}`);
+  }
+  return tidy(() => {
+    // The logistic loss formula from above is
+    //   x - x * z + log(1 + exp(-x))
+    // For x < 0, a more numerically stable formula is
+    //   -x * z + log(1 + exp(x))
+    // Note that these two expressions can be combined into the following:
+    //   max(x, 0) - x * z + log(1 + exp(-abs(x)))
+    const reluLogits = logits.relu();
+    const negAbsLogits = logits.abs().neg();
+    return reluLogits.sub(logits.mul(labels)).add(negAbsLogits.exp().log1p());
+  });
 }
 
 export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tfc.mean(K.binaryCrossentropy(yTrue, yPred), -1);
+  return tidy(() => {
+    let y: Tensor;
+    y = tfc.clipByValue(yPred, epsilon(), 1 - epsilon());
+    y = tfc.log(tfc.div(y, tfc.sub(getScalar(1), y)));
+    return tfc.mean(sigmoidCrossEntropyWithLogits(yTrue, y), -1);
+  });
 }
 
 export function kullbackLeiblerDivergence(
     yTrue: Tensor, yPred: Tensor): Tensor {
-  const clippedTrue = tfc.clipByValue(yTrue, K.epsilon(), 1);
-  const clippedPred = tfc.clipByValue(yPred, K.epsilon(), 1);
-  return tfc.sum(
-      tfc.mul(yTrue, tfc.log(tfc.div(clippedTrue, clippedPred))), -1);
+  return tidy(() => {
+    const clippedTrue = tfc.clipByValue(yTrue, epsilon(), 1);
+    const clippedPred = tfc.clipByValue(yPred, epsilon(), 1);
+    return tfc.sum(
+        tfc.mul(yTrue, tfc.log(tfc.div(clippedTrue, clippedPred))), -1);
+  });
 }
 
 export function poisson(yTrue: Tensor, yPred: Tensor): Tensor {
-  const logPred = tfc.log(K.scalarPlusArray(K.getScalar(K.epsilon()), yPred));
-  return tfc.mean(tfc.sub(yPred, tfc.mul(yTrue, logPred)), -1);
+  return tidy(() => {
+    const logPred = tfc.log(tfc.add(getScalar(epsilon()), yPred));
+    return tfc.mean(tfc.sub(yPred, tfc.mul(yTrue, logPred)), -1);
+  });
 }
 
 /**
@@ -185,10 +303,12 @@ export function poisson(yTrue: Tensor, yPred: Tensor): Tensor {
  * @return Cosine proximity Tensor.
  */
 export function cosineProximity(yTrue: Tensor, yPred: Tensor): Tensor {
-  const trueNormalized = K.l2Normalize(yTrue, -1);
-  const predNormalized = K.l2Normalize(yPred, -1);
-  const trueXPred = tfc.mul(trueNormalized, predNormalized);
-  return tfc.neg(tfc.sum(trueXPred, -1));
+  return tidy(() => {
+    const trueNormalized = l2Normalize(yTrue, -1);
+    const predNormalized = l2Normalize(yPred, -1);
+    const trueXPred = tfc.mul(trueNormalized, predNormalized);
+    return tfc.neg(tfc.sum(trueXPred, -1));
+  });
 }
 
 export const mse = meanSquaredError;
@@ -228,7 +348,13 @@ export function get(identifierOrFn: string|LossOrMetricFn): LossOrMetricFn {
     if (identifierOrFn in lossesMap) {
       return lossesMap[identifierOrFn];
     }
-    throw new ValueError(`Unknown loss ${identifierOrFn}`);
+    let errMsg = `Unknown loss ${identifierOrFn}`;
+    if (identifierOrFn.toLowerCase().includes('softmaxcrossentropy')) {
+      errMsg = `Unknown loss ${identifierOrFn}. ` +
+          'Use "categoricalCrossentropy" as the string name for ' +
+          'tf.losses.softmaxCrossEntropy';
+    }
+    throw new ValueError(errMsg);
   } else {
     return identifierOrFn;
   }

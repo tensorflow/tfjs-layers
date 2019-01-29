@@ -12,19 +12,16 @@
  * Unit tests for core.ts.
  */
 
-// tslint:disable:max-line-length
-import {serialization, Tensor, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
+import {ones, serialization, Tensor, tensor1d, Tensor2D, tensor2d, tensor3d} from '@tensorflow/tfjs-core';
 
-import {Layer} from '../engine/topology';
+import {Layer, SymbolicTensor} from '../engine/topology';
 import * as tfl from '../index';
 import {deserialize} from '../layers/serialization';
-import {Shape} from '../types';
-import {convertPythonicToTs} from '../utils/serialization_utils';
+import {Shape} from '../keras_format/common';
+import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {Add, Average, Concatenate, Maximum, Minimum, Multiply} from './merge';
-
-// tslint:enable:max-line-length
 
 describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
   const layers = [Add, Average, Multiply, Maximum, Minimum];
@@ -57,7 +54,7 @@ describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
 
   it('Single input leads to exception', () => {
     const x = new tfl.SymbolicTensor('float32', [2, 2], null, [], null);
-    const addLayer = new Add({name: 'Add'});
+    const addLayer = tfl.layers.add({name: 'Add'});
     expect(() => {
       addLayer.apply([x]);
     }).toThrowError(/.*at least 2 inputs\. Got 1 input.*/);
@@ -66,7 +63,7 @@ describeMathCPU('Merge Layers Except Concatenate: Symbolic', () => {
   it('Non-unique batch sizes to exception', () => {
     const x1 = new tfl.SymbolicTensor('float32', [1, 2], null, [], null);
     const x2 = new tfl.SymbolicTensor('float32', [2, 2], null, [], null);
-    const addLayer = new Add({name: 'Add'});
+    const addLayer = tfl.layers.add({name: 'Add'});
     expect(() => {
       addLayer.apply([x1, x2]);
     }).toThrowError(/Can not merge tensors with different batch sizes/);
@@ -97,6 +94,21 @@ describeMathCPUAndGPU('Add-Functional', () => {
     const input2 = tensor2d([10, 20, 30, 40], [2, 2]);
     const output = tfl.layers.add().apply([input1, input2]) as Tensor;
     expectTensorsClose(output, tensor2d([11, 22, 33, 44], [2, 2]));
+  });
+
+  it('predict() with functional model with Add layer works', () => {
+    const input = tfl.layers.input({shape: [24, 24, 3]});
+    const conv1 =
+        tfl.layers.conv2d({filters: 4, kernelSize: [3, 3]}).apply(input) as
+        tfl.SymbolicTensor;
+    const conv2 =
+        tfl.layers.conv2d({filters: 4, kernelSize: [3, 3]}).apply(input) as
+        tfl.SymbolicTensor;
+    const sum = tfl.layers.add().apply([conv1, conv2]) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: [input], outputs: sum});
+    const x = ones([1, 24, 24, 3]);
+    const y = model.predict(x) as Tensor;
+    expect(y.shape).toEqual([1, 22, 22, 4]);
   });
 });
 
@@ -242,19 +254,19 @@ describeMathCPU('Concatenate Layer: Symbolic', () => {
   it('All known shapes', () => {
     const x1 = new tfl.SymbolicTensor('float32', [2, 3, 4], null, [], null);
     const x2 = new tfl.SymbolicTensor('float32', [2, 3, 4], null, [], null);
-    const layer0 = new Concatenate({});
+    const layer0 = tfl.layers.concatenate({});
     expect((layer0.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
       2, 3, 8
     ]);
-    const layer1 = new Concatenate({axis: -1});
+    const layer1 = tfl.layers.concatenate({axis: -1});
     expect((layer1.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
       2, 3, 8
     ]);
-    const layer2 = new Concatenate({axis: 0});
+    const layer2 = tfl.layers.concatenate({axis: 0});
     expect((layer2.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
       4, 3, 4
     ]);
-    const layer3 = new Concatenate({axis: 1});
+    const layer3 = tfl.layers.concatenate({axis: 1});
     expect((layer3.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
       2, 6, 4
     ]);
@@ -262,7 +274,7 @@ describeMathCPU('Concatenate Layer: Symbolic', () => {
   it('Concat axis has unknown shape', () => {
     const x1 = new tfl.SymbolicTensor('float32', [2, null, 4], null, [], null);
     const x2 = new tfl.SymbolicTensor('float32', [2, null, 4], null, [], null);
-    const layer = new Concatenate({axis: 1});
+    const layer = tfl.layers.concatenate({axis: 1});
     expect((layer.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
       2, null, 4
     ]);
@@ -270,7 +282,7 @@ describeMathCPU('Concatenate Layer: Symbolic', () => {
   it('Non-concat axis has unknown shape', () => {
     const x1 = new tfl.SymbolicTensor('float32', [null, 3, 4], null, [], null);
     const x2 = new tfl.SymbolicTensor('float32', [null, 5, 4], null, [], null);
-    const layer = new Concatenate({axis: 1});
+    const layer = tfl.layers.concatenate({axis: 1});
     expect((layer.apply([x1, x2]) as tfl.SymbolicTensor).shape).toEqual([
       null, 8, 4
     ]);
@@ -278,16 +290,24 @@ describeMathCPU('Concatenate Layer: Symbolic', () => {
   it('Incompatible shape leads to error', () => {
     const x1 = new tfl.SymbolicTensor('float32', [2, 3, 5], null, [], null);
     const x2 = new tfl.SymbolicTensor('float32', [2, 4, 5], null, [], null);
-    const layer = new Concatenate({});
+    const layer = tfl.layers.concatenate({});
     expect(() => layer.apply([
       x1, x2
     ])).toThrowError(/requires inputs with matching shapes except/);
   });
   it('Single shape leads to error', () => {
     const x1 = new tfl.SymbolicTensor('float32', [2, 3, 5], null, [], null);
-    const layer = new Concatenate({});
+    const layer = tfl.layers.concatenate({});
     expect(() => layer.apply([x1]))
         .toThrowError(/should be called on a list of at least 2 inputs/);
+  });
+  it('Serialization round trip', () => {
+    const layer = tfl.layers.concatenate({axis: 2});
+    const pythonicConfig = convertTsToPythonic(layer.getConfig());
+    // tslint:disable-next-line:no-any
+    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+    const layerPrime = tfl.layers.concatenate(tsConfig);
+    expect(layerPrime.getConfig().axis).toEqual(2);
   });
 });
 
@@ -295,14 +315,14 @@ describeMathCPUAndGPU('Add Layer: Tensor', () => {
   it('2D plus 2D', () => {
     const x1 = tensor2d([[10, 20], [30, 40]], [2, 2]);
     const x2 = tensor2d([[-1, -2], [-3, -4]], [2, 2]);
-    const addLayer = new Add({});
+    const addLayer = tfl.layers.add({});
     const y = addLayer.apply([x1, x2]) as Tensor;
     expectTensorsClose(y, tensor2d([[9, 18], [27, 36]], [2, 2]));
   });
   it('2D plus 2D, with broadcast', () => {
     const x1 = tensor2d([[10, 20], [30, 40]], [2, 2]);
     const x2 = tensor2d([[-2], [-4]], [2, 1]);
-    const addLayer = new Add({});
+    const addLayer = tfl.layers.add({});
     const y = addLayer.apply([x1, x2]) as Tensor;
     expectTensorsClose(y, tensor2d([[8, 18], [26, 36]], [2, 2]));
   });
@@ -310,10 +330,39 @@ describeMathCPUAndGPU('Add Layer: Tensor', () => {
     const x1 =
         tensor3d([[[10, 20], [30, 40]], [[50, 60], [70, 80]]], [2, 2, 2]);
     const x2 = tensor2d([[-2], [-4]], [2, 1]);
-    const addLayer = new Add({});
+    const addLayer = tfl.layers.add({});
     const y = addLayer.apply([x1, x2]) as Tensor;
     expectTensorsClose(
         y, tensor3d([[[8, 18], [28, 38]], [[46, 56], [66, 76]]], [2, 2, 2]));
+  });
+  it('computeMask', () => {
+    const x1 = tensor2d([[10, 20], [30, 40]]);
+    const x2 = tensor2d([[-2, -1], [-4, -3]]);
+    const addLayer = tfl.layers.add({});
+    const m1 = tensor1d([true, false], 'bool');
+    const m2 = tensor1d([true, true], 'bool');
+    const mask = addLayer.computeMask([x1, x2], [m1, m2]) as Tensor;
+    expectTensorsClose(mask, tensor2d([[true, false]], [1, 2], 'bool'));
+  });
+  it('computeMask error condition: non-array input', () => {
+    const x1 = tensor2d([[10, 20], [30, 40]]);
+    const x2 = tensor2d([[-2, -1], [-4, -3]]);
+    const addLayer = tfl.layers.add({});
+    const m1 = tensor1d([true, false], 'bool');
+    const m2 = tensor1d([true, true], 'bool');
+    expect(() => addLayer.computeMask(x1, [
+      m1, m2
+    ])).toThrowError(/inputs.*should be an Array/);
+    expect(() => addLayer.computeMask([x1, x2], m1))
+        .toThrowError(/mask.*should be an Array/);
+  });
+  it('computeMask error condition: incorrect number of masks', () => {
+    const x1 = tensor2d([[10, 20], [30, 40]]);
+    const x2 = tensor2d([[-2, -1], [-4, -3]]);
+    const addLayer = tfl.layers.add({});
+    const m1 = tensor1d([true, false], 'bool');
+    expect(() => addLayer.computeMask([x1, x2], [m1]))
+        .toThrowError(/ are expected to have the same/);
   });
 });
 
@@ -321,7 +370,7 @@ describeMathCPUAndGPU('Multiply Layer: Tensor', () => {
   it('2D times 2D', () => {
     const x1 = tensor2d([[10, 20], [30, 40]], [2, 2]);
     const x2 = tensor2d([[-1, -2], [-3, -4]], [2, 2]);
-    const multipyLayer = new Multiply({});
+    const multipyLayer = tfl.layers.multiply({});
     const y = multipyLayer.apply([x1, x2]) as Tensor;
     expectTensorsClose(y, tensor2d([[-10, -40], [-90, -160]], [2, 2]));
   });
@@ -340,14 +389,14 @@ describeMathCPUAndGPU('Average Layer: Tensor', () => {
   it('2D and 2D', () => {
     const x1 = tensor2d([[10, 20], [30, 40]], [2, 2]);
     const x2 = tensor2d([[-2, -4], [-6, -8]], [2, 2]);
-    const averageLayer = new Average({});
+    const averageLayer = tfl.layers.average({});
     const y = averageLayer.apply([x1, x2]) as Tensor;
     expectTensorsClose(y, tensor2d([[4, 8], [12, 16]], [2, 2]));
   });
   it('2D and 2D, with broadcast', () => {
     const x1 = tensor2d([[10, 20], [30, 40]], [2, 2]);
     const x2 = tensor2d([[-2], [-4]], [2, 1]);
-    const averageLayer = new Average({});
+    const averageLayer = tfl.layers.average({});
     const y = averageLayer.apply([x1, x2]) as Tensor;
     expectTensorsClose(y, tensor2d([[4, 9], [13, 18]], [2, 2]));
   });
@@ -357,7 +406,7 @@ describeMathCPUAndGPU('Maximum Layer: Tensor', () => {
   it('2D and 2D', () => {
     const x1 = tensor2d([[10, 20], [-6, -8]], [2, 2]);
     const x2 = tensor2d([[-2, -4], [30, 40]], [2, 2]);
-    const averageLayer = new Maximum({});
+    const averageLayer = tfl.layers.maximum({});
     const y = averageLayer.apply([x1, x2]) as Tensor;
     expectTensorsClose(y, tensor2d([[10, 20], [30, 40]], [2, 2]));
   });
@@ -367,7 +416,7 @@ describeMathCPUAndGPU('Minimum Layer: Tensor', () => {
   it('2D and 2D', () => {
     const x1 = tensor2d([[10, 20], [-6, -8]], [2, 2]);
     const x2 = tensor2d([[-2, -4], [30, 40]], [2, 2]);
-    const averageLayer = new Minimum({});
+    const averageLayer = tfl.layers.minimum({});
     const y = averageLayer.apply([x1, x2]) as Tensor;
     expectTensorsClose(y, tensor2d([[-2, -4], [-6, -8]], [2, 2]));
   });
@@ -386,13 +435,118 @@ describeMathCPUAndGPU('Concatenate Layer: Tensor', () => {
   for (const axis of axisValues) {
     it(`axis=${axis}`, () => {
       createData();
-      const layer = new Concatenate({axis});
+      const layer = tfl.layers.concatenate({axis});
       const expected = axis === 0 ?
           tensor2d([1, 2, 3, 4, -1, -2, -3, -4], [4, 2]) :
           tensor2d([1, 2, -1, -2, 3, 4, -3, -4], [2, 4]);
       expectTensorsClose(layer.apply([x1, x2]) as Tensor, expected);
     });
   }
+
+  it('computeMask', () => {
+    const layer = tfl.layers.concatenate();
+    const x1 = tensor2d([[1], [0], [1]]);
+    const x2 = tensor2d([[1], [0], [0]]);
+    const mask = layer.computeMask(
+        [x1, x2], [x1.asType('bool'), x2.asType('bool')]) as Tensor;
+    expectTensorsClose(mask, tensor1d([true, false, false], 'bool'));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // input1 = keras.Input(shape=[4])
+  // input2 = keras.Input(shape=[4])
+  // y1 = keras.layers.Embedding(10,
+  //                             3,
+  //                             input_length=4,
+  //                             mask_zero=True,
+  //                             embeddings_initializer='ones')(input1)
+  // y1 = keras.layers.LSTM(3,
+  //                       recurrent_initializer='ones',
+  //                       kernel_initializer='ones',
+  //                       bias_initializer='zeros')(y1)
+  // y2 = keras.layers.Embedding(10,
+  //                             3,
+  //                             input_length=4,
+  //                             mask_zero=True,
+  //                             embeddings_initializer='ones')(input2)
+  // y2 = keras.layers.LSTM(3,
+  //                       recurrent_initializer='ones',
+  //                       kernel_initializer='ones',
+  //                       bias_initializer='zeros')(y2)
+  //
+  // y = keras.layers.Concatenate()([y1, y2])
+  // y = keras.layers.Dense(1,
+  //                       kernel_initializer='ones',
+  //                       bias_initializer='zeros')(y)
+  //
+  // model = keras.Model(inputs=[input1, input2], outputs=y)
+  // model.summary()
+  //
+  // xs1 = np.array([[0, 0, 0, 0],
+  //                 [1, 0, 0, 0],
+  //                 [1, 2, 0, 0],
+  //                 [1, 2, 3, 0]])
+  // xs2 = np.array([[0, 0, 0, 0],
+  //                 [0, 0, 0, 0],
+  //                 [1, 0, 0, 0],
+  //                 [1, 2, 0, 0]])
+  //
+  // ys = model.predict([xs1, xs2])
+  // print(ys)
+  // ```
+  it('With masking', () => {
+    const input1 = tfl.input({shape: [4]});
+    const input2 = tfl.input({shape: [4]});
+    let y1 = tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 3,
+      inputLength: 4,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }).apply(input1) as SymbolicTensor;
+    y1 = tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(y1) as SymbolicTensor;
+    let y2 = tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 3,
+      inputLength: 4,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }).apply(input2) as SymbolicTensor;
+    y2 = tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(y2) as SymbolicTensor;
+    let y = tfl.layers.concatenate().apply([y1, y2]) as SymbolicTensor;
+    y = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(y) as SymbolicTensor;
+    const model = tfl.model({
+      inputs: [input1, input2],
+      outputs: y
+    });
+
+    const xs1 = tensor2d(
+        [[0, 0, 0, 0], [1, 0, 0, 0], [1, 2, 0, 0], [1, 2, 3, 0]]);
+    // Notice the mask of xs2 is different from that of xs1.
+    const xs2 = tensor2d(
+        [[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [1, 2, 0, 0]]);
+    const ys = model.predict([xs1, xs2]) as Tensor;
+    expectTensorsClose(
+        ys, tensor2d([[0], [2.2785282], [5.169547], [5.8760333]]));
+  });
 });
 
 describeMathCPU('Deserialize Merge Layers', () => {
@@ -528,5 +682,325 @@ describeMathCPU('Deserialize Merge Layers', () => {
     expect(model.layers[2] instanceof Concatenate);
     expect(model.outputs.length).toEqual(1);
     expect(model.outputs[0].shape).toEqual([null, 8]);
+  });
+});
+
+describeMathCPU('Dot-Layer: Symbolic', () => {
+  // Example refernce Python Keras code:
+  //
+  // ```py
+  // import keras
+  //
+  // x1 = keras.Input(shape=[3, 4])
+  // x2 = keras.Input(shape=[3])
+  // dot_layer = keras.layers.Dot(1)
+  // y = dot_layer([x1, x2])
+  //
+  // print(x1.shape)
+  // print(x2.shape)
+  // print(y.shape)
+  // ```
+
+  it('2D x 2D', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 8], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 8], null, [], null);
+    const y1 = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y1.shape).toEqual([null, 1]);
+    const y2 = tfl.layers.dot({axes: 1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 1]);
+  });
+
+  it('3D x 3D, axes = -1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const y = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y.shape).toEqual([null, 2, 2]);
+  });
+
+  it('3D x 3D, axes = 1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: 1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 3, 3]);
+  });
+
+  it('3D x 3D, axes = 2', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: 2}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 2, 2]);
+  });
+
+  it('2D x 3D, axes = -1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 2]);
+  });
+
+  it('2D x 3D, axes = 1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 3, 4], null, [], null);
+    const y2 = tfl.layers.dot({axes: 1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 4]);
+  });
+
+  it('3D x 2D, axes = -1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: -1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 2]);
+  });
+
+  it('3D x 2D, axes = -1', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 3, 4], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 3], null, [], null);
+    const y2 = tfl.layers.dot({axes: 1}).apply([x1, x2]) as tfl.SymbolicTensor;
+    expect(y2.shape).toEqual([null, 4]);
+  });
+
+  it('computeOutputShape() does not alter input shape', () => {
+    const dotLayer = tfl.layers.dot({axes: 1});
+    const inputShape1: Shape = [null, 3, 4];
+    const inputShape2: Shape = [null, 3];
+    const outputShape = dotLayer.computeOutputShape([inputShape1, inputShape2]);
+    expect(outputShape).toEqual([null, 4]);
+    expect(inputShape1).toEqual([null, 3, 4]);
+    expect(inputShape2).toEqual([null, 3]);
+  });
+
+  // TODO(cais): Uncomment the follow test case when 4D and higher is supported
+  //   by the Dot layer.
+  // it('4D x 4D, axes = -1', () => {
+  //   const x1 = new tfl.SymbolicTensor(
+  //       'float32', [null, 2, 3, 4], null, [], null);
+  //   const x2 = new tfl.SymbolicTensor(
+  //       'float32', [null, 2, 3, 4], null, [], null);
+  //   const y = tfl.layers.dot({axes: -1}).apply([x1, x2]) as
+  //       tfl.SymbolicTensor;
+  //   expect(y.shape).toEqual([null, 2, 3, 2, 3]);
+  // });
+
+  it('Dimension mismatch leads to error', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 4], null, [], null);
+    expect(() => tfl.layers.dot({axes: -1}).apply([
+      x1, x2
+    ])).toThrowError('Dimension incompatibility: 3 !== 4');
+  });
+
+  it('Incorrect number of inputs leads to error', () => {
+    const x1 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x2 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const x3 = new tfl.SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    expect(() => tfl.layers.dot({axes: -1}).apply([x1]))
+        .toThrowError(/should be called on a list of exactly 2 inputs/);
+    expect(() => tfl.layers.dot({axes: -1}).apply(x1))
+        .toThrowError(/should be called on a list of exactly 2 inputs/);
+    expect(() => tfl.layers.dot({axes: -1}).apply([
+      x1, x2, x3
+    ])).toThrowError(/should be called on a list of exactly 2 inputs/);
+  });
+
+  it('Serialization round trip', () => {
+    const layer = tfl.layers.dot({axes: -1, normalize: true});
+    const pythonicConfig = convertTsToPythonic(layer.getConfig());
+    // tslint:disable-next-line:no-any
+    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+    const layerPrime = tfl.layers.dot(tsConfig);
+    expect(layerPrime.getConfig().axes).toEqual(-1);
+    expect(layerPrime.getConfig().normalize).toEqual(true);
+  });
+});
+
+describeMathCPUAndGPU('Dot-Layer: Tensor', () => {
+  // Example reference Python Keras code:
+  //
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // x1 = keras.Input(shape=[2])
+  // x2 = keras.Input(shape=[2])
+  // dot_layer = keras.layers.Dot(-11)
+  // y = dot_layer([x1, x2])
+  //
+  // model = keras.Model([x1, x2], y)
+  // model.summary()
+  //
+  // xs1 = np.array([[10, 20], [30, 40]], dtype=np.float32)
+  // xs2 = np.array([[-1, -2], [-3, -4]], dtype=np.float32)
+  // print(model.predict([xs1, xs2]))
+  // ```
+
+  it('2D x 2D, axis = -1', () => {
+    const x1 = tensor2d([[10, 20], [30, 40]]);
+    const x2 = tensor2d([[-1, -2], [-3, -4]]);
+    const dotLayer = tfl.layers.dot({axes: -1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-50], [-250]]));
+  });
+
+  it('2D x 2D, axis = -1, normalize = true', () => {
+    const x1 = tensor2d([[10, 20], [30, 40]]);
+    const x2 = tensor2d([[-1, -2], [-4, -3]]);
+    const dotLayer = tfl.layers.dot({axes: -1, normalize: true});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-1], [-0.96]]));
+  });
+
+  it('2D x 2D, axis = 1', () => {
+    const x1 = tensor2d([[10, 20], [30, 40]]);
+    const x2 = tensor2d([[-1, -2], [-3, -4]]);
+    const dotLayer = tfl.layers.dot({axes: 1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-50], [-250]]));
+  });
+
+  it('3D x 2D, axis = -1', () => {
+    const x1 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const x2 = tensor2d([[-1, -2], [-3, -4]]);
+    const dotLayer = tfl.layers.dot({axes: -1});
+    const y1 = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y1, tensor2d([[-50, -110], [-24, -10]]));
+    const x3 = tensor2d([[1, 2], [3, 4]]);
+    const y2 = dotLayer.apply([x1, x3]) as Tensor;
+    expectTensorsClose(y2, tensor2d([[50, 110], [24, 10]]));
+  });
+
+  it('2D x 3D, axis = -1', () => {
+    const x1 = tensor2d([[-1, -2], [-3, -4]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: -1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-50, -110], [-24, -10]]));
+  });
+
+  it('2D x 3D, axis = 1', () => {
+    const x1 = tensor2d([[-1, -2], [-3, -4]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: 1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(y, tensor2d([[-70, -100], [-20, -13]]));
+  });
+
+  it('3D x 3D, axis = -1', () => {
+    const x1 = tensor3d([[[-1, -2], [-3, -4]], [[5, 6], [7, 8]]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: -1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(
+        y, tensor3d([[[-50, -110], [-110, -250]], [[38, 16], [52, 22]]]));
+  });
+
+  it('3D x 3D, axis = 1', () => {
+    const x1 = tensor3d([[[-1, -2], [-3, -4]], [[5, 6], [7, 8]]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: 1});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(
+        y, tensor3d([[[-100, -140], [-140, -200]], [[34, 22], [40, 26]]]));
+  });
+
+  it('3D x 3D, axis = [1, 2]', () => {
+    const x1 = tensor3d([[[-1, -2], [-3, -4]], [[5, 6], [7, 8]]]);
+    const x2 = tensor3d([[[10, 20], [30, 40]], [[4, 3], [2, 1]]]);
+    const dotLayer = tfl.layers.dot({axes: [1, 2]});
+    const y = dotLayer.apply([x1, x2]) as Tensor;
+    expectTensorsClose(
+        y, tensor3d([[[-70, -150], [-100, -220]], [[41, 17], [48, 20]]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // input1 = keras.Input(shape=[4])
+  // input2 = keras.Input(shape=[4])
+  // y1 = keras.layers.Embedding(10,
+  //                             3,
+  //                             input_length=4,
+  //                             mask_zero=True,
+  //                             embeddings_initializer='ones')(input1)
+  // y1 = keras.layers.LSTM(3,
+  //                       recurrent_initializer='ones',
+  //                       kernel_initializer='ones',
+  //                       bias_initializer='zeros')(y1)
+  // y2 = keras.layers.Embedding(10,
+  //                             3,
+  //                             input_length=4,
+  //                             mask_zero=True,
+  //                             embeddings_initializer='ones')(input2)
+  // y2 = keras.layers.LSTM(3,
+  //                       recurrent_initializer='ones',
+  //                       kernel_initializer='ones',
+  //                       bias_initializer='zeros')(y2)
+  //
+  // y = keras.layers.Dot(axes=[-1, -1])([y1, y2])
+  // y = keras.layers.Dense(1,
+  //                       kernel_initializer='ones',
+  //                       bias_initializer='zeros')(y)
+  //
+  // model = keras.Model(inputs=[input1, input2], outputs=y)
+  //
+  // xs1 = np.array([[0, 0, 0, 0],
+  //                 [1, 0, 0, 0],
+  //                 [1, 2, 0, 0],
+  //                 [1, 2, 3, 0]])
+  // xs2 = np.array([[0, 0, 0, 0],
+  //                 [0, 0, 0, 0],
+  //                 [1, 0, 0, 0],
+  //                 [1, 2, 0, 0]])
+  // ys = model.predict([xs1, xs2])
+  // print(ys)
+  // ```
+  it('With masking', () => {
+    const input1 = tfl.input({shape: [4]});
+    const input2 = tfl.input({shape: [4]});
+    let y1 = tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 3,
+      inputLength: 4,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }).apply(input1) as SymbolicTensor;
+    y1 = tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(y1) as SymbolicTensor;
+    let y2 = tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 3,
+      inputLength: 4,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }).apply(input2) as SymbolicTensor;
+    y2 = tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(y2) as SymbolicTensor;
+    let y = tfl.layers.dot({axes: [-1, -1]}).apply([y1, y2]) as SymbolicTensor;
+    y = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(y) as SymbolicTensor;
+    const model = tfl.model({
+      inputs: [input1, input2],
+      outputs: y
+    });
+
+    const xs1 = tensor2d(
+        [[0, 0, 0, 0], [1, 0, 0, 0], [1, 2, 0, 0], [1, 2, 3, 0]]);
+    // Notice the mask of xs2 is different from that of xs1.
+    const xs2 = tensor2d(
+        [[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [1, 2, 0, 0]]);
+    const ys = model.predict([xs1, xs2]) as Tensor;
+    expectTensorsClose(ys, tensor2d([[0], [0], [2.195756], [2.8765779]]));
   });
 });

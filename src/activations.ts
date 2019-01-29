@@ -10,9 +10,11 @@
 
 // Layer activation functions
 import * as tfc from '@tensorflow/tfjs-core';
-import {scalar, serialization, Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
+import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
+import {ActivationIdentifier} from './keras_format/activation_config';
 import {deserializeKerasObject} from './utils/generic_utils';
 
 /**
@@ -28,10 +30,6 @@ export abstract class Activation extends serialization.Serializable {
     return {};
   }
 }
-
-/** @docinline */
-export type ActivationIdentifier = 'elu'|'hardSigmoid'|'linear'|'relu'|'relu6'|
-    'selu'|'sigmoid'|'softmax'|'softplus'|'softsign'|'tanh'|string;
 
 /**
  * Exponential linear unit (ELU).
@@ -50,7 +48,7 @@ export class Elu extends Activation {
     return K.elu(x, alpha);
   }
 }
-serialization.SerializationMap.register(Elu);
+serialization.registerClass(Elu);
 
 /**
  * Scaled Exponential Linear Unit. (Klambauer et al., 2017).
@@ -65,7 +63,7 @@ export class Selu extends Activation {
     return tfc.selu(x);
   }
 }
-serialization.SerializationMap.register(Selu);
+serialization.registerClass(Selu);
 
 /**
  *  Rectified linear unit
@@ -76,21 +74,18 @@ export class Relu extends Activation {
     return tfc.relu(x);
   }
 }
-serialization.SerializationMap.register(Relu);
+serialization.registerClass(Relu);
 
 /**
  * Rectified linear unit activation maxing out at 6.0.
  */
-// TODO(bileschi): A new constant 6 here is being created at each invocation.
-// A better pattern would be to reuse a single constant 6, created after the
-// backend math has been instantiated.
 export class Relu6 extends Activation {
   static readonly className = 'relu6';
   apply(x: Tensor): Tensor {
-    return tfc.minimum(scalar(6.0), tfc.relu(x));
+    return tidy(() => tfc.minimum(getScalar(6.0), tfc.relu(x)));
   }
 }
-serialization.SerializationMap.register(Relu6);
+serialization.registerClass(Relu6);
 
 //* Linear activation (no-op) */
 export class Linear extends Activation {
@@ -99,7 +94,7 @@ export class Linear extends Activation {
     return x;
   }
 }
-serialization.SerializationMap.register(Linear);
+serialization.registerClass(Linear);
 
 /**
  * Sigmoid activation function.
@@ -110,7 +105,7 @@ export class Sigmoid extends Activation {
     return tfc.sigmoid(x);
   }
 }
-serialization.SerializationMap.register(Sigmoid);
+serialization.registerClass(Sigmoid);
 
 /**
  * Segment-wise linear approximation of sigmoid.
@@ -121,7 +116,7 @@ export class HardSigmoid extends Activation {
     return K.hardSigmoid(x);
   }
 }
-serialization.SerializationMap.register(HardSigmoid);
+serialization.registerClass(HardSigmoid);
 
 /**
  * Softplus activation function.
@@ -129,10 +124,10 @@ serialization.SerializationMap.register(HardSigmoid);
 export class Softplus extends Activation {
   static readonly className = 'softplus';
   apply(x: Tensor): Tensor {
-    return K.softplus(x);
+    return tfc.softplus(x);
   }
 }
-serialization.SerializationMap.register(Softplus);
+serialization.registerClass(Softplus);
 
 /**
  * Softsign activation function.
@@ -143,7 +138,7 @@ export class Softsign extends Activation {
     return K.softsign(x);
   }
 }
-serialization.SerializationMap.register(Softsign);
+serialization.registerClass(Softsign);
 
 /**
  * Hyperbolic tangent function.
@@ -154,7 +149,7 @@ export class Tanh extends Activation {
     return tfc.tanh(x);
   }
 }
-serialization.SerializationMap.register(Tanh);
+serialization.registerClass(Tanh);
 
 /**
  * Softmax activation function
@@ -177,7 +172,7 @@ export class Softmax extends Activation {
     return tfc.softmax(x, axis);
   }
 }
-serialization.SerializationMap.register(Softmax);
+serialization.registerClass(Softmax);
 
 export function serializeActivation(activation: Activation): string {
   return activation.getClassName();

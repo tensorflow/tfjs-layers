@@ -12,18 +12,20 @@
  * Unit tests for wrapper layers.
  */
 
-// tslint:disable:max-line-length
-import {Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
+import {ones, scalar, serialization, Tensor, tensor2d, Tensor3D, tensor3d} from '@tensorflow/tfjs-core';
 
-import {Layer} from '../engine/topology';
+import {Layer, SymbolicTensor} from '../engine/topology';
+import {Model} from '../engine/training';
 import * as tfl from '../index';
+import {BidirectionalMergeMode, VALID_BIDIRECTIONAL_MERGE_MODES} from '../keras_format/common';
+import {convertPythonicToTs} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {Dense, Reshape} from './core';
-import {SimpleRNN} from './recurrent';
-import {BidirectionalMergeMode, checkBidirectionalMergeMode, TimeDistributed, VALID_BIDIRECTIONAL_MERGE_MODES} from './wrappers';
+import {RNN, SimpleRNN} from './recurrent';
+import {deserialize} from './serialization';
+import {Bidirectional, checkBidirectionalMergeMode, TimeDistributed} from './wrappers';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('TimeDistributed Layer: Symbolic', () => {
   it('3D input: Dense', () => {
@@ -77,6 +79,154 @@ describeMathCPUAndGPU('TimeDistributed Layer: Tensor', () => {
         output,
         tensor3d(
             [[[3], [7], [11], [15]], [[-3], [-7], [-11], [-15]]], [2, 4, 1]));
+  });
+
+  // Reference Python Keras code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model_as_layer = keras.Sequential(
+  //     layers=[keras.layers.Dense(
+  //         units=3,
+  //         input_shape=[2, 5],
+  //         kernel_initializer='ones',
+  //         activation='softmax')])
+  //
+  // td = keras.layers.TimeDistributed(
+  //     layer=model_as_layer, input_shape=[2, 5])
+  // model = keras.Sequential(layers=[td])
+  // model.summary()
+  //
+  // xs = np.ones([1, 2, 5])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('Model as constituent layer', () => {
+    const modelAsLayer = tfl.sequential({
+      layers: [tfl.layers.dense({
+        activation: 'softmax',
+        units: 3,
+        inputShape: [2, 5],
+        kernelInitializer: 'ones'
+      })],
+    });
+    const td =
+        tfl.layers.timeDistributed({layer: modelAsLayer, inputShape: [2, 5]});
+    const model = tfl.sequential({layers: [td]});
+    const ys = model.predict(ones([1, 2, 5])) as Tensor;
+    expect(ys.shape).toEqual([1, 2, 3]);
+    expectTensorsClose(ys, tensor3d([[
+                         [0.33333334, 0.33333334, 0.33333334],
+                         [0.33333334, 0.33333334, 0.33333334]
+                       ]]));
+  });
+
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // input1 = keras.Input(shape=[4])
+  // input2 = keras.Input(shape=[4])
+  // y1 = keras.layers.Embedding(10,
+  //                             3,
+  //                             input_length=4,
+  //                             mask_zero=True,
+  //                             embeddings_initializer='ones')(input1)
+  // y1 = keras.layers.LSTM(3,
+  //                        return_sequences=True,
+  //                        recurrent_initializer='ones',
+  //                        kernel_initializer='ones',
+  //                        bias_initializer='zeros')(y1)
+  // z1 = keras.layers.Embedding(10,
+  //                             3,
+  //                             input_length=4,
+  //                             mask_zero=True,
+  //                             embeddings_initializer='ones')(input2)
+  // z1 = keras.layers.LSTM(3,
+  //                        return_sequences=True,
+  //                        recurrent_initializer='ones',
+  //                        kernel_initializer='ones',
+  //                        bias_initializer='zeros')(z1)
+  // y2 = keras.layers.Dot(axes=[2, 2])([y1, z1])
+  // y3 = keras.layers.Concatenate()([y1, y2])
+  // y3 = keras.layers.TimeDistributed(keras.layers.Dense(
+  //     1,
+  //     kernel_initializer='ones',
+  //     bias_initializer='zeros'))(y3)
+  // model = keras.Model(inputs=[input1, input2], outputs=y3)
+  // model.summary()
+  //
+  // xs1 = np.array([[0, 0, 0, 0], [1, 0, 0, 0], [1, 2, 0, 0], [1, 2, 3, 0]])
+  // xs2 = np.ones([4, 4])
+  // ys = model.predict([xs1, xs2])
+  // print(ys)
+  // ```
+  it('With masking', () => {
+    const input1 = tfl.input({shape: [4]});
+    const input2 = tfl.input({shape: [4]});
+    let y1 = tfl.layers
+                 .embedding({
+                   inputDim: 10,
+                   outputDim: 3,
+                   inputLength: 4,
+                   maskZero: true,
+                   embeddingsInitializer: 'ones'
+                 })
+                 .apply(input1) as SymbolicTensor;
+    y1 = tfl.layers
+             .lstm({
+               units: 3,
+               returnSequences: true,
+               recurrentInitializer: 'ones',
+               kernelInitializer: 'ones',
+               biasInitializer: 'zeros'
+             })
+             .apply(y1) as SymbolicTensor;
+    let z1 = tfl.layers
+                 .embedding({
+                   inputDim: 10,
+                   outputDim: 3,
+                   inputLength: 4,
+                   maskZero: true,
+                   embeddingsInitializer: 'ones'
+                 })
+                 .apply(input2) as SymbolicTensor;
+    z1 = tfl.layers
+             .lstm({
+               units: 3,
+               returnSequences: true,
+               recurrentInitializer: 'ones',
+               kernelInitializer: 'ones',
+               biasInitializer: 'zeros'
+             })
+             .apply(z1) as SymbolicTensor;
+    const y2 = tfl.layers.dot({axes: [2, 2]}).apply([y1, z1]) as SymbolicTensor;
+    let y3 = tfl.layers.concatenate().apply([y1, y2]) as SymbolicTensor;
+    y3 = tfl.layers
+             .timeDistributed({
+               layer: tfl.layers.dense({
+                 units: 1,
+                 kernelInitializer: 'ones',
+                 biasInitializer: 'zeros'
+               })
+             })
+             .apply(y3) as SymbolicTensor;
+    const model = tfl.model({inputs: [input1, input2], outputs: y3});
+
+    const xs1 =
+        tensor2d([[0, 0, 0, 0], [1, 0, 0, 0], [1, 2, 0, 0], [1, 2, 3, 0]]);
+    const xs2 = ones([4, 4]);
+    const ys = model.predict([xs1, xs2]) as Tensor;
+    expectTensorsClose(
+        ys, tensor3d([
+          [[0], [0], [0], [0]],
+          [[10.7489796], [10.7489796], [10.7489796], [10.7489796]],
+          [[10.7489796], [13.6384077], [13.6384077], [13.6384077]],
+          [[10.7489796], [13.6384077], [14.0818386], [14.0818386]]
+        ]));
   });
 });
 
@@ -162,6 +312,21 @@ describeMathCPU('Bidirectional Layer: Symbolic', () => {
     expect(outputs[0].shape).toEqual([10, 8, 3]);
     expect(outputs[1].shape).toEqual([10, 3]);
     expect(outputs[2].shape).toEqual([10, 3]);
+  });
+  it('Serialization round trip', () => {
+    const layer = tfl.layers.bidirectional({
+      layer: new SimpleRNN({units: 3}),
+      mergeMode: 'concat',
+      inputShape: [4, 4],
+    });
+    const model = tfl.sequential({layers: [layer]});
+    const unused: {} = null;
+    const modelJSON = model.toJSON(unused, false);
+    const modelPrime = deserialize(
+                           convertPythonicToTs(modelJSON) as
+                           serialization.ConfigDict) as tfl.Sequential;
+    expect((modelPrime.layers[0] as Bidirectional).getConfig().mergeMode)
+        .toEqual('concat');
   });
 });
 
@@ -280,5 +445,219 @@ describeMathCPUAndGPU('Bidirectional Layer: Tensor', () => {
         y[1], tensor2d([[0.9440416, 0.9440416, 0.9440416]], [1, 3]));
     expectTensorsClose(
         y[2], tensor2d([[-0.9842659, -0.9842659, -0.9842659]], [1, 3]));
+  });
+
+  // The golden values in the test below can be obtained with the following
+  // Python Keras code.
+  //
+  // ```python
+  // import keras
+  // import numpy
+  //
+  // rnn = keras.layers.LSTM(
+  //     1,
+  //     kernel_initializer='ones',
+  //     recurrent_initializer='ones',
+  //     bias_initializer='ones',
+  //     go_backwards=True)
+  // bidi = keras.layers.Bidirectional(
+  //     rnn, merge_mode='concat', input_shape=[2, 2])
+  // model = keras.Sequential([bidi])
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // x = np.array([[[0.1, 0.2],
+  //               [-0.1, 0.1]]])
+  // y = np.array([[0.3, 0.5]])
+  // print(model.predict(x))
+  //
+  // history = model.fit(x, y)
+  // print(history.history)
+  // ```
+  it('Backwards LSTM: predict and fit: concat', async () => {
+    const lstm = tfl.layers.lstm({
+      units: 1,
+      kernelInitializer: 'ones',
+      recurrentInitializer: 'ones',
+      biasInitializer: 'ones',
+      goBackwards: true
+    }) as RNN;
+    const bidi = tfl.layers.bidirectional(
+        {layer: lstm, inputShape: [2, 2], mergeMode: 'concat'});
+    const model = tfl.sequential({layers: [bidi]});
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const x = tensor3d([[[0.1, 0.2], [-0.1, 0.1]]]);
+    const y = tensor2d([[0.3, 0.5]]);
+    expectTensorsClose(
+        model.predict(x) as Tensor, tensor2d([[0.69299805, 0.66088]]));
+    const history = await model.fit(x, y);
+    expect(history.history.loss[0]).toBeCloseTo(0.0901649);
+    expectTensorsClose(
+        model.predict(x) as Tensor, tensor2d([[0.6927189, 0.66077083]]));
+  });
+
+  // The golden values in the test below can be obtained with the following
+  // Python Keras code.
+  //
+  // ```python
+  // import keras
+  // import numpy
+  //
+  // rnn = keras.layers.LSTM(
+  //     1,
+  //     kernel_initializer='ones',
+  //     recurrent_initializer='ones',
+  //     bias_initializer='ones',
+  //     go_backwards=True)
+  // bidi = keras.layers.Bidirectional(
+  //     rnn, merge_mode='ave', input_shape=[2, 2])
+  // model = keras.Sequential([bidi])
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // x = np.array([[[0.1, 0.2],
+  //               [-0.1, 0.1]]])
+  // y = np.array([[0.4]])
+  // print(model.predict(x))
+  //
+  // history = model.fit(x, y)
+  // print(history.history)
+  // ```
+  it('Backwards LSTM: predict and fit: ave', done => {
+    const lstm = tfl.layers.lstm({
+      units: 1,
+      kernelInitializer: 'ones',
+      recurrentInitializer: 'ones',
+      biasInitializer: 'ones',
+      goBackwards: true
+    }) as RNN;
+    const bidi = tfl.layers.bidirectional(
+        {layer: lstm, inputShape: [2, 2], mergeMode: 'ave'});
+    const model = tfl.sequential({layers: [bidi]});
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const x = tensor3d([[[0.1, 0.2], [-0.1, 0.1]]]);
+    const y = tensor2d([[0.4]]);
+    expectTensorsClose(model.predict(x) as Tensor, tensor2d([[0.676939]]));
+    model.fit(x, y)
+        .then(history => {
+          expect(history.history.loss[0]).toBeCloseTo(0.0766952);
+          expectTensorsClose(
+              model.predict(x) as Tensor, tensor2d([[0.6767467]]));
+          done();
+        })
+        .catch(err => {
+          done.fail(err.stack);
+        });
+  });
+});
+
+describeMathCPUAndGPU('Bidirectional with initial state', () => {
+  const sequenceLength = 4;
+  const recurrentUnits = 3;
+  const inputDim = 2;
+
+  function createLayerAndTensors(): {
+    bidiLayer: Bidirectional,
+    initState1: SymbolicTensor,
+    initState2: SymbolicTensor,
+    inputTensor: SymbolicTensor,
+    outputTensors: SymbolicTensor[],
+  } {
+    const initState1 = tfl.input({shape: [recurrentUnits]});
+    const initState2 = tfl.input({shape: [recurrentUnits]});
+    const inputTensor = tfl.input({shape: [sequenceLength, inputDim]});
+    const bidiLayer = tfl.layers.bidirectional({
+      layer: tfl.layers.gru({
+        units: recurrentUnits,
+        kernelInitializer: 'zeros',
+        recurrentInitializer: 'zeros',
+        biasInitializer: 'ones'
+      }) as RNN,
+      mergeMode: null,
+    }) as Bidirectional;
+    const outputTensors =
+        bidiLayer.apply(
+            inputTensor, {initialState: [initState1, initState2]}) as
+        SymbolicTensor[];
+    return {bidiLayer, initState1, initState2, inputTensor, outputTensors};
+  }
+
+  it('Correct shapes', () => {
+    const layerAndTensors = createLayerAndTensors();
+    expect(layerAndTensors.outputTensors.length).toEqual(2);
+    expect(layerAndTensors.outputTensors[0].shape).toEqual([
+      null, recurrentUnits
+    ]);
+    expect(layerAndTensors.outputTensors[1].shape).toEqual([
+      null, recurrentUnits
+    ]);
+  });
+
+  it('apply() with concrete tensors', () => {
+    const layerAndTensors = createLayerAndTensors();
+    const xVal = ones([1, sequenceLength, inputDim]);
+    const initState1Val = ones([1, recurrentUnits]).mul(scalar(-1));
+    const initState2Val = ones([1, recurrentUnits]);
+    const yVals =
+        layerAndTensors.bidiLayer.apply(
+            xVal, {initialState: [initState1Val, initState2Val]}) as Tensor[];
+    expect(yVals.length).toEqual(2);
+    expectTensorsClose(
+        yVals[0], tensor2d([[0.33863544, 0.33863544, 0.33863544]]));
+    expectTensorsClose(yVals[1], tensor2d([[0.8188354, 0.8188354, 0.8188354]]));
+  });
+
+  it('Model predict', () => {
+    const layerAndTensors = createLayerAndTensors();
+    const model = tfl.model({
+      inputs: [
+        layerAndTensors.inputTensor, layerAndTensors.initState1,
+        layerAndTensors.initState2
+      ],
+      outputs: layerAndTensors.outputTensors
+    });
+    const xVal = ones([1, sequenceLength, inputDim]);
+    const initState1Val = ones([1, recurrentUnits]).mul(scalar(-1));
+    const initState2Val = ones([1, recurrentUnits]);
+    const yVals =
+        model.predict([xVal, initState1Val, initState2Val]) as Tensor[];
+    expect(yVals.length).toEqual(2);
+    expectTensorsClose(
+        yVals[0], tensor2d([[0.33863544, 0.33863544, 0.33863544]]));
+    expectTensorsClose(yVals[1], tensor2d([[0.8188354, 0.8188354, 0.8188354]]));
+  });
+
+  it('Model serialization round trip', () => {
+    // Disable the console warning about the unserialization SymbolicTensor in
+    // the CallArgs.
+    spyOn(console, 'warn');
+    const layerAndTensors = createLayerAndTensors();
+    const model = tfl.model({
+      inputs: [
+        layerAndTensors.inputTensor, layerAndTensors.initState1,
+        layerAndTensors.initState2
+      ],
+      outputs: layerAndTensors.outputTensors
+    });
+    const json1 = model.toJSON(null, false);
+    const model2 =
+        deserialize(convertPythonicToTs(json1) as serialization.ConfigDict) as
+        Model;
+    const json2 = model2.toJSON(null, false);
+    expect(json2).toEqual(json1);
+  });
+
+  it('Incorrect number of initial-state tensors leads to error', () => {
+    const initState1 = tfl.input({shape: [recurrentUnits]});
+    const x = tfl.input({shape: [sequenceLength, inputDim]});
+    const bidi = tfl.layers.bidirectional({
+      layer: tfl.layers.gru({
+        units: recurrentUnits,
+      }) as RNN,
+      mergeMode: null,
+    });
+    expect(() => bidi.apply(x, {
+      initialState: [initState1]
+    })).toThrowError(/the state should be .*RNNs/);
   });
 });

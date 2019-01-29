@@ -13,14 +13,18 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-import {serialization, Tensor, util} from '@tensorflow/tfjs-core';
+import {serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
+import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {Layer, LayerConfig} from '../engine/topology';
+import {Layer, LayerArgs, SymbolicTensor} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {Kwargs, Shape, SymbolicTensor} from '../types';
+import {Shape} from '../keras_format/common';
+import {l2Normalize} from '../losses';
+import {Kwargs} from '../types';
 import * as generic_utils from '../utils/generic_utils';
 import * as mathUtils from '../utils/math_utils';
+import {getExactlyOneShape} from '../utils/types_utils';
 
 /**
  * Generic Merge layer for element-wise merge functions.
@@ -30,8 +34,8 @@ import * as mathUtils from '../utils/math_utils';
 export abstract class Merge extends Layer {
   protected reshapeRequired: boolean;
 
-  constructor(config?: LayerConfig) {
-    super(config || {});
+  constructor(args?: LayerArgs) {
+    super(args || {});
     this.supportsMasking = true;
   }
 
@@ -87,7 +91,7 @@ export abstract class Merge extends Layer {
     // Used purely for shape validation.
     if (Array.isArray(inputShape) && !Array.isArray(inputShape[0])) {
       // Make sure that inputShape is an Array of shape.
-      inputShape = [generic_utils.getExactlyOneShape(inputShape)];
+      inputShape = [getExactlyOneShape(inputShape)];
     }
     inputShape = inputShape as Shape[];
     if (inputShape.length < 2) {
@@ -129,70 +133,72 @@ export abstract class Merge extends Layer {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    inputs = inputs as Tensor[];
-    if (this.reshapeRequired) {
-      const reshapedInputs: Tensor[] = [];
-      const inputDims = inputs.map(input => K.ndim(input));
-      if (inputDims.indexOf(null) === -1) {
-        // If ranks of all inputs are available, we simply expand each of them
-        // at axis=1 until all of them have the same rank.
-        const maxNDim = mathUtils.max(inputDims);
-        for (let x of inputs) {
-          const xNDim = K.ndim(x);
-          for (let k = 0; k < maxNDim - xNDim; ++k) {
-            x = K.expandDims(x, 1);
-          }
-          reshapedInputs.push(x);
-        }
-        return this.mergeFunction(reshapedInputs);
-      } else {
-        // Transpose all inputs so that batch size is the last dimension.
-        // [batchSize, dim1, dim2, ...] -> [dim1, dim2, ..., batchSize]
-        let transposed = false;
-        for (const x of inputs) {
-          const xNDim = K.ndim(x);
-          if (xNDim == null) {
-            const xShape = K.shape(x);
-            const batchSize = xShape[0];
-            const newShape = xShape.slice(1).concat([batchSize]);
-            let xTransposed = K.reshape(
-                x, [batchSize].concat(mathUtils.arrayProd(xShape.slice(1))));
-            xTransposed = tfc.transpose(xTransposed, [1, 0]);
-            xTransposed = K.reshape(xTransposed, newShape);
-            reshapedInputs.push(xTransposed);
-            transposed = true;
-          } else if (xNDim > 1) {
-            const dims = mathUtils.range(1, xNDim).concat([0]);
-            reshapedInputs.push(tfc.transpose(x, dims));
-            transposed = true;
-          } else {
-            // We don't transpose inputs if they are 1D vectors or scalars.
+    return tidy(() => {
+      inputs = inputs as Tensor[];
+      if (this.reshapeRequired) {
+        const reshapedInputs: Tensor[] = [];
+        const inputDims = inputs.map(input => input.rank);
+        if (inputDims.indexOf(null) === -1) {
+          // If ranks of all inputs are available, we simply expand each of them
+          // at axis=1 until all of them have the same rank.
+          const maxNDim = mathUtils.max(inputDims);
+          for (let x of inputs) {
+            const xNDim = x.rank;
+            for (let k = 0; k < maxNDim - xNDim; ++k) {
+              x = K.expandDims(x, 1);
+            }
             reshapedInputs.push(x);
           }
-        }
-        let y = this.mergeFunction(reshapedInputs);
-        const yNDim = K.ndim(y);
-        if (transposed) {
-          // If inputs have been transposed, we have to transpose the output
-          // too.
-          if (yNDim == null) {
-            const yShape = K.shape(y);
-            const yNDim = yShape.length;
-            const batchSize = yShape[yNDim - 1];
-            const newShape =
-                [batchSize].concat(yShape.slice(0, yShape.length - 1));
-            y = K.reshape(
-                tfc.transpose(K.reshape(y, [-1, batchSize]), [1, 0]), newShape);
-          } else if (yNDim > 1) {
-            const dims = [yNDim - 1].concat(mathUtils.range(0, yNDim - 1));
-            y = tfc.transpose(y, dims);
+          return this.mergeFunction(reshapedInputs);
+        } else {
+          // Transpose all inputs so that batch size is the last dimension.
+          // [batchSize, dim1, dim2, ...] -> [dim1, dim2, ..., batchSize]
+          let transposed = false;
+          for (const x of inputs) {
+            const xNDim = x.rank;
+            if (xNDim == null) {
+              const xShape = x.shape;
+              const batchSize = xShape[0];
+              const newShape = xShape.slice(1).concat([batchSize]);
+              let xTransposed = x.reshape(
+                  [batchSize].concat(mathUtils.arrayProd(xShape.slice(1))));
+              xTransposed = tfc.transpose(xTransposed, [1, 0]);
+              xTransposed = xTransposed.reshape(newShape);
+              reshapedInputs.push(xTransposed);
+              transposed = true;
+            } else if (xNDim > 1) {
+              const dims = mathUtils.range(1, xNDim).concat([0]);
+              reshapedInputs.push(tfc.transpose(x, dims));
+              transposed = true;
+            } else {
+              // We don't transpose inputs if they are 1D vectors or scalars.
+              reshapedInputs.push(x);
+            }
           }
+          let y = this.mergeFunction(reshapedInputs);
+          const yNDim = y.rank;
+          if (transposed) {
+            // If inputs have been transposed, we have to transpose the output
+            // too.
+            if (yNDim == null) {
+              const yShape = y.shape;
+              const yNDim = yShape.length;
+              const batchSize = yShape[yNDim - 1];
+              const newShape =
+                  [batchSize].concat(yShape.slice(0, yShape.length - 1));
+              y = tfc.transpose(y.reshape([-1, batchSize]), [1, 0])
+                      .reshape(newShape);
+            } else if (yNDim > 1) {
+              const dims = [yNDim - 1].concat(mathUtils.range(0, yNDim - 1));
+              y = tfc.transpose(y, dims);
+            }
+          }
+          return y;
         }
-        return y;
+      } else {
+        return this.mergeFunction(inputs);
       }
-    } else {
-      return this.mergeFunction(inputs);
-    }
+    });
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
@@ -223,7 +229,34 @@ export abstract class Merge extends Layer {
     return outputShape;
   }
 
-  // TODO(cais): Implement computeMask();
+  computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
+    return tfc.tidy(() => {
+      if (mask == null) {
+        return null;
+      }
+      if (!Array.isArray(mask)) {
+        throw new ValueError('`mask` should be an Array');
+      }
+      if (!Array.isArray(inputs)) {
+        throw new ValueError('`inputs` should be an Array');
+      }
+      if (mask.length !== inputs.length) {
+        throw new ValueError(
+            `The Array 'inputs' and 'mask' are expected to have the same ` +
+            `length, but have different lengths ` +
+            `(${inputs.length} vs ${mask.length})`);
+      }
+      if (mask.every(m => m == null)) {
+        return null;
+      }
+      mask = mask.map(m => m == null ? m : tfc.expandDims(m, 0));
+      let output = mask[0];
+      for (let i = 1; i < mask.length - 1; ++i) {
+        output = tfc.logicalAnd(output, mask[i]);
+      }
+      return output;
+    });
+  }
 }
 
 /**
@@ -246,19 +279,21 @@ export abstract class Merge extends Layer {
  */
 export class Add extends Merge {
   static className = 'Add';
-  constructor(config?: LayerConfig) {
-    super(config as LayerConfig);
+  constructor(args?: LayerArgs) {
+    super(args as LayerArgs);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
-    let output = tfc.zeros(inputs[0].shape);
-    for (const input of inputs) {
-      output = tfc.add(output, input);
-    }
-    return output;
+    return tidy(() => {
+      let output = inputs[0].clone();
+      for (let i = 1; i < inputs.length; ++i) {
+        output = tfc.add(output, inputs[i]);
+      }
+      return output;
+    });
   }
 }
-serialization.SerializationMap.register(Add);
+serialization.registerClass(Add);
 
 /**
  * Calculate the element-wise sum of inputs, which all have the same shape.
@@ -267,7 +302,7 @@ serialization.SerializationMap.register(Add);
  *
  * 1. Construct an instance of `Add` layer, by using no input argument
  *    or a single configuration argument. The resultant `Add` layer can then
- *    be used on `SymbolicTensor`s or `Tensor`s. For example:
+ *    be used on `tf.SymbolicTensor`s or `tf.Tensor`s. For example:
  *
  * ```js
  * const addLayer = tf.layers.add();
@@ -281,9 +316,9 @@ serialization.SerializationMap.register(Add);
  * // dimension.
  * ```
  *
- * 2. Invoke directly on an `Array` of `SymbolicTensor`s. This constructs
+ * 2. Invoke directly on an `Array` of `tf.SymbolicTensor`s. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `SymbolicTensor`. For example:
+ *    generating a new `tf.SymbolicTensor`. For example:
  *
  * ```js
  * const input1 = tf.input({shape: [2, 2]});
@@ -294,9 +329,10 @@ serialization.SerializationMap.register(Add);
  * // dimension.
  * ```
  *
- * 3. Invoke directly on `Tensor`s, i.e., concrete values. This constructs
+ * 3. Invoke directly on `tf.Tensor`s, i.e., concrete values. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `Tensor` as the result of the computation. For example:
+ *    generating a new `tf.Tensor` as the result of the computation. For
+ * example:
  *
  * ```js
  * const input1 = tf.tensor2d([1, 2, 3, 4], [2, 2]);
@@ -305,7 +341,7 @@ serialization.SerializationMap.register(Add);
  * // Gives [[11, 22], [33, 44]].
  *
  */
-export function add(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function add(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Add({});
@@ -336,19 +372,21 @@ export function add(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  */
 export class Multiply extends Merge {
   static className = 'Multiply';
-  constructor(config?: LayerConfig) {
-    super(config);
+  constructor(args?: LayerArgs) {
+    super(args);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
-    let output = tfc.ones(inputs[0].shape);
-    for (const input of inputs) {
-      output = tfc.mul(output, input);
-    }
-    return output;
+    return tidy(() => {
+      let output = inputs[0].clone();
+      for (let i = 1; i < inputs.length; ++i) {
+        output = tfc.mul(output, inputs[i]);
+      }
+      return output;
+    });
   }
 }
-serialization.SerializationMap.register(Multiply);
+serialization.registerClass(Multiply);
 
 /**
  * Calculate the element-wise product of inputs, which all have the same shape.
@@ -357,7 +395,7 @@ serialization.SerializationMap.register(Multiply);
  *
  * 1. Construct an instance of `Multiply` layer, by using no input argument
  *    or a single configuration argument. The resultant `Multiply` layer can
- *    then be used on `SymbolicTensor`s or `Tensor`s. For example:
+ *    then be used on `tf.SymbolicTensor`s or `tf.Tensor`s. For example:
  *
  * ```js
  * const multiplyLayer = tf.layers.multiply();
@@ -371,9 +409,9 @@ serialization.SerializationMap.register(Multiply);
  * // dimension.
  * ```
  *
- * 2. Invoke directly on an `Array` of `SymbolicTensor`s. This constructs
+ * 2. Invoke directly on an `Array` of `tf.SymbolicTensor`s. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `SymbolicTensor`. For example:
+ *    generating a new `tf.SymbolicTensor`. For example:
  *
  * ```js
  * const input1 = tf.input({shape: [2, 2]});
@@ -384,9 +422,10 @@ serialization.SerializationMap.register(Multiply);
  * // dimension.
  * ```
  *
- * 3. Invoke directly on `Tensor`s, i.e., concrete values. This constructs
+ * 3. Invoke directly on `tf.Tensor`s, i.e., concrete values. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `Tensor` as the result of the computation. For example:
+ *    generating a new `tf.Tensor` as the result of the computation. For
+ * example:
  *
  * ```js
  * const input1 = tf.tensor2d([1, 2, 3, 4], [2, 2]);
@@ -395,7 +434,7 @@ serialization.SerializationMap.register(Multiply);
  * // Gives [[10, 40], [90, 160]].
  *
  */
-export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Multiply({});
@@ -425,19 +464,21 @@ export function multiply(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  */
 export class Average extends Merge {
   static className = 'Average';
-  constructor(config?: LayerConfig) {
-    super(config);
+  constructor(args?: LayerArgs) {
+    super(args);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
-    let output = tfc.zeros(inputs[0].shape);
-    for (const input of inputs) {
-      output = tfc.add(output, input);
-    }
-    return K.scalarTimesArray(K.getScalar(1 / inputs.length), output);
+    return tidy(() => {
+      let output = inputs[0].clone();
+      for (let i = 1; i < inputs.length; ++i) {
+        output = tfc.add(output, inputs[i]);
+      }
+      return tfc.mul(getScalar(1 / inputs.length), output);
+    });
   }
 }
-serialization.SerializationMap.register(Average);
+serialization.registerClass(Average);
 
 /**
  * Calculate the element-wise arithmetic mean of inputs, which all have the same
@@ -447,7 +488,7 @@ serialization.SerializationMap.register(Average);
  *
  * 1. Construct an instance of `Average` layer, by using no input argument
  *    or a single configuration argument. The resultant `Average` layer can then
- *    be used on `SymbolicTensor`s or `Tensor`s. For example:
+ *    be used on `tf.SymbolicTensor`s or `tf.Tensor`s. For example:
  *
  * ```js
  * const averageLayer = tf.layers.average();
@@ -461,9 +502,9 @@ serialization.SerializationMap.register(Average);
  * // dimension.
  * ```
  *
- * 2. Invoke directly on an `Array` of `SymbolicTensor`s. This constructs
+ * 2. Invoke directly on an `Array` of `tf.SymbolicTensor`s. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `SymbolicTensor`. For example:
+ *    generating a new `tf.SymbolicTensor`. For example:
  *
  * ```js
  * const input1 = tf.input({shape: [2, 2]});
@@ -474,9 +515,10 @@ serialization.SerializationMap.register(Average);
  * // dimension.
  * ```
  *
- * 3. Invoke directly on `Tensor`s, i.e., concrete values. This constructs
+ * 3. Invoke directly on `tf.Tensor`s, i.e., concrete values. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `Tensor` as the result of the computation. For example:
+ *    generating a new `tf.Tensor` as the result of the computation. For
+ * example:
  *
  * ```js
  * const input1 = tf.tensor2d([1, 2, 3, 4], [2, 2]);
@@ -485,7 +527,7 @@ serialization.SerializationMap.register(Average);
  * // Gives [[5.5, 11], [16.5, 22]].
  *
  */
-export function average(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function average(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Average({});
@@ -515,19 +557,21 @@ export function average(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  */
 export class Maximum extends Merge {
   static className = 'Maximum';
-  constructor(config?: LayerConfig) {
-    super(config);
+  constructor(args?: LayerArgs) {
+    super(args);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
-    let output = inputs[0];
-    for (let i = 1; i < inputs.length; ++i) {
-      output = tfc.maximum(output, inputs[i]);
-    }
-    return output;
+    return tidy(() => {
+      let output = inputs[0];
+      for (let i = 1; i < inputs.length; ++i) {
+        output = tfc.maximum(output, inputs[i]);
+      }
+      return output;
+    });
   }
 }
-serialization.SerializationMap.register(Maximum);
+serialization.registerClass(Maximum);
 
 /**
  * Calculate the element-wise maximum of inputs, which all have the same shape.
@@ -536,7 +580,7 @@ serialization.SerializationMap.register(Maximum);
  *
  * 1. Construct an instance of `Maximum` layer, by using no input argument
  *    or a single configuration argument. The resultant `Maximum` layer can then
- *    be used on `SymbolicTensor`s or `Tensor`s. For example:
+ *    be used on `tf.SymbolicTensor`s or `tf.Tensor`s. For example:
  *
  * ```js
  * const maximumLayer = tf.layers.maximum();
@@ -550,9 +594,9 @@ serialization.SerializationMap.register(Maximum);
  * // dimension.
  * ```
  *
- * 2. Invoke directly on an `Array` of `SymbolicTensor`s. This constructs
+ * 2. Invoke directly on an `Array` of `tf.SymbolicTensor`s. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `SymbolicTensor`. For example:
+ *    generating a new `tf.SymbolicTensor`. For example:
  *
  * ```js
  * const input1 = tf.input({shape: [2, 2]});
@@ -563,9 +607,10 @@ serialization.SerializationMap.register(Maximum);
  * // dimension.
  * ```
  *
- * 3. Invoke directly on `Tensor`s, i.e., concrete values. This constructs
+ * 3. Invoke directly on `tf.Tensor`s, i.e., concrete values. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `Tensor` as the result of the computation. For example:
+ *    generating a new `tf.Tensor` as the result of the computation. For
+ * example:
  *
  * ```js
  * const input1 = tf.tensor2d([1, 20, 3, 40], [2, 2]);
@@ -574,7 +619,7 @@ serialization.SerializationMap.register(Maximum);
  * // Gives [[10, 20], [30, 40]].
  *
  */
-export function maximum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function maximum(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Maximum({});
@@ -604,19 +649,21 @@ export function maximum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
  */
 export class Minimum extends Merge {
   static className = 'Minimum';
-  constructor(config?: LayerConfig) {
-    super(config);
+  constructor(args?: LayerArgs) {
+    super(args);
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
-    let output = inputs[0];
-    for (let i = 1; i < inputs.length; ++i) {
-      output = tfc.minimum(output, inputs[i]);
-    }
-    return output;
+    return tidy(() => {
+      let output = inputs[0];
+      for (let i = 1; i < inputs.length; ++i) {
+        output = tfc.minimum(output, inputs[i]);
+      }
+      return output;
+    });
   }
 }
-serialization.SerializationMap.register(Minimum);
+serialization.registerClass(Minimum);
 
 /**
  * Calculate the element-wise minimum of inputs, which all have the same shape.
@@ -625,7 +672,7 @@ serialization.SerializationMap.register(Minimum);
  *
  * 1. Construct an instance of `Minimum` layer, by using no input argument
  *    or a single configuration argument. The resultant `Minimum` layer can then
- *    be used on `SymbolicTensor`s or `Tensor`s. For example:
+ *    be used on `tf.SymbolicTensor`s or `tf.Tensor`s. For example:
  *
  * ```js
  * const minimumLayer = tf.layers.minimum();
@@ -639,9 +686,9 @@ serialization.SerializationMap.register(Minimum);
  * // dimension.
  * ```
  *
- * 2. Invoke directly on an `Array` of `SymbolicTensor`s. This constructs
+ * 2. Invoke directly on an `Array` of `tf.SymbolicTensor`s. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `SymbolicTensor`. For example:
+ *    generating a new `tf.SymbolicTensor`. For example:
  *
  * ```js
  * const input1 = tf.input({shape: [2, 2]});
@@ -652,9 +699,10 @@ serialization.SerializationMap.register(Minimum);
  * // dimension.
  * ```
  *
- * 3. Invoke directly on `Tensor`s, i.e., concrete values. This constructs
+ * 3. Invoke directly on `tf.Tensor`s, i.e., concrete values. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `Tensor` as the result of the computation. For example:
+ *    generating a new `tf.Tensor` as the result of the computation. For
+ * example:
  *
  * ```js
  * const input1 = tf.tensor2d([1, 20, 3, 40], [2, 2]);
@@ -663,7 +711,7 @@ serialization.SerializationMap.register(Minimum);
  * // Gives [[1, 2], [3, 4]].
  *
  */
-export function minimum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
+export function minimum(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
     SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Minimum({});
@@ -675,7 +723,7 @@ export function minimum(config?: SymbolicTensor[]|Tensor[]|LayerConfig): Layer|
   }
 }
 
-export interface ConcatenateLayerConfig extends LayerConfig {
+export interface ConcatenateLayerArgs extends LayerArgs {
   /**
    * Axis along which to concatenate.
    */
@@ -705,12 +753,12 @@ export class Concatenate extends Merge {
   readonly DEFAULT_AXIS = -1;
   private readonly axis: number;
 
-  constructor(config?: ConcatenateLayerConfig) {
-    super(config);
-    if (config == null) {
-      config = {};
+  constructor(args?: ConcatenateLayerArgs) {
+    super(args);
+    if (args == null) {
+      args = {};
     }
-    this.axis = config.axis == null ? this.DEFAULT_AXIS : config.axis;
+    this.axis = args.axis == null ? this.DEFAULT_AXIS : args.axis;
     this.supportsMasking = true;
     this.reshapeRequired = false;
   }
@@ -760,7 +808,9 @@ export class Concatenate extends Merge {
   }
 
   protected mergeFunction(inputs: Tensor[]): Tensor {
-    return K.concatenate(inputs, this.axis);
+    return tidy(() => {
+      return K.concatenate(inputs, this.axis);
+    });
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
@@ -783,10 +833,59 @@ export class Concatenate extends Merge {
     return outputShape;
   }
 
-  // TODO(cais): Implement computeMask();
-  // TODO(cais): Add getConfig();
+  computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
+    if (mask == null) {
+      return null;
+    }
+    if (!Array.isArray(mask)) {
+      throw new ValueError('`mask` should be an array for Concatenate');
+    }
+    if (!Array.isArray(inputs)) {
+      throw new ValueError('`inputs` should be an array for Concatenate');
+    }
+    if (mask.length !== inputs.length) {
+      throw new ValueError(
+          `Mismatch in the length of mask (${mask.length}) ` +
+          `and the legnth of inputs (${inputs.length})`);
+    }
+    return tfc.tidy(() => {
+      let allNullMasks = true;
+      mask.forEach(m => {
+        if (m != null) {
+          allNullMasks = false;
+          return;
+        }
+      });
+      if (allNullMasks) {
+        return null;
+      }
+      const outputMasks: Tensor[] = [];
+      for (let i = 0; i < inputs.length; ++i) {
+        if (mask[i] == null) {
+          // Input is unmasked. Append all 1's to masks.
+          outputMasks.push(tfc.onesLike(inputs[i]).asType('bool'));
+        } else if (mask[i].rank < inputs[i].rank) {
+          // Mask is smaller than the input, expand it.
+          outputMasks.push(tfc.expandDims(mask[i], -1));
+        } else {
+          outputMasks.push(mask[i]);
+        }
+      }
+      const concatenatedMasks = tfc.concat(outputMasks, this.axis);
+      return tfc.all(concatenatedMasks, -1, false);
+    });
+  }
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
+      'axis': this.axis,
+    };
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
 }
-serialization.SerializationMap.register(Concatenate);
+serialization.registerClass(Concatenate);
 
 /**
  * Concatenate an `Array` of inputs.
@@ -795,7 +894,7 @@ serialization.SerializationMap.register(Concatenate);
  *
  * 1. Construct an instance of `Concatenate` layer, by using no input argument
  *    or a single configuration argument. The resultant `Concatenate` layer can
- *    then be used on `SymbolicTensor`s or `Tensor`s. For example:
+ *    then be used on `tf.SymbolicTensor`s or `tf.Tensor`s. For example:
  *
  * ```js
  * const concatLayer = tf.layers.concatenate();
@@ -810,9 +909,9 @@ serialization.SerializationMap.register(Concatenate);
  * // last dimensions of the two inputs.
  * ```
  *
- * 2. Invoke directly on an `Array` of `SymbolicTensor`s. This constructs
+ * 2. Invoke directly on an `Array` of `tf.SymbolicTensor`s. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `SymbolicTensor`. For example:
+ *    generating a new `tf.SymbolicTensor`. For example:
  *
  * ```js
  * const input1 = tf.input({shape: [2, 3]});
@@ -824,9 +923,10 @@ serialization.SerializationMap.register(Concatenate);
  * // last dimensions of the two inputs.
  * ```
  *
- * 3. Invoke directly on `Tensor`s, i.e., concrete values. This constructs
+ * 3. Invoke directly on `tf.Tensor`s, i.e., concrete values. This constructs
  *    an `Layer` object internally and calls its `apply` method on the inputs,
- *    generating a new `Tensor` as the result of the computation. For example:
+ *    generating a new `tf.Tensor` as the result of the computation. For
+ * example:
  *
  * ```js
  * const input1 = tf.tensor2d([[1, 2], [3, 4]], [2, 2]);
@@ -836,8 +936,7 @@ serialization.SerializationMap.register(Concatenate);
  *
  */
 export function concatenate(config?: SymbolicTensor[]|Tensor[]|
-                            ConcatenateLayerConfig): Layer|SymbolicTensor|
-    Tensor {
+                            ConcatenateLayerArgs): Layer|SymbolicTensor|Tensor {
   if (Array.isArray(config)) {
     const layer = new Concatenate({});
     return layer.apply(config as SymbolicTensor[] | Tensor[]) as
@@ -848,6 +947,257 @@ export function concatenate(config?: SymbolicTensor[]|Tensor[]|
   }
 }
 
-// TODO(cais): Add class Dot.
+export interface DotLayerArgs extends LayerArgs {
+  /**
+   * Axis or axes along which the dot product will be taken.
+   *
+   * Integer or an Array of integers.
+   */
+  axes: number|[number, number];
+
+  /**
+   * Whether to L2-normalize samples along the dot product axis
+   * before taking the dot product.
+   *
+   * If set to `true`, the output of the dot product isthe cosine
+   * proximity between the two samples.
+   */
+  normalize?: boolean;
+}
+
+/**
+ * Interpretable potentially negative axis index.
+ *
+ * For example, given axis = -1, and dim = 3, this function will return 2.
+ *
+ * @param axis The axis index, may be a positive, zero or negative integer.
+ * @param dim Total number of dimensions, a positive integer.
+ * @returns A non-negative axis index equivalent to the input `axis`.
+ */
+function interpretAxis(axis: number, dim: number): number {
+  while (axis < 0) {
+    axis += dim;
+  }
+  return axis;
+}
+
+function batchDot(x: Tensor, y: Tensor, axes: number|[number, number]): Tensor {
+  if (x.shape.length > 3 || y.shape.length > 3) {
+    throw new NotImplementedError(
+        'batchDot is not implemented for tensors of 4D or higher rank yet');
+  }
+  tfc.util.assert(
+      x.shape.length >= 2,
+      `batchDot requires the rank of x to be >= 2, ` +
+          `but got ${x.shape.length}`);
+  tfc.util.assert(
+      x.shape.length >= 2,
+      `batchDot requires the rank of y to be >= 2, ` +
+          `but got ${y.shape.length}`);
+
+  if (typeof axes === 'number') {
+    axes = [axes, axes];
+  }
+
+  if (x.dtype === 'complex64' || y.dtype === 'complex64') {
+    throw new NotImplementedError(
+        'batchDot is not implemented for complex64-type Tensors yet.');
+  }
+
+  const xNDim = x.shape.length;
+  const yNDim = y.shape.length;
+  if (axes == null) {
+    // Behave like batchMatmul by default.
+    axes = [xNDim - 1, yNDim - 2];
+  }
+  const axesArray = axes as [number, number];
+
+  return tfc.tidy(() => {
+    let diff: number;
+    if (xNDim > yNDim) {
+      diff = xNDim - yNDim;
+      const diffShape: Shape = [];
+      for (let i = 0; i < diff; ++i) {
+        diffShape.push(1);
+      }
+      y = y.reshape(y.shape.concat(diffShape));
+    } else if (yNDim > xNDim) {
+      diff = yNDim - xNDim;
+      const diffShape: Shape = [];
+      for (let i = 0; i < diff; ++i) {
+        diffShape.push(1);
+      }
+      x = x.reshape(x.shape.concat(diffShape));
+    } else {
+      diff = 0;
+    }
+
+    let out: Tensor;
+    if (x.shape.length === 2 && y.shape.length === 2) {
+      if (axesArray[0] === axesArray[1]) {
+        out = x.mulStrict(y).sum(axesArray[0]);
+      } else {
+        out = x.transpose([1, 0]).mulStrict(y).sum(axesArray[1]);
+      }
+    } else {
+      const adjX = axesArray[0] !== x.shape.length - 1;
+      const adjY = axesArray[1] === y.shape.length - 1;
+      out = x.matMul(y, adjX, adjY);
+    }
+
+    if (diff > 0) {
+      let idx: number;
+      if (xNDim > yNDim) {
+        idx = xNDim + yNDim - 3;
+      } else {
+        idx = xNDim - 1;
+      }
+      const squeezeAxes: number[] = [];
+      for (let i = idx; i < idx + diff; ++i) {
+        squeezeAxes.push(i);
+      }
+      out = out.squeeze(squeezeAxes);
+    }
+    if (out.shape.length === 1) {
+      out = out.expandDims(1);
+    }
+    return out;
+  });
+}
+
+/**
+ * Layer that computes a dot product between samples in two tensors.
+ *
+ * E.g., if applied to a list of two tensors `a` and `b` both of shape
+ * `[batchSize, n]`, the output will be a tensor of shape `[batchSize, 1]`,
+ * where each entry at index `[i, 0]` will be the dot product between
+ * `a[i, :]` and `b[i, :]`.
+ *
+ * Example:
+ *
+ * ```js
+ * const dotLayer = tf.layers.dot({axes: -1});
+ * const x1 = tf.tensor2d([[10, 20], [30, 40]]);
+ * const x2 = tf.tensor2d([[-1, -2], [-3, -4]]);
+ *
+ * // Invoke the layer's apply() method in eager (imperative) mode.
+ * const y = dotLayer.apply([x1, x2]);
+ * y.print();
+ * ```
+ */
+export class Dot extends Merge {
+  static className = 'Dot';
+
+  private axes: number|[number, number];
+  private normalize: boolean;
+
+  constructor(args: DotLayerArgs) {
+    super(args);
+    this.axes = args.axes;
+    this.normalize = args.normalize == null ? false : args.normalize;
+    this.supportsMasking = true;
+    this.reshapeRequired = false;
+  }
+
+  build(inputShape: Shape|Shape[]): void {
+    tfc.util.assert(
+        Array.isArray(inputShape) && inputShape.length === 2 &&
+            Array.isArray(inputShape[0]) && Array.isArray(inputShape[1]),
+        'A `Dot` layer should be called on a list of exactly 2 inputs.');
+    const shape1 = inputShape[0] as Shape;
+    const shape2 = inputShape[1] as Shape;
+    if (shape1.length > 3 || shape2.length > 3) {
+      throw new NotImplementedError(
+          'Dot layer does not support tensors of 4D or higher rank yet.');
+    }
+
+    const axes = this.interpretAxes(shape1, shape2);
+    if (shape1[axes[0]] !== shape2[axes[1]]) {
+      throw new ValueError(
+          `Dimension incompatibility: ` +
+          `${shape1[axes[0]]} !== ${shape2[axes[1]]}`);
+    }
+  }
+
+  protected mergeFunction(inputs: Tensor[]): Tensor {
+    if (inputs.length !== 2) {
+      throw new ValueError(
+          'A `Dot` layer must be called on exactly 2 inputs, ' +
+          `but received ${inputs.length} input(s).`);
+    }
+
+    let x1 = inputs[0];
+    let x2 = inputs[1];
+    let axes: [number, number];
+    if (!Array.isArray(this.axes)) {
+      axes = [
+        interpretAxis(this.axes, x1.shape.length),
+        interpretAxis(this.axes, x2.shape.length)
+      ];
+    } else {
+      axes = this.axes.map(
+                 (axis, i) => interpretAxis(
+                     axis, inputs[i].shape.length)) as [number, number];
+    }
+    if (this.normalize) {
+      x1 = l2Normalize(x1, axes[0]);
+      x2 = l2Normalize(x2, axes[1]);
+    }
+    return batchDot(x1, x2, axes);
+  }
+
+  private interpretAxes(shape1: Shape, shape2: Shape): number[] {
+    let axes: number[];
+    if (!Array.isArray(this.axes)) {
+      // `this.axes` is a single integer.
+      axes = [
+        interpretAxis(this.axes, shape1.length),
+        interpretAxis(this.axes, shape2.length)
+      ];
+    } else {
+      // `this.axes` is an Array of integers.
+      axes = this.axes;
+    }
+    return axes;
+  }
+
+  computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
+    tfc.util.assert(
+        Array.isArray(inputShape) && inputShape.length === 2 &&
+            Array.isArray(inputShape[0]) && Array.isArray(inputShape[1]),
+        'A `Dot` layer should be called on a list of exactly 2 inputs.');
+    const shape1 = (inputShape[0] as Shape).slice();
+    const shape2 = (inputShape[1] as Shape).slice();
+    if (shape1.length > 3 || shape2.length > 3) {
+      throw new NotImplementedError(
+          'Dot layer does not support tensors of 4D or higher rank yet.');
+    }
+
+    const axes = this.interpretAxes(shape1, shape2);
+    shape1.splice(axes[0], 1);
+    shape2.splice(axes[1], 1);
+    shape2.splice(0, 1);
+    const outputShape = shape1.concat(shape2);
+    if (outputShape.length === 1) {
+      outputShape.push(1);
+    }
+    return outputShape;
+  }
+
+  computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
+    return null;
+  }
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
+      'axes': this.axes,
+      'normalize': this.normalize
+    };
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+}
+serialization.registerClass(Dot);
 
 // TODO(cais): Add functional interfaces for the merge layers.

@@ -46,6 +46,30 @@ describeMathCPUAndGPU('binaryAccuracy', () => {
   });
 });
 
+describeMathCPUAndGPU('sparseCategoricalAccuracy', () => {
+  it('1D float32 yTrue, 2D yPred', () => {
+    const yTrue = tensor1d([1, 1, 2, 2, 0]);
+    const yPred = tensor2d(
+        [[0, 1, 0], [1, 0, 0], [0, 0.4, 0.6], [0, 0.6, 0.4], [0.7, 0.3, 0]]);
+    const accuracy = tfl.metrics.sparseCategoricalAccuracy(yTrue, yPred);
+    expectTensorsClose(accuracy, tensor1d([1, 0, 1, 0, 1]));
+  });
+  it('1D int32 yTrue, 2D yPred', () => {
+    const yTrue = tensor1d([1, 1, 2, 2, 0], 'int32');
+    const yPred = tensor2d(
+        [[0, 1, 0], [1, 0, 0], [0, 0.4, 0.6], [0, 0.6, 0.4], [0.7, 0.3, 0]]);
+    const accuracy = tfl.metrics.sparseCategoricalAccuracy(yTrue, yPred);
+    expectTensorsClose(accuracy, tensor1d([1, 0, 1, 0, 1]));
+  });
+  it('2D int32 yTrue, 2D yPred', () => {
+    const yTrue = tensor2d([1, 1, 2, 2, 0], [5, 1], 'int32');
+    const yPred = tensor2d(
+        [[0, 1, 0], [1, 0, 0], [0, 0.4, 0.6], [0, 0.6, 0.4], [0.7, 0.3, 0]]);
+    const accuracy = tfl.metrics.sparseCategoricalAccuracy(yTrue, yPred);
+    expectTensorsClose(accuracy, tensor1d([1, 0, 1, 0, 1]));
+  });
+});
+
 describeMathCPUAndGPU('binaryCrossentropy', () => {
   it('2D single-value yTrue', () => {
     // Use the following Python code to generate the reference values:
@@ -138,6 +162,118 @@ describeMathCPUAndGPU('categoricalCrossentropy metric', () => {
     const accuracy = tfl.metrics.categoricalCrossentropy(x, y);
     expect(accuracy.dtype).toEqual('float32');
     expectTensorsClose(accuracy, tensor1d([2.995732, 0.22314353]));
+  });
+});
+
+describeMathCPUAndGPU('precision metric', () => {
+  it('1D', () => {
+    const x = tensor1d([0, 0, 0, 1]);
+    const y = tensor1d([0, 0, 0, 1]);
+    const precision = tfl.metrics.precision(x, y);
+    expect(precision.dtype).toEqual('float32');
+    expectTensorsClose(precision, scalar(1));
+  });
+  it('2D', () => {
+    // Use the following Python code to generate the reference values:
+    // ```python
+    //
+    // import tensorflow as tf
+    // import numpy as np
+    //
+    // with tf.Session() as session:
+    //     labels = tf.constant([
+    //       [0, 0, 1],
+    //       [0, 0, 1],
+    //       [1, 0, 0],
+    //       [0, 1, 0]
+    //     ])
+    //     prediction = tf.constant([
+    //       [0, 0, 1],
+    //       [1, 0, 0],
+    //       [1, 0, 0],
+    //       [0, 1, 0]
+    //     ])
+    //
+    //     output = tf.metrics.precision(
+    //       labels,
+    //       prediction
+    //     )
+    //
+    //     init = tf.local_variables_initializer()
+    //     session.run(init)
+    //
+    //     result = session.run(output)
+    //     print(result[0])
+    // ```
+    const x = tensor2d([[0, 0, 1], [0, 0, 1], [1, 0, 0], [0, 1, 0]]);
+    const y = tensor2d([[0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]]);
+    const precision = tfl.metrics.precision(x, y);
+    expect(precision.dtype).toEqual('float32');
+    expectTensorsClose(precision, scalar(0.75));
+  });
+
+  it('2D edge case', () => {
+    const x = tensor2d([[0, 0, 1], [0, 0, 1], [1, 0, 0], [0, 1, 0]]);
+    const y = tensor2d([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]);
+    const precision = tfl.metrics.precision(x, y);
+    expect(precision.dtype).toEqual('float32');
+    expectTensorsClose(precision, scalar(0));
+  });
+});
+
+describeMathCPUAndGPU('recall metric', () => {
+  it('1D', () => {
+    const x = tensor1d([1, 0, 1, 0, 0, 0, 1]);
+    const y = tensor1d([0, 0, 1, 1, 1, 1, 0]);
+    const recall = tfl.metrics.recall(x, y);
+    expect(recall.dtype).toEqual('float32');
+    expectTensorsClose(recall, scalar(0.33333334));
+  });
+  it('2D', () => {
+    // Use the following Python code to generate the reference values:
+    // ```python
+    //
+    // import tensorflow as tf
+    // import numpy as np
+    //
+    // with tf.Session() as session:
+    //     labels = tf.constant([
+    //       [0, 0, 1],
+    //       [0, 0, 1],
+    //       [1, 0, 0],
+    //       [0, 1, 0]
+    //     ])
+    //     prediction = tf.constant([
+    //       [0, 0, 1],
+    //       [1, 0, 0],
+    //       [1, 0, 0],
+    //       [0, 1, 0]
+    //     ])
+    //
+    //     output = tf.metrics.recall(
+    //       labels,
+    //       prediction
+    //     )
+    //
+    //     init = tf.local_variables_initializer()
+    //     session.run(init)
+    //
+    //     result = session.run(output)
+    //     print(result[0])
+    // ```
+    const x = tensor2d([[0, 0, 1], [0, 0, 1], [1, 0, 0], [0, 1, 0]]);
+    const y = tensor2d([[0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]]);
+    const recall = tfl.metrics.recall(x, y);
+    expect(recall.dtype).toEqual('float32');
+    expectTensorsClose(recall, scalar(0.75));
+  });
+
+  it('2D edge case', () => {
+    const x = tensor2d([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]);
+    const y = tensor2d([[0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 1, 0]]);
+    const recall = tfl.metrics.recall(x, y);
+    expect(recall.dtype).toEqual('float32');
+    expectTensorsClose(recall, scalar(0));
   });
 });
 

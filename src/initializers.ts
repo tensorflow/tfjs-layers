@@ -8,37 +8,31 @@
  * =============================================================================
  */
 
-// tslint:disable:max-line-length
-import {DataType, doc, eye, linalg, ones, randomUniform, scalar, Scalar, serialization, Tensor, Tensor2D, truncatedNormal, zeros} from '@tensorflow/tfjs-core';
+import {DataType, eye, linalg, mul, ones, randomUniform, scalar, Scalar, serialization, Tensor, Tensor2D, tidy, truncatedNormal, zeros} from '@tensorflow/tfjs-core';
 
+import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
-import {checkDataFormat, DataFormat} from './common';
+import {checkDataFormat} from './common';
 import {NotImplementedError, ValueError} from './errors';
-import {Shape} from './types';
+import {DataFormat, Shape} from './keras_format/common';
+import {Distribution, FanMode, VALID_DISTRIBUTION_VALUES, VALID_FAN_MODE_VALUES} from './keras_format/initializer_config';
 import {checkStringTypeUnionValue, deserializeKerasObject, serializeKerasObject} from './utils/generic_utils';
 import {arrayProd} from './utils/math_utils';
 
-// tslint:enable:max-line-length
-
-/** @docinline */
-export type FanMode = 'fanIn'|'fanOut'|'fanAvg';
-export const VALID_FAN_MODE_VALUES = ['fanIn', 'fanOut', 'fanAvg'];
 export function checkFanMode(value?: string): void {
   checkStringTypeUnionValue(VALID_FAN_MODE_VALUES, 'FanMode', value);
 }
 
-/** @docinline */
-export type Distribution = 'normal'|'uniform';
-export const VALID_DISTRIBUTION_VALUES = ['normal', 'uniform'];
 export function checkDistribution(value?: string): void {
   checkStringTypeUnionValue(VALID_DISTRIBUTION_VALUES, 'Distribution', value);
 }
 
 /**
  * Initializer base class.
+ *
+ * @doc {
+ *   heading: 'Initializers', subheading: 'Classes', namespace: 'initializers'}
  */
-@doc(
-    {heading: 'Initializers', subheading: 'Classes', namespace: 'initializers'})
 export abstract class Initializer extends serialization.Serializable {
   public fromConfigUsesCustomObjects(): boolean {
     return false;
@@ -66,7 +60,7 @@ export class Zeros extends Initializer {
     return zeros(shape, dtype);
   }
 }
-serialization.SerializationMap.register(Zeros);
+serialization.registerClass(Zeros);
 
 /**
  * Initializer that generates tensors initialized to 1.
@@ -78,9 +72,9 @@ export class Ones extends Initializer {
     return ones(shape, dtype);
   }
 }
-serialization.SerializationMap.register(Ones);
+serialization.registerClass(Ones);
 
-export interface ConstantConfig {
+export interface ConstantArgs {
   /** The value for each element in the variable. */
   value: number;
 }
@@ -91,13 +85,20 @@ export interface ConstantConfig {
 export class Constant extends Initializer {
   static className = 'Constant';
   private value: number;
-  constructor(config: ConstantConfig) {
+  constructor(args: ConstantArgs) {
     super();
-    this.value = config.value;
+    if (typeof args !== 'object') {
+      throw new ValueError(
+          `Expected argument of type ConstantConfig but got ${args}`);
+    }
+    if (args.value === undefined) {
+      throw new ValueError(`config must have value set but got ${args}`);
+    }
+    this.value = args.value;
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    return K.scalarTimesArray(scalar(this.value), ones(shape, dtype));
+    return tidy(() => mul(scalar(this.value), ones(shape, dtype)));
   }
 
   getConfig(): serialization.ConfigDict {
@@ -106,9 +107,9 @@ export class Constant extends Initializer {
     };
   }
 }
-serialization.SerializationMap.register(Constant);
+serialization.registerClass(Constant);
 
-export interface RandomUniformConfig {
+export interface RandomUniformArgs {
   /** Lower bound of the range of random values to generate. */
   minval?: number;
   /** Upper bound of the range of random values to generate. */
@@ -132,11 +133,11 @@ export class RandomUniform extends Initializer {
   private maxval: number;
   private seed: number;
 
-  constructor(config: RandomUniformConfig) {
+  constructor(args: RandomUniformArgs) {
     super();
-    this.minval = config.minval || this.DEFAULT_MINVAL;
-    this.maxval = config.maxval || this.DEFAULT_MAXVAL;
-    this.seed = config.seed;
+    this.minval = args.minval || this.DEFAULT_MINVAL;
+    this.maxval = args.maxval || this.DEFAULT_MAXVAL;
+    this.seed = args.seed;
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
@@ -147,9 +148,9 @@ export class RandomUniform extends Initializer {
     return {minval: this.minval, maxval: this.maxval, seed: this.seed};
   }
 }
-serialization.SerializationMap.register(RandomUniform);
+serialization.registerClass(RandomUniform);
 
-export interface RandomNormalConfig {
+export interface RandomNormalArgs {
   /** Mean of the random values to generate. */
   mean?: number;
   /** Standard deviation of the random values to generate. */
@@ -170,18 +171,20 @@ export class RandomNormal extends Initializer {
   private stddev: number;
   private seed: number;
 
-  constructor(config: RandomNormalConfig) {
+  constructor(args: RandomNormalArgs) {
     super();
-    this.mean = config.mean || this.DEFAULT_MEAN;
-    this.stddev = config.stddev || this.DEFAULT_STDDEV;
-    this.seed = config.seed;
+    this.mean = args.mean || this.DEFAULT_MEAN;
+    this.stddev = args.stddev || this.DEFAULT_STDDEV;
+    this.seed = args.seed;
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    if (dtype === 'bool') {
+    dtype = dtype || 'float32';
+    if (dtype !== 'float32' && dtype !== 'int32') {
       throw new NotImplementedError(
-          `randomNormal does not support dType bool.`);
+          `randomNormal does not support dType ${dtype}.`);
     }
+
     return K.randomNormal(shape, this.mean, this.stddev, dtype, this.seed);
   }
 
@@ -189,9 +192,9 @@ export class RandomNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-serialization.SerializationMap.register(RandomNormal);
+serialization.registerClass(RandomNormal);
 
-export interface TruncatedNormalConfig {
+export interface TruncatedNormalArgs {
   /** Mean of the random values to generate. */
   mean?: number;
   /** Standard deviation of the random values to generate. */
@@ -217,17 +220,18 @@ export class TruncatedNormal extends Initializer {
   private stddev: number;
   private seed: number;
 
-  constructor(config: TruncatedNormalConfig) {
+  constructor(args: TruncatedNormalArgs) {
     super();
-    this.mean = config.mean || this.DEFAULT_MEAN;
-    this.stddev = config.stddev || this.DEFAULT_STDDEV;
-    this.seed = config.seed;
+    this.mean = args.mean || this.DEFAULT_MEAN;
+    this.stddev = args.stddev || this.DEFAULT_STDDEV;
+    this.seed = args.seed;
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    if (dtype === 'bool') {
+    dtype = dtype || 'float32';
+    if (dtype !== 'float32' && dtype !== 'int32') {
       throw new NotImplementedError(
-          `truncatedNormal does not support dType bool.`);
+          `truncatedNormal does not support dType ${dtype}.`);
     }
     return truncatedNormal(shape, this.mean, this.stddev, dtype, this.seed);
   }
@@ -236,9 +240,9 @@ export class TruncatedNormal extends Initializer {
     return {mean: this.mean, stddev: this.stddev, seed: this.seed};
   }
 }
-serialization.SerializationMap.register(TruncatedNormal);
+serialization.registerClass(TruncatedNormal);
 
-export interface IdentityConfig {
+export interface IdentityArgs {
   /**
    * Multiplicative factor to apply to the identity matrix.
    */
@@ -252,25 +256,28 @@ export interface IdentityConfig {
 export class Identity extends Initializer {
   static className = 'Identity';
   private gain: Scalar;
-  constructor(config: IdentityConfig) {
+  constructor(args: IdentityArgs) {
     super();
-    this.gain = config.gain != null ? scalar(config.gain) : K.getScalar(1.0);
+    this.gain = args.gain != null ? scalar(args.gain) : getScalar(1.0);
   }
+
   apply(shape: Shape, dtype?: DataType): Tensor {
-    if (shape.length !== 2 || shape[0] !== shape[1]) {
-      throw new ValueError(
-          'Identity matrix initializer can only be used for' +
-          ' 2D square matrices.');
-    } else {
-      return K.scalarTimesArray(this.gain, eye(shape[0]));
-    }
+    return tidy(() => {
+      if (shape.length !== 2 || shape[0] !== shape[1]) {
+        throw new ValueError(
+            'Identity matrix initializer can only be used for' +
+            ' 2D square matrices.');
+      } else {
+        return mul(this.gain, eye(shape[0]));
+      }
+    });
   }
 
   getConfig(): serialization.ConfigDict {
     return {gain: this.gain.get()};
   }
 }
-serialization.SerializationMap.register(Identity);
+serialization.registerClass(Identity);
 
 /**
  * Computes the number of input and output units for a weight shape.
@@ -307,7 +314,7 @@ function computeFans(
   return [fanIn, fanOut];
 }
 
-export interface VarianceScalingConfig {
+export interface VarianceScalingArgs {
   /** Scaling factor (positive float). */
   scale: number;
 
@@ -344,18 +351,18 @@ export class VarianceScaling extends Initializer {
    * Constructor of VarianceScaling.
    * @throws ValueError for invalid value in scale.
    */
-  constructor(config: VarianceScalingConfig) {
+  constructor(args: VarianceScalingArgs) {
     super();
-    if (config.scale < 0.0) {
+    if (args.scale < 0.0) {
       throw new ValueError(
-          `scale must be a positive float. Got: ${config.scale}`);
+          `scale must be a positive float. Got: ${args.scale}`);
     }
-    this.scale = config.scale == null ? 1.0 : config.scale;
-    this.mode = config.mode;
+    this.scale = args.scale == null ? 1.0 : args.scale;
+    this.mode = args.mode;
     checkFanMode(this.mode);
-    this.distribution = config.distribution;
+    this.distribution = args.distribution;
     checkDistribution(this.distribution);
-    this.seed = config.seed;
+    this.seed = args.seed;
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
@@ -373,9 +380,10 @@ export class VarianceScaling extends Initializer {
 
     if (this.distribution === 'normal') {
       const stddev = Math.sqrt(scale);
-      if (dtype === 'bool') {
+      dtype = dtype || 'float32';
+      if (dtype !== 'float32' && dtype !== 'int32') {
         throw new NotImplementedError(
-            `${this.getClassName()} does not support dType bool.`);
+            `${this.getClassName()} does not support dType ${dtype}.`);
       }
       return truncatedNormal(shape, 0, stddev, dtype, this.seed);
     } else {
@@ -393,9 +401,9 @@ export class VarianceScaling extends Initializer {
     };
   }
 }
-serialization.SerializationMap.register(VarianceScaling);
+serialization.registerClass(VarianceScaling);
 
-export interface SeedOnlyInitializerConfig {
+export interface SeedOnlyInitializerArgs {
   /** Random number generator seed. */
   seed?: number;
 }
@@ -412,6 +420,8 @@ export interface SeedOnlyInitializerConfig {
  *       http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf.
  */
 export class GlorotUniform extends VarianceScaling {
+  static className = 'GlorotUniform';
+
   /**
    * Constructor of GlorotUniform
    * @param scale
@@ -419,12 +429,12 @@ export class GlorotUniform extends VarianceScaling {
    * @param distribution
    * @param seed
    */
-  constructor(config?: SeedOnlyInitializerConfig) {
+  constructor(args?: SeedOnlyInitializerArgs) {
     super({
       scale: 1.0,
       mode: 'fanAvg',
       distribution: 'uniform',
-      seed: config == null ? null : config.seed
+      seed: args == null ? null : args.seed
     });
   }
 
@@ -435,6 +445,7 @@ export class GlorotUniform extends VarianceScaling {
     return VarianceScaling.className;
   }
 }
+serialization.registerClass(GlorotUniform);
 
 /**
  * Glorot normal initializer, also called Xavier normal initializer.
@@ -448,6 +459,8 @@ export class GlorotUniform extends VarianceScaling {
  *       http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
  */
 export class GlorotNormal extends VarianceScaling {
+  static className = 'GlorotNormal';
+
   /**
    * Constructor of GlorotNormal.
    * @param scale
@@ -455,12 +468,12 @@ export class GlorotNormal extends VarianceScaling {
    * @param distribution
    * @param seed
    */
-  constructor(config?: SeedOnlyInitializerConfig) {
+  constructor(args?: SeedOnlyInitializerArgs) {
     super({
       scale: 1.0,
       mode: 'fanAvg',
       distribution: 'normal',
-      seed: config == null ? null : config.seed
+      seed: args == null ? null : args.seed
     });
   }
 
@@ -471,6 +484,7 @@ export class GlorotNormal extends VarianceScaling {
     return VarianceScaling.className;
   }
 }
+serialization.registerClass(GlorotNormal);
 
 /**
  * He normal initializer.
@@ -483,12 +497,14 @@ export class GlorotNormal extends VarianceScaling {
  *     He et al., http://arxiv.org/abs/1502.01852
  */
 export class HeNormal extends VarianceScaling {
-  constructor(config?: SeedOnlyInitializerConfig) {
+  static className = 'HeNormal';
+
+  constructor(args?: SeedOnlyInitializerArgs) {
     super({
       scale: 2.0,
       mode: 'fanIn',
       distribution: 'normal',
-      seed: config == null ? null : config.seed
+      seed: args == null ? null : args.seed
     });
   }
 
@@ -499,6 +515,39 @@ export class HeNormal extends VarianceScaling {
     return VarianceScaling.className;
   }
 }
+serialization.registerClass(HeNormal);
+
+/**
+ * He uniform initializer.
+ *
+ * It draws samples from a uniform distribution within [-limit, limit]
+ * where `limit` is `sqrt(6 / fan_in)`
+ * where `fanIn` is the number of input units in the weight tensor.
+ *
+ * Reference:
+ *     He et al., http://arxiv.org/abs/1502.01852
+ */
+export class HeUniform extends VarianceScaling {
+  static className = 'HeUniform';
+
+  constructor(args?: SeedOnlyInitializerArgs) {
+    super({
+      scale: 2.0,
+      mode: 'fanIn',
+      distribution: 'uniform',
+      seed: args == null ? null : args.seed
+    });
+  }
+
+  getClassName(): string {
+    // In Python Keras, HeUniform is not a class, but a helper method
+    // that creates a VarianceScaling object. Use 'VarianceScaling' as
+    // class name to be compatible with that.
+    return VarianceScaling.className;
+  }
+}
+serialization.registerClass(HeUniform);
+
 
 /**
  * LeCun normal initializer.
@@ -512,12 +561,14 @@ export class HeNormal extends VarianceScaling {
  *   [Efficient Backprop](http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf)
  */
 export class LeCunNormal extends VarianceScaling {
-  constructor(config?: SeedOnlyInitializerConfig) {
+  static className = 'LeCunNormal';
+
+  constructor(args?: SeedOnlyInitializerArgs) {
     super({
       scale: 1.0,
       mode: 'fanIn',
       distribution: 'normal',
-      seed: config == null ? null : config.seed
+      seed: args == null ? null : args.seed
     });
   }
 
@@ -528,8 +579,37 @@ export class LeCunNormal extends VarianceScaling {
     return VarianceScaling.className;
   }
 }
+serialization.registerClass(LeCunNormal);
 
-export interface OrthogonalConfig extends SeedOnlyInitializerConfig {
+/**
+ * LeCun uniform initializer.
+ *
+ * It draws samples from a uniform distribution in the interval
+ * `[-limit, limit]` with `limit = sqrt(3 / fanIn)`,
+ * where `fanIn` is the number of input units in the weight tensor.
+ */
+export class LeCunUniform extends VarianceScaling {
+  static className = 'LeCunNormal';
+
+  constructor(args?: SeedOnlyInitializerArgs) {
+    super({
+      scale: 1.0,
+      mode: 'fanIn',
+      distribution: 'uniform',
+      seed: args == null ? null : args.seed
+    });
+  }
+
+  getClassName(): string {
+    // In Python Keras, LeCunUniform is not a class, but a helper method
+    // that creates a VarianceScaling object. Use 'VarianceScaling' as
+    // class name to be compatible with that.
+    return VarianceScaling.className;
+  }
+}
+serialization.registerClass(LeCunUniform);
+
+export interface OrthogonalArgs extends SeedOnlyInitializerArgs {
   /**
    * Multiplicative factor to apply to the orthogonal matrix. Defaults to 1.
    */
@@ -548,10 +628,10 @@ export class Orthogonal extends Initializer {
   protected readonly gain: number;
   protected readonly seed: number;
 
-  constructor(config?: OrthogonalConfig) {
+  constructor(args?: OrthogonalArgs) {
     super();
-    this.gain = config.gain == null ? this.DEFAULT_GAIN : config.gain;
-    this.seed = config.seed;
+    this.gain = args.gain == null ? this.DEFAULT_GAIN : args.gain;
+    this.seed = args.seed;
 
     if (this.seed != null) {
       throw new NotImplementedError(
@@ -560,24 +640,28 @@ export class Orthogonal extends Initializer {
   }
 
   apply(shape: Shape, dtype?: DataType): Tensor {
-    if (shape.length !== 2) {
-      throw new NotImplementedError(
-          'The Orthogonal Initializer does not support non-2D shapes yet.');
-    }
-    if (shape[0] * shape[1] > 2000) {
-      console.warn(
-          `Orthgonal initializer is being called on a matrix with more than ` +
-          `2000 (${shape[0] * shape[1]}) elements: Slowness may result.`);
-    }
+    return tidy(() => {
+      if (shape.length !== 2) {
+        throw new NotImplementedError(
+            'The Orthogonal Initializer does not support non-2D shapes yet.');
+      }
+      if (shape[0] * shape[1] > 2000) {
+        console.warn(
+            `Orthogonal initializer is being called on a matrix with more ` +
+            `than 2000 (${shape[0] * shape[1]}) elements: ` +
+            `Slowness may result.`);
+      }
 
-    // TODO(cais): Add seed support.
-    const normalizedShape = shape[0] > shape[1] ? [shape[1], shape[0]] : shape;
-    const a = K.randomNormal(normalizedShape, 0, 1, 'float32') as Tensor2D;
-    let q = linalg.gramSchmidt(a) as Tensor2D;
-    if (shape[0] > shape[1]) {
-      q = q.transpose();
-    }
-    return K.scalarTimesArray(K.getScalar(this.gain), q);
+      // TODO(cais): Add seed support.
+      const normalizedShape =
+          shape[0] > shape[1] ? [shape[1], shape[0]] : shape;
+      const a = K.randomNormal(normalizedShape, 0, 1, 'float32') as Tensor2D;
+      let q = linalg.gramSchmidt(a) as Tensor2D;
+      if (shape[0] > shape[1]) {
+        q = q.transpose();
+      }
+      return mul(getScalar(this.gain), q);
+    });
   }
 
   getConfig(): serialization.ConfigDict {
@@ -587,12 +671,13 @@ export class Orthogonal extends Initializer {
     };
   }
 }
-serialization.SerializationMap.register(Orthogonal);
+serialization.registerClass(Orthogonal);
 
 /** @docinline */
 export type InitializerIdentifier = 'constant'|'glorotNormal'|'glorotUniform'|
-    'heNormal'|'identity'|'leCunNormal'|'ones'|'orthogonal'|'randomNormal'|
-    'randomUniform'|'truncatedNormal'|'varianceScaling'|'zeros'|string;
+    'heNormal'|'heUniform'|'identity'|'leCunNormal'|'leCunUniform'|'ones'|
+    'orthogonal'|'randomNormal'|'randomUniform'|'truncatedNormal'|
+    'varianceScaling'|'zeros'|string;
 
 // Maps the JavaScript-like identifier keys to the corresponding registry
 // symbols.
@@ -602,8 +687,10 @@ export const INITIALIZER_IDENTIFIER_REGISTRY_SYMBOL_MAP:
       'glorotNormal': 'GlorotNormal',
       'glorotUniform': 'GlorotUniform',
       'heNormal': 'HeNormal',
+      'heUniform': 'HeUniform',
       'identity': 'Identity',
       'leCunNormal': 'LeCunNormal',
+      'leCunUniform': 'LeCunUniform',
       'ones': 'Ones',
       'orthogonal': 'Orthogonal',
       'randomNormal': 'RandomNormal',
@@ -635,14 +722,18 @@ export function getInitializer(identifier: InitializerIdentifier|Initializer|
     /* We have four 'helper' classes for common initializers that
     all get serialized as 'VarianceScaling' and shouldn't go through
     the deserializeInitializer pathway. */
-    if (className === 'GlorotUniform') {
-      return new GlorotUniform();
-    } else if (className === 'GlorotNormal') {
+    if (className === 'GlorotNormal') {
       return new GlorotNormal();
+    } else if (className === 'GlorotUniform') {
+      return new GlorotUniform();
     } else if (className === 'HeNormal') {
       return new HeNormal();
+    } else if (className === 'HeUniform') {
+      return new HeUniform();
     } else if (className === 'LeCunNormal') {
       return new LeCunNormal();
+    } else if (className === 'LeCunUniform') {
+      return new LeCunUniform();
     } else {
       const config = {className, config: {}};
       return deserializeInitializer(config);

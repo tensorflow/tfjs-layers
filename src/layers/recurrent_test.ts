@@ -12,9 +12,8 @@
  * Unit tests for recurrent.ts.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {Scalar, scalar, Tensor, tensor2d, tensor3d, tensor4d} from '@tensorflow/tfjs-core';
+import {randomNormal, Scalar, scalar, Tensor, tensor1d, tensor2d, tensor3d, tensor4d, test_util} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
@@ -24,8 +23,10 @@ import {Kwargs} from '../types';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {rnn, RNN, RNNCell} from './recurrent';
-// tslint:enable:max-line-length
+import {GRU, LSTM, rnn, RNN, RNNCell} from './recurrent';
+import {ActivationIdentifier} from '../keras_format/activation_config';
+
+const expectArraysClose = test_util.expectArraysClose;
 
 /**
  * A simplistic RNN step function for testing.
@@ -39,7 +40,7 @@ import {rnn, RNN, RNNCell} from './recurrent';
  */
 function rnnStepForTest(inputs: Tensor, states: Tensor[]): [Tensor, Tensor[]] {
   const mean = tfc.mean(inputs) as Scalar;
-  const newStates = states.map(state => K.scalarPlusArray(mean, state));
+  const newStates = states.map(state => tfc.add(mean, state));
   const output = tfc.neg(newStates[0]);
   return [output, newStates];
 }
@@ -47,128 +48,146 @@ function rnnStepForTest(inputs: Tensor, states: Tensor[]): [Tensor, Tensor[]] {
 describeMathCPUAndGPU('rnn', () => {
   it('Simple step function: 3D inputs, 1 state', () => {
     const inputs = tensor3d(
-      [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
+        [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     const initialStates = [tfc.zeros([2, 4])];
-    const rnnOutputs = rnn(rnnStepForTest, inputs, initialStates);
+    const rnnOutputs = rnn(
+        rnnStepForTest, inputs, initialStates,
+        false /* goBackwards */,
+        null /* mask */,
+        null /* constants */,
+        false /* unroll */,
+        true /* needPerStepOutputs */);
     const lastOutput = rnnOutputs[0];
     const outputs = rnnOutputs[1];
     const newStates = rnnOutputs[2];
     expectTensorsClose(
-      lastOutput,
-      tensor2d(
-        [
-          [-57.75, -57.75, -57.75, -57.75],
-          [-57.75, -57.75, -57.75, -57.75]
-        ],
-        [2, 4]));
+        lastOutput,
+        tensor2d(
+            [
+              [-57.75, -57.75, -57.75, -57.75],
+              [-57.75, -57.75, -57.75, -57.75]
+            ],
+            [2, 4]));
     expectTensorsClose(
-      outputs,
-      tensor3d(
-        [
-          [
-            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
-            [-57.75, -57.75, -57.75, -57.75]
-          ],
-          [
-            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
-            [-57.75, -57.75, -57.75, -57.75]
-          ]
-        ],
-        [2, 3, 4]));
+        outputs,
+        tensor3d(
+            [
+              [
+                [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+                [-57.75, -57.75, -57.75, -57.75]
+              ],
+              [
+                [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+                [-57.75, -57.75, -57.75, -57.75]
+              ]
+            ],
+            [2, 3, 4]));
     expect(newStates.length).toEqual(1);
     expectTensorsClose(
-      newStates[0],
-      tensor2d(
-        [[57.75, 57.75, 57.75, 57.75], [57.75, 57.75, 57.75, 57.75]],
-        [2, 4]));
+        newStates[0],
+        tensor2d(
+            [[57.75, 57.75, 57.75, 57.75], [57.75, 57.75, 57.75, 57.75]],
+            [2, 4]));
   });
 
   it('Simple step function: 3D inputs, 2 states', () => {
     const inputs = tensor3d(
-      [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
+        [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     // The two state tensors have different shapes.
     const initialStates = [tfc.zeros([2, 4]), tfc.ones([2, 3])];
-    const rnnOutputs = rnn(rnnStepForTest, inputs, initialStates);
+    const rnnOutputs = rnn(
+        rnnStepForTest, inputs, initialStates,
+        false /* goBackwards */,
+        null /* mask */,
+        null /* constants */,
+        false /* unroll */,
+        true /* needPerStepOutputs */);
     const lastOutput = rnnOutputs[0];
     const outputs = rnnOutputs[1];
     const newStates = rnnOutputs[2];
     expectTensorsClose(
-      lastOutput,
-      tensor2d(
-        [
-          [-57.75, -57.75, -57.75, -57.75],
-          [-57.75, -57.75, -57.75, -57.75]
-        ],
-        [2, 4]));
+        lastOutput,
+        tensor2d(
+            [
+              [-57.75, -57.75, -57.75, -57.75],
+              [-57.75, -57.75, -57.75, -57.75]
+            ],
+            [2, 4]));
     expectTensorsClose(
-      outputs,
-      tensor3d(
-        [
-          [
-            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
-            [-57.75, -57.75, -57.75, -57.75]
-          ],
-          [
-            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
-            [-57.75, -57.75, -57.75, -57.75]
-          ]
-        ],
-        [2, 3, 4]));
+        outputs,
+        tensor3d(
+            [
+              [
+                [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+                [-57.75, -57.75, -57.75, -57.75]
+              ],
+              [
+                [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+                [-57.75, -57.75, -57.75, -57.75]
+              ]
+            ],
+            [2, 3, 4]));
     expect(newStates.length).toEqual(2);
     expectTensorsClose(
-      newStates[0],
-      tensor2d(
-        [[57.75, 57.75, 57.75, 57.75], [57.75, 57.75, 57.75, 57.75]],
-        [2, 4]));
+        newStates[0],
+        tensor2d(
+            [[57.75, 57.75, 57.75, 57.75], [57.75, 57.75, 57.75, 57.75]],
+            [2, 4]));
     expectTensorsClose(
-      newStates[1],
-      tensor2d([[58.75, 58.75, 58.75], [58.75, 58.75, 58.75]], [2, 3]));
+        newStates[1],
+        tensor2d([[58.75, 58.75, 58.75], [58.75, 58.75, 58.75]], [2, 3]));
   });
 
   it('Simple step function: 4D inputs, 2 states', () => {
     const inputs = tensor4d(
-      [
-        [[[1], [2]], [[3], [4]], [[5], [6]]],
-        [[[10], [20]], [[30], [40]], [[50], [60]]]
-      ],
-      [2, 3, 2, 1]);
+        [
+          [[[1], [2]], [[3], [4]], [[5], [6]]],
+          [[[10], [20]], [[30], [40]], [[50], [60]]]
+        ],
+        [2, 3, 2, 1]);
     // The two state tensors have different shapes.
     const initialStates = [tfc.zeros([2, 4]), tfc.ones([2, 3])];
-    const rnnOutputs = rnn(rnnStepForTest, inputs, initialStates);
+    const rnnOutputs = rnn(
+        rnnStepForTest, inputs, initialStates,
+        false /* goBackwards */,
+        null /* mask */,
+        null /* constants */,
+        false /* unroll */,
+        true /* needPerStepOutputs */);
     const lastOutput = rnnOutputs[0];
     const outputs = rnnOutputs[1];
     const newStates = rnnOutputs[2];
     expectTensorsClose(
-      lastOutput,
-      tensor2d(
-        [
-          [-57.75, -57.75, -57.75, -57.75],
-          [-57.75, -57.75, -57.75, -57.75]
-        ],
-        [2, 4]));
+        lastOutput,
+        tensor2d(
+            [
+              [-57.75, -57.75, -57.75, -57.75],
+              [-57.75, -57.75, -57.75, -57.75]
+            ],
+            [2, 4]));
     expectTensorsClose(
-      outputs,
-      tensor3d(
-        [
-          [
-            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
-            [-57.75, -57.75, -57.75, -57.75]
-          ],
-          [
-            [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
-            [-57.75, -57.75, -57.75, -57.75]
-          ]
-        ],
-        [2, 3, 4]));
+        outputs,
+        tensor3d(
+            [
+              [
+                [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+                [-57.75, -57.75, -57.75, -57.75]
+              ],
+              [
+                [-8.25, -8.25, -8.25, -8.25], [-27.5, -27.5, -27.5, -27.5],
+                [-57.75, -57.75, -57.75, -57.75]
+              ]
+            ],
+            [2, 3, 4]));
     expect(newStates.length).toEqual(2);
     expectTensorsClose(
-      newStates[0],
-      tensor2d(
-        [[57.75, 57.75, 57.75, 57.75], [57.75, 57.75, 57.75, 57.75]],
-        [2, 4]));
+        newStates[0],
+        tensor2d(
+            [[57.75, 57.75, 57.75, 57.75], [57.75, 57.75, 57.75, 57.75]],
+            [2, 4]));
     expectTensorsClose(
-      newStates[1],
-      tensor2d([[58.75, 58.75, 58.75], [58.75, 58.75, 58.75]], [2, 3]));
+        newStates[1],
+        tensor2d([[58.75, 58.75, 58.75], [58.75, 58.75, 58.75]], [2, 3]));
   });
 
   it('Using inputs <3D leads to ValueError', () => {
@@ -200,7 +219,7 @@ class RNNCellForTest extends RNNCell {
     const dataInputs = inputs[0];
     const states = inputs.slice(1);
     const mean = tfc.mean(dataInputs) as Scalar;
-    const newStates = states.map(state => K.scalarPlusArray(mean, state));
+    const newStates = states.map(state => tfc.add(mean, state));
     const output = tfc.neg(newStates[0]);
     return [output].concat(newStates);
   }
@@ -209,7 +228,6 @@ class RNNCellForTest extends RNNCell {
 describeMathCPU('RNN-Layer', () => {
   // TODO(cais): Add tests for stacked RNN cell (i.e., multiple cells) once it
   //   implemented.
-  // TODO(cais): Add tests for stateful RNN once it is implemented.
   // TODO(cais): Add tests for masks once implemented.
   // TODO(cais): Add tests for constants once implemented.
 
@@ -357,7 +375,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
         [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     const outputs = rnn.apply(inputs) as Tensor;
     expectTensorsClose(
-        outputs, K.scalarTimesArray(scalar(-57.75), tfc.ones([2, 4])));
+        outputs, tfc.mul(scalar(-57.75), tfc.ones([2, 4])));
   });
 
   it('apply: 1 state: returnSequences=true, returnState=false', () => {
@@ -449,7 +467,7 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
     const outputs =
         rnn.apply(inputs, {'initialState': [tfc.ones([2, 4])]}) as Tensor;
     expectTensorsClose(
-        outputs, K.scalarTimesArray(scalar(-58.75), tfc.ones([2, 4])));
+        outputs, tfc.mul(scalar(-58.75), tfc.ones([2, 4])));
   });
 
   it('call: with 2 initialStates', () => {
@@ -458,16 +476,17 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
     const inputs = tensor3d(
         [[[1, 2], [3, 4], [5, 6]], [[10, 20], [30, 40], [50, 60]]], [2, 3, 2]);
     const outputs = rnn.apply(inputs, {
-      'initialState':
-          [tfc.ones([2, 4]), K.scalarTimesArray(scalar(2), tfc.ones([2, 5]))]
+      'initialState': [
+        tfc.ones([2, 4]), tfc.mul(scalar(2), tfc.ones([2, 5]))
+      ]
     }) as Tensor[];
     expect(outputs.length).toEqual(3);
     expectTensorsClose(
-        outputs[0], K.scalarTimesArray(scalar(-58.75), tfc.ones([2, 4])));
+        outputs[0], tfc.mul(scalar(-58.75), tfc.ones([2, 4])));
     expectTensorsClose(
-        outputs[1], K.scalarTimesArray(scalar(58.75), tfc.ones([2, 4])));
+        outputs[1], tfc.mul(scalar(58.75), tfc.ones([2, 4])));
     expectTensorsClose(
-        outputs[2], K.scalarTimesArray(scalar(59.75), tfc.ones([2, 5])));
+        outputs[2], tfc.mul(scalar(59.75), tfc.ones([2, 5])));
   });
 
   it('call with incorrect number of initialStates leads to ValueError', () => {
@@ -483,16 +502,14 @@ describeMathCPUAndGPU('RNN-Layer-Math', () => {
 
 describeMathCPU('SimpleRNN Symbolic', () => {
   it('returnSequences=false, returnState=false', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const simpleRNN = tfl.layers.simpleRNN({units: 5});
     const output = simpleRNN.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 5]);
   });
 
   it('returnSequences=false, returnState=true', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const simpleRNN = tfl.layers.simpleRNN({units: 5, returnState: true});
     const output = simpleRNN.apply(input) as tfl.SymbolicTensor[];
     expect(output.length).toEqual(2);
@@ -501,16 +518,14 @@ describeMathCPU('SimpleRNN Symbolic', () => {
   });
 
   it('returnSequences=true, returnState=false', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const simpleRNN = tfl.layers.simpleRNN({units: 5, returnSequences: true});
     const output = simpleRNN.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 10, 5]);
   });
 
   it('returnSequences=true, returnState=true', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const simpleRNN = tfl.layers.simpleRNN({
       units: 5,
       returnSequences: true,
@@ -539,9 +554,91 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
 
   // TODO(cais): Add test for the default recurrent initializer ('Orthogonal')
   //   when it becomes available.
-  // TODO(cais): Test dropout and recurrentDropout when implemented.
 
-  const activations = ['linear', 'tanh'];
+  const dropouts = [0.0, 0.1];
+  const trainings = [true, false];
+  for (const training of trainings) {
+    for (const dropout of dropouts) {
+      const testTitle =
+          `returnSequences=false, returnState=false, useBias=true,` +
+          ` ${training}, dropout=${dropout}`;
+      it(testTitle, () => {
+        const timeSteps = 3;
+        const simpleRNN = tfl.layers.simpleRNN({
+          units,
+          kernelInitializer: 'ones',
+          recurrentInitializer: 'ones',
+          biasInitializer: 'ones',
+          dropout,
+        });
+        const kwargs:Kwargs = {};
+        if (training) {
+          kwargs['training'] = true;
+        }
+        const input = tfc.ones([batchSize, timeSteps, inputSize]);
+        spyOn(tfc, 'randomUniform').and.callThrough();
+        let numTensors = 0;
+        for (let i = 0; i < 2; i++){
+          tfc.dispose(simpleRNN.apply(input, kwargs) as Tensor);
+          if (dropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(1  * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, inputSize], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
+          if (i === 0) {
+            numTensors = tfc.memory().numTensors;
+          } else {
+            expect(tfc.memory().numTensors).toEqual(numTensors);
+          }
+        }
+      });
+    }
+  }
+
+  const recurrentDropouts = [0.0, 0.1];
+  for (const training of trainings) {
+    for (const recurrentDropout of recurrentDropouts) {
+      const testTitle =
+          `returnSequences=false, returnState=false, useBias=true,` +
+          ` ${training}, recurrentDropout=${recurrentDropout}`;
+      it(testTitle, () => {
+        const timeSteps = 3;
+        const simpleRNN = tfl.layers.simpleRNN({
+          units,
+          kernelInitializer: 'ones',
+          recurrentInitializer: 'ones',
+          biasInitializer: 'ones',
+          recurrentDropout,
+        });
+        const kwargs:Kwargs = {};
+        if (training) {
+          kwargs['training'] = true;
+        }
+        const input = tfc.ones([batchSize, timeSteps, inputSize]);
+        spyOn(tfc, 'randomUniform').and.callThrough();
+        let numTensors = 0;
+        for (let i = 0; i < 2; i++){
+          tfc.dispose(simpleRNN.apply(input, kwargs) as Tensor);
+          if (recurrentDropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(1 * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, units], 0, 1, 'float32');
+          } else {
+              expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
+          if (i === 0) {
+            numTensors = tfc.memory().numTensors;
+          } else {
+            expect(tfc.memory().numTensors).toEqual(numTensors);
+          }
+        }
+      });
+    }
+  }
+
+  const activations : ActivationIdentifier[] = ['linear', 'tanh'];
   for (const activation of activations) {
     const testTitle =
         `returnSequences=false, returnState=false, useBias=true, ${activation}`;
@@ -562,7 +659,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
       }
       expectTensorsClose(
           output,
-          K.scalarTimesArray(
+          tfc.mul(
               scalar(expectedElementValue), tfc.ones([batchSize, units])));
     });
   }
@@ -600,18 +697,206 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
       const outputT1 = K.sliceAlongFirstAxis(timeMajorOutput, 1, 1);
       expectTensorsClose(
           outputT0,
-          K.scalarTimesArray(
+          tfc.mul(
               scalar(inputSize + 1), tfc.ones([1, batchSize, units])));
       expectTensorsClose(
           outputT1,
-          K.scalarTimesArray(
+          tfc.mul(
               scalar((inputSize + 1) * (units + 1)),
               tfc.ones([1, batchSize, units])));
       if (returnState) {
         expectTensorsClose(finalState, outputT1.reshape([batchSize, units]));
       }
     });
+
+    it('stateful missing batchInputShape leads to error' , () => {
+      const sequenceLength = 3;
+      const simpleRNN = tfl.layers.simpleRNN({
+        units,
+        kernelInitializer: 'ones',
+        recurrentInitializer: 'ones',
+        biasInitializer: 'zeros',
+        activation: 'linear',
+        stateful: true,
+        inputShape: [sequenceLength, inputSize]
+      }) as RNN;
+      const model = tfl.sequential();
+      expect(() => model.add(simpleRNN)).toThrowError(
+          /needs to know its batch size/);
+    });
+
+    // The reference values below can be obtained with PyKeras code:
+    // ```python
+    // import keras
+    // import numpy as np
+    //
+    // units = 5
+    // batch_size = 4
+    // input_size = 2
+    // sequence_length = 3
+    //
+    // rnn = keras.layers.SimpleRNN(units,
+    //                             kernel_initializer='ones',
+    //                             recurrent_initializer='ones',
+    //                             bias_initializer='zeros',
+    //                             activation='linear',
+    //                             stateful=True,
+    //                             batch_input_shape=[batch_size,
+    //                                                 sequence_length,
+    //                                                 input_size])
+    //
+    // x = np.ones([batch_size, sequence_length, input_size])
+    //
+    // model = keras.Sequential()
+    // model.add(rnn)
+    // print(model.predict(x))
+    // print(model.predict(x))
+    // model.reset_states()
+    // print(model.predict(x))
+    // print(model.predict(x))
+    // ```
+    it('stateful forward', () => {
+      const sequenceLength = 3;
+      const rnn = tfl.layers.simpleRNN({
+        units,
+        kernelInitializer: 'ones',
+        recurrentInitializer: 'ones',
+        biasInitializer: 'zeros',
+        activation: 'linear',
+        stateful: true,
+        batchInputShape: [batchSize, sequenceLength, inputSize]
+      });
+      const model = tfl.sequential();
+      model.add(rnn);
+      const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+      const scalar1 = tfc.scalar(62);
+      const scalar2 = tfc.scalar(7812);
+      let y1: Tensor;
+      let y2: Tensor;
+      tfc.tidy(() => {
+        y1 = model.predict(x) as Tensor;
+        expectArraysClose(y1, tfc.ones([batchSize, units]).mul(scalar1));
+        y2 = model.predict(x) as Tensor;
+        expectArraysClose(y2, tfc.ones([batchSize, units]).mul(scalar2));
+      });
+      model.resetStates();
+      const numTensors0 = tfc.memory().numTensors;
+
+      tfc.tidy(() => {
+        y1 = model.predict(x) as Tensor;
+        expectArraysClose(y1, tfc.ones([batchSize, units]).mul(scalar1));
+        y2 = model.predict(x) as Tensor;
+        expectArraysClose(y2, tfc.ones([batchSize, units]).mul(scalar2));
+      });
+      // Assert no memory leak, even without resetStates() being called.
+      expect(tfc.memory().numTensors).toEqual(numTensors0);
+    });
   }
+
+  it('computeMask: returnSequence = false, returnState = false', () => {
+    const sequenceLength = 3;
+    const rnn = tfl.layers.simpleRNN({
+      units,
+      returnSequences: false,
+      returnState: false,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    });
+    const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+    const m = tfc.ones([sequenceLength, 1]);
+    const mask = rnn.computeMask(x, m);
+    expect(mask).toBeNull();
+  });
+
+  it('computeMask: returnSequence = true, returnState = false', () => {
+    const sequenceLength = 3;
+    const rnn = tfl.layers.simpleRNN({
+      units,
+      returnSequences: true,
+      returnState: false,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    });
+    const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+    const m = tfc.ones([sequenceLength, 1]);
+    const mask = rnn.computeMask(x, m) as Tensor;
+    expectTensorsClose(mask, m);
+  });
+
+  it('computeMask: returnSequence = true, returnState = true', () => {
+    const sequenceLength = 3;
+    const rnn = tfl.layers.simpleRNN({
+      units,
+      returnSequences: true,
+      returnState: true,
+      stateful: true,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    });
+    const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+    rnn.apply(x);
+    rnn.resetStates();  // Let the RNN layer object construct its state first.
+    const m = tfc.ones([sequenceLength, 1]);
+    const masks = rnn.computeMask(x, m) as Tensor[];
+    expect(masks.length).toEqual(2);
+    expectTensorsClose(masks[0], m);
+    expect(masks[1]).toBeNull();
+  });
+
+  // The reference values can be obtained with the following PyKeras code:
+  // ```python
+  // import keras
+  // import numpy as np
+  //
+  // batch_size = 4
+  // sequence_length = 3
+  // input_size = 2
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.SimpleRNN(
+  //     units=5,
+  //     batch_input_shape=[batch_size, sequence_length, input_size],
+  //     kernel_initializer='ones',
+  //     recurrent_initializer='ones',
+  //     bias_initializer='zeros',
+  //     stateful=True))
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='zeros',
+  //                              use_bias=False))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs_1 = np.ones([batch_size, sequence_length, input_size])
+  // xs_2 = np.zeros([batch_size, sequence_length, input_size])
+  // xs = np.concatenate([xs_1, xs_2], 0)
+  // ys = np.array([[-1], [-2], [0], [1], [1], [2], [0], [-1]])
+  //
+  // history = model.fit(xs, ys, batch_size=batch_size, shuffle=False)
+  // print(history.history)
+  // ```
+  it('stateful BPTT', async () => {
+    const sequenceLength = 3;
+    const model = tfl.sequential();
+    model.add(tfl.layers.simpleRNN({
+      units,
+      kernelInitializer: 'ones',
+      recurrentInitializer: 'ones',
+      biasInitializer: 'zeros',
+      stateful: true,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    }));
+    model.add(tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros',
+      useBias: false
+    }));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xs1 = tfc.ones([batchSize, sequenceLength, inputSize]);
+    const xs2 = tfc.ones([batchSize, sequenceLength, inputSize]);
+    const xs = tfc.concat([xs1, xs2], 0);
+    const ys = tfc.tensor2d([[-1], [-2], [0], [1], [1], [2], [0], [-1]]);
+
+    const history = await model.fit(xs, ys, {batchSize, shuffle: false});
+    // See code snippet above for the code used to obtain this loss value.
+    expect(history.history.loss[0]).toBeCloseTo(1.5262475);
+  });
 
   it('BPTT', () => {
     // The following golden values for assertion can be obtained with the
@@ -672,28 +957,26 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
     }
     expectTensorsClose(
         simpleRNN.getWeights()[0],
-        K.scalarTimesArray(scalar(0.8484658), tfc.ones([4, 1])));
+        tfc.mul(scalar(0.8484658), tfc.ones([4, 1])));
     expectTensorsClose(
         simpleRNN.getWeights()[1],
-        K.scalarTimesArray(scalar(0.8484799), tfc.ones([1, 1])));
+        tfc.mul(scalar(0.8484799), tfc.ones([1, 1])));
     expectTensorsClose(
         dense.getWeights()[0],
-        K.scalarTimesArray(scalar(80.967026), tfc.ones([1, 1])));
+        tfc.mul(scalar(80.967026), tfc.ones([1, 1])));
   });
 });
 
 describeMathCPU('GRU Symbolic', () => {
   it('returnSequences=false, returnState=false', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const gru = tfl.layers.gru({units: 5});
     const output = gru.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 5]);
   });
 
   it('returnSequences=false, returnState=true', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const gru = tfl.layers.gru({units: 5, returnState: true});
     const output = gru.apply(input) as tfl.SymbolicTensor[];
     expect(output.length).toEqual(2);
@@ -702,16 +985,14 @@ describeMathCPU('GRU Symbolic', () => {
   });
 
   it('returnSequences=true, returnState=false', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const gru = tfl.layers.gru({units: 5, returnSequences: true});
     const output = gru.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 10, 5]);
   });
 
   it('returnSequences=true, returnState=true', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const gru = tfl.layers.gru({
       units: 5,
       returnSequences: true,
@@ -737,14 +1018,17 @@ describeMathCPU('GRU Symbolic', () => {
      });
 
 
-  it('Serialization round trip', () => {
-    const layer = tfl.layers.gru({units: 4});
-    const pythonicConfig = convertTsToPythonic(layer.getConfig());
-    // tslint:disable-next-line:no-any
-    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
-    const layerPrime = tfl.layers.gru(tsConfig);
-    expect(layerPrime.getConfig().units).toEqual(4);
-  });
+  for (const implementation of [1, 2]) {
+    it('Serialization round trip', () => {
+      const layer = tfl.layers.gru({units: 4, implementation});
+      const pythonicConfig = convertTsToPythonic(layer.getConfig());
+      // tslint:disable-next-line:no-any
+      const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+      const layerPrime = tfl.layers.gru(tsConfig);
+      expect(layerPrime.getConfig().units).toEqual(4);
+      expect(layerPrime.getConfig().implementation).toEqual(implementation);
+    });
+  }
 });
 
 describeMathCPUAndGPU('GRU Tensor', () => {
@@ -785,7 +1069,89 @@ describeMathCPUAndGPU('GRU Tensor', () => {
 
   // TODO(cais): Add test for the default recurrent initializer ('Orthogonal')
   //   when it becomes available.
-  // TODO(cais): Test dropout and recurrentDropout when implemented.
+
+  const dropouts = [0.0, 0.1];
+  const trainings = [true, false];
+  for (const training of trainings) {
+    for (const dropout of dropouts) {
+      const testTitle =
+          `returnSequences=false, returnState=false, useBias=true,` +
+          ` ${training}, dropout=${dropout}`;
+      it(testTitle, () => {
+        const gru = tfl.layers.gru({
+          units,
+          kernelInitializer: 'ones',
+          recurrentInitializer: 'ones',
+          biasInitializer: 'ones',
+          dropout,
+          implementation: 1
+        });
+        const kwargs:Kwargs = {};
+        if (training) {
+          kwargs['training'] = true;
+        }
+        const input = tfc.ones([batchSize, timeSteps, inputSize]);
+        spyOn(tfc, 'randomUniform').and.callThrough();
+        let numTensors = 0;
+        for (let i = 0; i < 2; i++){
+          tfc.dispose(gru.apply(input, kwargs) as Tensor);
+          if (dropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(3  * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, inputSize], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
+          if (i === 0) {
+            numTensors = tfc.memory().numTensors;
+          } else {
+            expect(tfc.memory().numTensors).toEqual(numTensors);
+          }
+        }
+      });
+    }
+  }
+
+  const recurrentDropouts = [0.0, 0.1];
+  for (const training of trainings) {
+    for (const recurrentDropout of recurrentDropouts) {
+      const testTitle =
+          `returnSequences=false, returnState=false, useBias=true,` +
+          ` ${training}, recurrentDropout=${recurrentDropout}`;
+      it(testTitle, () => {
+        const gru = tfl.layers.gru({
+          units,
+          kernelInitializer: 'ones',
+          recurrentInitializer: 'ones',
+          biasInitializer: 'ones',
+          recurrentDropout,
+          implementation: 1
+        });
+        const kwargs:Kwargs = {};
+        if (training) {
+          kwargs['training'] = true;
+        }
+        const input = tfc.ones([batchSize, timeSteps, inputSize]);
+        spyOn(tfc, 'randomUniform').and.callThrough();
+        let numTensors = 0;
+        for (let i = 0; i < 2; i++){
+          tfc.dispose(gru.apply(input, kwargs) as Tensor);
+          if (recurrentDropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(3 * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, units], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
+          if (i === 0) {
+            numTensors = tfc.memory().numTensors;
+          } else {
+            expect(tfc.memory().numTensors).toEqual(numTensors);
+          }
+        }
+      });
+    }
+  }
 
   const implementations = [1, 2];
   const returnStateValues = [false, true];
@@ -815,14 +1181,14 @@ describeMathCPUAndGPU('GRU Tensor', () => {
           let expectedOutput: Tensor;
           if (returnSequences) {
             const outputs = goldenOutputElementValues.map(
-                value => K.scalarTimesArray(
+                value => tfc.mul(
                     scalar(value), tfc.ones([1, batchSize, units])));
             expectedOutput = tfc.transpose(
                 K.concatAlongFirstAxis(
                     K.concatAlongFirstAxis(outputs[0], outputs[1]), outputs[2]),
                 [1, 0, 2]);
           } else {
-            expectedOutput = K.scalarTimesArray(
+            expectedOutput = tfc.mul(
                 scalar(goldenOutputElementValueFinal),
                 tfc.ones([batchSize, units]));
           }
@@ -832,7 +1198,7 @@ describeMathCPUAndGPU('GRU Tensor', () => {
             expectTensorsClose(output[0], expectedOutput);
             expectTensorsClose(
                 output[1],
-                K.scalarTimesArray(
+                tfc.mul(
                     scalar(goldenOutputElementValueFinal),
                     tfc.ones([batchSize, units])));
           } else {
@@ -843,6 +1209,131 @@ describeMathCPUAndGPU('GRU Tensor', () => {
       }
     }
   }
+
+  // The reference values below can be obtained with PyKeras code:
+  // ```python
+  // import keras
+  // import numpy as np
+  //
+  // units = 5
+  // batch_size = 4
+  // input_size = 2
+  // sequence_length = 3
+  //
+  // rnn = keras.layers.GRU(units,
+  //                        kernel_initializer='ones',
+  //                        recurrent_initializer='zeros',
+  //                        bias_initializer='zeros',
+  //                        activation='linear',
+  //                        stateful=True,
+  //                        batch_input_shape=[batch_size,
+  //                                           sequence_length,
+  //                                           input_size])
+  //
+  // x = np.ones([batch_size, sequence_length, input_size])
+  //
+  // model = keras.Sequential()
+  // model.add(rnn)
+  // print(model.predict(x))
+  // print(model.predict(x))
+  // model.reset_states()
+  // print(model.predict(x))
+  // print(model.predict(x))
+  // ```
+  it('stateful forward', () => {
+    const sequenceLength = 3;
+    const rnn = tfl.layers.gru({
+      units,
+      kernelInitializer: 'ones',
+      recurrentInitializer: 'zeros',
+      biasInitializer: 'zeros',
+      activation: 'linear',
+      stateful: true,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    });
+    const model = tfl.sequential();
+    model.add(rnn);
+    const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+    tfc.tidy(() => {
+      const y1 = model.predict(x) as Tensor;
+      expectArraysClose(
+          y1, tfc.ones([batchSize, units]).mul(tfc.scalar(0.542)));
+      const y2 = model.predict(x) as Tensor;
+      expectArraysClose(
+          y2, tfc.ones([batchSize, units]).mul(tfc.scalar(0.9371182)));
+    });
+    model.resetStates();
+    const numTensors0 = tfc.memory().numTensors;
+
+    tfc.tidy(() => {
+      const y3 = model.predict(x) as Tensor;
+      expectArraysClose(
+          y3, tfc.ones([batchSize, units]).mul(tfc.scalar(0.542)));
+      const y4 = model.predict(x) as Tensor;
+      expectArraysClose(
+          y4, tfc.ones([batchSize, units]).mul(tfc.scalar(0.9371182)));
+    });
+    // Assert no memory leak, even without resetStates() being called.
+    expect(tfc.memory().numTensors).toEqual(numTensors0);
+  });
+
+  // The reference values can be obtained with the following PyKeras code:
+  // ```python
+  // import keras
+  // import numpy as np
+  //
+  // batch_size = 4
+  // sequence_length = 3
+  // input_size = 2
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.GRU(
+  //     units=5,
+  //     batch_input_shape=[batch_size, sequence_length, input_size],
+  //     kernel_initializer='ones',
+  //     recurrent_initializer='ones',
+  //     bias_initializer='zeros',
+  //     stateful=True))
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='zeros',
+  //                              use_bias=False))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs_1 = np.ones([batch_size, sequence_length, input_size])
+  // xs_2 = np.zeros([batch_size, sequence_length, input_size])
+  // xs = np.concatenate([xs_1, xs_2], 0)
+  // ys = np.array([[-1], [-2], [0], [1], [1], [2], [0], [-1]])
+  //
+  // history = model.fit(xs, ys, batch_size=batch_size, shuffle=False)
+  // print(history.history)
+  // ```
+  it('stateful BPTT', async () => {
+    const sequenceLength = 3;
+    const model = tfl.sequential();
+    model.add(tfl.layers.gru({
+      units,
+      kernelInitializer: 'ones',
+      recurrentInitializer: 'ones',
+      biasInitializer: 'zeros',
+      stateful: true,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    }));
+    model.add(tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros',
+      useBias: false
+    }));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xs1 = tfc.ones([batchSize, sequenceLength, inputSize]);
+    const xs2 = tfc.ones([batchSize, sequenceLength, inputSize]);
+    const xs = tfc.concat([xs1, xs2], 0);
+    const ys = tfc.tensor2d([[-1], [-2], [0], [1], [1], [2], [0], [-1]]);
+
+    const history = await model.fit(xs, ys, {batchSize, shuffle: false});
+    // See code snippet above for the code used to obtain this loss value.
+    expect(history.history.loss[0]).toBeCloseTo(1.501);
+  });
 
   it('BPTT', () => {
     // The following golden values for assertion can be obtained with the
@@ -906,20 +1397,108 @@ describeMathCPUAndGPU('GRU Tensor', () => {
         tensor2d([[-1.562513e-02, 0, 2.086183e-07]], [1, 3]));
     expectTensorsClose(dense.getWeights()[0], tensor2d([[1.2187521]], [1, 1]));
   });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // in1 = keras.Input(shape=[5])
+  // out1 = keras.layers.Dense(2,
+  //                           kernel_initializer='ones',
+  //                           bias_initializer='zeros')(in1)
+  // in2 = keras.Input(shape=[3, 4])
+  // out2 = keras.layers.GRU(2,
+  //                         recurrent_initializer='ones',
+  //                         kernel_initializer='ones',
+  //                         bias_initializer='zeros')(in2, initial_state=out1)
+  // model = keras.Model(inputs=[in1, in2], outputs=[out1, out2])
+  //
+  // xs1 = np.array([[0.1, 0.2, 0.3, 0.4, 0.5]])
+  // xs2 = np.array([[[0.1, 0.2, 0.3, 0.4], [-0.1, -0.2, -0.3, -0.4],
+  //                 [0.3, 0.4, 0.5, 0.6]]])
+  // print(model.predict([xs1, xs2]))
+  // ```
+  it('SymbolicTensor as initialState thru kwargs; Save & Load', async () => {
+    const in1 = tfl.input({shape: [5]});
+    const out1 = tfl.layers.dense({
+      units: 2,
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(in1) as tfl.SymbolicTensor;
+    const in2 = tfl.input({shape: [3, 4]});
+    const out2 = tfl.layers.gru({
+      units: 2,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(in2, {initialState: out1}) as tfl.SymbolicTensor;
+
+    const model = tfl.model({inputs: [in1 , in2], outputs: [out1, out2]});
+
+    const xs1 = tensor2d([[0.1, 0.2, 0.3, 0.4, 0.5]]);
+    const xs2 = tensor3d(
+        [[[0.1, 0.2, 0.3, 0.4], [-0.1, -0.2, -0.3, -0.4],
+          [0.3, 0.4, 0.5, 0.6]]]);
+    const ys = model.predict([xs1, xs2]) as Tensor[];
+    expect(ys.length).toEqual(2);
+    expectTensorsClose(ys[0], tensor2d([[1.5, 1.5]]));
+    expectTensorsClose(ys[1], tensor2d([[1.4435408, 1.4435408]]));
+
+    // NOTE: Here on down, i.e., the part that tests serialization and
+    // deserialization of the model, has no counterpart in the Python
+    // code snippet above.
+    const modelJSON = model.toJSON(null, false);
+    const modelPrime =
+        await tfl.models.modelFromJSON({modelTopology: modelJSON});
+    const ysPrime = modelPrime.predict([xs1, xs2]) as Tensor[];
+    expect(ysPrime.length).toEqual(2);
+    expectTensorsClose(ysPrime[0], ys[0]);
+    expectTensorsClose(ysPrime[1], ys[1]);
+  });
+});
+
+describeMathCPU('GRU-deserialization', () => {
+  it('Default recurrentActivation round trip', () => {
+    const x = randomNormal([1, 2, 3]);
+    const layer = tfl.layers.gru({units: 4}) as GRU;
+    const y = layer.apply(x) as Tensor;
+    const pythonicConfig = convertTsToPythonic(layer.getConfig());
+    // tslint:disable-next-line:no-any
+    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+    const layerPrime = tfl.layers.gru(tsConfig) as GRU;
+    const yPrime = layer.apply(x) as Tensor;
+    expectTensorsClose(yPrime, y);
+    expect(layerPrime.recurrentActivation.getClassName())
+        .toEqual(layer.recurrentActivation.getClassName());
+  });
+
+  it('Non-default recurrentActivation round trip', () => {
+    const x = randomNormal([1, 2, 3]);
+    const layer =
+        tfl.layers.gru({units: 4, recurrentActivation: 'tanh'}) as GRU;
+    const y = layer.apply(x) as Tensor;
+    const pythonicConfig = convertTsToPythonic(layer.getConfig());
+    // tslint:disable-next-line:no-any
+    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+    const layerPrime = tfl.layers.gru(tsConfig) as GRU;
+    const yPrime = layer.apply(x) as Tensor;
+    expectTensorsClose(yPrime, y);
+    expect(layerPrime.recurrentActivation.getClassName())
+        .toEqual(layer.recurrentActivation.getClassName());
+  });
 });
 
 describeMathCPU('LSTM Symbolic', () => {
   it('returnSequences=false, returnState=false', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const lstm = tfl.layers.lstm({units: 5});
     const output = lstm.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 5]);
   });
 
   it('returnSequences=false, returnState=true', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const lstm = tfl.layers.lstm({units: 5, returnState: true});
     const output = lstm.apply(input) as tfl.SymbolicTensor[];
     expect(output.length).toEqual(3);
@@ -929,16 +1508,14 @@ describeMathCPU('LSTM Symbolic', () => {
   });
 
   it('returnSequences=true, returnState=false', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const lstm = tfl.layers.lstm({units: 5, returnSequences: true});
     const output = lstm.apply(input) as tfl.SymbolicTensor;
     expect(output.shape).toEqual([9, 10, 5]);
   });
 
   it('returnSequences=true, returnState=true', () => {
-    const input =
-        new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
+    const input = new tfl.SymbolicTensor('float32', [9, 10, 8], null, [], null);
     const lstm = tfl.layers.lstm({
       units: 5,
       returnSequences: true,
@@ -965,21 +1542,24 @@ describeMathCPU('LSTM Symbolic', () => {
      });
 
 
-  it('Serialization round trip', () => {
-    const layer = tfl.layers.lstm({units: 4});
-    const pythonicConfig = convertTsToPythonic(layer.getConfig());
-    // tslint:disable-next-line:no-any
-    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
-    const layerPrime = tfl.layers.lstm(tsConfig);
-    expect(layerPrime.getConfig().units).toEqual(4);
-  });
+  for (const implementation of [1, 2]) {
+    it('Serialization round trip', () => {
+      const layer = tfl.layers.lstm({units: 4, implementation});
+      const pythonicConfig = convertTsToPythonic(layer.getConfig());
+      // tslint:disable-next-line:no-any
+      const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+      const layerPrime = tfl.layers.lstm(tsConfig);
+      expect(layerPrime.getConfig().units).toEqual(4);
+      expect(layerPrime.getConfig().implementation).toEqual(implementation);
+    });
+  }
 });
 
 describeMathCPUAndGPU('LSTM Tensor', () => {
   // Note:
   // The golden expected values used for assertions in these unit tests can be
-  // obtained through running the Python code similar to the following example.
-  // TensorFlow 1.5 was used to obtain the values.
+  // obtained through running the Python code similar to the following
+  // example. TensorFlow 1.5 was used to obtain the values.
   //
   // ```python
   // import numpy as np
@@ -1013,7 +1593,89 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
 
   // TODO(cais): Add test for the default recurrent initializer ('Orthogonal')
   //   when it becomes available.
-  // TODO(cais): Test dropout and recurrentDropout when implemented.
+
+  const dropouts = [0.0, 0.1];
+  const trainings = [true, false];
+  for (const training of trainings) {
+    for (const dropout of dropouts) {
+      const testTitle =
+          `returnSequences=false, returnState=false, useBias=true,` +
+          ` ${training}, dropout=${dropout}`;
+      it(testTitle, () => {
+        const lstm = tfl.layers.lstm({
+          units,
+          kernelInitializer: 'ones',
+          recurrentInitializer: 'ones',
+          biasInitializer: 'ones',
+          dropout,
+          implementation: 1
+        });
+        const kwargs:Kwargs = {};
+        if (training) {
+          kwargs['training'] = true;
+        }
+        const input = tfc.ones([batchSize, timeSteps, inputSize]);
+        spyOn(tfc, 'randomUniform').and.callThrough();
+        let numTensors = 0;
+        for (let i = 0; i < 2; i++){
+          tfc.dispose(lstm.apply(input, kwargs) as Tensor);
+          if (dropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(4 * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, inputSize], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
+          if (i === 0) {
+            numTensors = tfc.memory().numTensors;
+          } else {
+            expect(tfc.memory().numTensors).toEqual(numTensors);
+          }
+        }
+      });
+    }
+  }
+
+  const recurrentDropouts = [0.0, 0.1];
+  for (const training of trainings) {
+    for (const recurrentDropout of recurrentDropouts) {
+      const testTitle =
+          `returnSequences=false, returnState=false, useBias=true,` +
+          ` ${training}, recurrentDropout=${recurrentDropout}`;
+      it(testTitle, () => {
+        const lstm = tfl.layers.lstm({
+          units,
+          kernelInitializer: 'ones',
+          recurrentInitializer: 'ones',
+          biasInitializer: 'ones',
+          recurrentDropout,
+          implementation: 1
+        });
+        const kwargs:Kwargs = {};
+        if (training) {
+          kwargs['training'] = true;
+        }
+        const input = tfc.ones([batchSize, timeSteps, inputSize]);
+        spyOn(tfc, 'randomUniform').and.callThrough();
+        let numTensors = 0;
+        for (let i = 0; i < 2; i++){
+          tfc.dispose(lstm.apply(input, kwargs) as Tensor);
+          if (recurrentDropout !== 0.0 && training) {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(4 * (i + 1));
+            expect(tfc.randomUniform).toHaveBeenCalledWith(
+              [batchSize, units], 0, 1, 'float32');
+          } else {
+            expect(tfc.randomUniform).toHaveBeenCalledTimes(0);
+          }
+          if (i === 0) {
+            numTensors = tfc.memory().numTensors;
+          } else {
+            expect(tfc.memory().numTensors).toEqual(numTensors);
+          }
+        }
+      });
+    }
+  }
 
   const implementations: Array<(1 | 2)> = [1, 2];
   const returnStateValues = [false, true];
@@ -1037,8 +1699,8 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
           const input = tfc.ones([batchSize, timeSteps, inputSize]);
           let output = lstm.apply(input);
 
-          // See comments at the beginning of this describe() block on how these
-          // golden expected values can be obtained.
+          // See comments at the beginning of this describe() block on how
+          // these golden expected values can be obtained.
           const goldenOutputElementValueAtT0 = 0.7595095;
           const goldenOutputElementValueAtT1 = 0.96367633;
           const goldenHStateElementValue = goldenOutputElementValueAtT1;
@@ -1046,16 +1708,16 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
 
           let expectedOutput: Tensor;
           if (returnSequences) {
-            const outputAtT0 = K.scalarTimesArray(
+            const outputAtT0 = tfc.mul(
                 scalar(goldenOutputElementValueAtT0),
                 tfc.ones([1, batchSize, units]));
-            const outputAtT1 = K.scalarTimesArray(
+            const outputAtT1 = tfc.mul(
                 scalar(goldenOutputElementValueAtT1),
                 tfc.ones([1, batchSize, units]));
             expectedOutput = tfc.transpose(
                 K.concatAlongFirstAxis(outputAtT0, outputAtT1), [1, 0, 2]);
           } else {
-            expectedOutput = K.scalarTimesArray(
+            expectedOutput = tfc.mul(
                 scalar(goldenOutputElementValueAtT1),
                 tfc.ones([batchSize, units]));
           }
@@ -1065,12 +1727,12 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
             expectTensorsClose(output[0], expectedOutput);
             expectTensorsClose(
                 output[1],
-                K.scalarTimesArray(
+                tfc.mul(
                     scalar(goldenHStateElementValue),
                     tfc.ones([batchSize, units])));
             expectTensorsClose(
                 output[2],
-                K.scalarTimesArray(
+                tfc.mul(
                     scalar(goldenCStateElementValue),
                     tfc.ones([batchSize, units])));
           } else {
@@ -1080,6 +1742,130 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
         });
       }
     }
+
+    // The reference values below can be obtained with PyKeras code:
+    // ```python
+    // import keras
+    // import numpy as np
+    //
+    // units = 5
+    // batch_size = 4
+    // input_size = 2
+    // sequence_length = 3
+    //
+    // rnn = keras.layers.LSTM(units,
+    //                         kernel_initializer='ones',
+    //                         recurrent_initializer='ones',
+    //                         bias_initializer='ones',
+    //                         stateful=True,
+    //                         batch_input_shape=[batch_size,
+    //                                            sequence_length,
+    //                                            input_size])
+    //
+    // x = np.ones([batch_size, sequence_length, input_size])
+    //
+    // model = keras.Sequential()
+    // model.add(rnn)
+    // print(model.predict(x))
+    // print(model.predict(x))
+    // model.reset_states()
+    // print(model.predict(x))
+    // print(model.predict(x))
+    // ```
+    it('stateful forward', () => {
+      const sequenceLength = 3;
+      const rnn = tfl.layers.lstm({
+        units,
+        kernelInitializer: 'ones',
+        recurrentInitializer: 'ones',
+        biasInitializer: 'ones',
+        stateful: true,
+        batchInputShape: [batchSize, sequenceLength, inputSize]
+      });
+      const model = tfl.sequential();
+      model.add(rnn);
+      const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+
+      tfc.tidy(() => {
+        const y1 = model.predict(x) as Tensor;
+        expectArraysClose(
+            y1, tfc.ones([batchSize, units]).mul(tfc.scalar(0.995)));
+        const y2 = model.predict(x) as Tensor;
+        expectArraysClose(
+            y2, tfc.ones([batchSize, units]).mul(tfc.scalar(0.99998766)));
+      });
+      model.resetStates();
+      const numTensors0 = tfc.memory().numTensors;
+
+      tfc.tidy(() => {
+        const y1 = model.predict(x) as Tensor;
+        expectArraysClose(
+            y1, tfc.ones([batchSize, units]).mul(tfc.scalar(0.995)));
+        const y2 = model.predict(x) as Tensor;
+        expectArraysClose(
+            y2, tfc.ones([batchSize, units]).mul(tfc.scalar(0.99998766)));
+      });
+      // Assert no memory leak, even without resetStates() being called.
+      expect(tfc.memory().numTensors).toEqual(numTensors0);
+    });
+
+    // The reference values can be obtained with the following PyKeras code:
+    // ```python
+    // import keras
+    // import numpy as np
+    //
+    // batch_size = 4
+    // sequence_length = 3
+    // input_size = 2
+    //
+    // model = keras.Sequential()
+    // model.add(keras.layers.LSTM(
+    //     5,
+    //     batch_input_shape=[batch_size, sequence_length, input_size],
+    //     kernel_initializer='ones',
+    //     recurrent_initializer='ones',
+    //     bias_initializer='ones',
+    //     stateful=True))
+    // model.add(keras.layers.Dense(1,
+    //                              kernel_initializer='ones',
+    //                              use_bias=False))
+    // model.compile(loss='mean_squared_error', optimizer='sgd')
+    //
+    // xs_1 = np.ones([batch_size, sequence_length, input_size])
+    // xs_2 = np.ones([batch_size, sequence_length, input_size])
+    // xs = np.concatenate([xs_1, xs_2], 0)
+    // ys = np.array([[1], [2], [3], [4], [5], [6], [7], [8]])
+    //
+    // history = model.fit(xs, ys, batch_size=batch_size, shuffle=False)
+    // print(history.history)
+    // ```
+    it('stateful BPTT', async () => {
+      const sequenceLength = 3;
+      const model = tfl.sequential();
+      model.add(tfl.layers.lstm({
+        units,
+        kernelInitializer: 'ones',
+        recurrentInitializer: 'ones',
+        biasInitializer: 'ones',
+        stateful: true,
+        batchInputShape: [batchSize, sequenceLength, inputSize]
+      }));
+      model.add(tfl.layers.dense({
+        units: 1,
+        kernelInitializer: 'ones',
+        useBias: false
+      }));
+      model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+      const xs1 = tfc.ones([batchSize, sequenceLength, inputSize]);
+      const xs2 = tfc.ones([batchSize, sequenceLength, inputSize]);
+      const xs = tfc.concat([xs1, xs2], 0);
+      const ys = tfc.tensor2d([[1], [2], [3], [4], [5], [6], [7], [8]]);
+
+      const history = await model.fit(xs, ys, {batchSize, shuffle: false});
+      // See code snippet above for the code used to obtain this loss value.
+      expect(history.history.loss[0]).toBeCloseTo(5.8377);
+    });
 
     it('BPTT', () => {
       // The following golden values for assertion can be obtained with the
@@ -1151,20 +1937,481 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
           dense.getWeights()[0], tensor2d([[1.4559253]], [1, 1]));
     });
   }
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                  4,
+  //                                  input_length=6,
+  //                                  mask_zero=True,
+  //                                  embeddings_initializer='ones'))
+  // model.add(keras.layers.LSTM(3,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='ones',
+  //                              bias_initializer='zero'))
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //                [1, 0, 0, 0, 0, 0],
+  //                [1, 2, 0, 0, 0, 0],
+  //                [1, 2, 3, 0, 0, 0]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(
+        ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  //
+  // model = keras.Sequential()
+  // embedding_layer = keras.layers.Embedding(4,
+  //                                          2,
+  //                                          input_length=3,
+  //                                          mask_zero=True)
+  // model.add(embedding_layer)
+  // lstm_layer = keras.layers.LSTM(2, go_backwards=True)
+  // model.add(lstm_layer)
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='ones',
+  //                              bias_initializer='zero'))
+  //
+  // embedding_layer.set_weights([
+  //     np.array([[0.1, 0.2], [0.3, 0.4], [-0.1, -0.2], [-0.3, -0.4]])])
+  // print(lstm_layer.get_weights())
+  // lstm_layer.set_weights([
+  //     np.array([[1, 2, 3, 4, 5, 6, 7, 8],
+  //               [-1, -2, -3, -4, -5, -6, -7, -8]]),
+  //     np.array([[1, 2, 3, 4, 5, 6, 7, 8],
+  //               [-1, -2, -3, -4, -5, -6, -7, -8]]),
+  //     np.array([1, 2, 3, 4, 5, 6, 7, 8])])
+  //
+  // xs = np.array([[0, 0, 0],
+  //                [1, 0, 0],
+  //                [1, 2, 0],
+  //                [1, 2, 3]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask, goBackwards = true', () => {
+    const model = tfl.sequential();
+    const embeddingLayer = tfl.layers.embedding({
+      inputDim: 4,
+      outputDim: 2,
+      inputLength: 3,
+      maskZero: true
+    });
+    model.add(embeddingLayer);
+    const lstmLayer = tfl.layers.lstm({
+      units: 2,
+      goBackwards: true
+    });
+    model.add(lstmLayer);
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    // Setting weights to asymmetric, so that the effect of goBackwards=true
+    // can show.
+    embeddingLayer.setWeights([
+        tensor2d([[0.1, 0.2], [0.3, 0.4], [-0.1, -0.2], [-0.3, -0.4]])]);
+    lstmLayer.setWeights([
+        tensor2d([[1, 2, 3, 4, 5, 6, 7, 8],
+                  [-1, -2, -3, -4, -5, -6, -7, -8]]),
+        tensor2d([[1, 2, 3, 4, 5, 6, 7, 8],
+                  [-1, -2, -3, -4, -5, -6, -7, -8]]),
+        tensor1d([1, 2, 3, 4, 5, 6, 7, 8])]);
+
+    const xs = tensor2d([[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(
+        ys, tensor2d([[0], [1.2876499], [1.8165315], [1.9599037]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Reshape(target_shape=[6], input_shape=[6]))
+  // nested_model = keras.Sequential()
+  // nested_model.add(keras.layers.Embedding(10,
+  //                                         4,
+  //                                         input_length=6,
+  //                                         mask_zero=True,
+  //                                         embeddings_initializer='ones'))
+  // nested_model.add(keras.layers.LSTM(3,
+  //                                    recurrent_initializer='ones',
+  //                                    kernel_initializer='ones',
+  //                                    bias_initializer='zeros'))
+  // model.add(nested_model)
+  // model.add(keras.layers.Dense(1,
+  //                              kernel_initializer='ones',
+  //                              bias_initializer='zero'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //               [1, 0, 0, 0, 0, 0],
+  //               [1, 2, 0, 0, 0, 0],
+  //               [1, 2, 3, 0, 0, 0]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask and a nested model', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.reshape({
+      targetShape: [6],
+      inputShape: [6]
+    }));  // A dummy input layer.
+    const nestedModel = tfl.sequential();
+    nestedModel.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    nestedModel.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(nestedModel);
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(
+        ys, tensor2d([[0], [2.283937], [2.891939], [2.9851441]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                  4,
+  //                                  input_length=6,
+  //                                  mask_zero=True,
+  //                                 embeddings_initializer='ones'))
+  // model.add(keras.layers.LSTM(3,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  // model.add(keras.layers.Dense(1,
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zero'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //               [1, 0, 0, 0, 0, 0],
+  //               [1, 2, 0, 0, 0, 0],
+  //               [1, 2, 3, 0, 0, 0]])
+  // ys = np.array([[1], [2], [3], [4]])
+  //
+  // model.fit(xs, ys, epochs=2, batch_size=4)
+  // history = model.fit(xs, ys, epochs=2, batch_size=4)
+  // print(history.history)
+  // ```
+  it('BPTT with mask: correctness and no leak', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = tensor2d([[1], [2], [3], [4]]);
+
+    // Serves as burn-in call for subsequent tracking of memory leak.
+    await model.fit(xs, ys, {epochs: 2, batchSize: 4});
+
+    const numTensors0 = tfc.memory().numTensors;
+    const history = await model.fit(xs, ys, {epochs: 2, batchSize: 4});
+    const numTensors1 = tfc.memory().numTensors;
+    // Assert no memory leak.
+    expect(numTensors1).toEqual(numTensors0);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(0.503677);
+    expect(history.history.loss[1]).toBeCloseTo(0.492173);
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // inp = keras.Input(shape=[6])
+  // y = keras.layers.Embedding(10,
+  //                            4,
+  //                            input_length=6,
+  //                            mask_zero=True,
+  //                            embeddings_initializer='ones')(inp)
+  // y = keras.layers.LSTM(3,
+  //                       return_state=True,
+  //                       recurrent_initializer='ones',
+  //                       kernel_initializer='ones',
+  //                       bias_initializer='zeros')(y)
+  //
+  // model = keras.Model(inputs=inp, outputs=y)
+  //
+  // xs = np.array([[0, 0, 0, 0, 0, 0],
+  //                [1, 0, 0, 0, 0, 0],
+  //                [1, 2, 0, 0, 0, 0],
+  //                [1, 2, 3, 0, 0, 0]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask, returnStates = true', () => {
+    const inp = tfl.input({shape: [6]});
+    let y: tfl.SymbolicTensor|tfl.SymbolicTensor[] = tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 6,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }).apply(inp) as tfl.SymbolicTensor;
+    y = tfl.layers.lstm({
+      units: 3,
+      returnState: true,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }).apply(y) as tfl.SymbolicTensor[];
+    const model = tfl.model({inputs: inp, outputs: y});
+    const xs = tensor2d(
+        [[0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0], [1, 2, 0, 0, 0, 0],
+         [1, 2, 3, 0, 0, 0]]);
+    const ys = model.predict(xs) as Tensor[];
+    expect(ys.length).toEqual(3);
+    expectTensorsClose(ys[0], tensor2d([
+        [0, 0, 0],
+        [0.76131237, 0.76131237, 0.76131237],
+        [0.9639796, 0.9639796, 0.9639796],
+        [0.99504817, 0.99504817, 0.99504817]]));
+    expectTensorsClose(ys[1], tensor2d([
+        [0, 0, 0],
+        [0.76131237, 0.76131237, 0.76131237],
+        [0.9639796, 0.9639796, 0.9639796],
+        [0.99504817, 0.99504817, 0.99504817]]));
+    expectTensorsClose(ys[2], tensor2d([
+        [0, 0, 0],
+        [0.9993292, 0.9993292, 0.9993292],
+        [1.9993222, 1.9993222, 1.9993222],
+        [2.9993203,2.9993203,　2.9993203]]));
+  });
+
+  // Referernce Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                 4,
+  //                                 input_length=3,
+  //                                 mask_zero=True,
+  //                                 embeddings_initializer='ones'))
+  // model.add(keras.layers.LSTM(3,
+  //                             return_sequences=True,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  // model.add(keras.layers.Dense(1,
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  //
+  // xs = np.array([[0, 0, 0],
+  //               [1, 0, 0],
+  //               [1, 2, 0],
+  //               [1, 2, 3]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('With mask, returnSequences = true', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 3,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      returnSequences: true,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.dense({
+        units: 1, kernelInitializer: 'ones', biasInitializer: 'zeros'}));
+
+    const xs = tensor2d(
+        [[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(ys, tensor3d(
+        [[[0], [0], [0]], [[2.283937], [2.283937], [2.283937]],
+         [[2.283937], [2.8919387], [2.8919387]],
+         [[2.283937], [2.8919387], [2.9851446]]]));
+  });
+
+  // Reference Python code:
+  // ```py
+  // import keras
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Embedding(10,
+  //                                  4,
+  //                                  input_length=3,
+  //                                  mask_zero=True,
+  //                                  embeddings_initializer='ones'))
+  // model.add(keras.layers.SimpleRNN(3,
+  //                                  return_sequences=True,
+  //                                  recurrent_initializer='ones',
+  //                                  kernel_initializer='ones',
+  //                                  bias_initializer='zeros'))
+  // model.add(keras.layers.LSTM(3,
+  //                             recurrent_initializer='ones',
+  //                             kernel_initializer='ones',
+  //                             bias_initializer='zeros'))
+  //
+  // xs = np.array([[0, 0, 0],
+  //                [1, 0, 0],
+  //                [1, 2, 0],
+  //                [1, 2, 3]])
+  // ys = model.predict(xs)
+  // print(ys)
+  // ```
+  it('Stacked RNNs with masking: correctness and no leak', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.embedding({
+      inputDim: 10,
+      outputDim: 4,
+      inputLength: 3,
+      maskZero: true,
+      embeddingsInitializer: 'ones'
+    }));
+    model.add(tfl.layers.simpleRNN({
+      units: 3,
+      returnSequences: true,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.add(tfl.layers.lstm({
+      units: 3,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+
+    const xs = tensor2d(
+      [[0, 0, 0], [1, 0, 0], [1, 2, 0], [1, 2, 3]]);
+
+    // Burn-in call for subsequent memory leak check.
+    model.predict(xs);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const ys = model.predict(xs) as Tensor;
+    const numTensors1 = tfc.memory().numTensors;
+    expectTensorsClose(ys, tensor2d(
+        [[0, 0, 0], [0.75950104, 0.75950104, 0.75950104],
+         [0.96367145, 0.96367145, 0.96367145],
+         [0.9950049, 0.9950049, 0.9950049]]));
+    ys.dispose();
+    // Assert no memory leak.
+    expect(numTensors1).toEqual(numTensors0 + 1);
+  });
 });
 
 describeMathCPU('LSTM-deserialization', () => {
-  it('modelFromConfig', async done => {
-    modelFromJSON(fakeLSTMModel)
-        .then(model => {
-          const encoderInputs = tfc.zeros([1, 3, 71], 'float32');
-          const decoderInputs = tfc.zeros([1, 3, 94], 'float32');
-          const outputs =
-              model.predict([encoderInputs, decoderInputs]) as Tensor;
-          expect(outputs.shape).toEqual([1, 3, 94]);
-          done();
-        })
-        .catch(done.fail);
+  it('modelFromConfig', async () => {
+    const model = await modelFromJSON(fakeLSTMModel);
+    const encoderInputs = tfc.zeros([1, 3, 71], 'float32');
+    const decoderInputs = tfc.zeros([1, 3, 94], 'float32');
+    const outputs = model.predict([encoderInputs, decoderInputs]) as Tensor;
+    expect(outputs.shape).toEqual([1, 3, 94]);
+  });
+
+  it('Default recurrentActivation round trip', () => {
+    const x = randomNormal([1, 2, 3]);
+    const layer = tfl.layers.lstm({units: 4}) as LSTM;
+    const y = layer.apply(x) as Tensor;
+    const pythonicConfig = convertTsToPythonic(layer.getConfig());
+    // tslint:disable-next-line:no-any
+    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+    const layerPrime = tfl.layers.lstm(tsConfig) as LSTM;
+    const yPrime = layer.apply(x) as Tensor;
+    expectTensorsClose(yPrime, y);
+    expect(layerPrime.recurrentActivation.getClassName())
+        .toEqual(layer.recurrentActivation.getClassName());
+  });
+
+  it('Non-default recurrentActivation round trip', () => {
+    const x = randomNormal([1, 2, 3]);
+    const layer =
+        tfl.layers.lstm({units: 4, recurrentActivation: 'tanh'}) as LSTM;
+    const y = layer.apply(x) as Tensor;
+    const pythonicConfig = convertTsToPythonic(layer.getConfig());
+    // tslint:disable-next-line:no-any
+    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+    const layerPrime = tfl.layers.lstm(tsConfig) as LSTM;
+    const yPrime = layer.apply(x) as Tensor;
+    expectTensorsClose(yPrime, y);
+    expect(layerPrime.recurrentActivation.getClassName())
+        .toEqual(layer.recurrentActivation.getClassName());
   });
 });
 

@@ -9,20 +9,22 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-import {DataType, Tensor} from '@tensorflow/tfjs-core';
+import {DataType, Tensor, variableGrads} from '@tensorflow/tfjs-core';
 
-import {randomNormal} from './backend/tfjs_backend';
+import {getNextUniqueTensorId} from './backend/state';
 import {getScopedTensorName, getUniqueTensorName} from './common';
 import {Constraint} from './constraints';
 import {NotImplementedError} from './errors';
-import {getNextUniqueTensorId, Shape, SymbolicTensor} from './types';
+import {Shape} from './keras_format/common';
+import {HasShape} from './types';
 
 const DEFAULT_VARIABLE_NAME_PREFIX = 'Variable';
 
 /**
- * A `LayerVariable` is similar to a `Tensor` in that it has a dtype and shape,
- * but its value is mutable.  The value is itself represented as a `Tensor`, and
- * can be read with the `read()` method and updated with the `write()` method.
+ * A `tf.layers.LayerVariable` is similar to a `tf.Tensor` in that it has a
+ * dtype and shape, but its value is mutable.  The value is itself represented
+ * as a`tf.Tensor`, and can be read with the `read()` method and updated with
+ * the `write()` method.
  */
 export class LayerVariable {
   readonly dtype: DataType;
@@ -40,7 +42,7 @@ export class LayerVariable {
   protected readonly val: tfc.Variable;
   readonly constraint: Constraint;
   /**
-   * Construct Variable from a Tensor.
+   * Construct Variable from a `tf.Tensor`.
    *
    * If not explicitly named, the Variable will be given a name with the
    * prefix 'Variable'. Variable names are unique. In the case of name
@@ -79,6 +81,7 @@ export class LayerVariable {
    * be reflected by future calls to this method.
    */
   read(): Tensor {
+    this.assertNotDisposed();
     return this.val;
   }
 
@@ -91,17 +94,34 @@ export class LayerVariable {
    */
   write(newVal: Tensor) {
     // TODO(cais): Once  TF.js Core supports Tensor.dtype, check dtype match.
+    this.assertNotDisposed();
     checkShapesMatch(this.val, newVal);
-    this.val.assign(newVal);
-    if (this.constraint != null) {
-      this.val.assign(this.constraint.apply(this.val));
+    // Skip updating if this is the exact same tensor.
+    if (this.val.id !== newVal.id) {
+      this.val.assign(newVal);
+      if (this.constraint != null) {
+        this.val.assign(this.constraint.apply(this.val));
+      }
     }
     return this;
   }
+
+  /**
+   * Dispose this LayersVariable instance from memory.
+   */
+  dispose(): void {
+    this.assertNotDisposed();
+    this.val.dispose();
+  }
+
+  protected assertNotDisposed(): void {
+    if (this.val.isDisposed) {
+      throw new Error(`LayersVariable ${this.name} is already disposed.`);
+    }
+  }
 }
 
-function checkShapesMatch(
-    x: Tensor|SymbolicTensor, y: Tensor|SymbolicTensor): void {
+function checkShapesMatch(x: HasShape, y: HasShape): void {
   if (x.shape.toString() !== y.shape.toString()) {
     throw new Error(
         'Shape mismatch: ' + JSON.stringify(x.shape) + ' vs. ' +
@@ -192,6 +212,7 @@ export function eyeVariable(
     size: number, dtype?: DataType, name?: string): LayerVariable {
   return new LayerVariable(tfc.eye(size), dtype, name);
 }
+
 /**
  * Get a Variable with uniform distribution of values.
  * @param shape Shape of the tensor.
@@ -224,8 +245,10 @@ export function truncatedNormalVariable(
     name = 'truncatedNormal'): LayerVariable {
   // TODO(cais): Implement logic for dtype and seed once they are supported
   // by deeplearn.js.
-  if (dtype === 'bool') {
-    throw new NotImplementedError(`randomNormal does not support dType bool.`);
+  dtype = dtype || 'float32';
+  if (dtype !== 'float32' && dtype !== 'int32') {
+    throw new NotImplementedError(
+        `randomNormal does not support dType ${dtype}.`);
   }
   return new LayerVariable(
       tfc.truncatedNormal(shape, mean, stddev, dtype, seed), dtype, name);
@@ -243,12 +266,13 @@ export function truncatedNormalVariable(
 export function randomNormalVariable(
     shape: Shape, mean = 0.0, stddev = 1.0, dtype?: DataType, seed?: number,
     name = 'randomNormal'): LayerVariable {
-  if (dtype === 'bool') {
+  dtype = dtype || 'float32';
+  if (dtype !== 'float32' && dtype !== 'int32') {
     throw new NotImplementedError(
-        `randomNormalVariable does not support dType bool.`);
+        `randomNormalVariable does not support dType ${dtype}.`);
   }
   return new LayerVariable(
-      randomNormal(shape, mean, stddev, dtype, seed), dtype, name);
+      tfc.randomNormal(shape, mean, stddev, dtype, seed), dtype, name);
 }
 
 /**
@@ -285,7 +309,7 @@ export function updateSub(x: LayerVariable, decrement: Tensor): LayerVariable {
  * Get the values of an array of Variables.
  *
  * @param tensors An `Array` of `Variable`s to get the values of.
- * @return The values of the inputs, as an `Array` of `Tensor`s.
+ * @return The values of the inputs, as an `Array` of`tf.Tensor`s.
  */
 export function batchGetValue(xs: LayerVariable[]): Tensor[] {
   return xs.map(x => x.read());
@@ -305,4 +329,22 @@ export function batchSetValue(
     const variable: LayerVariable = variableAndValue[0];
     variable.write(variableAndValue[1]);
   });
+}
+
+/**
+ * Returns the gradients of `variables` w.r.t. the return value of `lossFn`.
+ * @param lossFn A function which returns a Scalar to be used as the function
+ *   value (i.e., numerator) for differentiation.
+ * @param variables List of variables to be used as the independent variables
+ *   (i.e., denominator) for differentiation.
+ * @returns An Array of gradients tensors.
+ */
+export function gradients(
+    lossFn: () => tfc.Scalar, variables: LayerVariable[]): Tensor[] {
+  // TODO(cais): The return type signature can be simplified if deeplearn makes
+  //   the corresponding type public.
+  const variableList =
+      variables.map(variable => variable.read() as tfc.Variable);
+  const valudAndGrads = variableGrads(lossFn, variableList);
+  return variables.map(variable => valudAndGrads.grads[variable.name]);
 }

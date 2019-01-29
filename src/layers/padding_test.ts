@@ -12,37 +12,34 @@
  * Unit Tests for Padding Layers.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor, tensor3d} from '@tensorflow/tfjs-core';
 
-import {DataFormat} from '../common';
+import {SymbolicTensor} from '../engine/topology';
 import * as tfl from '../index';
-import {SymbolicTensor} from '../types';
+import {DataFormat} from '../keras_format/common';
 import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {spatial2dPadding, temporalPadding, ZeroPadding2D, ZeroPadding2DLayerConfig} from './padding';
+import {spatial2dPadding, temporalPadding, ZeroPadding2D, ZeroPadding2DLayerArgs} from './padding';
 
-// tslint:enable:max-line-length
 
 describeMathCPUAndGPU('temporalPadding', () => {
   it('default padding 1-1', () => {
     const x = tensor3d([[[1, 2], [3, 4]], [[-1, -2], [-3, -4]]]);
     const y = temporalPadding(x);
-    expectTensorsClose(y, tensor3d([
-                         [[0, 0], [1, 2], [3, 4], [0, 0]],
-                         [[0, 0], [-1, -2], [-3, -4], [0, 0]]
-                       ]));
+    expectTensorsClose(
+        y, tensor3d([
+          [[0, 0], [1, 2], [3, 4], [0, 0]], [[0, 0], [-1, -2], [-3, -4], [0, 0]]
+        ]));
   });
   it('custom padding 2-2', () => {
     const x = tensor3d([[[1, 2], [3, 4]], [[-1, -2], [-3, -4]]]);
     const y = temporalPadding(x, [2, 2]);
-    expectTensorsClose(
-        y, tensor3d([
-          [[0, 0], [0, 0], [1, 2], [3, 4], [0, 0], [0, 0]],
-          [[0, 0], [0, 0], [-1, -2], [-3, -4], [0, 0], [0, 0]]
-        ]));
+    expectTensorsClose(y, tensor3d([
+                         [[0, 0], [0, 0], [1, 2], [3, 4], [0, 0], [0, 0]],
+                         [[0, 0], [0, 0], [-1, -2], [-3, -4], [0, 0], [0, 0]]
+                       ]));
   });
 });
 
@@ -159,9 +156,8 @@ describeMathCPU('ZeroPadding2D: Symbolic', () => {
     const layer = tfl.layers.zeroPadding2d({padding: [2, 4]}) as ZeroPadding2D;
     const pythonicConfig = convertTsToPythonic(layer.getConfig());
     const tsConfig = convertPythonicToTs(pythonicConfig);
-    const layerPrime =
-        tfl.layers.zeroPadding2d(tsConfig as ZeroPadding2DLayerConfig) as
-        ZeroPadding2D;
+    const layerPrime = tfl.layers.zeroPadding2d(
+                           tsConfig as ZeroPadding2DLayerArgs) as ZeroPadding2D;
     expect(layerPrime.padding).toEqual(layer.padding);
     expect(layerPrime.dataFormat).toEqual(layer.dataFormat);
   });

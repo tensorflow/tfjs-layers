@@ -8,14 +8,21 @@
  * =============================================================================
  */
 
+import * as tfc from '@tensorflow/tfjs-core';
+import * as tfl from '@tensorflow/tfjs-layers';
+
 export function status(statusText) {
   document.getElementById('status').textContent = statusText;
 }
 
 export function setMetadata(metadata) {
+  document.getElementById('benchmark-timestamp').textContent = new Date().toISOString();
+  document.getElementById('navigator-userAgent').textContent = navigator.userAgent;
   document.getElementById('pyKerasVersion').textContent = metadata.keras_version;
   document.getElementById('tfVersion').textContent = metadata.tensorflow_version;
   document.getElementById('tfUsesGPU').textContent = metadata.tensorflow_uses_gpu;
+  document.getElementById('tfjs-core-version').textContent = tfc.version_core;
+  document.getElementById('tfjs-layers-version').textContent = tfl.version_layers;
 }
 
 export function setRunBenchmarksFunction(runAllBenchmarks) {
@@ -27,9 +34,17 @@ export function addResult(modelName, result) {
   let row = '<td>' + modelName + '</td>';
   row += '<td>' + result.originalData.description + '</td>';
   row += '<td>' + result.originalData.batch_size + '</td>';
-  row += '<td>' + result.originalData.train_epochs + '</td>';
-  row += '<td>' + (result.originalData.train_time * 1e3).toFixed(1) + '</td>';
-  row += '<td>' + result.trainTimeMs.toFixed(1) + '</td>';
+  const trainEpochsStr =
+      result.originalData.train_epochs > 0 ?
+      result.originalData.train_epochs : 'N/A';
+  row += '<td>' + trainEpochsStr + '</td>';
+  const originalTrainTimeStr =
+      result.originalData.train_epochs > 0 ?
+      (result.originalData.train_time * 1e3).toFixed(1) : 'N/A';
+  row += '<td>' + originalTrainTimeStr + '</td>';
+  const trainTimeStr =
+      result.trainTimeMs == null ? 'N/A' : result.trainTimeMs.toFixed(1);
+  row += '<td>' + trainTimeStr + '</td>';
   row += '<td>' + (result.originalData.predict_time * 1e3).toFixed(1) + '</td>';
   row += '<td>' + result.predictTimeMs.toFixed(1) + '</td>';
 

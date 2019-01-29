@@ -13,23 +13,22 @@
  *
  * Original source: keras/constraints.py
  */
-import {serialization, Tensor} from '@tensorflow/tfjs-core';
+import {notEqual, serialization, Tensor, tidy, zerosLike} from '@tensorflow/tfjs-core';
 
-// tslint:disable:max-line-length
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {Layer, LayerConfig} from '../engine/topology';
-import {NotImplementedError, ValueError} from '../errors';
+import {Layer, LayerArgs} from '../engine/topology';
+import {ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
+import {Shape} from '../keras_format/common';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
-import {Kwargs, Shape} from '../types';
+import {Kwargs} from '../types';
 import * as generic_utils from '../utils/generic_utils';
-import {getExactlyOneShape} from '../utils/generic_utils';
+import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-// tslint:enable:max-line-length
 
-export interface EmbeddingLayerConfig extends LayerConfig {
+export interface EmbeddingLayerArgs extends LayerArgs {
   /**
    * Integer > 0. Size of the vocabulary, i.e. maximum integer index + 1.
    */
@@ -99,18 +98,18 @@ export class Embedding extends Layer {
   private readonly embeddingsRegularizer?: Regularizer;
   private readonly embeddingsConstraint?: Constraint;
 
-  constructor(config: EmbeddingLayerConfig) {
-    super(config);
-    if (config.batchInputShape == null && config.inputShape == null) {
+  constructor(args: EmbeddingLayerArgs) {
+    super(args);
+    if (args.batchInputShape == null && args.inputShape == null) {
       // Porting Note: This logic is copied from Layer's constructor, since we
       // can't do exactly what the Python constructor does for Embedding().
       // Specifically, the super constructor can not be called after the
       // mutation of the `config` argument.
       let batchSize: number = null;
-      if (config.batchSize != null) {
-        batchSize = config.batchSize;
+      if (args.batchSize != null) {
+        batchSize = args.batchSize;
       }
-      if (config.inputLength == null) {
+      if (args.inputLength == null) {
         // Fix super-constructor to what it would have done if
         // 'config.inputShape' were (None, )
         this.batchInputShape = [batchSize, null];
@@ -118,18 +117,19 @@ export class Embedding extends Layer {
         // Fix super-constructor to what it would have done if
         // 'config.inputShape' were (config.inputLength, )
         this.batchInputShape =
-            [batchSize].concat(generic_utils.toList(config.inputLength));
+            [batchSize].concat(generic_utils.toList(args.inputLength));
       }
     }
-    this.inputDim = config.inputDim;
-    this.outputDim = config.outputDim;
+    this.inputDim = args.inputDim;
+    this.outputDim = args.outputDim;
     this.embeddingsInitializer = getInitializer(
-        config.embeddingsInitializer || this.DEFAULT_EMBEDDINGS_INITIALIZER);
-    this.embeddingsRegularizer = getRegularizer(config.embeddingsRegularizer);
-    this.activityRegularizer = getRegularizer(config.activityRegularizer);
-    this.embeddingsConstraint = getConstraint(config.embeddingsConstraint);
-    this.maskZero = config.maskZero;
-    this.inputLength = config.inputLength;
+        args.embeddingsInitializer || this.DEFAULT_EMBEDDINGS_INITIALIZER);
+    this.embeddingsRegularizer = getRegularizer(args.embeddingsRegularizer);
+    this.activityRegularizer = getRegularizer(args.activityRegularizer);
+    this.embeddingsConstraint = getConstraint(args.embeddingsConstraint);
+    this.maskZero = args.maskZero;
+    this.supportsMasking = args.maskZero;
+    this.inputLength = args.inputLength;
   }
 
   public build(inputShape: Shape|Shape[]): void {
@@ -140,13 +140,23 @@ export class Embedding extends Layer {
     this.built = true;
   }
 
+  // Override warnOnIncompatibleInputShape because an embedding layer allows
+  // the input to have varying ranks.
+  protected warnOnIncompatibleInputShape(inputShape: Shape) {}
+
   computeMask(inputs: Tensor|Tensor[], mask?: Tensor|Tensor[]): Tensor {
-    throw new NotImplementedError(
-        'computeMask has not been implemented for Embedding yet');
+    return tidy(() => {
+      if (!this.maskZero) {
+        return null;
+      } else {
+        inputs = getExactlyOneTensor(inputs);
+        return notEqual(inputs, zerosLike(inputs as Tensor));
+      }
+    });
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     if (this.inputLength == null) {
       return [...inputShape, this.outputDim];
     }
@@ -175,15 +185,17 @@ export class Embedding extends Layer {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    this.invokeCallHook(inputs, kwargs);
-    // Embedding layer accepts only a single input.
-    let input = generic_utils.getExactlyOneTensor(inputs);
-    if (K.dtype(input) !== 'int32') {
-      input = K.cast(input, 'int32');
-    }
-    const output = K.gather(this.embeddings.read(), input.as1D());
-    return K.reshape(
-        output, getExactlyOneShape(this.computeOutputShape(input.shape)));
+    return tidy(() => {
+      this.invokeCallHook(inputs, kwargs);
+      // Embedding layer accepts only a single input.
+      let input = getExactlyOneTensor(inputs);
+      if (input.dtype !== 'int32') {
+        input = K.cast(input, 'int32');
+      }
+      const output = K.gather(this.embeddings.read(), input.as1D());
+      return output.reshape(
+          getExactlyOneShape(this.computeOutputShape(input.shape)));
+    });
   }
 
   getConfig(): serialization.ConfigDict {
@@ -202,5 +214,4 @@ export class Embedding extends Layer {
     return config;
   }
 }
-
-serialization.SerializationMap.register(Embedding);
+serialization.registerClass(Embedding);

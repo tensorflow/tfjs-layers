@@ -19,10 +19,14 @@ set -e
 DEMO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DEMO_PORT=8000
+SKIP_PY_BENCHMAKRS=0
 while true; do
   if [[ "$1" == "--port" ]]; then
     DEMO_PORT=$2
     shift 2
+  elif [[ "$1" == "--skip_py_benchmarks" ]]; then
+    SKIP_PY_BENCHMAKRS=1
+    shift
   elif [[ -z "$1" ]]; then
     break
   else
@@ -39,24 +43,31 @@ DATA_ROOT="${DEMO_DIR}/dist/data"
 
 # Make sure you install the tensorflowjs pip package first.
 
-echo Running Python Keras benchmarks...
-python "${DEMO_DIR}/python/benchmarks.py" "${DATA_ROOT}"
+if [[ "${SKIP_PY_BENCHMAKRS}" == 0 ]]; then
+  echo Running Python Keras benchmarks...
+  python "${DEMO_DIR}/python/benchmarks.py" "${DATA_ROOT}"
+fi
 
-echo Building local TensorFlow.js Layers NPM package...
-cd ../..
-yarn build
-yarn link
-
-cd ${DEMO_DIR}
+# Build tfjs-layers.
+echo "Building tfjs-layers..."
+cd "${DEMO_DIR}/../.."
 yarn
-yarn link "@tensorflow/tfjs-layers"
+yarn build
+
+echo "Building benchmarks demo..."
+cd ${DEMO_DIR}
+# Force a refresh of the tfjs-layers dependency.
+rm -rf node_modules
+yarn
 yarn build
 
 echo
 echo "-----------------------------------------------------------"
-echo "Once the HTTP server has started, you can view the demo at:"
-echo "  http://localhost:${DEMO_PORT}/dist"
+echo "Benchmarks page will open in your browser shortly...       "
+echo
+echo "Once the page is up, click the 'Run Benchmarks' button     "
+echo "to run the benchmarks in the browser.                      "
 echo "-----------------------------------------------------------"
 echo
 
-node_modules/http-server/bin/http-server -p "${DEMO_PORT}"
+yarn watch

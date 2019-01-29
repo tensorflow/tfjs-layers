@@ -10,11 +10,9 @@
 
 /* Original source: utils/generic_utils.py */
 
-// tslint:disable:max-line-length
-import {DataType, serialization, Tensor} from '@tensorflow/tfjs-core';
+import {DataType, serialization} from '@tensorflow/tfjs-core';
 
 import {AssertionError, ValueError} from '../errors';
-import {Shape} from '../types';
 // tslint:enable
 
 /**
@@ -104,29 +102,6 @@ export function objectListUid(objs: any|any[]): string {
   return retVal;
 }
 /**
- * Determine whether the input is an Array of Shapes.
- */
-export function isArrayOfShapes(x: Shape|Shape[]): boolean {
-  return Array.isArray(x) && Array.isArray(x[0]);
-}
-
-/**
- * Special case of normalizing shapes to lists.
- *
- * @param x A shape or list of shapes to normalize into a list of Shapes.
- * @return A list of Shapes.
- */
-export function normalizeShapeList(x: Shape|Shape[]): Shape[] {
-  if (x.length === 0) {
-    return [];
-  }
-  if (!Array.isArray(x[0])) {
-    return [x] as Shape[];
-  }
-  return x as Shape[];
-}
-
-/**
  * Converts string to snake-case.
  * @param name
  */
@@ -168,11 +143,48 @@ export function serializeKerasObject(instance: serialization.Serializable):
 }
 
 /**
+ * Replace ndarray-style scalar objects in serialization objects with numbers.
+ *
+ * Background: In some versions of tf.keras, certain scalar values in the HDF5
+ * model save file can be serialized as: `{'type': 'ndarray', 'value': num}`,
+ * where in `num` is a plain number. This method converts such serialization
+ * to a `number`.
+ *
+ * @param config The keras-format serialization object to be processed
+ *   (in place).
+ */
+function convertNDArrayScalarsInConfig(
+    config: serialization.ConfigDictValue): void {
+  if (config == null || typeof config !== 'object') {
+    return;
+  } else if (Array.isArray(config)) {
+    config.forEach(configItem => convertNDArrayScalarsInConfig(configItem));
+  } else {
+    const fields = Object.keys(config);
+    for (const field of fields) {
+      const value = config[field];
+      if (value != null && typeof value === 'object') {
+        if (!Array.isArray(value) && value['type'] === 'ndarray' &&
+            typeof value['value'] === 'number') {
+          config[field] = value['value'];
+        } else {
+          convertNDArrayScalarsInConfig(value as serialization.ConfigDict);
+        }
+      }
+    }
+  }
+}
+
+/**
  * Deserialize a saved Keras Object
  * @param identifier either a string ID or a saved Keras dictionary
  * @param moduleObjects a list of Python class names to object constructors
  * @param customObjects a list of Python class names to object constructors
  * @param printableModuleName debug text for the object being reconstituted
+ * @param fastWeightInit Optional flag to use fast weight initialization
+ *   during deserialization. This is applicable to cases in which
+ *   the initialization will be immediately overwritten by loaded weight
+ *   values. Default: `false`.
  * @returns a TensorFlow.js Layers object
  */
 // tslint:disable:no-any
@@ -180,7 +192,7 @@ export function deserializeKerasObject(
     identifier: string|serialization.ConfigDict,
     moduleObjects = {} as {[objName: string]: any},
     customObjects = {} as {[objName: string]: any},
-    printableModuleName = 'object'): any {
+    printableModuleName = 'object', fastWeightInit = false): any {
   // tslint:enable
   if (typeof identifier === 'string') {
     const functionName = identifier;
@@ -192,7 +204,16 @@ export function deserializeKerasObject(
     } else {
       fn = moduleObjects[functionName];
       if (fn == null) {
-        throw new ValueError(`Unknown ${printableModuleName}: ${identifier}`);
+        throw new ValueError(
+            `Unknown ${printableModuleName}: ${identifier}. ` +
+            `This may be due to one of the following reasons:\n` +
+            `1. The ${printableModuleName} is defined in Python, in which ` +
+            `case it needs to be ported to TensorFlow.js or your JavaScript ` +
+            `code.\n` +
+            `2. The custom ${printableModuleName} is defined in JavaScript, ` +
+            `but is not registered properly with ` +
+            `tf.serialization.registerClass().`);
+        // TODO(cais): Add link to tutorial page on custom layers.
       }
     }
     return fn;
@@ -215,7 +236,16 @@ export function deserializeKerasObject(
       [cls, fromConfig] = moduleObjects[className];
     }
     if (cls == null) {
-      throw new ValueError(`Unknown ${printableModuleName}: ${className}`);
+      throw new ValueError(
+          `Unknown ${printableModuleName}: ${className}. ` +
+          `This may be due to one of the following reasons:\n` +
+          `1. The ${printableModuleName} is defined in Python, in which ` +
+          `case it needs to be ported to TensorFlow.js or your JavaScript ` +
+          `code.\n` +
+          `2. The custom ${printableModuleName} is defined in JavaScript, ` +
+          `but is not registered properly with ` +
+          `tf.serialization.registerClass().`);
+      // TODO(cais): Add link to tutorial page on custom layers.
     }
     if (fromConfig != null) {
       // Porting notes: Instead of checking to see whether fromConfig accepts
@@ -239,7 +269,9 @@ export function deserializeKerasObject(
       for (const key of Object.keys(customObjects)) {
         _GLOBAL_CUSTOM_OBJECTS[key] = customObjects[key];
       }
-      const returnObj = fromConfig(cls, config.config);
+      convertNDArrayScalarsInConfig(config.config);
+      const returnObj =
+          fromConfig(cls, config.config, customObjects, fastWeightInit);
       _GLOBAL_CUSTOM_OBJECTS = {...backupCustomObjects};
 
       return returnObj;
@@ -258,48 +290,6 @@ export function deserializeKerasObject(
       _GLOBAL_CUSTOM_OBJECTS = {...backupCustomObjects};
       return returnObj;
     }
-  }
-}
-
-/**
- * Helper function to obtain exactly one Tensor.
- * @param xs: A single `Tensor` or an `Array` of `Tensor`s.
- * @return A single `Tensor`. If `xs` is an `Array`, return the first one.
- * @throws ValueError: If `xs` is an `Array` and its length is not 1.
- */
-export function getExactlyOneTensor(xs: Tensor|Tensor[]): Tensor {
-  let x: Tensor;
-  if (Array.isArray(xs)) {
-    if (xs.length !== 1) {
-      throw new ValueError(`Expected Tensor length to be 1; got ${xs.length}`);
-    }
-    x = xs[0];
-  } else {
-    x = xs as Tensor;
-  }
-  return x;
-}
-
-/**
- * Helper function to obtain exactly on instance of Shape.
- *
- * @param shapes Input single `Shape` or Array of `Shape`s.
- * @returns If input is a single `Shape`, return it unchanged. If the input is
- *   an `Array` containing exactly one instance of `Shape`, return the instance.
- *   Otherwise, throw a `ValueError`.
- * @throws ValueError: If input is an `Array` of `Shape`s, and its length is not
- *   1.
- */
-export function getExactlyOneShape(shapes: Shape|Shape[]): Shape {
-  if (Array.isArray(shapes) && Array.isArray(shapes[0])) {
-    if (shapes.length === 1) {
-      shapes = shapes as Shape[];
-      return shapes[0];
-    } else {
-      throw new ValueError(`Expected exactly 1 Shape; got ${shapes.length}`);
-    }
-  } else {
-    return shapes as Shape;
   }
 }
 
@@ -410,3 +400,29 @@ export function checkStringTypeUnionValue(
         values} or null/undefined.`);
   }
 }
+
+/**
+ * Helper function for verifying the types of inputs.
+ *
+ * Ensures that the elements of `x` are all of type `expectedType`.
+ * Also verifies that the length of `x` is within bounds.
+ *
+ * @param x Object to test.
+ * @param expectedType The string expected type of all of the elements in the
+ * Array.
+ * @param minLength Return false if x.length is less than this.
+ * @param maxLength Return false if x.length is greater than this.
+ * @returns true if and only if `x` is an `Array<expectedType>` with
+ * length >= `minLength` and <= `maxLength`.
+ */
+// tslint:disable:no-any
+export function checkArrayTypeAndLength(
+    x: any, expectedType: string, minLength = 0,
+    maxLength = Infinity): boolean {
+  assert(minLength >= 0);
+  assert(maxLength >= minLength);
+  return (
+      Array.isArray(x) && x.length >= minLength && x.length <= maxLength &&
+      x.every(e => typeof e === expectedType));
+}
+// tslint:enable:no-any

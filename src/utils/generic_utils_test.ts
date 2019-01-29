@@ -108,41 +108,6 @@ describe('toList', () => {
   });
 });
 
-describe('isArrayOfShapes', () => {
-  it('returns false for a single non-empty shape', () => {
-    expect(utils.isArrayOfShapes([1, 2, 3])).toEqual(false);
-  });
-  it('returns false for a single empty shape', () => {
-    expect(utils.isArrayOfShapes([])).toEqual(false);
-  });
-  it('returns true for an array of shapes', () => {
-    expect(utils.isArrayOfShapes([[1], [2, 3]])).toEqual(true);
-  });
-  it('returns true for an array of shapes that includes empty shapes', () => {
-    expect(utils.isArrayOfShapes([[], [2, 3]])).toEqual(true);
-    expect(utils.isArrayOfShapes([[]])).toEqual(true);
-    expect(utils.isArrayOfShapes([[], []])).toEqual(true);
-  });
-});
-
-describe('normalizeShapeList', () => {
-  it('returns an empty list if an empty list is passed in.', () => {
-    expect(utils.normalizeShapeList([])).toEqual([]);
-  });
-
-  it('returns a list of shapes if a single shape is passed in.', () => {
-    expect(utils.normalizeShapeList([1])).toEqual([[1]]);
-  });
-
-  it('returns a list of shapes if an empty shape is passed in.', () => {
-    expect(utils.normalizeShapeList([[]])).toEqual([[]]);
-  });
-
-  it('returns a list of shapes if a list of shapes is passed in.', () => {
-    expect(utils.normalizeShapeList([[1]])).toEqual([[1]]);
-  });
-});
-
 describe('toSnakeCase', () => {
   for (const [inputString, expectedOutput] of [
            ['', ''], ['A', 'a'], ['AA', 'aa'], ['AAA', 'aaa'], ['AAa', 'a_aa'],
@@ -162,23 +127,6 @@ describe('toCamelCase', () => {
       expect(utils.toCamelCase(inputString)).toEqual(expectedOutput);
     });
   }
-});
-
-describe('getExactlyOneShape', () => {
-  it('single instance', () => {
-    expect(utils.getExactlyOneShape([1, 2, 3])).toEqual([1, 2, 3]);
-    expect(utils.getExactlyOneShape([null, 8])).toEqual([null, 8]);
-    expect(utils.getExactlyOneShape([])).toEqual([]);
-  });
-  it('Array of length 1', () => {
-    expect(utils.getExactlyOneShape([[1, 2]])).toEqual([1, 2]);
-    expect(utils.getExactlyOneShape([[]])).toEqual([]);
-  });
-  it('Array of length 2: ValueError', () => {
-    expect(() => utils.getExactlyOneShape([
-      [1], [2]
-    ])).toThrowError(/Expected exactly 1 Shape; got 2/);
-  });
 });
 
 describe('stringsEqual', () => {
@@ -242,5 +190,41 @@ describe('isObjectEmpty', () => {
   it('Non-empty object', () => {
     expect(utils.isObjectEmpty({'a': 12})).toEqual(false);
     expect(utils.isObjectEmpty({'a': 12, 'b': 34})).toEqual(false);
+  });
+});
+
+describe('checkArrayTypeAndLength', () => {
+  it('checks types', () => {
+    // [1,2,3] is made of all 'number's.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3], 'number')).toEqual(true);
+    // ['hello', 'world'] is made of all 'strings's.
+    expect(utils.checkArrayTypeAndLength(['hello', 'world'], 'string'))
+        .toEqual(true);
+    // [1,2,[3]] is not made of all 'number's.
+    expect(utils.checkArrayTypeAndLength([1, 2, [3]], 'number')).toEqual(false);
+  });
+  it('checks lengths', () => {
+    // length of [1,2,3] is >= 1.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3], 'number', 1)).toEqual(true);
+    // length of [1,2,3] is >= 1 and <= 3.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3], 'number', 1, 3))
+        .toEqual(true);
+    // length of [1,2,3,4,5] is not >= 1 and <= 3.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3, 4, 5], 'number', 1, 3))
+        .toEqual(false);
+    // length of [1,2,3,4,5] is not >= 7 and <= 10.
+    expect(utils.checkArrayTypeAndLength([1, 2, 3, 4, 5], 'number', 7, 10))
+        .toEqual(false);
+    // Length of the empty array is >= 0 and <= 0.
+    expect(utils.checkArrayTypeAndLength([], 'does_not_matter', 0, 0))
+        .toEqual(true);
+  });
+  it('rejects negative length limits', () => {
+    expect(() => utils.checkArrayTypeAndLength([1, 2, 3], 'number', -1))
+        .toThrowError();
+  });
+  it('rejects maxLength < minLength', () => {
+    expect(() => utils.checkArrayTypeAndLength([1, 2, 3], 'number', 100, 2))
+        .toThrowError();
   });
 });

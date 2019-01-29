@@ -12,25 +12,25 @@
  * TensorFlow.js Layers: Basic Layers.
  */
 
-import {Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
+import {Scalar, serialization, Tensor, tidy, transpose, util} from '@tensorflow/tfjs-core';
 
-// tslint:disable:max-line-length
-import {Activation as ActivationFn, ActivationIdentifier, getActivation, serializeActivation} from '../activations';
+import {Activation as ActivationFn, getActivation, serializeActivation} from '../activations';
+import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {Constraint, ConstraintIdentifier, getConstraint, serializeConstraint} from '../constraints';
-import {Layer, LayerConfig} from '../engine/topology';
+import {DisposeResult, InputSpec, Layer, LayerArgs} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
 import {getInitializer, Initializer, InitializerIdentifier, serializeInitializer} from '../initializers';
+import {ActivationIdentifier} from '../keras_format/activation_config';
+import {Shape} from '../keras_format/common';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
-import {Kwargs, Shape} from '../types';
-import * as generic_utils from '../utils/generic_utils';
-import {getExactlyOneTensor} from '../utils/generic_utils';
-import * as math_utils from '../utils/math_utils';
+import {Kwargs} from '../types';
+import {arrayProd, range} from '../utils/math_utils';
+import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-// tslint:enable:max-line-length
 
-export interface DropoutLayerConfig extends LayerConfig {
+export interface DropoutLayerArgs extends LayerArgs {
   /** Float between 0 and 1. Fraction of the input units to drop. */
   rate: number;
 
@@ -63,13 +63,13 @@ export class Dropout extends Layer {
   private readonly noiseShape: number[];
   private readonly seed: number;
 
-  constructor(config: DropoutLayerConfig) {
-    super(config);
-    this.rate = Math.max(Math.min(config.rate, 1), 0);
-    this.rateScalar = K.getScalar(this.rate);
+  constructor(args: DropoutLayerArgs) {
+    super(args);
+    this.rate = Math.max(Math.min(args.rate, 1), 0);
+    this.rateScalar = getScalar(this.rate);
     // So that the scalar doesn't get tidied up between executions.
-    this.noiseShape = config.noiseShape;
-    this.seed = config.seed;
+    this.noiseShape = args.noiseShape;
+    this.seed = args.seed;
     if (this.seed != null) {
       throw new NotImplementedError(
           'Non-default seed is not implemented in Dropout layer yet: ' +
@@ -92,24 +92,27 @@ export class Dropout extends Layer {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    this.invokeCallHook(inputs, kwargs);
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    if (this.noiseShape != null &&
-        !util.arraysEqual(input.shape, this.noiseShape)) {
-      throw new NotImplementedError(
-          'Non-default noise shape is not implemented in Dropout layer yet: ' +
-          JSON.stringify(this.noiseShape));
-    }
-    if (0 < this.rate && this.rate < 1) {
-      const training = kwargs['training'] == null ? false : kwargs['training'];
-      const noiseShape = this.getNoiseShape(input);
-      const output =
-          K.inTrainPhase(
-              () => K.dropout(input, this.rateScalar, noiseShape, this.seed),
-              () => input, training) as Tensor;
-      return output;
-    }
-    return inputs;
+    return tidy(() => {
+      this.invokeCallHook(inputs, kwargs);
+      const input = getExactlyOneTensor(inputs);
+      if (this.noiseShape != null &&
+          !util.arraysEqual(input.shape, this.noiseShape)) {
+        throw new NotImplementedError(
+            'Non-default noise shape is not implemented in Dropout ' +
+            'layer yet: ' + JSON.stringify(this.noiseShape));
+      }
+      if (0 < this.rate && this.rate < 1) {
+        const training =
+            kwargs['training'] == null ? false : kwargs['training'];
+        const noiseShape = this.getNoiseShape(input);
+        const output =
+            K.inTrainPhase(
+                () => K.dropout(input, this.rateScalar, noiseShape, this.seed),
+                () => input, training) as Tensor;
+        return output;
+      }
+      return inputs;
+    });
   }
 
   getConfig(): serialization.ConfigDict {
@@ -122,10 +125,19 @@ export class Dropout extends Layer {
     Object.assign(config, baseConfig);
     return config;
   }
+  
+  dispose(): DisposeResult {
+    const result = super.dispose();
+    if (!this.rateScalar.isDisposed) {
+      this.rateScalar.dispose();
+      result.numDisposedVariables++;
+    }
+    return result;
+  }
 }
-serialization.SerializationMap.register(Dropout);
+serialization.registerClass(Dropout);
 
-export interface DenseLayerConfig extends LayerConfig {
+export interface DenseLayerArgs extends LayerArgs {
   /** Positive integer, dimensionality of the output space. */
   units: number;
   /**
@@ -191,7 +203,7 @@ export interface DenseLayerConfig extends LayerConfig {
  *
  * **Input shape:**
  *
- *   nD `Tensor` with shape: `(batchSize, ..., inputDim)`.
+ *   nD `tf.Tensor` with shape: `(batchSize, ..., inputDim)`.
  *
  *   The most common situation would be
  *   a 2D input with shape `(batchSize, inputDim)`.
@@ -224,39 +236,40 @@ export class Dense extends Layer {
   private readonly kernelRegularizer?: Regularizer;
   private readonly biasRegularizer?: Regularizer;
 
-  constructor(config: DenseLayerConfig) {
-    super(config);
-    if (config.batchInputShape == null && config.inputShape == null &&
-        config.inputDim != null) {
+  constructor(args: DenseLayerArgs) {
+    super(args);
+    if (args.batchInputShape == null && args.inputShape == null &&
+        args.inputDim != null) {
       // This logic is copied from Layer's constructor, since we can't
       // do exactly what the Python constructor does for Dense().
       let batchSize: number = null;
-      if (config.batchSize != null) {
-        batchSize = config.batchSize;
+      if (args.batchSize != null) {
+        batchSize = args.batchSize;
       }
-      this.batchInputShape = [batchSize, config.inputDim];
+      this.batchInputShape = [batchSize, args.inputDim];
     }
 
-    this.units = config.units;
-    this.activation = getActivation(config.activation);
-    if (config.useBias != null) {
-      this.useBias = config.useBias;
+    this.units = args.units;
+    this.activation = getActivation(args.activation);
+    if (args.useBias != null) {
+      this.useBias = args.useBias;
     }
     this.kernelInitializer = getInitializer(
-        config.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
+        args.kernelInitializer || this.DEFAULT_KERNEL_INITIALIZER);
     this.biasInitializer =
-        getInitializer(config.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
-    this.kernelConstraint = getConstraint(config.kernelConstraint);
-    this.biasConstraint = getConstraint(config.biasConstraint);
-    this.kernelRegularizer = getRegularizer(config.kernelRegularizer);
-    this.biasRegularizer = getRegularizer(config.biasRegularizer);
-    this.activityRegularizer = getRegularizer(config.activityRegularizer);
+        getInitializer(args.biasInitializer || this.DEFAULT_BIAS_INITIALIZER);
+    this.kernelConstraint = getConstraint(args.kernelConstraint);
+    this.biasConstraint = getConstraint(args.biasConstraint);
+    this.kernelRegularizer = getRegularizer(args.kernelRegularizer);
+    this.biasRegularizer = getRegularizer(args.biasRegularizer);
+    this.activityRegularizer = getRegularizer(args.activityRegularizer);
+    this.supportsMasking = true;
 
     this.inputSpec = [{minNDim: 2}];
   }
 
   public build(inputShape: Shape|Shape[]): void {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     const inputLastDim = inputShape[inputShape.length - 1];
     if (this.kernel == null) {
       this.kernel = this.addWeight(
@@ -274,24 +287,26 @@ export class Dense extends Layer {
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     const outputShape = inputShape.slice();
     outputShape[outputShape.length - 1] = this.units;
     return outputShape;
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    this.invokeCallHook(inputs, kwargs);
-    // Dense layer accepts only a single input.
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    let output = K.dot(input, this.kernel.read());
-    if (this.bias != null) {
-      output = K.biasAdd(output, this.bias.read());
-    }
-    if (this.activation != null) {
-      output = this.activation.apply(output);
-    }
-    return output;
+    return tidy(() => {
+      this.invokeCallHook(inputs, kwargs);
+      // Dense layer accepts only a single input.
+      const input = getExactlyOneTensor(inputs);
+      let output = K.dot(input, this.kernel.read());
+      if (this.bias != null) {
+        output = K.biasAdd(output, this.bias.read());
+      }
+      if (this.activation != null) {
+        output = this.activation.apply(output);
+      }
+      return output;
+    });
   }
 
   getConfig(): serialization.ConfigDict {
@@ -312,7 +327,7 @@ export class Dense extends Layer {
     return config;
   }
 }
-serialization.SerializationMap.register(Dense);
+serialization.registerClass(Dense);
 
 /**
  * Flattens the input. Does not affect the batch size.
@@ -333,13 +348,13 @@ serialization.SerializationMap.register(Dense);
  */
 export class Flatten extends Layer {
   static className = 'Flatten';
-  constructor(config?: LayerConfig) {
-    super(config || {});
+  constructor(args?: LayerArgs) {
+    super(args || {});
     this.inputSpec = [{minNDim: 3}];
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     for (const dim of inputShape.slice(1)) {
       if (dim == null) {
         throw new ValueError(
@@ -349,17 +364,19 @@ export class Flatten extends Layer {
             `layer in your model.`);
       }
     }
-    return [inputShape[0], math_utils.arrayProd(inputShape, 1)];
+    return [inputShape[0], arrayProd(inputShape, 1)];
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    this.invokeCallHook(inputs, kwargs);
-    return K.batchFlatten(generic_utils.getExactlyOneTensor(inputs));
+    return tidy(() => {
+      this.invokeCallHook(inputs, kwargs);
+      return K.batchFlatten(getExactlyOneTensor(inputs));
+    });
   }
 }
-serialization.SerializationMap.register(Flatten);
+serialization.registerClass(Flatten);
 
-export interface ActivationLayerConfig extends LayerConfig {
+export interface ActivationLayerArgs extends LayerArgs {
   /**
    * Name of the activation function to use.
    */
@@ -400,16 +417,18 @@ export class Activation extends Layer {
   static className = 'Activation';
   activation: ActivationFn;
 
-  constructor(config: ActivationLayerConfig) {
-    super(config);
+  constructor(args: ActivationLayerArgs) {
+    super(args);
     this.supportsMasking = true;
-    this.activation = getActivation(config.activation);
+    this.activation = getActivation(args.activation);
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    this.invokeCallHook(inputs, kwargs);
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    return this.activation.apply(input);
+    return tidy(() => {
+      this.invokeCallHook(inputs, kwargs);
+      const input = getExactlyOneTensor(inputs);
+      return this.activation.apply(input);
+    });
   }
 
   getConfig(): serialization.ConfigDict {
@@ -419,14 +438,14 @@ export class Activation extends Layer {
     return config;
   }
 }
-serialization.SerializationMap.register(Activation);
+serialization.registerClass(Activation);
 
-export interface ReshapeLayerConfig extends LayerConfig {
+export interface ReshapeLayerArgs extends LayerArgs {
   /** The target shape. Does not include the batch axis. */
   targetShape: Shape;
 }
 
-export interface RepeatVectorLayerConfig extends LayerConfig {
+export interface RepeatVectorLayerArgs extends LayerArgs {
   /**
    * The integer number of times to repeat the input.
    */
@@ -449,9 +468,9 @@ export class RepeatVector extends Layer {
   static className = 'RepeatVector';
   readonly n: number;
 
-  constructor(config: RepeatVectorLayerConfig) {
-    super(config);
-    this.n = config.n;
+  constructor(args: RepeatVectorLayerArgs) {
+    super(args);
+    this.n = args.n;
     this.inputSpec = [{ndim: 2}];
   }
 
@@ -460,8 +479,10 @@ export class RepeatVector extends Layer {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    inputs = getExactlyOneTensor(inputs);
-    return K.repeat(inputs, this.n);
+    return tidy(() => {
+      inputs = getExactlyOneTensor(inputs);
+      return K.repeat(inputs, this.n);
+    });
   }
 
   getConfig(): serialization.ConfigDict {
@@ -473,12 +494,18 @@ export class RepeatVector extends Layer {
     return config;
   }
 }
-serialization.SerializationMap.register(RepeatVector);
-
+serialization.registerClass(RepeatVector);
 
 /**
  * Reshapes an input to a certain shape.
- * TODO(cais): Code example.
+ *
+ * ```js
+ * const input = tf.input({shape: [4, 3]});
+ * const reshapeLayer = tf.layers.reshape({targetShape: [2, 6]});
+ * // Inspect the inferred output shape of the Reshape layer, which
+ * // equals `[null, 2, 6]`. (The 1st dimension is the undermined batch size.)
+ * console.log(JSON.stringify(reshapeLayer.apply(input).shape));
+ * ```
  *
  * Input shape:
  *   Arbitrary: although all dimensions in the input shape must be fixed.
@@ -493,9 +520,9 @@ export class Reshape extends Layer {
   static className = 'Reshape';
   private targetShape: Shape;
 
-  constructor(config: ReshapeLayerConfig) {
-    super(config);
-    this.targetShape = config.targetShape;
+  constructor(args: ReshapeLayerArgs) {
+    super(args);
+    this.targetShape = args.targetShape;
 
     // Make sure that all unknown dimensions are represented as `null`.
     for (let i = 0; i < this.targetShape.length; ++i) {
@@ -541,7 +568,7 @@ export class Reshape extends Layer {
       }
     }
 
-    const originalSize = math_utils.arrayProd(inputShape);
+    const originalSize = arrayProd(inputShape);
     if (unknown !== null) {
       if (known === 0 || originalSize % known !== 0) {
         throw new ValueError(errorMsg);
@@ -572,12 +599,114 @@ export class Reshape extends Layer {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    this.invokeCallHook(inputs, kwargs);
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    const inputShape = K.shape(input);
-    const outputShape = inputShape.slice(0, 1).concat(
-        this.fixUnknownDimension(inputShape.slice(1), this.targetShape));
-    return K.reshape(input, outputShape);
+    return tidy(() => {
+      this.invokeCallHook(inputs, kwargs);
+      const input = getExactlyOneTensor(inputs);
+      const inputShape = input.shape;
+      const outputShape = inputShape.slice(0, 1).concat(
+          this.fixUnknownDimension(inputShape.slice(1), this.targetShape));
+      return input.reshape(outputShape);
+    });
+  }
+
+  getConfig(): serialization.ConfigDict {
+    const config = {
+      targetShape: this.targetShape,
+    };
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
   }
 }
-serialization.SerializationMap.register(Reshape);
+serialization.registerClass(Reshape);
+
+export interface PermuteLayerArgs extends LayerArgs {
+  /**
+   * Array of integers. Permutation pattern. Does not include the
+   * sample (batch) dimension. Index starts at 1.
+   * For instance, `[2, 1]` permutes the first and second dimensions
+   * of the input.
+   */
+  dims: number[];
+}
+
+/**
+ * Permutes the dimensions of the input according to a given pattern.
+ *
+ * Useful for, e.g., connecting RNNs and convnets together.
+ *
+ * Example:
+ *
+ * ```js
+ * const model = tf.Sequential();
+ * model.add(tf.layers.permute({
+ *   dims: [2, 1],
+ *   inputShape: [10, 64]
+ * }));
+ * console.log(model.outputShape);
+ * // Now model's output shape is [null, 64, 10], where null is the
+ * // unpermuted sample (batch) dimension.
+ * ```
+ *
+ * Input shape:
+ *   Arbitrary. Use the configuration field `inputShape` when using this
+ *   layer as othe first layer in a model.
+ *
+ * Output shape:
+ *   Same rank as the input shape, but with the dimensions re-ordered (i.e.,
+ *   permuted) according to the `dims` configuration of this layer.
+ */
+export class Permute extends Layer {
+  static className = 'Permute';
+  readonly dims: number[];
+  private readonly dimsIncludingBatch: number[];
+
+  constructor(args: PermuteLayerArgs) {
+    super(args);
+    if (args.dims == null) {
+      throw new Error(
+          'Required configuration field `dims` is missing during Permute ' +
+          'constructor call.');
+    }
+    if (!Array.isArray(args.dims)) {
+      throw new Error(
+          'Permute constructor requires `dims` to be an Array, but received ' +
+          `${args.dims} instead.`);
+    }
+
+    // Check the validity of the permutation indices.
+    const expectedSortedIndices = range(1, args.dims.length + 1);
+    if (!util.arraysEqual(args.dims.slice().sort(), expectedSortedIndices)) {
+      throw new Error(
+          'Invalid permutation `dims`: ' + JSON.stringify(args.dims) +
+          ' `dims` must contain consecutive integers starting from 1.');
+    }
+
+    this.dims = args.dims;
+    this.dimsIncludingBatch = [0].concat(this.dims);
+    this.inputSpec = [new InputSpec({ndim: this.dims.length + 1})];
+  }
+
+  computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
+    inputShape = getExactlyOneShape(inputShape);
+    const outputShape = inputShape.slice();
+    this.dims.forEach((dim: number, i: number) => {
+      outputShape[i + 1] = (inputShape as Shape)[dim];
+    });
+    return outputShape;
+  }
+
+  call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+    return transpose(getExactlyOneTensor(inputs), this.dimsIncludingBatch);
+  }
+
+  getConfig(): serialization.ConfigDict {
+    const config = {
+      dims: this.dims,
+    };
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+}
+serialization.registerClass(Permute);

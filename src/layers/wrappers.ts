@@ -12,24 +12,26 @@
  * Layers that augment the functionality of a base layer.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {serialization, Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
+import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
-import {Layer, LayerConfig} from '../engine/topology';
+import {nameScope} from '../common';
+import {InputSpec, Layer, LayerArgs, SymbolicTensor} from '../engine/topology';
 import {NotImplementedError, ValueError} from '../errors';
-import {Kwargs, Shape} from '../types';
-import {RegularizerFn, RnnStepFunction, SymbolicTensor} from '../types';
+import {BidirectionalMergeMode, Shape, VALID_BIDIRECTIONAL_MERGE_MODES} from '../keras_format/common';
+import {Kwargs} from '../types';
+import {RegularizerFn, RnnStepFunction} from '../types';
 import * as generic_utils from '../utils/generic_utils';
+import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-import {rnn, RNN} from './recurrent';
+import {rnn, RNN, standardizeArgs} from './recurrent';
 import {deserialize} from './serialization';
 
-// tslint:enable:max-line-length
 
-export interface WrapperLayerConfig extends LayerConfig {
+export interface WrapperLayerArgs extends LayerArgs {
   /**
    * The layer to be wrapped.
    */
@@ -46,7 +48,7 @@ export interface WrapperLayerConfig extends LayerConfig {
 export abstract class Wrapper extends Layer {
   readonly layer: Layer;
 
-  constructor(config: WrapperLayerConfig) {
+  constructor(args: WrapperLayerArgs) {
     // Porting Note: In PyKeras, `self.layer` is set prior to the calling
     //   `super()`. But we can't do that here due to TypeScript's restriction.
     //   See: https://github.com/Microsoft/TypeScript/issues/8277
@@ -54,8 +56,8 @@ export abstract class Wrapper extends Layer {
     //   `set trainable()` below in order to prevent using `this.layer` when
     //   its value is `undefined`. The super constructor does use the getter
     //   and the setter of `this.layer`.
-    super(config);
-    this.layer = config.layer;
+    super(args);
+    this.layer = args.layer;
   }
 
   build(inputShape: Shape|Shape[]): void {
@@ -127,6 +129,13 @@ export abstract class Wrapper extends Layer {
     return config;
   }
 
+  setFastWeightInitDuringBuild(value: boolean) {
+    super.setFastWeightInitDuringBuild(value);
+    if (this.layer != null) {
+      this.layer.setFastWeightInitDuringBuild(value);
+    }
+  }
+
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict,
@@ -186,13 +195,13 @@ export abstract class Wrapper extends Layer {
  */
 export class TimeDistributed extends Wrapper {
   static className = 'TimeDistributed';
-  constructor(config: WrapperLayerConfig) {
-    super(config);
+  constructor(args: WrapperLayerArgs) {
+    super(args);
     this.supportsMasking = true;
   }
 
   build(inputShape: Shape|Shape[]): void {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     if (inputShape.length < 3) {
       throw new ValueError(
           `TimeDistributed layer expects an input shape >= 3D, but received ` +
@@ -208,7 +217,7 @@ export class TimeDistributed extends Wrapper {
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     const childInputShape = [inputShape[0]].concat(inputShape.slice(2));
     const childOutputShape =
         this.layer.computeOutputShape(childInputShape) as Shape;
@@ -217,43 +226,50 @@ export class TimeDistributed extends Wrapper {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    // TODO(cais): Add 'training' and 'useLearningPhase' to kwargs.
-    inputs = generic_utils.getExactlyOneTensor(inputs);
-    // Porting Note: In tfjs-layers, `inputs` are always concrete tensor values.
-    // Hence the inputs can't have an undetermined first (batch) dimension,
-    // which is why we always use the K.rnn approach here.
-    const step: RnnStepFunction = (inputs: Tensor, states: Tensor[]) => {
+    return tidy(() => {
+      // TODO(cais): Add 'training' and 'useLearningPhase' to kwargs.
+      inputs = getExactlyOneTensor(inputs);
+      // Porting Note: In tfjs-layers, `inputs` are always concrete tensor
+      // values. Hence the inputs can't have an undetermined first (batch)
+      // dimension, which is why we always use the K.rnn approach here.
+      const step: RnnStepFunction = (inputs: Tensor, states: Tensor[]) => {
+        // TODO(cais): Add useLearningPhase.
+        // NOTE(cais): `layer.call` may return a length-1 array of Tensor in
+        //   some cases (e.g., `layer` is a `Sequential` instance), which is
+        //   why `getExactlyOneTensor` is used below.
+        const output = getExactlyOneTensor(this.layer.call(inputs, kwargs));
+        return [output, []];
+      };
+      const rnnOutputs =
+          rnn(step, inputs, [], false /* goBackwards */, null /* mask */,
+              null /* constants */, false /* unroll */,
+              true /* needPerStepOutputs */);
+      const y = rnnOutputs[1];
+      // TODO(cais): Add activity regularization.
       // TODO(cais): Add useLearningPhase.
-      const output = this.layer.call(inputs, kwargs) as Tensor;
-      return [output, []];
-    };
-    const rnnOutputs =
-        rnn(step, inputs, [], false, null, null, false, inputs.shape[1]);
-    const y = rnnOutputs[1];
-    // TODO(cais): Add activity regularization.
-    // TODO(cais): Add useLearningPhase.
-    return y;
+      return y;
+    });
   }
-}
-serialization.SerializationMap.register(TimeDistributed);
 
-export type BidirectionalMergeMode = 'sum'|'mul'|'concat'|'ave';
-export const VALID_BIDIRECTIONAL_MERGE_MODES = ['sum', 'mul', 'concat', 'ave'];
+  // TODO(cais): Implement detailed computeMask() logic.
+}
+serialization.registerClass(TimeDistributed);
+
 export function checkBidirectionalMergeMode(value?: string): void {
   generic_utils.checkStringTypeUnionValue(
       VALID_BIDIRECTIONAL_MERGE_MODES, 'BidirectionalMergeMode', value);
 }
 
-export interface BidirectionalLayerConfig extends WrapperLayerConfig {
+export interface BidirectionalLayerArgs extends WrapperLayerArgs {
   /**
    * The instance of an `RNN` layer to be wrapped.
    */
   layer: RNN;
 
   /**
-   * Mode by which outputs of the forward and backward RNNs are combinied.
-   * If `null` or `undefined`, the output will not be combined, they will be
-   * returned as an `Array`.
+   * Mode by which outputs of the forward and backward RNNs are
+   * combinied. If `null` or `undefined`, the output will not be
+   * combined, they will be returned as an `Array`.
    */
   mergeMode?: BidirectionalMergeMode;
 }
@@ -265,33 +281,44 @@ export class Bidirectional extends Wrapper {
   private mergeMode: BidirectionalMergeMode;
   private returnSequences: boolean;
   private returnState: boolean;
+  private numConstants?: number;
   private _trainable: boolean;
 
-  constructor(config: BidirectionalLayerConfig) {
-    super(config);
-    this.forwardLayer = config.layer;
-    // TODO(cais): Perform shallow copy if necessary.
-    const layerConfig = config.layer.getConfig();
+  constructor(args: BidirectionalLayerArgs) {
+    super(args);
+
+    // Note: When creating `this.forwardLayer`, the original Layer object
+    //   (`config.layer`) ought to be cloned. This is why we call
+    //   `getConfig()` followed by `deserialize()`. Without this cloning,
+    //   the layer names saved during serialization will incorrectly contain
+    //   the 'forward_' prefix. In Python Keras, this is done using
+    //   `copy.copy` (shallow copy), which does not have a simple equivalent
+    //   in JavaScript. JavaScript's `Object.assign()` does not copy
+    //   methods.
+    const layerConfig = args.layer.getConfig();
+    this.forwardLayer =
+        deserialize(
+            {className: args.layer.getClassName(), config: layerConfig}) as RNN;
     layerConfig['goBackwards'] =
         layerConfig['goBackwards'] === true ? false : true;
     this.backwardLayer =
         deserialize(
-            {className: config.layer.getClassName(), config: layerConfig}) as
-        RNN;
+            {className: args.layer.getClassName(), config: layerConfig}) as RNN;
     this.forwardLayer.name = 'forward_' + this.forwardLayer.name;
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
-    checkBidirectionalMergeMode(config.mergeMode);
-    this.mergeMode = config.mergeMode;
-    if (config.weights) {
+    checkBidirectionalMergeMode(args.mergeMode);
+    this.mergeMode = args.mergeMode;
+    if (args.weights) {
       throw new NotImplementedError(
           'weights support is not implemented for Bidirectional layer yet.');
     }
-    this._stateful = config.layer.stateful;
-    this.returnSequences = config.layer.returnSequences;
-    this.returnState = config.layer.returnState;
+    this._stateful = args.layer.stateful;
+    this.returnSequences = args.layer.returnSequences;
+    this.returnState = args.layer.returnState;
     this.supportsMasking = true;
     this._trainable = true;
-    this.inputSpec = config.layer.inputSpec;
+    this.inputSpec = args.layer.inputSpec;
+    this.numConstants = null;
   }
 
   get trainable(): boolean {
@@ -362,77 +389,144 @@ export class Bidirectional extends Wrapper {
   apply(
       inputs: Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[],
       kwargs?: Kwargs): Tensor|Tensor[]|SymbolicTensor|SymbolicTensor[] {
-    let initialState: Tensor[]|SymbolicTensor[] = null;
-    if (kwargs != null) {
-      initialState = kwargs['initialState'];
+    let initialState: Tensor[]|SymbolicTensor[] =
+        kwargs == null ? null : kwargs['initialState'];
+    let constants: Tensor[]|SymbolicTensor[] =
+        kwargs == null ? null : kwargs['constants'];
+    if (kwargs == null) {
+      kwargs = {};
     }
+    const standardized =
+        standardizeArgs(inputs, initialState, constants, this.numConstants);
+    inputs = standardized.inputs as Tensor | SymbolicTensor;
+    initialState = standardized.initialState;
+    constants = standardized.constants;
+
     if (Array.isArray(inputs)) {
       initialState = (inputs as Tensor[] | SymbolicTensor[]).slice(1);
       inputs = (inputs as Tensor[] | SymbolicTensor[])[0];
     }
 
-    if (initialState == null || initialState.length === 0) {
-      const applyOutputs = super.apply(inputs, kwargs);
-      return applyOutputs;
-    } else {
+    if ((initialState == null || initialState.length === 0) &&
+        constants == null) {
+      return super.apply(inputs, kwargs);
+    }
+    const additionalInputs: Array<Tensor|SymbolicTensor> = [];
+    const additionalSpecs: InputSpec[] = [];
+    if (initialState != null) {
+      const numStates = initialState.length;
+      if (numStates % 2 > 0) {
+        throw new ValueError(
+            'When passing `initialState` to a Bidrectional RNN, ' +
+            'the state should be an Array containing the states of ' +
+            'the underlying RNNs.');
+      }
+      kwargs['initialState'] = initialState;
+      additionalInputs.push(...initialState);
+      const stateSpecs = (initialState as Array<Tensor|SymbolicTensor>)
+                             .map(state => new InputSpec({shape: state.shape}));
+      this.forwardLayer.stateSpec = stateSpecs.slice(0, numStates / 2);
+      this.backwardLayer.stateSpec = stateSpecs.slice(numStates / 2);
+      additionalSpecs.push(...stateSpecs);
+    }
+    if (constants != null) {
       throw new NotImplementedError(
-          'The support for initial states is not implemented for ' +
-          'Bidirectional layers yet.');
+          'Support for constants in Bidirectional layers is not ' +
+          'implemented yet.');
+    }
+
+    const isSymbolicTensor = additionalInputs[0] instanceof SymbolicTensor;
+    for (const tensor of additionalInputs) {
+      if (tensor instanceof SymbolicTensor !== isSymbolicTensor) {
+        throw new ValueError(
+            'The initial state of a Bidirectional layer cannot be ' +
+            'specified as a mix of symbolic and non-symbolic tensors');
+      }
+    }
+
+    if (isSymbolicTensor) {
+      // Compute the full input and specs, including the states.
+      const fullInput = [inputs].concat(additionalInputs);
+      const fullInputSpec = this.inputSpec.concat(additionalSpecs);
+      // Perform the call temporarily and replace inputSpec.
+      // Note: with initial states symbolic calls and non-symbolic calls to
+      // this method differ in how the initial states are passed. For
+      // symbolic calls, the initial states are passed in the first arg, as
+      // an Array of SymbolicTensors; for non-symbolic calls, they are
+      // passed in the second arg as a part of the kwargs. Hence the need to
+      // temporarily modify inputSpec here.
+      // TODO(cais): Make refactoring so that this hacky code below is no
+      // longer needed.
+      const originalInputSpec = this.inputSpec;
+      this.inputSpec = fullInputSpec;
+      const output =
+          super.apply(fullInput as Tensor[] | SymbolicTensor[], kwargs);
+      this.inputSpec = originalInputSpec;
+      return output;
+    } else {
+      return super.apply(inputs, kwargs);
     }
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    if (kwargs['mask'] != null) {
-      throw new NotImplementedError(
-          'The support for masking is not implemented for ' +
-          'Bidirectional layers yet.');
-    }
-    if (kwargs['initialState'] != null) {
-      throw new NotImplementedError(
-          'The support for initial states is not implemented for ' +
-          'Bidirectional layers yet.');
-    }
+    return tidy(() => {
+      if (kwargs['mask'] != null) {
+        throw new NotImplementedError(
+            'The support for masking is not implemented for ' +
+            'Bidirectional layers yet.');
+      }
+      const initialState = kwargs['initialState'];
 
-    // TODO(cais): Implement support for initial state.
-    let y = this.forwardLayer.call(inputs, kwargs);
-    let yRev = this.backwardLayer.call(inputs, kwargs);
-
-    let states: Tensor[];
-    if (this.returnState) {
-      if (Array.isArray(y)) {
-        states = (y as Tensor[]).slice(1).concat((yRev as Tensor[]).slice(1));
+      let y: Tensor|Tensor[];
+      let yRev: Tensor|Tensor[];
+      if (initialState == null) {
+        y = this.forwardLayer.call(inputs, kwargs);
+        yRev = this.backwardLayer.call(inputs, kwargs);
       } else {
+        const forwardState = initialState.slice(0, initialState.length / 2);
+        const backwardState = initialState.slice(initialState.length / 2);
+        y = this.forwardLayer.call(
+            inputs, Object.assign(kwargs, {initialState: forwardState}));
+        yRev = this.backwardLayer.call(
+            inputs, Object.assign(kwargs, {initialState: backwardState}));
       }
-      y = (y as Tensor[])[0];
-      yRev = (yRev as Tensor[])[0];
-    }
 
-    if (this.returnSequences) {
-      yRev = tfc.reverse(yRev as Tensor, 1);
-    }
-
-    let output: Tensor|Tensor[];
-    if (this.mergeMode === 'concat') {
-      output = K.concatenate([y as Tensor, yRev as Tensor]);
-    } else if (this.mergeMode === 'sum') {
-      output = tfc.add(y as Tensor, yRev as Tensor);
-    } else if (this.mergeMode === 'ave') {
-      output = K.scalarTimesArray(
-          K.getScalar(0.5), tfc.add(y as Tensor, yRev as Tensor));
-    } else if (this.mergeMode === 'mul') {
-      output = tfc.mul(y as Tensor, yRev as Tensor);
-    } else if (this.mergeMode == null) {
-      output = [y as Tensor, yRev as Tensor];
-    }
-
-    // TODO(cais): Properly set learning phase.
-    if (this.returnState) {
-      if (this.mergeMode == null) {
-        return (output as Tensor[]).concat(states);
+      let states: Tensor[];
+      if (this.returnState) {
+        if (Array.isArray(y)) {
+          states = (y as Tensor[]).slice(1).concat((yRev as Tensor[]).slice(1));
+        } else {
+        }
+        y = (y as Tensor[])[0];
+        yRev = (yRev as Tensor[])[0];
       }
-      return [output as Tensor].concat(states);
-    }
-    return output;
+
+      if (this.returnSequences) {
+        yRev = tfc.reverse(yRev as Tensor, 1);
+      }
+
+      let output: Tensor|Tensor[];
+      if (this.mergeMode === 'concat') {
+        output = K.concatenate([y as Tensor, yRev as Tensor]);
+      } else if (this.mergeMode === 'sum') {
+        output = tfc.add(y as Tensor, yRev as Tensor);
+      } else if (this.mergeMode === 'ave') {
+        output = tfc.mul(getScalar(0.5), tfc.add(y as Tensor, yRev as Tensor));
+      } else if (this.mergeMode === 'mul') {
+        output = tfc.mul(y as Tensor, yRev as Tensor);
+      } else if (this.mergeMode == null) {
+        output = [y as Tensor, yRev as Tensor];
+      }
+
+      // TODO(cais): Properly set learning phase.
+      if (this.returnState) {
+        if (this.mergeMode == null) {
+          return (output as Tensor[]).concat(states);
+        }
+        return [output as Tensor].concat(states);
+      }
+      return output;
+    });
   }
 
   resetStates(states?: Tensor|Tensor[]): void {
@@ -441,10 +535,10 @@ export class Bidirectional extends Wrapper {
   }
 
   build(inputShape: Shape|Shape[]): void {
-    K.nameScope(this.forwardLayer.name, () => {
+    nameScope(this.forwardLayer.name, () => {
       this.forwardLayer.build(inputShape);
     });
-    K.nameScope(this.backwardLayer.name, () => {
+    nameScope(this.backwardLayer.name, () => {
       this.backwardLayer.build(inputShape);
     });
     this.built = true;
@@ -463,6 +557,43 @@ export class Bidirectional extends Wrapper {
   }
 
   // TODO(cais): Implement constraints().
-  // TODO(cais): Implement getConfig().
+
+  setFastWeightInitDuringBuild(value: boolean) {
+    super.setFastWeightInitDuringBuild(value);
+    if (this.forwardLayer != null) {
+      this.forwardLayer.setFastWeightInitDuringBuild(value);
+    }
+    if (this.backwardLayer != null) {
+      this.backwardLayer.setFastWeightInitDuringBuild(value);
+    }
+  }
+
+  getConfig(): serialization.ConfigDict {
+    const config: serialization.ConfigDict = {
+      'mergeMode': this.mergeMode,
+    };
+    // TODO(cais): Add logic for `numConstants` once the property is added.
+    const baseConfig = super.getConfig();
+    Object.assign(config, baseConfig);
+    return config;
+  }
+
+  static fromConfig<T extends serialization.Serializable>(
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
+    const rnnLayer =
+        deserialize(config['layer'] as serialization.ConfigDict) as RNN;
+    delete config['layer'];
+    // TODO(cais): Add logic for `numConstants` once the property is added.
+    if (config['numConstants'] != null) {
+      throw new NotImplementedError(
+          `Deserialization of a Bidirectional layer with numConstants ` +
+          `present is not supported yet.`);
+    }
+    // tslint:disable-next-line:no-any
+    const newConfig: {[key: string]: any} = config;
+    newConfig['layer'] = rnnLayer;
+    return new cls(newConfig);
+  }
 }
-serialization.SerializationMap.register(Bidirectional);
+serialization.registerClass(Bidirectional);

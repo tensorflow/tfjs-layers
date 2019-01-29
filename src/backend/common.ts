@@ -8,14 +8,18 @@
  * =============================================================================
  */
 
-import {DataFormat} from '../common';
+import {ENV} from '@tensorflow/tfjs-core';
+import {DataFormat} from '../keras_format/common';
 
-let _epsilon = 1e-7;
+let _epsilon: number;
 
 /**
  * Returns the value of the fuzz factor used in numeric expressions.
  */
 export function epsilon() {
+  if (_epsilon == null) {
+    _epsilon = ENV.get('EPSILON');
+  }
   return _epsilon;
 }
 

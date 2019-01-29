@@ -1,3 +1,4 @@
+.rpt2_cache/
 .vscode/
 demos/
 python/
@@ -5,10 +6,11 @@ scripts/
 src/
 tools/
 coverage/
-node_modules/
+package/
+**/node_modules/
 karma.conf.js
 dist/demos/
-dist/**/*.js.map
+dist/**/*_fakes.js
 dist/**/*_test.js
 dist/**/*_test.d.ts
 integration_tests/
@@ -18,7 +20,12 @@ integration_tests/
 .pylintrc
 CONTRIBUTING.md
 DEVELOPMENT.md
+ISSUE_TEMPLATE.md
+pull_request_template.md
 tslint.json
+tsconfig.json
+rollup.config.js
 WORKSPACE
 yarn.lock
 yarn-error.log
+.yalc/

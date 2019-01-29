@@ -15,97 +15,98 @@
 // Porting Note: In Python Keras, the padding layers are in convolutional.py,
 //   but we decided to put them in a separate file (padding.ts) for clarity.
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {serialization, Tensor} from '@tensorflow/tfjs-core';
+import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {imageDataFormat} from '../backend/common';
-import * as K from '../backend/tfjs_backend';
-import {DataFormat} from '../common';
-import {InputSpec, Layer, LayerConfig} from '../engine/topology';
+import {InputSpec, Layer, LayerArgs} from '../engine/topology';
 import {ValueError} from '../errors';
-import {Kwargs, Shape} from '../types';
-import {getExactlyOneShape, getExactlyOneTensor} from '../utils/generic_utils';
+import {DataFormat, Shape} from '../keras_format/common';
+import {Kwargs} from '../types';
+import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 
-// tslint:enable:max-line-length
 
 /**
  * Pads the middle dimension of a 3D tensor.
  *
- * @param x Input `Tensor` to be padded.
+ * @param x Input `tf.Tensor` to be padded.
  * @param padding `Array` of 2 integers, how many zeros to add at the start and
  *   end of the middle dimension (i.e., dimension 1).
- * @return A padded 3D `Tensor`.
+ * @return A padded 3D `tf.Tensor`.
  */
 export function temporalPadding(x: Tensor, padding?: [number, number]): Tensor {
-  if (K.ndim(x) !== 3) {
-    throw new ValueError(
-        `temporalPadding expects input tensor to be 3-D, but received a ` +
-        `${K.ndim(x)}-D tensor.`);
-  }
+  return tidy(() => {
+    if (x.rank !== 3) {
+      throw new ValueError(
+          `temporalPadding expects input tensor to be 3-D, but received a ` +
+          `${x.rank}-D tensor.`);
+    }
 
-  if (padding == null) {
-    padding = [1, 1];
-  }
-  if (padding.length !== 2) {
-    throw new ValueError(
-        `temporalPadding expects input padding pattern to be a length-2 ` +
-        `array, but received a length-${padding.length} array.`);
-  }
+    if (padding == null) {
+      padding = [1, 1];
+    }
+    if (padding.length !== 2) {
+      throw new ValueError(
+          `temporalPadding expects input padding pattern to be a length-2 ` +
+          `array, but received a length-${padding.length} array.`);
+    }
 
-  const pattern: Array<[number, number]> = [[0, 0], padding, [0, 0]];
-  return tfc.pad(x, pattern);
+    const pattern: Array<[number, number]> = [[0, 0], padding, [0, 0]];
+    return tfc.pad(x, pattern);
+  });
 }
 
 /**
  * Pads the 2nd and 3rd dimensions of a 4D tensor.
  *
- * @param x Input `Tensor` to be padded.
+ * @param x Input `tf.Tensor` to be padded.
  * @param padding `Array` of two `Array`s, each of which is an `Array` of two
  *   integers. The amount of padding at the beginning and end of the 2nd and 3rd
  *   dimensions, respectively.
  * @param dataFormat 'channelsLast' (default) or 'channelsFirst'.
- * @return Padded 4D `Tensor`.
+ * @return Padded 4D `tf.Tensor`.
  */
 export function spatial2dPadding(
     x: Tensor, padding?: [[number, number], [number, number]],
     dataFormat?: DataFormat): Tensor {
-  if (K.ndim(x) !== 4) {
-    throw new ValueError(
-        `temporalPadding expects input tensor to be 4-D, but received a ` +
-        `${K.ndim(x)}-D tensor.`);
-  }
+  return tidy(() => {
+    if (x.rank !== 4) {
+      throw new ValueError(
+          `temporalPadding expects input tensor to be 4-D, but received a ` +
+          `${x.rank}-D tensor.`);
+    }
 
-  if (padding == null) {
-    padding = [[1, 1], [1, 1]];
-  }
-  if (padding.length !== 2 || padding[0].length !== 2 ||
-      padding[1].length !== 2) {
-    throw new ValueError(
-        'spatial2dPadding expects `padding` to be an Array of two Arrays, ' +
-        'each of which is an Array of two integers.');
-  }
+    if (padding == null) {
+      padding = [[1, 1], [1, 1]];
+    }
+    if (padding.length !== 2 || padding[0].length !== 2 ||
+        padding[1].length !== 2) {
+      throw new ValueError(
+          'spatial2dPadding expects `padding` to be an Array of two Arrays, ' +
+          'each of which is an Array of two integers.');
+    }
 
-  if (dataFormat == null) {
-    dataFormat = imageDataFormat();
-  }
-  if (dataFormat !== 'channelsLast' && dataFormat !== 'channelsFirst') {
-    throw new ValueError(
-        `Unknown data format: ${dataFormat}. ` +
-        `Supported data formats are 'channelsLast' and 'channelsFirst.`);
-  }
+    if (dataFormat == null) {
+      dataFormat = imageDataFormat();
+    }
+    if (dataFormat !== 'channelsLast' && dataFormat !== 'channelsFirst') {
+      throw new ValueError(
+          `Unknown data format: ${dataFormat}. ` +
+          `Supported data formats are 'channelsLast' and 'channelsFirst.`);
+    }
 
-  let pattern: Array<[number, number]>;
-  if (dataFormat === 'channelsFirst') {
-    pattern = [[0, 0], [0, 0], padding[0], padding[1]];
-  } else {
-    pattern = [[0, 0], padding[0], padding[1], [0, 0]];
-  }
+    let pattern: Array<[number, number]>;
+    if (dataFormat === 'channelsFirst') {
+      pattern = [[0, 0], [0, 0], padding[0], padding[1]];
+    } else {
+      pattern = [[0, 0], padding[0], padding[1], [0, 0]];
+    }
 
-  return tfc.pad(x, pattern);
+    return tfc.pad(x, pattern);
+  });
 }
 
-export interface ZeroPadding2DLayerConfig extends LayerConfig {
+export interface ZeroPadding2DLayerArgs extends LayerArgs {
   /**
    * Integer, or `Array` of 2 integers, or `Array` of 2 `Array`s, each of
    * which is an `Array` of 2 integers.
@@ -155,53 +156,51 @@ export class ZeroPadding2D extends Layer {
   readonly dataFormat: DataFormat;
   readonly padding: [[number, number], [number, number]];
 
-  constructor(config?: ZeroPadding2DLayerConfig) {
-    if (config == null) {
-      config = {};
+  constructor(args?: ZeroPadding2DLayerArgs) {
+    if (args == null) {
+      args = {};
     }
-    super(config);
+    super(args);
 
     this.dataFormat =
-        config.dataFormat == null ? imageDataFormat() : config.dataFormat;
+        args.dataFormat == null ? imageDataFormat() : args.dataFormat;
     // TODO(cais): Maybe refactor the following logic surrounding `padding`
     //   into a helper method.
-    if (config.padding == null) {
+    if (args.padding == null) {
       this.padding = [[1, 1], [1, 1]];
-    } else if (typeof config.padding === 'number') {
+    } else if (typeof args.padding === 'number') {
       this.padding =
-          [[config.padding, config.padding], [config.padding, config.padding]];
+          [[args.padding, args.padding], [args.padding, args.padding]];
     } else {
-      config.padding = config.padding as [number, number] |
+      args.padding = args.padding as [number, number] |
           [[number, number], [number, number]];
-      if (config.padding.length !== 2) {
+      if (args.padding.length !== 2) {
         throw new ValueError(
             `ZeroPadding2D expects padding to be a length-2 array, but ` +
-            `received a length-${config.padding.length} array.`);
+            `received a length-${args.padding.length} array.`);
       }
 
       let heightPadding: [number, number];
       let widthPadding: [number, number];
-      if (typeof config.padding[0] === 'number') {
-        heightPadding =
-            [config.padding[0] as number, config.padding[0] as number];
-        widthPadding =
-            [config.padding[1] as number, config.padding[1] as number];
+      if (typeof args.padding[0] === 'number') {
+        heightPadding = [args.padding[0] as number, args.padding[0] as number];
+        widthPadding = [args.padding[1] as number, args.padding[1] as number];
       } else {
-        config.padding = config.padding as [[number, number], [number, number]];
+        args.padding = args.padding as [[number, number], [number, number]];
 
-        if (config.padding[0].length !== 2) {
+        if (args.padding[0].length !== 2) {
           throw new ValueError(
               `ZeroPadding2D expects height padding to be a length-2 array, ` +
-              `but received a length-${config.padding[0].length} array.`);
+              `but received a length-${args.padding[0].length} array.`);
         }
-        heightPadding = config.padding[0] as [number, number];
+        heightPadding = args.padding[0] as [number, number];
 
-        if (config.padding[1].length !== 2) {
+        if (args.padding[1].length !== 2) {
           throw new ValueError(
               `ZeroPadding2D expects width padding to be a length-2 array, ` +
-              `but received a length-${config.padding[1].length} array.`);
+              `but received a length-${args.padding[1].length} array.`);
         }
-        widthPadding = config.padding[1] as [number, number];
+        widthPadding = args.padding[1] as [number, number];
       }
       this.padding = [heightPadding, widthPadding];
     }
@@ -241,8 +240,9 @@ export class ZeroPadding2D extends Layer {
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    return spatial2dPadding(
-        getExactlyOneTensor(inputs), this.padding, this.dataFormat);
+    return tidy(
+        () => spatial2dPadding(
+            getExactlyOneTensor(inputs), this.padding, this.dataFormat));
   }
 
   getConfig(): serialization.ConfigDict {
@@ -255,4 +255,4 @@ export class ZeroPadding2D extends Layer {
     return config;
   }
 }
-serialization.SerializationMap.register(ZeroPadding2D);
+serialization.registerClass(ZeroPadding2D);

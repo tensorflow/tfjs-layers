@@ -12,23 +12,22 @@
  * TensorFlow.js Layers: Pooling Layers.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {serialization, Tensor, Tensor3D, Tensor4D} from '@tensorflow/tfjs-core';
+import {serialization, Tensor, Tensor3D, Tensor4D, tidy} from '@tensorflow/tfjs-core';
 
 import {imageDataFormat} from '../backend/common';
 import * as K from '../backend/tfjs_backend';
-import {checkDataFormat, checkPaddingMode, checkPoolMode, DataFormat, PaddingMode, PoolMode} from '../common';
+import {checkDataFormat, checkPaddingMode, checkPoolMode} from '../common';
 import {InputSpec} from '../engine/topology';
-import {Layer, LayerConfig} from '../engine/topology';
-import {NotImplementedError} from '../errors';
-import {Kwargs, Shape} from '../types';
+import {Layer, LayerArgs} from '../engine/topology';
+import {NotImplementedError, ValueError} from '../errors';
+import {DataFormat, PaddingMode, PoolMode, Shape} from '../keras_format/common';
+import {Kwargs} from '../types';
 import {convOutputLength} from '../utils/conv_utils';
-import * as generic_utils from '../utils/generic_utils';
+import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 
 import {preprocessConv2DInput} from './convolutional';
 
-// tslint:enable:max-line-length
 
 /**
  * 2D pooling.
@@ -44,45 +43,47 @@ export function pool2d(
     x: Tensor, poolSize: [number, number], strides?: [number, number],
     padding?: PaddingMode, dataFormat?: DataFormat,
     poolMode?: PoolMode): Tensor {
-  checkDataFormat(dataFormat);
-  checkPoolMode(poolMode);
-  checkPaddingMode(padding);
-  if (strides == null) {
-    strides = [1, 1];
-  }
-  if (padding == null) {
-    padding = 'valid';
-  }
-  if (dataFormat == null) {
-    dataFormat = imageDataFormat();
-  }
-  if (poolMode == null) {
-    poolMode = 'max';
-  }
+  return tidy(() => {
+    checkDataFormat(dataFormat);
+    checkPoolMode(poolMode);
+    checkPaddingMode(padding);
+    if (strides == null) {
+      strides = [1, 1];
+    }
+    if (padding == null) {
+      padding = 'valid';
+    }
+    if (dataFormat == null) {
+      dataFormat = imageDataFormat();
+    }
+    if (poolMode == null) {
+      poolMode = 'max';
+    }
 
-  // TODO(cais): Remove the preprocessing step once deeplearn.js supports
-  // dataFormat as an input argument.
-  x = preprocessConv2DInput(x, dataFormat);  // x is NHWC after preprocessing.
-  let y: Tensor;
-  const paddingString = (padding === 'same') ? 'same' : 'valid';
-  if (poolMode === 'max') {
-    // TODO(cais): Rank check?
-    y = tfc.maxPool(x as Tensor4D, poolSize, strides, paddingString);
-  } else {  // 'avg'
-    // TODO(cais): Check the dtype and rank of x and give clear error message
-    //   if those are incorrect.
-    y = tfc.avgPool(
-        // TODO(cais): Rank check?
-        x as Tensor3D | Tensor4D, poolSize, strides, paddingString);
-  }
-  if (dataFormat === 'channelsFirst') {
-    y = tfc.transpose(y, [0, 3, 1, 2]);  // NHWC -> NCHW.
-  }
-  return y;
+    // TODO(cais): Remove the preprocessing step once deeplearn.js supports
+    // dataFormat as an input argument.
+    x = preprocessConv2DInput(x, dataFormat);  // x is NHWC after preprocessing.
+    let y: Tensor;
+    const paddingString = (padding === 'same') ? 'same' : 'valid';
+    if (poolMode === 'max') {
+      // TODO(cais): Rank check?
+      y = tfc.maxPool(x as Tensor4D, poolSize, strides, paddingString);
+    } else {  // 'avg'
+      // TODO(cais): Check the dtype and rank of x and give clear error message
+      //   if those are incorrect.
+      y = tfc.avgPool(
+          // TODO(cais): Rank check?
+          x as Tensor3D | Tensor4D, poolSize, strides, paddingString);
+    }
+    if (dataFormat === 'channelsFirst') {
+      y = tfc.transpose(y, [0, 3, 1, 2]);  // NHWC -> NCHW.
+    }
+    return y;
+  });
 }
 
 
-export interface Pooling1DLayerConfig extends LayerConfig {
+export interface Pooling1DLayerArgs extends LayerArgs {
   /**
    * Size of the window to pool over, should be an integer.
    */
@@ -107,24 +108,53 @@ export abstract class Pooling1D extends Layer {
 
   /**
    *
-   * @param config Parameters for the Pooling layer.
+   * @param args Parameters for the Pooling layer.
    *
    * config.poolSize defaults to 2.
    */
-  constructor(config: Pooling1DLayerConfig) {
-    if (config.poolSize == null) {
-      config.poolSize = 2;
+  constructor(args: Pooling1DLayerArgs) {
+    if (args.poolSize == null) {
+      args.poolSize = 2;
     }
-    super(config);
-    this.poolSize = [config.poolSize];
-    this.strides = config.strides == null ? this.poolSize : [config.strides];
-    this.padding = config.padding == null ? 'valid' : config.padding;
+    super(args);
+    if (typeof args.poolSize === 'number') {
+      this.poolSize = [args.poolSize];
+    } else if (
+        Array.isArray(args.poolSize) &&
+        (args.poolSize as number[]).length === 1 &&
+        typeof (args.poolSize as number[])[0] === 'number') {
+      this.poolSize = args.poolSize;
+    } else {
+      throw new ValueError(
+          `poolSize for 1D convolutional layer must be a number or an ` +
+          `Array of a single number, but received ` +
+          `${JSON.stringify(args.poolSize)}`);
+    }
+    if (args.strides == null) {
+      this.strides = this.poolSize;
+    } else {
+      if (typeof args.strides === 'number') {
+        this.strides = [args.strides];
+      } else if (
+          Array.isArray(args.strides) &&
+          (args.strides as number[]).length === 1 &&
+          typeof (args.strides as number[])[0] === 'number') {
+        this.strides = args.strides;
+      } else {
+        throw new ValueError(
+            `strides for 1D convolutional layer must be a number or an ` +
+            `Array of a single number, but received ` +
+            `${JSON.stringify(args.strides)}`);
+      }
+    }
+
+    this.padding = args.padding == null ? 'valid' : args.padding;
     checkPaddingMode(this.padding);
     this.inputSpec = [new InputSpec({ndim: 3})];
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     const length = convOutputLength(
         inputShape[1], this.poolSize[0], this.padding, this.strides[0]);
     return [inputShape[0], length, inputShape[2]];
@@ -135,14 +165,16 @@ export abstract class Pooling1D extends Layer {
       padding: PaddingMode, dataFormat: DataFormat): Tensor;
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    this.invokeCallHook(inputs, kwargs);
-    // Add dummy last dimension.
-    inputs = K.expandDims(generic_utils.getExactlyOneTensor(inputs), 2);
-    const output = this.poolingFunction(
-        generic_utils.getExactlyOneTensor(inputs), [this.poolSize[0], 1],
-        [this.strides[0], 1], this.padding, 'channelsLast');
-    // Remove dummy last dimension.
-    return tfc.squeeze(output, [2]);
+    return tidy(() => {
+      this.invokeCallHook(inputs, kwargs);
+      // Add dummy last dimension.
+      inputs = K.expandDims(getExactlyOneTensor(inputs), 2);
+      const output = this.poolingFunction(
+          getExactlyOneTensor(inputs), [this.poolSize[0], 1],
+          [this.strides[0], 1], this.padding, 'channelsLast');
+      // Remove dummy last dimension.
+      return tfc.squeeze(output, [2]);
+    });
   }
 
   getConfig(): serialization.ConfigDict {
@@ -166,8 +198,8 @@ export abstract class Pooling1D extends Layer {
  */
 export class MaxPooling1D extends Pooling1D {
   static className = 'MaxPooling1D';
-  constructor(config: Pooling1DLayerConfig) {
-    super(config);
+  constructor(args: Pooling1DLayerArgs) {
+    super(args);
   }
 
   protected poolingFunction(
@@ -178,7 +210,7 @@ export class MaxPooling1D extends Pooling1D {
     return pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
-serialization.SerializationMap.register(MaxPooling1D);
+serialization.registerClass(MaxPooling1D);
 
 /**
  * Average pooling operation for spatial data.
@@ -191,8 +223,8 @@ serialization.SerializationMap.register(MaxPooling1D);
  */
 export class AveragePooling1D extends Pooling1D {
   static className = 'AveragePooling1D';
-  constructor(config: Pooling1DLayerConfig) {
-    super(config);
+  constructor(args: Pooling1DLayerArgs) {
+    super(args);
   }
 
   protected poolingFunction(
@@ -203,9 +235,9 @@ export class AveragePooling1D extends Pooling1D {
     return pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-serialization.SerializationMap.register(AveragePooling1D);
+serialization.registerClass(AveragePooling1D);
 
-export interface Pooling2DLayerConfig extends LayerConfig {
+export interface Pooling2DLayerArgs extends LayerArgs {
   /**
    * Factors by which to downscale in each dimension [vertical, horizontal].
    * Expects an integer or an array of 2 integers.
@@ -217,12 +249,13 @@ export interface Pooling2DLayerConfig extends LayerConfig {
   poolSize?: number|[number, number];
 
   /**
-   * The size of the stride in each dimension of the pooling window. Expects an
-   * integer or an array of 2 integers. Integer, tuple of 2 integers, or None.
+   * The size of the stride in each dimension of the pooling window. Expects
+   * an integer or an array of 2 integers. Integer, tuple of 2 integers, or
+   * None.
    *
    * If `null`, defaults to `poolSize`.
    */
-  strides?: [number, number];
+  strides?: number|[number, number];
 
   /** The padding type to use for the pooling layer. */
   padding?: PaddingMode;
@@ -239,18 +272,31 @@ export abstract class Pooling2D extends Layer {
   protected readonly padding: PaddingMode;
   protected readonly dataFormat: DataFormat;
 
-  constructor(config: Pooling2DLayerConfig) {
-    if (config.poolSize == null) {
-      config.poolSize = [2, 2];
+  constructor(args: Pooling2DLayerArgs) {
+    if (args.poolSize == null) {
+      args.poolSize = [2, 2];
     }
-    super(config);
-    this.poolSize = Array.isArray(config.poolSize) ?
-        config.poolSize :
-        [config.poolSize, config.poolSize];
-    this.strides = config.strides == null ? this.poolSize : config.strides;
-    this.padding = config.padding == null ? 'valid' : config.padding;
+    super(args);
+    this.poolSize = Array.isArray(args.poolSize) ?
+        args.poolSize :
+        [args.poolSize, args.poolSize];
+    if (args.strides == null) {
+      this.strides = this.poolSize;
+    } else if (Array.isArray(args.strides)) {
+      if (args.strides.length !== 2) {
+        throw new ValueError(
+            `If the strides property of a 2D pooling layer is an Array, ` +
+            `it is expected to have a length of 2, but received length ` +
+            `${args.strides.length}.`);
+      }
+      this.strides = args.strides;
+    } else {
+      // `config.strides` is a number.
+      this.strides = [args.strides, args.strides];
+    }
+    this.padding = args.padding == null ? 'valid' : args.padding;
     this.dataFormat =
-        config.dataFormat == null ? 'channelsLast' : config.dataFormat;
+        args.dataFormat == null ? 'channelsLast' : args.dataFormat;
     checkDataFormat(this.dataFormat);
     checkPaddingMode(this.padding);
 
@@ -258,7 +304,7 @@ export abstract class Pooling2D extends Layer {
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
-    inputShape = generic_utils.getExactlyOneShape(inputShape);
+    inputShape = getExactlyOneShape(inputShape);
     let rows =
         this.dataFormat === 'channelsFirst' ? inputShape[2] : inputShape[1];
     let cols =
@@ -279,10 +325,12 @@ export abstract class Pooling2D extends Layer {
       padding: PaddingMode, dataFormat: DataFormat): Tensor;
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    this.invokeCallHook(inputs, kwargs);
-    return this.poolingFunction(
-        generic_utils.getExactlyOneTensor(inputs), this.poolSize, this.strides,
-        this.padding, this.dataFormat);
+    return tidy(() => {
+      this.invokeCallHook(inputs, kwargs);
+      return this.poolingFunction(
+          getExactlyOneTensor(inputs), this.poolSize, this.strides,
+          this.padding, this.dataFormat);
+    });
   }
 
   getConfig(): serialization.ConfigDict {
@@ -319,8 +367,8 @@ export abstract class Pooling2D extends Layer {
  */
 export class MaxPooling2D extends Pooling2D {
   static className = 'MaxPooling2D';
-  constructor(config: Pooling2DLayerConfig) {
-    super(config);
+  constructor(args: Pooling2DLayerArgs) {
+    super(args);
   }
 
   protected poolingFunction(
@@ -331,7 +379,7 @@ export class MaxPooling2D extends Pooling2D {
     return pool2d(inputs, poolSize, strides, padding, dataFormat, 'max');
   }
 }
-serialization.SerializationMap.register(MaxPooling2D);
+serialization.registerClass(MaxPooling2D);
 
 /**
  * Average pooling operation for spatial data.
@@ -356,8 +404,8 @@ serialization.SerializationMap.register(MaxPooling2D);
  */
 export class AveragePooling2D extends Pooling2D {
   static className = 'AveragePooling2D';
-  constructor(config: Pooling2DLayerConfig) {
-    super(config);
+  constructor(args: Pooling2DLayerArgs) {
+    super(args);
   }
 
   protected poolingFunction(
@@ -368,14 +416,14 @@ export class AveragePooling2D extends Pooling2D {
     return pool2d(inputs, poolSize, strides, padding, dataFormat, 'avg');
   }
 }
-serialization.SerializationMap.register(AveragePooling2D);
+serialization.registerClass(AveragePooling2D);
 
 /**
  * Abstract class for different global pooling 1D layers.
  */
 export abstract class GlobalPooling1D extends Layer {
-  constructor(config: LayerConfig) {
-    super(config);
+  constructor(args: LayerArgs) {
+    super(args);
     this.inputSpec = [new InputSpec({ndim: 3})];
   }
 
@@ -397,16 +445,18 @@ export abstract class GlobalPooling1D extends Layer {
  */
 export class GlobalAveragePooling1D extends GlobalPooling1D {
   static className = 'GlobalAveragePooling1D';
-  constructor(config: LayerConfig) {
-    super(config);
+  constructor(args?: LayerArgs) {
+    super(args || {});
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    return tfc.mean(input, 1);
+    return tidy(() => {
+      const input = getExactlyOneTensor(inputs);
+      return tfc.mean(input, 1);
+    });
   }
 }
-serialization.SerializationMap.register(GlobalAveragePooling1D);
+serialization.registerClass(GlobalAveragePooling1D);
 
 /**
  * Global max pooling operation for temporal data.
@@ -417,18 +467,20 @@ serialization.SerializationMap.register(GlobalAveragePooling1D);
  */
 export class GlobalMaxPooling1D extends GlobalPooling1D {
   static className = 'GlobalMaxPooling1D';
-  constructor(config: LayerConfig) {
-    super(config);
+  constructor(args: LayerArgs) {
+    super(args || {});
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    return tfc.max(input, 1);
+    return tidy(() => {
+      const input = getExactlyOneTensor(inputs);
+      return tfc.max(input, 1);
+    });
   }
 }
-serialization.SerializationMap.register(GlobalMaxPooling1D);
+serialization.registerClass(GlobalMaxPooling1D);
 
-export interface GlobalPooling2DLayerConfig extends LayerConfig {
+export interface GlobalPooling2DLayerArgs extends LayerArgs {
   /**
    * One of `CHANNEL_LAST` (default) or `CHANNEL_FIRST`.
    *
@@ -445,10 +497,10 @@ export interface GlobalPooling2DLayerConfig extends LayerConfig {
  */
 export abstract class GlobalPooling2D extends Layer {
   protected dataFormat: DataFormat;
-  constructor(config: GlobalPooling2DLayerConfig) {
-    super(config);
+  constructor(args: GlobalPooling2DLayerArgs) {
+    super(args);
     this.dataFormat =
-        config.dataFormat == null ? 'channelsLast' : config.dataFormat;
+        args.dataFormat == null ? 'channelsLast' : args.dataFormat;
     checkDataFormat(this.dataFormat);
     this.inputSpec = [new InputSpec({ndim: 4})];
   }
@@ -488,16 +540,19 @@ export abstract class GlobalPooling2D extends Layer {
  */
 export class GlobalAveragePooling2D extends GlobalPooling2D {
   static className = 'GlobalAveragePooling2D';
+
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    if (this.dataFormat === 'channelsLast') {
-      return tfc.mean(input, [1, 2]);
-    } else {
-      return tfc.mean(input, [2, 3]);
-    }
+    return tidy(() => {
+      const input = getExactlyOneTensor(inputs);
+      if (this.dataFormat === 'channelsLast') {
+        return tfc.mean(input, [1, 2]);
+      } else {
+        return tfc.mean(input, [2, 3]);
+      }
+    });
   }
 }
-serialization.SerializationMap.register(GlobalAveragePooling2D);
+serialization.registerClass(GlobalAveragePooling2D);
 
 /**
  * Global max pooling operation for spatial data.
@@ -513,13 +568,16 @@ serialization.SerializationMap.register(GlobalAveragePooling2D);
  */
 export class GlobalMaxPooling2D extends GlobalPooling2D {
   static className = 'GlobalMaxPooling2D';
+
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
-    const input = generic_utils.getExactlyOneTensor(inputs);
-    if (this.dataFormat === 'channelsLast') {
-      return tfc.max(input, [1, 2]);
-    } else {
-      return tfc.max(input, [2, 3]);
-    }
+    return tidy(() => {
+      const input = getExactlyOneTensor(inputs);
+      if (this.dataFormat === 'channelsLast') {
+        return tfc.max(input, [1, 2]);
+      } else {
+        return tfc.max(input, [2, 3]);
+      }
+    });
   }
 }
-serialization.SerializationMap.register(GlobalMaxPooling2D);
+serialization.registerClass(GlobalMaxPooling2D);

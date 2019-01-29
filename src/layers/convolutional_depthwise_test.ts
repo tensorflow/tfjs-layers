@@ -12,18 +12,17 @@
  * Unit tests for convolutional_depthwise.ts.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor, tensor4d, Tensor4D} from '@tensorflow/tfjs-core';
 
-import {DataFormat, PaddingMode} from '../common';
 import * as tfl from '../index';
 import {InitializerIdentifier} from '../initializers';
+import {DataFormat, PaddingMode} from '../keras_format/common';
+import {convertPythonicToTs, convertTsToPythonic} from '../utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {depthwiseConv2d} from './convolutional_depthwise';
 
-// tslint:enable:max-line-length
 describeMathCPUAndGPU('depthwiseConv2d', () => {
   const x4by4Data = [[[
     [10, 30, 50, 70], [20, 40, 60, 80], [-10, -30, -50, -70],
@@ -147,6 +146,19 @@ describeMathCPU('DepthwiseConv2D-Symbolic', () => {
         .toThrowError(
             /Inputs to DepthwiseConv2D should have rank 4\. Received .*/);
   });
+
+  it('Serialization round trip', () => {
+    const layer = tfl.layers.depthwiseConv2d(
+        {kernelSize: 3, depthMultiplier: 4, activation: 'relu'});
+    const pythonicConfig = convertTsToPythonic(layer.getConfig());
+    // tslint:disable-next-line:no-any
+    const tsConfig = convertPythonicToTs(pythonicConfig) as any;
+    const layerPrime = tfl.layers.depthwiseConv2d(tsConfig);
+    const configPrime = layerPrime.getConfig();
+    expect(configPrime.kernelSize).toEqual([3, 3]);
+    expect(configPrime.depthMultiplier).toEqual(4);
+    expect(configPrime.activation).toEqual('relu');
+  });
 });
 
 describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
@@ -218,5 +230,17 @@ describeMathCPUAndGPU('DepthwiseConv2D-Tensor:', () => {
     const yExpected =
         tensor4d([100, 100, 260, 260, -100, -100, -260, -260], [1, 2, 2, 2]);
     expectTensorsClose(y, yExpected);
+  });
+
+  it('missing config.kernelSize throws exception', () => {
+    // tslint:disable-next-line:no-any
+    expect((filters: 1) => tfl.layers.depthwiseConv2d({} as any))
+        .toThrowError(/kernelSize/);
+  });
+  it('bad config.kernelSize throws exception', () => {
+    expect(
+        // tslint:disable-next-line:no-any
+        () => tfl.layers.depthwiseConv2d({kernelSize: [1]} as any))
+        .toThrowError(/kernelSize/);
   });
 });

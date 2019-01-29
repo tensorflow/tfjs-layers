@@ -13,10 +13,9 @@
 // tfjs-layers's internal Config TS-Centric format and PyKeras's
 // serialized Python Config format.
 
-// tslint:disable:max-line-length
 import {serialization} from '@tensorflow/tfjs-core';
 
-import {JsonValue} from '../types';
+import {PyJsonValue} from '../keras_format/types';
 import * as generic_utils from '../utils/generic_utils';
 // tslint:enable
 
@@ -43,7 +42,7 @@ function isArrayItemInputOrOutputName<T>(
  * @returns Result of the conversion.
  */
 export function convertPythonicToTs(
-    pythonicConfig: JsonValue, key?: string): serialization.ConfigDictValue {
+    pythonicConfig: PyJsonValue, key?: string): serialization.ConfigDictValue {
   if (pythonicConfig === null) {
     return null;
   } else if (typeof pythonicConfig === 'string') {
@@ -89,7 +88,7 @@ export function convertPythonicToTs(
  * @returns Result of the conversion.
  */
 export function convertTsToPythonic(
-    tsConfig: serialization.ConfigDictValue, key?: string): JsonValue {
+    tsConfig: serialization.ConfigDictValue, key?: string): PyJsonValue {
   if (tsConfig === null || tsConfig === undefined) {
     return null;
   } else if (typeof tsConfig === 'string') {

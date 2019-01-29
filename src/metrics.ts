@@ -12,14 +12,15 @@
  * Built-in metrics.
  */
 
-// tslint:disable:max-line-length
 import * as tfc from '@tensorflow/tfjs-core';
-import {Tensor} from '@tensorflow/tfjs-core';
+import {Tensor, tidy} from '@tensorflow/tfjs-core';
+
+import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {NotImplementedError, ValueError} from './errors';
 import {categoricalCrossentropy as categoricalCrossentropyLoss, cosineProximity, meanAbsoluteError, meanAbsolutePercentageError, meanSquaredError, sparseCategoricalCrossentropy as sparseCategoricalCrossentropyLoss} from './losses';
+import {binaryCrossentropy as lossBinaryCrossentropy} from './losses';
 import {LossOrMetricFn} from './types';
-// tslint:enable:max-line-length
 
 /**
  * Binary accuracy metric function.
@@ -49,10 +50,11 @@ import {LossOrMetricFn} from './types';
  * @return Accuracy Tensor.
  */
 export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
-  // TODO(cais): Maybe avoid creating a new Scalar on every invocation.
-  const threshold = K.scalarTimesArray(K.getScalar(0.5), tfc.onesLike(yPred));
-  const yPredThresholded = K.cast(tfc.greater(yPred, threshold), yTrue.dtype);
-  return tfc.mean(tfc.equal(yTrue, yPredThresholded), -1);
+  return tidy(() => {
+    const threshold = tfc.mul(getScalar(0.5), tfc.onesLike(yPred));
+    const yPredThresholded = K.cast(tfc.greater(yPred, threshold), yTrue.dtype);
+    return tfc.mean(tfc.equal(yTrue, yPredThresholded), -1);
+  });
 }
 
 /**
@@ -72,8 +74,132 @@ export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @return Accuracy Tensor.
  */
 export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
-  return K.cast(
-      tfc.equal(tfc.argMax(yTrue, -1), tfc.argMax(yPred, -1)), 'float32');
+  return tidy(
+      () => K.cast(
+          tfc.equal(tfc.argMax(yTrue, -1), tfc.argMax(yPred, -1)), 'float32'));
+}
+
+function truePositives(yTrue: Tensor, yPred: Tensor): Tensor {
+  return tidy(() => {
+    const one = getScalar(1);
+    return tfc.logicalAnd(yTrue.equal(one), yPred.equal(one))
+        .sum()
+        .cast('float32');
+  });
+}
+
+function falseNegatives(yTrue: Tensor, yPred: Tensor): Tensor {
+  return tidy(() => {
+    const one = getScalar(1);
+    const zero = getScalar(0);
+    return tfc.logicalAnd(yTrue.equal(one), yPred.equal(zero))
+        .sum()
+        .cast('float32');
+  });
+}
+
+function falsePositives(yTrue: Tensor, yPred: Tensor): Tensor {
+  return tidy(() => {
+    const one = getScalar(1);
+    const zero = getScalar(0);
+    return tfc.logicalAnd(yTrue.equal(zero), yPred.equal(one))
+        .sum()
+        .cast('float32');
+  });
+}
+
+/**
+ * Computes the precision of the predictions with respect to the labels.
+ *
+ * Example:
+ * ```js
+ * const x = tensor2d(
+ *    [
+ *      [0, 0, 0, 1],
+ *      [0, 1, 0, 0],
+ *      [0, 0, 0, 1].
+ *      [1, 0, 0, 0],
+ *      [0, 0, 1, 0]
+ *    ]
+ * );
+ *
+ * const y = tensor2d(
+ *    [
+ *      [0, 0, 1, 0],
+ *      [0, 1, 0, 0],
+ *      [0, 0, 0, 1].
+ *      [0, 1, 0, 0],
+ *      [0, 1, 0, 0]
+ *    ]
+ * );
+ *
+ * const precision = tf.metrics.precision(x, y);
+ * precision.print();
+ * ```
+ *
+ * @param yTrue The ground truth values. Expected to be contain only 0-1 values.
+ * @param yPred The predicted values. Expected to be contain only 0-1 values.
+ * @return Precision Tensor.
+ */
+export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
+  return tidy(() => {
+    const zero = getScalar(0);
+
+    const tp = truePositives(yTrue, yPred);
+    const fp = falsePositives(yTrue, yPred);
+
+    const denominator = tp.add(fp);
+
+    return tfc.where(tfc.greater(denominator, zero), tp.div(denominator), zero)
+        .cast('float32');
+  });
+}
+
+/**
+ * Computes the recall of the predictions with respect to the labels.
+ *
+ * Example:
+ * ```js
+ * const x = tensor2d(
+ *    [
+ *      [0, 0, 0, 1],
+ *      [0, 1, 0, 0],
+ *      [0, 0, 0, 1].
+ *      [1, 0, 0, 0],
+ *      [0, 0, 1, 0]
+ *    ]
+ * );
+ *
+ * const y = tensor2d(
+ *    [
+ *      [0, 0, 1, 0],
+ *      [0, 1, 0, 0],
+ *      [0, 0, 0, 1].
+ *      [0, 1, 0, 0],
+ *      [0, 1, 0, 0]
+ *    ]
+ * );
+ *
+ * const recall = tf.metrics.recall(x, y);
+ * recall.print();
+ * ```
+ *
+ * @param yTrue The ground truth values. Expected to be contain only 0-1 values.
+ * @param yPred The predicted values. Expected to be contain only 0-1 values.
+ * @return Recall Tensor.
+ */
+export function recall(yTrue: Tensor, yPred: Tensor): Tensor {
+  return tidy(() => {
+    const zero = getScalar(0);
+
+    const tp = truePositives(yTrue, yPred);
+    const fn = falseNegatives(yTrue, yPred);
+
+    const denominator = tp.add(fn);
+
+    return tfc.where(tfc.greater(denominator, zero), tp.div(denominator), zero)
+        .cast('float32');
+  });
 }
 
 /**
@@ -92,12 +218,34 @@ export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @return Accuracy Tensor.
  */
 export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
-  return tfc.mean(K.binaryCrossentropy(yTrue, yPred), -1);
+  return lossBinaryCrossentropy(yTrue, yPred);
 }
 
+/**
+ * Sparse categorical accuracy metric function.
+ * 
+ * ```Example:
+ * const yTrue = tensor1d([1, 1, 2, 2, 0]);
+ * const yPred = tensor2d(
+ *      [[0, 1, 0], [1, 0, 0], [0, 0.4, 0.6], [0, 0.6, 0.4], [0.7, 0.3, 0]]);
+ * const crossentropy = tf.metrics.sparseCategoricalAccuracy(yTrue, yPred);
+ * crossentropy.print();
+ * ```
+ *
+ * @param yTrue True labels: indices.
+ * @param yPred Predicted probabilities or logits.
+ * @returns Accuracy tensor.
+ */
 export function sparseCategoricalAccuracy(
-    yTrue: Tensor, yPred: Tensor): Tensor {
-  throw new NotImplementedError();
+  yTrue: Tensor, yPred: Tensor): Tensor {
+  if (yTrue.rank === yPred.rank) {
+    yTrue = yTrue.squeeze([yTrue.rank - 1]);
+  }
+  yPred = yPred.argMax(-1);
+  if (yPred.dtype !== yTrue.dtype) {
+    yPred = yPred.asType(yTrue.dtype);
+  }
+  return tfc.equal(yTrue, yPred).asType('float32');
 }
 
 export function topKCategoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -126,6 +274,7 @@ export function get(identifier: string|LossOrMetricFn): LossOrMetricFn {
   const metricsMap: {[functionName: string]: LossOrMetricFn} = {
     binaryAccuracy,
     categoricalAccuracy,
+    precision,
     categoricalCrossentropy,
     sparseCategoricalCrossentropy,
     mse,

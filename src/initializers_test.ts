@@ -12,15 +12,17 @@
  * Unit tests for initializers.
  */
 
-// tslint:disable:max-line-length
-import {eye, serialization, Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
+import {eye, randomNormal, serialization, Tensor, Tensor2D, tensor2d} from '@tensorflow/tfjs-core';
 
 import * as tfl from './index';
-import {checkDistribution, checkFanMode, getInitializer, serializeInitializer, VALID_DISTRIBUTION_VALUES, VALID_FAN_MODE_VALUES, VarianceScaling} from './initializers';
+import {checkDistribution, checkFanMode, getInitializer, serializeInitializer, VarianceScaling} from './initializers';
+import {VALID_DISTRIBUTION_VALUES, VALID_FAN_MODE_VALUES} from './keras_format/initializer_config';
+import {PyJsonDict} from './keras_format/types';
+import {deserialize} from './layers/serialization';
 import * as math_utils from './utils/math_utils';
-import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose, expectTensorsValuesInRange} from './utils/test_utils';
+import {convertPythonicToTs} from './utils/serialization_utils';
+import {describeMathCPU, describeMathCPUAndGPU, expectNoLeakedTensors, expectTensorsClose, expectTensorsValuesInRange} from './utils/test_utils';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('Zeros initializer', () => {
   it('1D', () => {
@@ -45,6 +47,10 @@ describeMathCPU('Zeros initializer', () => {
     expect(weights.shape).toEqual([2, 2]);
     expect(weights.dtype).toEqual('float32');
     expect(weights.dataSync()).toEqual(new Float32Array([0, 0, 0, 0]));
+  });
+
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('zeros').apply([3]), 1);
   });
 });
 
@@ -72,6 +78,9 @@ describeMathCPU('Ones initializer', () => {
     expect(weights.dtype).toEqual('float32');
     expect(weights.dataSync()).toEqual(new Float32Array([1, 1, 1, 1]));
   });
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('ones').apply([3]), 1);
+  });
 });
 
 describeMathCPU('Constant initializer', () => {
@@ -85,6 +94,20 @@ describeMathCPU('Constant initializer', () => {
     expect(weights.dataSync()).toEqual(new Float32Array([5, 5, 5]));
   });
 
+  it('1D, from builder function', () => {
+    const init = tfl.initializers.constant({value: 5});
+    const weights = init.apply([3], 'float32');
+    expect(weights.shape).toEqual([3]);
+    expect(weights.dtype).toEqual('float32');
+    expect(weights.dataSync()).toEqual(new Float32Array([5, 5, 5]));
+  });
+
+  it('1D, from builder function: passing a direct value throws error', () => {
+    // tslint:disable-next-line:no-any
+    expect(() => tfl.initializers.constant(5 as any))
+        .toThrowError(/Expected.*ConstantConfig/);
+  });
+
   it('2D, from config dict', () => {
     const initializerConfig:
         serialization.ConfigDict = {className: 'Constant', config: {value: 5}};
@@ -93,6 +116,13 @@ describeMathCPU('Constant initializer', () => {
     expect(weights.shape).toEqual([2, 2]);
     expect(weights.dtype).toEqual('float32');
     expect(weights.dataSync()).toEqual(new Float32Array([5, 5, 5, 5]));
+  });
+
+  it('Does not leak', () => {
+    const initializerConfig:
+        serialization.ConfigDict = {className: 'Constant', config: {value: 5}};
+    expectNoLeakedTensors(
+        () => getInitializer(initializerConfig).apply([3]), 1);
   });
 });
 
@@ -152,6 +182,9 @@ describeMathCPU('RandomUniform initializer', () => {
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, 17, 47);
   });
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('RandomUniform').apply([3]), 1);
+  });
 });
 
 describeMathCPU('RandomNormal initializer', () => {
@@ -183,6 +216,9 @@ describeMathCPU('RandomNormal initializer', () => {
     expect(weights.dtype).toEqual('float32');
     // TODO(bileschi): Add test to assert the values match expectations.
   });
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('RandomNormal').apply([3]), 1);
+  });
 });
 
 describeMathCPU('HeNormal initializer', () => {
@@ -204,6 +240,35 @@ describeMathCPU('HeNormal initializer', () => {
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -2 * stddev, 2 * stddev);
   });
+
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('HeNormal').apply([3]), 1);
+  });
+});
+
+describeMathCPU('HeUniform initializer', () => {
+  const shape = [7, 2];
+  const bound = Math.sqrt(6 / shape[0]);
+  it('default', () => {
+    const init = getInitializer('heUniform');
+    const weights = init.apply(shape, 'float32');
+    expect(weights.shape).toEqual(shape);
+    expect(weights.dtype).toEqual('float32');
+    expectTensorsValuesInRange(weights, -bound, bound);
+    expect(init.getClassName()).toEqual(VarianceScaling.className);
+  });
+
+  it('default, upper case', () => {
+    const init = getInitializer('HeUniform');
+    const weights = init.apply(shape, 'float32');
+    expect(weights.shape).toEqual(shape);
+    expect(weights.dtype).toEqual('float32');
+    expectTensorsValuesInRange(weights, -bound, bound);
+  });
+
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('heUniform').apply([3]), 1);
+  });
 });
 
 describeMathCPU('LecunNormal initializer', () => {
@@ -224,6 +289,35 @@ describeMathCPU('LecunNormal initializer', () => {
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, -2 * stddev, 2 * stddev);
+  });
+
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('LeCunNormal').apply([3]), 1);
+  });
+});
+
+describeMathCPU('LeCunUniform initializer', () => {
+  const shape = [7, 2];
+  const bound = Math.sqrt(3 / shape[0]);
+  it('default', () => {
+    const init = getInitializer('leCunUniform');
+    const weights = init.apply(shape, 'float32');
+    expect(weights.shape).toEqual(shape);
+    expect(weights.dtype).toEqual('float32');
+    expectTensorsValuesInRange(weights, -bound, bound);
+    expect(init.getClassName()).toEqual(VarianceScaling.className);
+  });
+
+  it('default, upper case', () => {
+    const init = getInitializer('LeCunUniform');
+    const weights = init.apply(shape, 'float32');
+    expect(weights.shape).toEqual(shape);
+    expect(weights.dtype).toEqual('float32');
+    expectTensorsValuesInRange(weights, -bound, bound);
+  });
+
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('LeCunUniform').apply([3]), 1);
   });
 });
 
@@ -255,6 +349,10 @@ describeMathCPU('TruncatedNormal initializer', () => {
     expect(weights.shape).toEqual(shape);
     expect(weights.dtype).toEqual('float32');
     expectTensorsValuesInRange(weights, 0.0, 2.0);
+  });
+  it('Does not leak', () => {
+    expectNoLeakedTensors(
+        () => getInitializer('TruncatedNormal').apply([3]), 1);
   });
 });
 
@@ -306,6 +404,9 @@ describeMathCPU('Glorot uniform initializer', () => {
       expect(math_utils.min(weights.dataSync() as Float32Array))
           .toBeGreaterThan(-limit);
     });
+  });
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('GlorotUniform').apply([3]), 1);
   });
 });
 
@@ -361,6 +462,9 @@ describeMathCPU('Glorot normal initializer', () => {
       const variance2 = math_utils.median(varianceArr2);
       expect(variance2).toBeLessThan(variance1);
     });
+  });
+  it('Does not leak', () => {
+    expectNoLeakedTensors(() => getInitializer('GlorotNormal').apply([3]), 1);
   });
 });
 
@@ -492,5 +596,28 @@ describeMathCPUAndGPU('Orthogonal Initializer', () => {
     expect(w.dtype).toEqual('float32');
     // Assert that columns of w are orthogonal.
     expectTensorsClose(w.matMul(w.transpose()), eye(n));
+  });
+  it('Does not leak', () => {
+    const init = getInitializer('Orthogonal');
+    expectNoLeakedTensors(() => init.apply([3, 3]), 1);
+  });
+
+  it('Deserialize model containing GlorotUniform initializer', () => {
+    // From https://github.com/tensorflow/tfjs/issues/798
+    const testModelJSON =
+        // tslint:disable-next-line:max-line-length
+        `{"modelTopology": {"keras_version": "2.1.6-tf", "backend": "tensorflow", "model_config": {"class_name": "Model", "config": {"name": "emoji_autoencoder", "layers": [{"name": "input_1", "class_name": "InputLayer", "config": {"batch_input_shape": [null, 128, 128, 1], "dtype": "float32", "sparse": false, "name": "input_1"}, "inbound_nodes": []}, {"name": "Encoder", "class_name": "Model", "config": {"name": "Encoder", "layers": [{"name": "input_128x128", "class_name": "InputLayer", "config": {"batch_input_shape": [null, 128, 128, 1], "dtype": "float32", "sparse": false, "name": "input_128x128"}, "inbound_nodes": []}, {"name": "Convolution1", "class_name": "Conv2D", "config": {"name": "Convolution1", "trainable": true, "dtype": "float32", "filters": 16, "kernel_size": [5, 5], "strides": [1, 1], "padding": "same", "data_format": "channels_last", "dilation_rate": [1, 1], "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["input_128x128", 0, 0, {}]]]}, {"name": "shrink_64x64", "class_name": "MaxPooling2D", "config": {"name": "shrink_64x64", "trainable": true, "dtype": "float32", "pool_size": [2, 2], "padding": "same", "strides": [2, 2], "data_format": "channels_last"}, "inbound_nodes": [[["Convolution1", 0, 0, {}]]]}, {"name": "Convolution2", "class_name": "Conv2D", "config": {"name": "Convolution2", "trainable": true, "dtype": "float32", "filters": 8, "kernel_size": [3, 3], "strides": [1, 1], "padding": "same", "data_format": "channels_last", "dilation_rate": [1, 1], "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["shrink_64x64", 0, 0, {}]]]}, {"name": "shrink_32x32", "class_name": "MaxPooling2D", "config": {"name": "shrink_32x32", "trainable": true, "dtype": "float32", "pool_size": [2, 2], "padding": "same", "strides": [2, 2], "data_format": "channels_last"}, "inbound_nodes": [[["Convolution2", 0, 0, {}]]]}, {"name": "Convolution3", "class_name": "Conv2D", "config": {"name": "Convolution3", "trainable": true, "dtype": "float32", "filters": 8, "kernel_size": [3, 3], "strides": [1, 1], "padding": "same", "data_format": "channels_last", "dilation_rate": [1, 1], "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["shrink_32x32", 0, 0, {}]]]}, {"name": "shrink_8x8", "class_name": "MaxPooling2D", "config": {"name": "shrink_8x8", "trainable": true, "dtype": "float32", "pool_size": [4, 4], "padding": "same", "strides": [4, 4], "data_format": "channels_last"}, "inbound_nodes": [[["Convolution3", 0, 0, {}]]]}, {"name": "conv2d", "class_name": "Conv2D", "config": {"name": "conv2d", "trainable": true, "dtype": "float32", "filters": 4, "kernel_size": [3, 3], "strides": [1, 1], "padding": "same", "data_format": "channels_last", "dilation_rate": [1, 1], "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["shrink_8x8", 0, 0, {}]]]}, {"name": "shrink_4x4", "class_name": "MaxPooling2D", "config": {"name": "shrink_4x4", "trainable": true, "dtype": "float32", "pool_size": [2, 2], "padding": "same", "strides": [2, 2], "data_format": "channels_last"}, "inbound_nodes": [[["conv2d", 0, 0, {}]]]}, {"name": "matrix-to-vector", "class_name": "Flatten", "config": {"name": "matrix-to-vector", "trainable": true, "dtype": "float32", "data_format": "channels_last"}, "inbound_nodes": [[["shrink_4x4", 0, 0, {}]]]}, {"name": "link_flat_to_64x1", "class_name": "Dense", "config": {"name": "link_flat_to_64x1", "trainable": true, "dtype": "float32", "units": 64, "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["matrix-to-vector", 0, 0, {}]]]}, {"name": "output_8x1", "class_name": "Dense", "config": {"name": "output_8x1", "trainable": true, "dtype": "float32", "units": 8, "activation": "tanh", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["link_flat_to_64x1", 0, 0, {}]]]}], "input_layers": [["input_128x128", 0, 0]], "output_layers": [["output_8x1", 0, 0]]}, "inbound_nodes": [[["input_1", 0, 0, {}]]]}, {"name": "Decoder", "class_name": "Model", "config": {"name": "Decoder", "layers": [{"name": "input_8x1", "class_name": "InputLayer", "config": {"batch_input_shape": [null, 8], "dtype": "float32", "sparse": false, "name": "input_8x1"}, "inbound_nodes": []}, {"name": "activate_input", "class_name": "Dense", "config": {"name": "activate_input", "trainable": true, "dtype": "float32", "units": 64, "activation": "tanh", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["input_8x1", 0, 0, {}]]]}, {"name": "link_reshape_64x1", "class_name": "Dense", "config": {"name": "link_reshape_64x1", "trainable": true, "dtype": "float32", "units": 64, "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["activate_input", 0, 0, {}]]]}, {"name": "reshape_8x8", "class_name": "Reshape", "config": {"name": "reshape_8x8", "trainable": true, "dtype": "float32", "target_shape": [8, 8, 1]}, "inbound_nodes": [[["link_reshape_64x1", 0, 0, {}]]]}, {"name": "conv2d_1", "class_name": "Conv2D", "config": {"name": "conv2d_1", "trainable": true, "dtype": "float32", "filters": 8, "kernel_size": [3, 3], "strides": [1, 1], "padding": "same", "data_format": "channels_last", "dilation_rate": [1, 1], "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["reshape_8x8", 0, 0, {}]]]}, {"name": "grow_16x16", "class_name": "UpSampling2D", "config": {"name": "grow_16x16", "trainable": true, "dtype": "float32", "size": [2, 2], "data_format": "channels_last"}, "inbound_nodes": [[["conv2d_1", 0, 0, {}]]]}, {"name": "conv2d_2", "class_name": "Conv2D", "config": {"name": "conv2d_2", "trainable": true, "dtype": "float32", "filters": 8, "kernel_size": [3, 3], "strides": [1, 1], "padding": "same", "data_format": "channels_last", "dilation_rate": [1, 1], "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["grow_16x16", 0, 0, {}]]]}, {"name": "grow_32x32", "class_name": "UpSampling2D", "config": {"name": "grow_32x32", "trainable": true, "dtype": "float32", "size": [2, 2], "data_format": "channels_last"}, "inbound_nodes": [[["conv2d_2", 0, 0, {}]]]}, {"name": "conv2d_3", "class_name": "Conv2D", "config": {"name": "conv2d_3", "trainable": true, "dtype": "float32", "filters": 8, "kernel_size": [3, 3], "strides": [1, 1], "padding": "same", "data_format": "channels_last", "dilation_rate": [1, 1], "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["grow_32x32", 0, 0, {}]]]}, {"name": "grow_64x64", "class_name": "UpSampling2D", "config": {"name": "grow_64x64", "trainable": true, "dtype": "float32", "size": [2, 2], "data_format": "channels_last"}, "inbound_nodes": [[["conv2d_3", 0, 0, {}]]]}, {"name": "conv2d_4", "class_name": "Conv2D", "config": {"name": "conv2d_4", "trainable": true, "dtype": "float32", "filters": 16, "kernel_size": [3, 3], "strides": [1, 1], "padding": "same", "data_format": "channels_last", "dilation_rate": [1, 1], "activation": "relu", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["grow_64x64", 0, 0, {}]]]}, {"name": "grow_128x128", "class_name": "UpSampling2D", "config": {"name": "grow_128x128", "trainable": true, "dtype": "float32", "size": [2, 2], "data_format": "channels_last"}, "inbound_nodes": [[["conv2d_4", 0, 0, {}]]]}, {"name": "output_128x128", "class_name": "Conv2D", "config": {"name": "output_128x128", "trainable": true, "dtype": "float32", "filters": 1, "kernel_size": [5, 5], "strides": [1, 1], "padding": "same", "data_format": "channels_last", "dilation_rate": [1, 1], "activation": "tanh", "use_bias": true, "kernel_initializer": {"class_name": "GlorotUniform", "config": {"seed": null, "dtype": "float32"}}, "bias_initializer": {"class_name": "Zeros", "config": {"dtype": "float32"}}, "kernel_regularizer": null, "bias_regularizer": null, "activity_regularizer": null, "kernel_constraint": null, "bias_constraint": null}, "inbound_nodes": [[["grow_128x128", 0, 0, {}]]]}], "input_layers": [["input_8x1", 0, 0]], "output_layers": [["output_128x128", 0, 0]]}, "inbound_nodes": [[["Encoder", 1, 0, {}]]]}], "input_layers": [["input_1", 0, 0]], "output_layers": [["Decoder", 1, 0]]}}, "training_config": {"optimizer_config": {"class_name": "Adadelta", "config": {"lr": 1.0, "rho": 0.95, "decay": 0.0, "epsilon": 1e-07}}, "loss": "mean_squared_error", "metrics": [], "weighted_metrics": null, "sample_weight_mode": null, "loss_weights": null}}, "weightsManifest": [{"paths": ["group1-shard1of1"], "weights": [{"name": "activate_input/kernel", "shape": [8, 64], "dtype": "float32"}, {"name": "activate_input/bias", "shape": [64], "dtype": "float32"}, {"name": "link_reshape_64x1/kernel", "shape": [64, 64], "dtype": "float32"}, {"name": "link_reshape_64x1/bias", "shape": [64], "dtype": "float32"}, {"name": "conv2d_1/kernel", "shape": [3, 3, 1, 8], "dtype": "float32"}, {"name": "conv2d_1/bias", "shape": [8], "dtype": "float32"}, {"name": "conv2d_2/kernel", "shape": [3, 3, 8, 8], "dtype": "float32"}, {"name": "conv2d_2/bias", "shape": [8], "dtype": "float32"}, {"name": "conv2d_3/kernel", "shape": [3, 3, 8, 8], "dtype": "float32"}, {"name": "conv2d_3/bias", "shape": [8], "dtype": "float32"}, {"name": "conv2d_4/kernel", "shape": [3, 3, 8, 16], "dtype": "float32"}, {"name": "conv2d_4/bias", "shape": [16], "dtype": "float32"}, {"name": "output_128x128/kernel", "shape": [5, 5, 16, 1], "dtype": "float32"}, {"name": "output_128x128/bias", "shape": [1], "dtype": "float32"}, {"name": "Convolution1/kernel", "shape": [5, 5, 1, 16], "dtype": "float32"}, {"name": "Convolution1/bias", "shape": [16], "dtype": "float32"}, {"name": "Convolution2/kernel", "shape": [3, 3, 16, 8], "dtype": "float32"}, {"name": "Convolution2/bias", "shape": [8], "dtype": "float32"}, {"name": "Convolution3/kernel", "shape": [3, 3, 8, 8], "dtype": "float32"}, {"name": "Convolution3/bias", "shape": [8], "dtype": "float32"}, {"name": "conv2d/kernel", "shape": [3, 3, 8, 4], "dtype": "float32"}, {"name": "conv2d/bias", "shape": [4], "dtype": "float32"}, {"name": "link_flat_to_64x1/kernel", "shape": [64, 64], "dtype": "float32"}, {"name": "link_flat_to_64x1/bias", "shape": [64], "dtype": "float32"}, {"name": "output_8x1/kernel", "shape": [64, 8], "dtype": "float32"}, {"name": "output_8x1/bias", "shape": [8], "dtype": "float32"}]}]}`;
+    const modelConfig = convertPythonicToTs(
+        JSON.parse(testModelJSON).modelTopology.model_config);
+
+    const model = deserialize(modelConfig as PyJsonDict) as tfl.Model;
+    expect(model.layers.length).toEqual(3);
+    expect(model.layers[0] instanceof tfl.Model).toEqual(false);
+    expect(model.layers[1] instanceof tfl.Model).toEqual(true);
+    expect(model.layers[2] instanceof tfl.Model).toEqual(true);
+    expect(model.inputs[0].shape).toEqual([null, 128, 128, 1]);
+    expect(model.outputs[0].shape).toEqual([null, 128, 128, 1]);
+    expect((model.predict(randomNormal([1, 128, 128, 1])) as Tensor).shape)
+        .toEqual([1, 128, 128, 1]);
   });
 });

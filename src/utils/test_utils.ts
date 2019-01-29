@@ -12,13 +12,12 @@
  * Testing utilities.
  */
 
-// tslint:disable:max-line-length
-import {Tensor, test_util} from '@tensorflow/tfjs-core';
-import * as jasmine_util from '@tensorflow/tfjs-core/dist/jasmine_util';
-import {disposeScalarCache} from '../backend/tfjs_backend';
+import {memory, Tensor, test_util} from '@tensorflow/tfjs-core';
+import {describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+
+import {disposeScalarCache} from '../backend/state';
 import {ValueError} from '../errors';
 
-// tslint:enable:max-line-length
 
 /**
  * Expect values are close between an Tensor or number array.
@@ -59,8 +58,12 @@ export function expectTensorsValuesInRange(
  * @param tests
  */
 export function describeMathCPUAndGPU(testName: string, tests: () => void) {
-  describeMathCPU(testName, tests);
-  describeMathGPU(testName, tests);
+  describeWithFlags(testName, test_util.ALL_ENVS, () => {
+    beforeEach(() => {
+      disposeScalarCache();
+    });
+    tests();
+  });
 }
 
 /**
@@ -69,7 +72,7 @@ export function describeMathCPUAndGPU(testName: string, tests: () => void) {
  * @param tests
  */
 export function describeMathCPU(testName: string, tests: () => void) {
-  jasmine_util.describeWithFlags(testName, test_util.CPU_ENVS, () => {
+  describeWithFlags(testName, test_util.CPU_ENVS, () => {
     beforeEach(() => {
       disposeScalarCache();
     });
@@ -83,10 +86,36 @@ export function describeMathCPU(testName: string, tests: () => void) {
  * @param tests
  */
 export function describeMathGPU(testName: string, tests: () => void) {
-  jasmine_util.describeWithFlags(testName, test_util.WEBGL_ENVS, () => {
+  describeWithFlags(testName, test_util.WEBGL_ENVS, () => {
     beforeEach(() => {
       disposeScalarCache();
     });
     tests();
   });
+}
+
+/**
+ * Check that a function only generates the expected number of new Tensors.
+ *
+ * The test  function is called twice, once to prime any regular constants and
+ * once to ensure that additional copies aren't created/tensors aren't leaked.
+ *
+ * @param testFunc A fully curried (zero arg) version of the function to test.
+ * @param numNewTensors The expected number of new Tensors that should exist.
+ */
+export function expectNoLeakedTensors(
+    // tslint:disable-next-line:no-any
+    testFunc: () => any, numNewTensors: number) {
+  testFunc();
+  const numTensorsBefore = memory().numTensors;
+  testFunc();
+  const numTensorsAfter = memory().numTensors;
+  const actualNewTensors = numTensorsAfter - numTensorsBefore;
+  if (actualNewTensors !== numNewTensors) {
+    throw new ValueError(
+        `Created an unexpected number of new ` +
+        `Tensors.  Expected: ${numNewTensors}, created : ${
+            actualNewTensors}. ` +
+        `Please investigate the discrepency and/or use tidy.`);
+  }
 }

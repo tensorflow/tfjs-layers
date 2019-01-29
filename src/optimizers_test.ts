@@ -12,13 +12,11 @@
  * Unit tests for optimizers.ts.
  */
 
-// tslint:disable:max-line-length
-import {AdagradOptimizer, AdamOptimizer, RMSPropOptimizer, SGDOptimizer} from '@tensorflow/tfjs-core';
+import {AdagradOptimizer, AdadeltaOptimizer, AdamOptimizer, AdamaxOptimizer, RMSPropOptimizer, SGDOptimizer} from '@tensorflow/tfjs-core';
 
 import {getOptimizer} from './optimizers';
 import {describeMathCPU} from './utils/test_utils';
 
-// tslint:enable:max-line-length
 
 describeMathCPU('getOptimizer', () => {
   // TODO(nsthorat): Assert defaults by getting config from the optimizer.
@@ -55,9 +53,25 @@ describeMathCPU('getOptimizer', () => {
     const optimizer = getOptimizer('adagrad');
     expect(optimizer instanceof AdagradOptimizer).toBe(true);
   });
-
+  it(`can instantiate Adadelta`, () => {
+    const optimizer = getOptimizer('Adadelta');
+    expect(optimizer instanceof AdadeltaOptimizer).toBe(true);
+  });
+  it(`can instantiate adadelta`, () => {
+    const optimizer = getOptimizer('adadelta');
+    expect(optimizer instanceof AdadeltaOptimizer).toBe(true);
+  });
+  it(`can instantiate Adamax`, () => {
+    const optimizer = getOptimizer('Adamax');
+    expect(optimizer instanceof AdamaxOptimizer).toBe(true);
+  });
+  it(`can instantiate adamax`, () => {
+    const optimizer = getOptimizer('adamax');
+    expect(optimizer instanceof AdamaxOptimizer).toBe(true);
+  });
   it('throws for non-existent optimizer', () => {
     expect(() => getOptimizer('not an optimizer'))
-        .toThrowError(/Unknown Optimizer/);
+      .toThrowError(/Unknown Optimizer/);
   });
+
 });
