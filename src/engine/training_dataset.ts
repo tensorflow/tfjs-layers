@@ -320,7 +320,7 @@ export async function fitDataset<T extends TensorContainer>(
     const verbose = args.verbose == null ? 1 : args.verbose;
     const {callbackList, history} = configureCallbacks(
         callbacks, args.yieldEvery, verbose, args.epochs, null, null,
-        geStepsPerEpoch(dataset, args),
+        getStepsPerEpoch(dataset, args),
         null,  // Batch size determined by the dataset itself.
         doValidation, callbackMetrics);
     callbackList.setModel(model);
@@ -433,8 +433,8 @@ export async function fitDataset<T extends TensorContainer>(
   }
 }
 
-/** Helper function that determines number of batches (steps) per epoch. */
-function geStepsPerEpoch<T extends TensorContainer>(
+/** Helper function that determines number of steps (batches) per epoch. */
+function getStepsPerEpoch<T extends TensorContainer>(
     dataset: Dataset<T>, args: ModelFitDatasetArgs<T>): number {
   // Attempt to determine # of batches in an epoch.
   let stepsPerEpoch: number = null;
