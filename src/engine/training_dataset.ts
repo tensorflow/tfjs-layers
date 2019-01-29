@@ -440,7 +440,7 @@ function getBatchesPerEpoch<T extends TensorContainer>(
   let stepsPerEpoch: number = null;
   if (args.batchesPerEpoch != null) {
     stepsPerEpoch = args.batchesPerEpoch;
-  } else if (dataset.size != null && Number.isFinite(dataset.size)) {
+  } else if (Number.isFinite(dataset.size)) {
     stepsPerEpoch = dataset.size;
   }
   return stepsPerEpoch;
