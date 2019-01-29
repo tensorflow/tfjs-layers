@@ -437,7 +437,7 @@ export async function fitDataset<T extends TensorContainer>(
 function getBatchesPerEpoch<T extends TensorContainer>(
     dataset: Dataset<T>, args: ModelFitDatasetArgs<T>): number {
   // Attempt to determine # of batches in an epoch.
-  let stepsPerEpoch: number;
+  let stepsPerEpoch: number = null;
   if (args.batchesPerEpoch != null) {
     stepsPerEpoch = args.batchesPerEpoch;
   } else if (dataset.size != null && Number.isFinite(dataset.size)) {
