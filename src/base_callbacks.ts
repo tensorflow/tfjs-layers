@@ -252,22 +252,6 @@ export class ModelTrainingYielder {
   }
 
   /**
-   * Find the first Scalar tensor in `logs` and await data() on it.
-   *
-   * This causes a data download (e.g., from GPU) and therefore clears the
-   * queued operations (e.g., on the GPU).
-   */
-  private async resolveOneTensorInLogs(logs: UnresolvedLogs) {
-    for (const key in logs) {
-      const value = logs[key];
-      if (typeof value !== 'number') {
-        await (value as Scalar).data();
-        break;
-      }
-    }
-  }
-
-  /**
    * The action taken when a batch ends.
    *
    * The action taken depends on the `yieldEvery` configuration.
@@ -291,7 +275,6 @@ export class ModelTrainingYielder {
       if (this.autoYieldEveryBatches == null) {
         // autoYieldEveryBatches has not been determined yet. We are still in
         // the measurement phase.
-        await this.resolveOneTensorInLogs(logs);
         const t = util.now();
         await nextFrame();
         // We skip the first few batches for timing, because they usually
@@ -318,7 +301,6 @@ export class ModelTrainingYielder {
         if (this.batchCount - this.lastYieldBatchCount >=
             this.autoYieldEveryBatches) {
           await nextFrame();
-          await this.resolveOneTensorInLogs(logs);
           this.lastYieldBatchCount = this.batchCount;
         }
       }
@@ -469,7 +451,7 @@ export class History extends BaseCallback {
   }
 }
 
-export interface CustomCallbackConfig {
+export interface CustomCallbackArgs {
   onTrainBegin?: (logs?: Logs) => Promise<void>;
   onTrainEnd?: (logs?: Logs) => Promise<void>;
   onEpochBegin?: (epoch: number, logs?: Logs) => Promise<void>;
@@ -489,14 +471,14 @@ export class CustomCallback extends BaseCallback {
   protected readonly batchBegin: (batch: number, logs?: Logs) => Promise<void>;
   protected readonly batchEnd: (batch: number, logs?: Logs) => Promise<void>;
 
-  constructor(config: CustomCallbackConfig) {
+  constructor(args: CustomCallbackArgs) {
     super();
-    this.trainBegin = config.onTrainBegin;
-    this.trainEnd = config.onTrainEnd;
-    this.epochBegin = config.onEpochBegin;
-    this.epochEnd = config.onEpochEnd;
-    this.batchBegin = config.onBatchBegin;
-    this.batchEnd = config.onBatchEnd;
+    this.trainBegin = args.onTrainBegin;
+    this.trainEnd = args.onTrainEnd;
+    this.epochBegin = args.onEpochBegin;
+    this.epochEnd = args.onEpochEnd;
+    this.batchBegin = args.onBatchBegin;
+    this.batchEnd = args.onBatchEnd;
   }
 
   async onEpochBegin(epoch: number, logs?: UnresolvedLogs): Promise<void> {
@@ -546,8 +528,8 @@ export class CustomCallback extends BaseCallback {
  * Standardize callbacks or configurations of them to an Array of callbacks.
  */
 export function standardizeCallbacks(callbacks: BaseCallback|BaseCallback[]|
-                                     CustomCallbackConfig|
-                                     CustomCallbackConfig[]): BaseCallback[] {
+                                     CustomCallbackArgs|
+                                     CustomCallbackArgs[]): BaseCallback[] {
   if (callbacks == null) {
     return null;
   }
@@ -559,7 +541,7 @@ export function standardizeCallbacks(callbacks: BaseCallback|BaseCallback[]|
   }
   // Convert custom callback configs to custom callback objects.
   const callbackConfigs =
-      generic_utils.toList(callbacks) as CustomCallbackConfig[];
+      generic_utils.toList(callbacks) as CustomCallbackArgs[];
   return callbackConfigs.map(
       callbackConfig => new CustomCallback(callbackConfig));
 }

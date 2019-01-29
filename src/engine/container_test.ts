@@ -11,24 +11,24 @@
 import {memory, ones, scalar, Tensor, zeros} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';
+import {Kwargs} from '../types';
 import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {Container, ContainerConfig} from './container';
+import {Container, ContainerArgs} from './container';
 import {execute, FeedDict} from './executor';
-import {getSourceInputs, Layer, LayerConfig, SymbolicTensor, CallHook} from './topology';
-import {Kwargs} from '../types';
+import {CallHook, getSourceInputs, Layer, LayerArgs, SymbolicTensor} from './topology';
 
 class LayerForTest extends tfl.layers.Layer {
   static className = 'LayerForTest';
-  constructor(config: LayerConfig) {
-    super(config);
+  constructor(args: LayerArgs) {
+    super(args);
   }
 }
 
 class ContainerForTest extends Container {
   static className = 'ContainerForTest';
-  constructor(config: ContainerConfig) {
-    super(config);
+  constructor(args: ContainerArgs) {
+    super(args);
   }
 }
 
@@ -590,7 +590,7 @@ describeMathCPUAndGPU('Model-dispose', () => {
     const result2 = model2.dispose();
 
     expect(result2.refCountAfterDispose).toEqual(0);
-    expect(result2.numDisposedVariables).toEqual(3) ;
+    expect(result2.numDisposedVariables).toEqual(3);
     // After model2 is disposed, the single weight of `nonSharedDenseLayer2`
     // and the two weights o `sharedDenseLayer` should be freed.
     expect(memory().numTensors).toEqual(numTensors0 - 4);
@@ -649,8 +649,8 @@ describeMathCPUAndGPU('Model-dispose', () => {
 
   it('Nested model gets the correct kwargs', async () => {
     const innerModel = tfl.sequential();
-    const layer = tfl.layers.dense({
-      units: 1,inputShape: [5], activation: 'sigmoid'});
+    const layer =
+        tfl.layers.dense({units: 1, inputShape: [5], activation: 'sigmoid'});
     innerModel.add(layer);
 
     const input = tfl.input({shape: [5]});
@@ -659,8 +659,8 @@ describeMathCPUAndGPU('Model-dispose', () => {
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
     const kwargsArray: Kwargs[] = [];
-    const recordKwargsHook: CallHook =
-        (inputs: Tensor|Tensor[], kwargs: {}) => kwargsArray.push(kwargs);
+    const recordKwargsHook: CallHook = (inputs: Tensor|Tensor[], kwargs: {}) =>
+        kwargsArray.push(kwargs);
     layer.setCallHook(recordKwargsHook);
 
     const xs = ones([3, 5]);
@@ -669,4 +669,20 @@ describeMathCPUAndGPU('Model-dispose', () => {
     expect(kwargsArray.length).toEqual(1);
     expect(kwargsArray[0]['training']).toEqual(true);
   });
+  it('Dispose Sequential model with a Dropout', () => {
+    const numTensors0 = memory().numTensors;
+    const model = tfl.sequential();
+    model.add(
+        tfl.layers.dense({units: 2, inputShape: [3], activation: 'relu'}));
+    model.add(tfl.layers.dense({units: 1}));
+    model.add(tfl.layers.dropout({rate: 0.8}));
+    model.build([3, 3]);
+
+    const result = model.dispose();
+    expect(result.refCountAfterDispose).toEqual(0);
+    expect(result.numDisposedVariables).toEqual(5);
+    // The four weight variables of the two layers should have been disposed.
+    // + the rate from the dropout tensor
+    expect(memory().numTensors).toEqual(numTensors0);
+  }); 
 });
