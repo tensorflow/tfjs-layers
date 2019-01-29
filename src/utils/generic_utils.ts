@@ -153,12 +153,12 @@ export function serializeKerasObject(instance: serialization.Serializable):
  * @param config The keras-format serialization object to be processed
  *   (in place).
  */
-function resolveNDArrayScalarsInConfig(
+function convertNDArrayScalarsInConfig(
     config: serialization.ConfigDictValue): void {
   if (config == null || typeof config !== 'object') {
     return;
   } else if (Array.isArray(config)) {
-    config.forEach(configItem => resolveNDArrayScalarsInConfig(configItem));
+    config.forEach(configItem => convertNDArrayScalarsInConfig(configItem));
   } else {
     const fields = Object.keys(config);
     for (const field of fields) {
@@ -168,7 +168,7 @@ function resolveNDArrayScalarsInConfig(
             typeof value['value'] === 'number') {
           config[field] = value['value'];
         } else {
-          resolveNDArrayScalarsInConfig(value as serialization.ConfigDict);
+          convertNDArrayScalarsInConfig(value as serialization.ConfigDict);
         }
       }
     }
@@ -269,7 +269,7 @@ export function deserializeKerasObject(
       for (const key of Object.keys(customObjects)) {
         _GLOBAL_CUSTOM_OBJECTS[key] = customObjects[key];
       }
-      resolveNDArrayScalarsInConfig(config.config);
+      convertNDArrayScalarsInConfig(config.config);
       const returnObj =
           fromConfig(cls, config.config, customObjects, fastWeightInit);
       _GLOBAL_CUSTOM_OBJECTS = {...backupCustomObjects};
