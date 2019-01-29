@@ -9,8 +9,6 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-// NOTE: It is necessary to import `TensorContainer` from dist currently,
-// because it is not exposed in the public API of tfjs-core.
 
 /**
  * Stub interfaces and classes for testing tf.Model.fitDataset().
