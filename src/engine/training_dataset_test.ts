@@ -551,6 +551,51 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expect(recordedSteps).toEqual(batchesPerEpoch);
   });
 
+  it('explicit stepPerEpoch overrides dataset.size for callbacks', async () => {
+    const batchSize = 8;
+    const numBatches = 3;
+    const xTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const yTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    let recordedSteps: number;
+    class TestCallback extends CustomCallback {
+      constructor() {
+        super({
+          onTrainBegin: async (logs?: Logs) => {
+            recordedSteps = this.params.steps as number;
+          }
+        });
+      }
+    }
+
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+    const epochs = 1;
+    await model.fitDataset(dataset, {
+      epochs,
+      batchesPerEpoch: numBatches - 1,
+      callbacks: new TestCallback()
+    });
+
+    expect(dataset.size).toEqual(numBatches);
+    expect(recordedSteps).toEqual(numBatches - 1);
+  });
+
   // Reference Python tf.keras code:
   //
   // ```py
