@@ -75,6 +75,7 @@ export interface InputLayerArgs {
  * ```
  */
 export class InputLayer extends Layer {
+  /** @nocollapse */
   static readonly className = 'InputLayer';
   sparse: boolean;
   constructor(args: InputLayerArgs) {
