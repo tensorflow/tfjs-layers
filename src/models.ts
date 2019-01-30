@@ -893,6 +893,7 @@ export class Sequential extends Model {
   }
 
   /* See parent class for JsDoc */
+  /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict,

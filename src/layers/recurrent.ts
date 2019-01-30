@@ -1853,6 +1853,7 @@ export class GRU extends RNN {
     return config;
   }
 
+  /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict): T {
@@ -2338,6 +2339,7 @@ export class LSTM extends RNN {
     return config;
   }
 
+  /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict): T {
@@ -2463,6 +2465,7 @@ export class StackedRNNCells extends RNNCell {
     return config;
   }
 
+  /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict,

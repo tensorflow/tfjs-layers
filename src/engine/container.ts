@@ -1261,6 +1261,7 @@ export abstract class Container extends Layer {
    * @returns A model instance.
    * @throws ValueError: In case of improperly formatted config dict.
    */
+  /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict,

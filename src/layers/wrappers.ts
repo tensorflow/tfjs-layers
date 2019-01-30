@@ -136,6 +136,7 @@ export abstract class Wrapper extends Layer {
     }
   }
 
+  /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict,
@@ -580,6 +581,7 @@ export class Bidirectional extends Wrapper {
     return config;
   }
 
+  /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict): T {

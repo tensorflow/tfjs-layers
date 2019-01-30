@@ -90,6 +90,7 @@ export class L1L2 extends Regularizer {
     return {'l1': this.l1.dataSync()[0], 'l2': this.l2.dataSync()[0]};
   }
 
+  /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
       cls: serialization.SerializableConstructor<T>,
       config: serialization.ConfigDict): T {
