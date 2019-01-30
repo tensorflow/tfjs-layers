@@ -750,7 +750,9 @@ export function getInitializer(identifier: InitializerIdentifier|Initializer|
     } else if (className === 'LeCunUniform') {
       return new LeCunUniform();
     } else {
-      const config = {className, config: {}};
+      const config: serialization.ConfigDict = {};
+      config.className = className;
+      config.config = {};
       return deserializeInitializer(config);
     }
   } else if (identifier instanceof Initializer) {
