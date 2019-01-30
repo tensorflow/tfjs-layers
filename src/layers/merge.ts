@@ -728,7 +728,7 @@ export function minimum(config?: SymbolicTensor[]|Tensor[]|LayerArgs): Layer|
   }
 }
 
-export interface ConcatenateLayerArgs extends LayerArgs {
+export declare interface ConcatenateLayerArgs extends LayerArgs {
   /**
    * Axis along which to concatenate.
    */
@@ -953,7 +953,7 @@ export function concatenate(config?: SymbolicTensor[]|Tensor[]|
   }
 }
 
-export interface DotLayerArgs extends LayerArgs {
+export declare interface DotLayerArgs extends LayerArgs {
   /**
    * Axis or axes along which the dot product will be taken.
    *

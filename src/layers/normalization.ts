@@ -170,7 +170,7 @@ export function normalizeBatchInTraining(
   }
 }
 
-export interface BatchNormalizationLayerArgs extends LayerArgs {
+export declare interface BatchNormalizationLayerArgs extends LayerArgs {
   /**
    * The integer axis that should be normalized (typically the features axis).
    * Defaults to -1.

@@ -83,7 +83,7 @@ export function pool2d(
 }
 
 
-export interface Pooling1DLayerArgs extends LayerArgs {
+export declare interface Pooling1DLayerArgs extends LayerArgs {
   /**
    * Size of the window to pool over, should be an integer.
    */
@@ -239,7 +239,7 @@ export class AveragePooling1D extends Pooling1D {
 }
 serialization.registerClass(AveragePooling1D);
 
-export interface Pooling2DLayerArgs extends LayerArgs {
+export declare interface Pooling2DLayerArgs extends LayerArgs {
   /**
    * Factors by which to downscale in each dimension [vertical, horizontal].
    * Expects an integer or an array of 2 integers.
@@ -486,7 +486,7 @@ export class GlobalMaxPooling1D extends GlobalPooling1D {
 }
 serialization.registerClass(GlobalMaxPooling1D);
 
-export interface GlobalPooling2DLayerArgs extends LayerArgs {
+export declare interface GlobalPooling2DLayerArgs extends LayerArgs {
   /**
    * One of `CHANNEL_LAST` (default) or `CHANNEL_FIRST`.
    *

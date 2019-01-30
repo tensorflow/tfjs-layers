@@ -199,7 +199,7 @@ export function conv2dWithBias(
 /**
  * Base LayerConfig for depthwise and non-depthwise convolutional layers.
  */
-export interface BaseConvLayerArgs extends LayerArgs {
+export declare interface BaseConvLayerArgs extends LayerArgs {
   /**
    * The dimensions of the convolution window. If kernelSize is a number, the
    * convolutional window will be square.
@@ -295,7 +295,7 @@ export interface BaseConvLayerArgs extends LayerArgs {
  * LayerConfig for non-depthwise convolutional layers.
  * Applies to non-depthwise convolution of all ranks (e.g, Conv1D, Conv2D).
  */
-export interface ConvLayerArgs extends BaseConvLayerArgs {
+export declare interface ConvLayerArgs extends BaseConvLayerArgs {
   /**
    * The dimensionality of the output space (i.e. the number of filters in the
    * convolution).
@@ -759,7 +759,7 @@ export class Conv2DTranspose extends Conv2D {
 }
 serialization.registerClass(Conv2DTranspose);
 
-export interface SeparableConvLayerArgs extends ConvLayerArgs {
+export declare interface SeparableConvLayerArgs extends ConvLayerArgs {
   /**
    * The number of depthwise convolution output channels for each input
    * channel.
@@ -1040,7 +1040,7 @@ export class Conv1D extends Conv {
 }
 serialization.registerClass(Conv1D);
 
-export interface Cropping2DLayerArgs extends LayerArgs {
+export declare interface Cropping2DLayerArgs extends LayerArgs {
   /**
    * Dimension of the cropping along the width and the height.
    * - If integer: the same symmetric cropping
@@ -1168,7 +1168,7 @@ export class Cropping2D extends Layer {
 }
 serialization.registerClass(Cropping2D);
 
-export interface UpSampling2DLayerArgs extends LayerArgs {
+export declare interface UpSampling2DLayerArgs extends LayerArgs {
   /**
    * The upsampling factors for rows and columns.
    *

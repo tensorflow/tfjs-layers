@@ -27,7 +27,7 @@ import {Kwargs} from '../types';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
-export interface ReLULayerArgs extends LayerArgs {
+export declare interface ReLULayerArgs extends LayerArgs {
   /**
    * Float, the maximum output value.
    */
@@ -80,7 +80,7 @@ export class ReLU extends Layer {
 }
 serialization.registerClass(ReLU);
 
-export interface LeakyReLULayerArgs extends LayerArgs {
+export declare interface LeakyReLULayerArgs extends LayerArgs {
   /**
    * Float `>= 0`. Negative slope coefficient. Defaults to `0.3`.
    */
@@ -134,7 +134,7 @@ export class LeakyReLU extends Layer {
 }
 serialization.registerClass(LeakyReLU);
 
-export interface PReLULayerArgs extends LayerArgs {
+export declare interface PReLULayerArgs extends LayerArgs {
   /**
    * Initializer for the learnable alpha.
    */
@@ -255,7 +255,7 @@ export class PReLU extends Layer {
 }
 serialization.registerClass(PReLU);
 
-export interface ELULayerArgs extends LayerArgs {
+export declare interface ELULayerArgs extends LayerArgs {
   /**
    * Float `>= 0`. Negative slope coefficient. Defaults to `1.0`.
    */
@@ -320,7 +320,7 @@ export class ELU extends Layer {
 }
 serialization.registerClass(ELU);
 
-export interface ThresholdedReLULayerArgs extends LayerArgs {
+export declare interface ThresholdedReLULayerArgs extends LayerArgs {
   /**
    * Float >= 0. Threshold location of activation.
    */
@@ -381,7 +381,7 @@ export class ThresholdedReLU extends Layer {
 }
 serialization.registerClass(ThresholdedReLU);
 
-export interface SoftmaxLayerArgs extends LayerArgs {
+export declare interface SoftmaxLayerArgs extends LayerArgs {
   /**
    * Integer, axis along which the softmax normalization is applied.
    * Defaults to `-1` (i.e., the last axis).

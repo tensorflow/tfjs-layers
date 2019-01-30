@@ -30,7 +30,7 @@ import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
 
 
-export interface DropoutLayerArgs extends LayerArgs {
+export declare interface DropoutLayerArgs extends LayerArgs {
   /** Float between 0 and 1. Fraction of the input units to drop. */
   rate: number;
 
@@ -138,7 +138,7 @@ export class Dropout extends Layer {
 }
 serialization.registerClass(Dropout);
 
-export interface DenseLayerArgs extends LayerArgs {
+export declare interface DenseLayerArgs extends LayerArgs {
   /** Positive integer, dimensionality of the output space. */
   units: number;
   /**
@@ -379,7 +379,7 @@ export class Flatten extends Layer {
 }
 serialization.registerClass(Flatten);
 
-export interface ActivationLayerArgs extends LayerArgs {
+export declare interface ActivationLayerArgs extends LayerArgs {
   /**
    * Name of the activation function to use.
    */
@@ -444,12 +444,12 @@ export class Activation extends Layer {
 }
 serialization.registerClass(Activation);
 
-export interface ReshapeLayerArgs extends LayerArgs {
+export declare interface ReshapeLayerArgs extends LayerArgs {
   /** The target shape. Does not include the batch axis. */
   targetShape: Shape;
 }
 
-export interface RepeatVectorLayerArgs extends LayerArgs {
+export declare interface RepeatVectorLayerArgs extends LayerArgs {
   /**
    * The integer number of times to repeat the input.
    */
@@ -626,7 +626,7 @@ export class Reshape extends Layer {
 }
 serialization.registerClass(Reshape);
 
-export interface PermuteLayerArgs extends LayerArgs {
+export declare interface PermuteLayerArgs extends LayerArgs {
   /**
    * Array of integers. Permutation pattern. Does not include the
    * sample (batch) dimension. Index starts at 1.

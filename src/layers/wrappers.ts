@@ -31,7 +31,7 @@ import {rnn, RNN, standardizeArgs} from './recurrent';
 import {deserialize} from './serialization';
 
 
-export interface WrapperLayerArgs extends LayerArgs {
+export declare interface WrapperLayerArgs extends LayerArgs {
   /**
    * The layer to be wrapped.
    */
@@ -262,7 +262,7 @@ export function checkBidirectionalMergeMode(value?: string): void {
       VALID_BIDIRECTIONAL_MERGE_MODES, 'BidirectionalMergeMode', value);
 }
 
-export interface BidirectionalLayerArgs extends WrapperLayerArgs {
+export declare interface BidirectionalLayerArgs extends WrapperLayerArgs {
   /**
    * The instance of an `RNN` layer to be wrapped.
    */
