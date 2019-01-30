@@ -199,13 +199,15 @@ export function deserializeActivation(
 export function getActivation(identifier: ActivationIdentifier|
                               serialization.ConfigDict|Activation): Activation {
   if (identifier == null) {
-    const config = {className: 'linear', config: {}} as
-        serialization.ConfigDict;
+    const config: serialization.ConfigDict = {};
+    config.className = 'linear';
+    config.config = {};
     return deserializeActivation(config);
   }
   if (typeof identifier === 'string') {
-    const config = {className: identifier, config: {}} as
-        serialization.ConfigDict;
+    const config: serialization.ConfigDict = {};
+    config.className = identifier;
+    config.config = {};
     return deserializeActivation(config);
   } else if (identifier instanceof Activation) {
     return identifier;
