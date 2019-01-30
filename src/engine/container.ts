@@ -11,7 +11,6 @@
 /* Original source: keras/engine/topology.py */
 
 import {Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
-
 import {getUid} from '../backend/state';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {Shape} from '../keras_format/common';
@@ -1207,7 +1206,7 @@ export abstract class Container extends Layer {
         className: layerClassName,
         config: layerConfig,
         inboundNodes: filteredInboundNodes
-      });
+      } as serialization.ConfigDict);
     }
     config['layers'] = layerConfigs;
     // Gather info about inputs and outputs

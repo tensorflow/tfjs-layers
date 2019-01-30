@@ -982,7 +982,7 @@ export class Sequential extends Model {
       config.push({
         className: layer.getClassName(),
         config: layer.getConfig(),
-      });
+      } as serialization.ConfigDict);
     }
     return config;
   }

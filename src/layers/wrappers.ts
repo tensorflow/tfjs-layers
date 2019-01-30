@@ -301,12 +301,14 @@ export class Bidirectional extends Wrapper {
     const layerConfig = args.layer.getConfig();
     this.forwardLayer =
         deserialize(
-            {className: args.layer.getClassName(), config: layerConfig}) as RNN;
+            {className: args.layer.getClassName(), config: layerConfig} as
+            serialization.ConfigDict) as RNN;
     layerConfig['goBackwards'] =
         layerConfig['goBackwards'] === true ? false : true;
     this.backwardLayer =
         deserialize(
-            {className: args.layer.getClassName(), config: layerConfig}) as RNN;
+            {className: args.layer.getClassName(), config: layerConfig} as
+            serialization.ConfigDict) as RNN;
     this.forwardLayer.name = 'forward_' + this.forwardLayer.name;
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
     checkBidirectionalMergeMode(args.mergeMode);

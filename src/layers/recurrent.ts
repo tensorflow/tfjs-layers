@@ -890,7 +890,7 @@ export class RNN extends Layer {
     config.cell = {
       className: this.cell.getClassName(),
       config: cellConfig,
-    };
+    } as serialization.ConfigDictValue;
     const baseConfig = super.getConfig();
     Object.assign(config, baseConfig);
     return config;
