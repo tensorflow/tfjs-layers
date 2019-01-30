@@ -12,9 +12,7 @@
  * TensorFlow.js Layers: Basic Layers.
  */
 
-// import {fused, Scalar, serialization, Tensor, tidy, transpose, util} from
-// '@tensorflow/tfjs-core';
-import {fused, Scalar, serialization, Tensor, tidy, transpose, util} from '../../../tfjs-core/src/index';
+import {fused, Scalar, serialization, Tensor, tidy, transpose, util} from '@tensorflow/tfjs-core';
 
 import {Activation as ActivationFn, getActivation, serializeActivation} from '../activations';
 import {getScalar} from '../backend/state';
