@@ -84,6 +84,7 @@ export interface EmbeddingLayerArgs extends LayerArgs {
  * outputDim]`.
  */
 export class Embedding extends Layer {
+  /** @nocollapse */
   static className = 'Embedding';
   private inputDim: number;
   private outputDim: number;

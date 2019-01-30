@@ -194,6 +194,7 @@ export abstract class Wrapper extends Layer {
  * ```
  */
 export class TimeDistributed extends Wrapper {
+  /** @nocollapse */
   static className = 'TimeDistributed';
   constructor(args: WrapperLayerArgs) {
     super(args);
@@ -275,6 +276,7 @@ export interface BidirectionalLayerArgs extends WrapperLayerArgs {
 }
 
 export class Bidirectional extends Wrapper {
+  /** @nocollapse */
   static className = 'Bidirectional';
   private forwardLayer: RNN;
   private backwardLayer: RNN;

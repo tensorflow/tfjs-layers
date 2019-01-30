@@ -343,6 +343,7 @@ export interface SequentialArgs {
  */
 /** @doc {heading: 'Models', subheading: 'Classes'} */
 export class Sequential extends Model {
+  /** @nocollapse */
   static className = 'Sequential';
   private model: Model;
   private _updatable: boolean;

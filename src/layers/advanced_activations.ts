@@ -46,6 +46,7 @@ export interface ReLULayerArgs extends LayerArgs {
  *   Same shape as the input.
  */
 export class ReLU extends Layer {
+  /** @nocollapse */
   static className = 'ReLU';
   maxValue: number;
 
@@ -101,6 +102,7 @@ export interface LeakyReLULayerArgs extends LayerArgs {
  *   Same shape as the input.
  */
 export class LeakyReLU extends Layer {
+  /** @nocollapse */
   static className = 'LeakyReLU';
   readonly alpha: number;
 
@@ -175,6 +177,7 @@ export interface PReLULayerArgs extends LayerArgs {
  *   Same shape as the input.
  */
 export class PReLU extends Layer {
+  /** @nocollapse */
   static className = 'PReLU';
   private readonly alphaInitializer: Initializer;
   private readonly alphaRegularizer: Regularizer;
@@ -278,6 +281,7 @@ export interface ELULayerArgs extends LayerArgs {
  * (ELUs)](https://arxiv.org/abs/1511.07289v1)
  */
 export class ELU extends Layer {
+  /** @nocollapse */
   static className = 'ELU';
   readonly alpha: number;
 
@@ -342,6 +346,7 @@ export interface ThresholdedReLULayerArgs extends LayerArgs {
  * Features](http://arxiv.org/abs/1402.3337)
  */
 export class ThresholdedReLU extends Layer {
+  /** @nocollapse */
   static className = 'ThresholdedReLU';
   readonly theta: number;
   private readonly thetaTensor: Tensor;
@@ -395,6 +400,7 @@ export interface SoftmaxLayerArgs extends LayerArgs {
  *   Same shape as the input.
  */
 export class Softmax extends Layer {
+  /** @nocollapse */
   static className = 'Softmax';
   readonly axis: number;
   readonly softmax: (t: Tensor, a?: number) => Tensor;

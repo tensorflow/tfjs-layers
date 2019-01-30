@@ -152,6 +152,7 @@ export interface ZeroPadding2DLayerArgs extends LayerArgs {
  *     `[batch, channels, paddedRows, paddedCols]`.
  */
 export class ZeroPadding2D extends Layer {
+  /** @nocollapse */
   static className = 'ZeroPadding2D';
   readonly dataFormat: DataFormat;
   readonly padding: [[number, number], [number, number]];

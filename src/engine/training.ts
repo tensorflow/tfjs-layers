@@ -441,6 +441,7 @@ export interface ModelCompileArgs {
  */
 /** @doc {heading: 'Models', subheading: 'Classes'} */
 export class Model extends Container implements tfc.InferenceModel {
+  /** @nocollapse */
   static className = 'Model';
   optimizer: Optimizer;
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|

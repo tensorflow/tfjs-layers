@@ -49,6 +49,7 @@ export interface L2Args {
  */
 /** @doc {heading: 'Regularizers', namespace: 'regularizers'} */
 export class L1L2 extends Regularizer {
+  /** @nocollapse */
   static className = 'L1L2';
 
   private readonly l1: Scalar;

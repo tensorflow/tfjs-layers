@@ -197,6 +197,7 @@ export abstract class Pooling1D extends Layer {
  * Output shape: `[batchSize, pooledLength, channels]`
  */
 export class MaxPooling1D extends Pooling1D {
+  /** @nocollapse */
   static className = 'MaxPooling1D';
   constructor(args: Pooling1DLayerArgs) {
     super(args);
@@ -222,6 +223,7 @@ serialization.registerClass(MaxPooling1D);
  * `tf.avgPool1d` is an alias.
  */
 export class AveragePooling1D extends Pooling1D {
+  /** @nocollapse */
   static className = 'AveragePooling1D';
   constructor(args: Pooling1DLayerArgs) {
     super(args);
@@ -366,6 +368,7 @@ export abstract class Pooling2D extends Layer {
  *       `[batchSize, channels, pooleRows, pooledCols]`
  */
 export class MaxPooling2D extends Pooling2D {
+  /** @nocollapse */
   static className = 'MaxPooling2D';
   constructor(args: Pooling2DLayerArgs) {
     super(args);
@@ -403,6 +406,7 @@ serialization.registerClass(MaxPooling2D);
  * `tf.avgPool2d` is an alias.
  */
 export class AveragePooling2D extends Pooling2D {
+  /** @nocollapse */
   static className = 'AveragePooling2D';
   constructor(args: Pooling2DLayerArgs) {
     super(args);
@@ -444,6 +448,7 @@ export abstract class GlobalPooling1D extends Layer {
  * Output Shape:2D tensor with shape: `[batchSize, features]`.
  */
 export class GlobalAveragePooling1D extends GlobalPooling1D {
+  /** @nocollapse */
   static className = 'GlobalAveragePooling1D';
   constructor(args?: LayerArgs) {
     super(args || {});
@@ -466,6 +471,7 @@ serialization.registerClass(GlobalAveragePooling1D);
  * Output Shape:2D tensor with shape: `[batchSize, features]`.
  */
 export class GlobalMaxPooling1D extends GlobalPooling1D {
+  /** @nocollapse */
   static className = 'GlobalMaxPooling1D';
   constructor(args: LayerArgs) {
     super(args || {});
@@ -539,6 +545,7 @@ export abstract class GlobalPooling2D extends Layer {
  *   2D tensor with shape: `[batchSize, channels]`.
  */
 export class GlobalAveragePooling2D extends GlobalPooling2D {
+  /** @nocollapse */
   static className = 'GlobalAveragePooling2D';
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
@@ -567,6 +574,7 @@ serialization.registerClass(GlobalAveragePooling2D);
  *   2D tensor with shape: `[batchSize, channels]`.
  */
 export class GlobalMaxPooling2D extends GlobalPooling2D {
+  /** @nocollapse */
   static className = 'GlobalMaxPooling2D';
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {

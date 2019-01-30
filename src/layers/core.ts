@@ -57,6 +57,7 @@ export interface DropoutLayerArgs extends LayerArgs {
  * each update during training time, which helps prevent overfitting.
  */
 export class Dropout extends Layer {
+  /** @nocollapse */
   static className = 'Dropout';
   private readonly rate: number;
   private readonly rateScalar: Scalar;
@@ -125,7 +126,7 @@ export class Dropout extends Layer {
     Object.assign(config, baseConfig);
     return config;
   }
-  
+
   dispose(): DisposeResult {
     const result = super.dispose();
     if (!this.rateScalar.isDisposed) {
@@ -219,6 +220,7 @@ export interface DenseLayerArgs extends LayerArgs {
  * flattened prior to the initial dot product with the kernel.
  */
 export class Dense extends Layer {
+  /** @nocollapse */
   static className = 'Dense';
   private units: number;
   // Default activation: Linear (none).
@@ -347,6 +349,7 @@ serialization.registerClass(Dense);
  * ```
  */
 export class Flatten extends Layer {
+  /** @nocollapse */
   static className = 'Flatten';
   constructor(args?: LayerArgs) {
     super(args || {});
@@ -414,6 +417,7 @@ export interface ActivationLayerArgs extends LayerArgs {
  *
  */
 export class Activation extends Layer {
+  /** @nocollapse */
   static className = 'Activation';
   activation: ActivationFn;
 
@@ -465,6 +469,7 @@ export interface RepeatVectorLayerArgs extends LayerArgs {
  * ```
  */
 export class RepeatVector extends Layer {
+  /** @nocollapse */
   static className = 'RepeatVector';
   readonly n: number;
 
@@ -517,6 +522,7 @@ serialization.registerClass(RepeatVector);
  *    targetShape[targetShape.length - 1]].
  */
 export class Reshape extends Layer {
+  /** @nocollapse */
   static className = 'Reshape';
   private targetShape: Shape;
 
@@ -657,6 +663,7 @@ export interface PermuteLayerArgs extends LayerArgs {
  *   permuted) according to the `dims` configuration of this layer.
  */
 export class Permute extends Layer {
+  /** @nocollapse */
   static className = 'Permute';
   readonly dims: number[];
   private readonly dimsIncludingBatch: number[];

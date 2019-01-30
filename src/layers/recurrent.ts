@@ -408,6 +408,7 @@ export interface RNNLayerArgs extends BaseRNNLayerArgs {
  *   (not changing over time), a.k.a an attention mechanism.
  */
 export class RNN extends Layer {
+  /** @nocollapse */
   static className = 'RNN';
   public readonly cell: RNNCell;
   public readonly returnSequences: boolean;
@@ -1036,6 +1037,7 @@ export interface SimpleRNNCellLayerArgs extends LayerArgs {
  * `tf.layers.simpleRNN`.
  */
 export class SimpleRNNCell extends RNNCell {
+  /** @nocollapse */
   static className = 'SimpleRNNCell';
   readonly units: number;
   readonly activation: Activation;
@@ -1304,6 +1306,7 @@ export interface SimpleRNNLayerArgs extends BaseRNNLayerArgs {
  * ```
  */
 export class SimpleRNN extends RNN {
+  /** @nocollapse */
   static className = 'SimpleRNN';
   constructor(args: SimpleRNNLayerArgs) {
     args.cell = new SimpleRNNCell(args);
@@ -1485,6 +1488,7 @@ export interface GRUCellLayerArgs extends SimpleRNNCellLayerArgs {
  * `tf.layers.gru`.
  */
 export class GRUCell extends RNNCell {
+  /** @nocollapse */
   static className = 'GRUCell';
   readonly units: number;
   readonly activation: Activation;
@@ -1728,6 +1732,7 @@ export interface GRULayerArgs extends SimpleRNNLayerArgs {
  * // 3rd dimension is the `GRUCell`'s number of units.
  */
 export class GRU extends RNN {
+  /** @nocollapse */
   static className = 'GRU';
   constructor(args: GRULayerArgs) {
     if (args.implementation === 0) {
@@ -1940,6 +1945,7 @@ export interface LSTMCellLayerArgs extends SimpleRNNCellLayerArgs {
  * `tf.layers.lstm`.
  */
 export class LSTMCell extends RNNCell {
+  /** @nocollapse */
   static className = 'LSTMCell';
   readonly units: number;
   readonly activation: Activation;
@@ -2035,6 +2041,7 @@ export class LSTMCell extends RNNCell {
         const capturedBiasInit = this.biasInitializer;
         const capturedUnits = this.units;
         biasInitializer = new (class CustomInit extends Initializer {
+          /** @nocollapse */
           static className = 'CustomInit';
 
           apply(shape: Shape, dtype?: DataType): Tensor {
@@ -2205,6 +2212,7 @@ export interface LSTMLayerArgs extends SimpleRNNLayerArgs {
  * // 3rd dimension is the `LSTMCell`'s number of units.
  */
 export class LSTM extends RNN {
+  /** @nocollapse */
   static className = 'LSTM';
   constructor(args: LSTMLayerArgs) {
     if (args.implementation as number === 0) {
@@ -2354,6 +2362,7 @@ export interface StackedRNNCellsArgs extends LayerArgs {
  * Used to implement efficient stacked RNNs.
  */
 export class StackedRNNCells extends RNNCell {
+  /** @nocollapse */
   static className = 'StackedRNNCells';
   protected cells: RNNCell[];
 
