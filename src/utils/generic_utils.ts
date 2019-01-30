@@ -139,8 +139,10 @@ export function serializeKerasObject(instance: serialization.Serializable):
   if (instance === null || instance === undefined) {
     return null;
   }
-  return {className: instance.getClassName(), config: instance.getConfig()} as
-      serialization.ConfigDictValue;
+  const dict: serialization.ConfigDictValue = {};
+  dict.className = instance.getClassName();
+  dict.config = instance.getConfig();
+  return dict;
 }
 
 /**

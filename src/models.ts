@@ -979,10 +979,10 @@ export class Sequential extends Model {
     //   dict).
     const config: serialization.ConfigDict[] = [];
     for (const layer of this.layers) {
-      config.push({
-        className: layer.getClassName(),
-        config: layer.getConfig(),
-      } as serialization.ConfigDict);
+      const dict: serialization.ConfigDict = {};
+      dict.className = layer.getClassName();
+      dict.config = layer.getConfig();
+      config.push(dict);
     }
     return config;
   }

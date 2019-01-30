@@ -299,16 +299,16 @@ export class Bidirectional extends Wrapper {
     //   in JavaScript. JavaScript's `Object.assign()` does not copy
     //   methods.
     const layerConfig = args.layer.getConfig();
-    this.forwardLayer =
-        deserialize(
-            {className: args.layer.getClassName(), config: layerConfig} as
-            serialization.ConfigDict) as RNN;
+    const forwDict: serialization.ConfigDict = {};
+    forwDict.className = args.layer.getClassName();
+    forwDict.config = layerConfig;
+    this.forwardLayer = deserialize(forwDict) as RNN;
     layerConfig['goBackwards'] =
         layerConfig['goBackwards'] === true ? false : true;
-    this.backwardLayer =
-        deserialize(
-            {className: args.layer.getClassName(), config: layerConfig} as
-            serialization.ConfigDict) as RNN;
+    const backDict: serialization.ConfigDict = {};
+    backDict.className = args.layer.getClassName();
+    backDict.config = layerConfig;
+    this.backwardLayer = deserialize(backDict) as RNN;
     this.forwardLayer.name = 'forward_' + this.forwardLayer.name;
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
     checkBidirectionalMergeMode(args.mergeMode);
