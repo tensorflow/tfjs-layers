@@ -11,8 +11,6 @@
 // Layer activation functions
 import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
-import {ConfigDict} from '@tensorflow/tfjs-core/dist/serialization';
-
 import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {ActivationIdentifier} from './keras_format/activation_config';
@@ -201,11 +199,12 @@ export function deserializeActivation(
 export function getActivation(identifier: ActivationIdentifier|
                               serialization.ConfigDict|Activation): Activation {
   if (identifier == null) {
-    const config: ConfigDict = {className: 'linear', config: {}};
+    const config: serialization.ConfigDict = {className: 'linear', config: {}};
     return deserializeActivation(config);
   }
   if (typeof identifier === 'string') {
-    const config: ConfigDict = {className: identifier, config: {}};
+    const config:
+        serialization.ConfigDict = {className: identifier, config: {}};
     return deserializeActivation(config);
   } else if (identifier instanceof Activation) {
     return identifier;
