@@ -1891,9 +1891,9 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // x = tf.keras.Input(shape=[1], name='x')
   //
   // output1 = tf.keras.layers.Dense(
-  //     1, kernel_initializer='zeros', bias_initializer='zeros')(x)
+  //     1, kernel_initializer='zeros')(x)
   // output2 = tf.keras.layers.Dense(
-  //     1, kernel_initializer='zeros', bias_initializer='zeros')(x)
+  //     1, kernel_initializer='zeros')(x)
   //
   // model = tf.keras.Model(inputs=x, outputs=[output1, output2])
   // model.compile(
@@ -2120,9 +2120,9 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // x = tf.keras.Input(shape=[1], name='x')
   //
   // output1 = tf.keras.layers.Dense(
-  //     1, kernel_initializer='zeros', bias_initializer='zeros')(x)
+  //     1, kernel_initializer='zeros')(x)
   // output2 = tf.keras.layers.Dense(
-  //     1, kernel_initializer='zeros', bias_initializer='zeros')(x)
+  //     1, kernel_initializer='zeros')(x)
   //
   // model = tf.keras.Model(inputs=x, outputs=[output1, output2])
   // model.compile(
@@ -2530,9 +2530,9 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // concat = tf.keras.layers.concatenate([input1, input2])
   //
   // output1 = tf.keras.layers.Dense(
-  //     1, kernel_initializer='zeros', bias_initializer='zeros')(concat)
+  //     1, kernel_initializer='zeros')(concat)
   // output2 = tf.keras.layers.Dense(
-  //     1, kernel_initializer='zeros', bias_initializer='zeros')(concat)
+  //     1, kernel_initializer='zeros')(concat)
   //
   // model = tf.keras.Model(
   //      inputs=[input1, input2],
