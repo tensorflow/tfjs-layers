@@ -1920,7 +1920,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[2])
   // print(model.get_weights()[3])
   // ```
-  it('1 input, 2 output, 1 metric, no validation, with batchesPerEpoch',
+  it('1 input, 2 outputs, 1 metric, no validation, with batchesPerEpoch',
     async () => {
     // Create a functional model with 2 outputs.
     const x = tfl.layers.input({shape: [1]});
@@ -2020,7 +2020,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.108621]));
   });
 
-  it('1 input, 2 output, 1 metric, no validation, no batchesPerEpoch',
+  it('1 input, 2 outputs, 1 metric, no validation, no batchesPerEpoch',
     async () => {
     // Create a functional model with 2 outputs.
     const x = tfl.layers.input({shape: [1]});
@@ -2158,7 +2158,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[2])
   // print(model.get_weights()[3])
   // ```
-  it('1 input, 2 output, 1 metric, tensor array validation, ' +
+  it('1 input, 2 outputs, 1 metric, tensor array validation, ' +
     'with batchesPerEpoch', async () => {
     // Create a functional model with 2 outputs.
     const x = tfl.layers.input({shape: [1]});
@@ -2285,7 +2285,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.108621]));
   });
 
-  it('1 input, 2 output, 1 metric, tensor array validation, ' +
+  it('1 input, 2 outputs, 1 metric, tensor array validation, ' +
     'no batchesPerEpoch', async () => {
     // Create a functional model with 2 outputs.
     const x = tfl.layers.input({shape: [1]});
@@ -2407,7 +2407,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.108621]));
   });
 
-  it('2 output, 1 missing output in dataset, with batchesPerEpoch',
+  it('2 outputs, 1 missing output in dataset, with batchesPerEpoch',
     async () => {
       // Create a functional model with 2 outputs.
       const x = tfl.layers.input({shape: [1]});
@@ -2469,7 +2469,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
           `output key '${model.outputNames[1]}'.`);
   });
 
-  it('2 output, 1 missing output in dataset, no batchesPerEpoch', async () => {
+  it('2 outputs, 1 missing output in dataset, no batchesPerEpoch', async () => {
     // Create a functional model with 2 outputs.
     const x = tfl.layers.input({shape: [1]});
     const output1 = tfl.layers.dense({
@@ -2582,7 +2582,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[2])
   // print(model.get_weights()[3])
   // ```
-  it('2 input, 2 output, 1 metric, no validation, with batchesPerEpoch',
+  it('2 inputs, 2 outputs, 1 metric, no validation, with batchesPerEpoch',
     async () => {
     // Create a functional model with 2 inputs and 2 outputs.
     const input1 = tfl.layers.input({shape: [1]});
@@ -2700,7 +2700,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.103376]));
   });
 
-  it('2 input, 2 output, 1 metric, no validation, no batchesPerEpoch',
+  it('2 inputs, 2 outputs, 1 metric, no validation, no batchesPerEpoch',
     async () => {
     // Create a functional model with 2 inputs and 2 outputs.
     const input1 = tfl.layers.input({shape: [1]});
