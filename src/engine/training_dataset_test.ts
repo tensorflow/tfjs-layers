@@ -1926,13 +1926,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const x = tfl.layers.input({shape: [1]});
     const output1 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const output2 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: x, outputs: [output1, output2]});
     model.compile(
@@ -2026,13 +2024,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const x = tfl.layers.input({shape: [1]});
     const output1 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const output2 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: x, outputs: [output1, output2]});
     model.compile(
@@ -2164,13 +2160,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const x = tfl.layers.input({shape: [1]});
     const output1 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const output2 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: x, outputs: [output1, output2]});
     model.compile(
@@ -2291,13 +2285,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const x = tfl.layers.input({shape: [1]});
     const output1 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const output2 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: x, outputs: [output1, output2]});
     model.compile(
@@ -2413,13 +2405,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       const x = tfl.layers.input({shape: [1]});
       const output1 = tfl.layers.dense({
         units: 1,
-        kernelInitializer: 'zeros',
-        biasInitializer: 'zeros'
+        kernelInitializer: 'zeros'
       }).apply(x) as tfl.SymbolicTensor;
       const output2 = tfl.layers.dense({
         units: 1,
-        kernelInitializer: 'zeros',
-        biasInitializer: 'zeros'
+        kernelInitializer: 'zeros'
       }).apply(x) as tfl.SymbolicTensor;
       const model = tfl.model({inputs: x, outputs: [output1, output2]});
       model.compile(
@@ -2474,13 +2464,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const x = tfl.layers.input({shape: [1]});
     const output1 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const output2 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(x) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: x, outputs: [output1, output2]});
     model.compile(
@@ -2590,13 +2578,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const concat = tfl.layers.concatenate().apply([input1, input2]);
     const output1 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(concat) as tfl.SymbolicTensor;
     const output2 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(concat) as tfl.SymbolicTensor;
     const model = tfl.model({
       inputs: [input1, input2],
@@ -2708,13 +2694,11 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const concat = tfl.layers.concatenate().apply([input1, input2]);
     const output1 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(concat) as tfl.SymbolicTensor;
     const output2 = tfl.layers.dense({
       units: 1,
-      kernelInitializer: 'zeros',
-      biasInitializer: 'zeros'
+      kernelInitializer: 'zeros'
     }).apply(concat) as tfl.SymbolicTensor;
     const model = tfl.model({
       inputs: [input1, input2],
