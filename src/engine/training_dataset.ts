@@ -181,7 +181,8 @@ function standardizeDataIteratorOutput(
   let ys = tuple[1] as TensorOrTensorMap;
   const standardizedXs: tfc.Tensor[] = [];
   const standardizedYs: tfc.Tensor[] = [];
-  let xsBatchSize: number, ysBatchSize: number;
+  let xsBatchSize: number;
+  let ysBatchSize: number;
 
   if (xs instanceof tfc.Tensor) {
     tfc.util.assert(
