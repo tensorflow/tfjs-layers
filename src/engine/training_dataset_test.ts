@@ -1957,12 +1957,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       return output;
     };
 
-    const yShape: {[name:string]: Array<number>} = {};
+    const yShape: {[name:string]: number[]} = {};
     yShape[model.outputNames[0]] = [1];
     yShape[model.outputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
       xShape: [1],
-      yShape: yShape,
+      yShape,
       batchSize,
       numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
@@ -1972,7 +1972,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
     await model.fitDataset(dataset, {
-      batchesPerEpoch: batchesPerEpoch,
+      batchesPerEpoch,
       epochs: 1
     });
     model.setWeights([
@@ -1980,10 +1980,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     ]);
 
     const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {
-      batchesPerEpoch: batchesPerEpoch,
-      epochs: epochs
-    });
+    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
 
     const numTensors1 = tfc.memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
@@ -2052,12 +2049,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       return output;
     };
 
-    const yShape: {[name:string]: Array<number>} = {};
+    const yShape: {[name:string]: number[]} = {};
     yShape[model.outputNames[0]] = [1];
     yShape[model.outputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
       xShape: [1],
-      yShape: yShape,
+      yShape,
       batchSize,
       numBatches: batchesPerEpoch,
       xTensorsFunc,
@@ -2072,7 +2069,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     ]);
 
     const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {epochs: epochs});
+    const history = await model.fitDataset(dataset, {epochs});
 
     const numTensors1 = tfc.memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
@@ -2191,12 +2188,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       return output;
     };
 
-    const yShape: {[name:string]: Array<number>} = {};
+    const yShape: {[name:string]: number[]} = {};
     yShape[model.outputNames[0]] = [1];
     yShape[model.outputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
       xShape: [1],
-      yShape: yShape,
+      yShape,
       batchSize,
       numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
@@ -2212,7 +2209,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
     await model.fitDataset(dataset, {
-      batchesPerEpoch: batchesPerEpoch,
+      batchesPerEpoch,
       epochs: 1,
       validationData: [valXs, valYs],
       validationBatchSize: batchSize
@@ -2222,8 +2219,8 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     ]);
 
     const history = await model.fitDataset(dataset, {
-      batchesPerEpoch: batchesPerEpoch,
-      epochs: epochs,
+      batchesPerEpoch,
+      epochs,
       validationData: [valXs, valYs],
       validationBatchSize: batchSize
     });
@@ -2313,12 +2310,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       return output;
     };
 
-    const yShape: {[name:string]: Array<number>} = {};
+    const yShape: {[name:string]: number[]} = {};
     yShape[model.outputNames[0]] = [1];
     yShape[model.outputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
       xShape: [1],
-      yShape: yShape,
+      yShape,
       batchSize,
       numBatches: batchesPerEpoch,
       xTensorsFunc,
@@ -2343,7 +2340,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     ]);
 
     const history = await model.fitDataset(dataset, {
-      epochs: epochs,
+      epochs,
       validationData: [valXs, valYs],
       validationBatchSize: batchSize
     });
@@ -2432,12 +2429,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
         return output;
       };
 
-      const yShape: {[name:string]: Array<number>} = {};
+      const yShape: {[name:string]: number[]} = {};
       yShape[model.outputNames[0]] = [1];
       yShape[model.outputNames[1]] = [1];
       const dataset = new FakeNumericDataset({
         xShape: [1],
-        yShape: yShape,
+        yShape,
         batchSize,
         numBatches: batchesPerEpoch * epochs,
         xTensorsFunc,
@@ -2446,10 +2443,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
       let errorCaught: Error;
       try {
-        await model.fitDataset(dataset, {
-          batchesPerEpoch: batchesPerEpoch,
-          epochs: epochs
-        });
+        await model.fitDataset(dataset, {batchesPerEpoch, epochs});
       } catch (err) {
         errorCaught = err;
       }
@@ -2491,12 +2485,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       return output;
     };
 
-    const yShape: {[name:string]: Array<number>} = {};
+    const yShape: {[name:string]: number[]} = {};
     yShape[model.outputNames[0]] = [1];
     yShape[model.outputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
       xShape: [1],
-      yShape: yShape,
+      yShape,
       batchSize,
       numBatches: batchesPerEpoch,
       xTensorsFunc,
@@ -2505,7 +2499,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
     let errorCaught: Error;
     try {
-      await model.fitDataset(dataset, {epochs: epochs});
+      await model.fitDataset(dataset, {epochs});
     } catch (err) {
       errorCaught = err;
     }
@@ -2625,12 +2619,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       return output;
     };
 
-    const yShape: {[name:string]: Array<number>} = {};
+    const yShape: {[name:string]: number[]} = {};
     yShape[model.outputNames[0]] = [1];
     yShape[model.outputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
       xShape: [1],
-      yShape: yShape,
+      yShape,
       batchSize,
       numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
@@ -2640,7 +2634,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
     await model.fitDataset(dataset, {
-      batchesPerEpoch: batchesPerEpoch,
+      batchesPerEpoch,
       epochs: 1
     });
     model.setWeights([
@@ -2648,10 +2642,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     ]);
 
     const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {
-      batchesPerEpoch: batchesPerEpoch,
-      epochs: epochs
-    });
+    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
 
     const numTensors1 = tfc.memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
@@ -2733,12 +2724,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       return output;
     };
 
-    const yShape: {[name:string]: Array<number>} = {};
+    const yShape: {[name:string]: number[]} = {};
     yShape[model.outputNames[0]] = [1];
     yShape[model.outputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
       xShape: [1],
-      yShape: yShape,
+      yShape,
       batchSize,
       numBatches: batchesPerEpoch,
       xTensorsFunc,
@@ -2753,7 +2744,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     ]);
 
     const numTensors0 = tfc.memory().numTensors;
-    const history = await model.fitDataset(dataset, {epochs: epochs});
+    const history = await model.fitDataset(dataset, {epochs});
 
     const numTensors1 = tfc.memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
