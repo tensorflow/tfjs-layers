@@ -22,6 +22,7 @@ import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {FakeNumericDataset} from './dataset_fakes';
 import {TensorMap} from './dataset_stub';
+import {CustomCallback} from '../base_callbacks';
 
 function createDenseModel(): tfl.Model {
   const model = tfl.sequential();
@@ -504,6 +505,95 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     // Assert that the the first log and the second logs do not overwrite each
     // other.
     expect(trainLogs[0].loss).not.toEqual(trainLogs[1].loss);
+  });
+
+  it('dataset.size != null feeds stepPerEpoch to callbacks', async () => {
+    const batchSize = 8;
+    const batchesPerEpoch = 3;
+    const xTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const yTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: batchesPerEpoch,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    let recordedSteps: number;
+    class TestCallback extends CustomCallback {
+      constructor() {
+        super({
+          onTrainBegin: async (logs?: Logs) => {
+            recordedSteps = this.params.steps as number;
+          }
+        });
+      }
+    }
+
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+    const epochs = 1;
+    await model.fitDataset(dataset, {
+      epochs,
+      callbacks: new TestCallback()
+    });
+
+    expect(dataset.size).toEqual(batchesPerEpoch);
+    expect(recordedSteps).toEqual(batchesPerEpoch);
+  });
+
+  it('explicit stepPerEpoch overrides dataset.size for callbacks', async () => {
+    const batchSize = 8;
+    const numBatches = 3;
+    const xTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const yTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    let recordedSteps: number;
+    class TestCallback extends CustomCallback {
+      constructor() {
+        super({
+          onTrainBegin: async (logs?: Logs) => {
+            recordedSteps = this.params.steps as number;
+          }
+        });
+      }
+    }
+
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+    const epochs = 1;
+    await model.fitDataset(dataset, {
+      epochs,
+      batchesPerEpoch: numBatches - 1,
+      callbacks: new TestCallback()
+    });
+
+    expect(dataset.size).toEqual(numBatches);
+    expect(recordedSteps).toEqual(numBatches - 1);
   });
 
   // Reference Python tf.keras code:
@@ -2164,6 +2254,48 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
 
     const numTensors0 = tfc.memory().numTensors;
     const evalOut = await model.evaluateDataset(dataset, {}) as tfc.Scalar[];
+    expect(evalOut.length).toEqual(2);
+    const expectedLoss = tfc.scalar(1.0);
+    const expectedAcc = tfc.scalar(0.0);
+    expectTensorsClose(evalOut[0], expectedLoss);
+    expectTensorsClose(evalOut[1], expectedAcc);
+    tfc.dispose(evalOut);
+    tfc.dispose([expectedLoss, expectedAcc]);
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+  });
+
+  it('1 input, 1 output, 1 metric, no batches, only 1 arg', async () => {
+    const model = createDenseModel();
+    model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['acc']});
+
+    const batchSize = 8;
+    const batches = 3;
+    const xTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const yTensorsFunc =
+        () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
+          batchSize, 1
+        ])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: batches,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below). Use 1-arg call.
+    tfc.dispose(await model.evaluateDataset(dataset) as tfc.Scalar[]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    // Use 1-arg call, omitting the config object.
+    const evalOut = await model.evaluateDataset(dataset) as tfc.Scalar[];
     expect(evalOut.length).toEqual(2);
     const expectedLoss = tfc.scalar(1.0);
     const expectedAcc = tfc.scalar(0.0);

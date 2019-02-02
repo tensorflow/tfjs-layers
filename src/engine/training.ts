@@ -12,8 +12,6 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {io, ModelPredictConfig as ModelPredictArgs, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
-import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
-
 import {getScalar,} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {History, ModelLoggingVerbosity} from '../base_callbacks';
@@ -590,7 +588,7 @@ export class Model extends Container implements tfc.InferenceModel {
       lossFunctions = theLosses.map(l => losses.get(l));
     } else {
       const lossFunction = losses.get(args.loss);
-      this.outputs.map(layer => {
+      this.outputs.forEach(_ => {
         lossFunctions.push(lossFunction);
       });
     }
@@ -839,11 +837,10 @@ export class Model extends Container implements tfc.InferenceModel {
    * @returns Loss and metric values as an Array of `Scalar` objects.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
    */
-  async evaluateDataset<T extends TensorContainer>(
-      dataset: Dataset<T>,
-      args: ModelEvaluateDatasetArgs): Promise<Scalar|Scalar[]> {
+  async evaluateDataset(dataset: Dataset<{}>, args?: ModelEvaluateDatasetArgs):
+      Promise<Scalar|Scalar[]> {
     this.makeTestFunction();
     return evaluateDataset(this, dataset, args);
   }
@@ -1003,7 +1000,8 @@ export class Model extends Container implements tfc.InferenceModel {
       //   iterating over the batches.
 
       const batches = makeBatches(numSamples, batchSize);
-      const outs: Tensor[] = [];
+      const outsBatches: Tensor[][] = this.outputs.map(output => []);
+
       // TODO(cais): Can the scope() be pushed down inside the for loop?
       for (let batchIndex = 0; batchIndex < batches.length; ++batchIndex) {
         const batchOuts = tfc.tidy(() => {
@@ -1025,18 +1023,10 @@ export class Model extends Container implements tfc.InferenceModel {
           const feedDict = new FeedDict(feeds);
           return execute(this.outputs, feedDict) as Tensor[];
         });
-        if (batchIndex === 0) {
-          // Pre-allocate.
-          for (const batchOut of batchOuts) {
-            outs.push(batchOut);
-          }
-        } else {
-          for (let i = 0; i < batchOuts.length; ++i) {
-            outs[i] = K.concatAlongFirstAxis(outs[i], batchOuts[i]);
-          }
-        }
+        batchOuts.forEach((batchOut, i) => outsBatches[i].push(batchOut));
       }
-      return singletonOrArray(outs);
+      return singletonOrArray(
+          outsBatches.map(batches => tfc.concat(batches, 0)));
     });
   }
 
@@ -1421,10 +1411,10 @@ export class Model extends Container implements tfc.InferenceModel {
    *   information collected during training.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
    */
-  async fitDataset<T extends TensorContainer>(
-      dataset: Dataset<T>, args: ModelFitDatasetArgs<T>): Promise<History> {
+  async fitDataset<T>(dataset: Dataset<T>, args: ModelFitDatasetArgs<T>):
+      Promise<History> {
     return fitDataset(this, dataset, args);
   }
 
@@ -1592,7 +1582,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * ```
    *
    * Example 4. Send  `model`'s topology and weights to an HTTP server.
-   * See the documentation of `tf.io.browserHTTPRequests` for more details
+   * See the documentation of `tf.io.browserHTTPRequest` for more details
    * including specifying request parameters and implementation of the
    * server.
    *

@@ -11,8 +11,6 @@
 /* Original source keras/models.py */
 
 import {io, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
-import {TensorContainer} from '@tensorflow/tfjs-core/dist/tensor_types';
-
 import {getUid} from './backend/state';
 import {History} from './base_callbacks';
 import {Dataset} from './engine/dataset_stub';
@@ -29,7 +27,6 @@ import {Kwargs, NamedTensorMap} from './types';
 import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 import {getExactlyOneShape} from './utils/types_utils';
-
 
 
 /**
@@ -712,11 +709,10 @@ export class Sequential extends Model {
    * @returns Loss and metric values as an Array of `Scalar` objects.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
    */
-  async evaluateDataset<T extends TensorContainer>(
-      dataset: Dataset<T>,
-      args: ModelEvaluateDatasetArgs): Promise<Scalar|Scalar[]> {
+  async evaluateDataset(dataset: Dataset<{}>, args: ModelEvaluateDatasetArgs):
+      Promise<Scalar|Scalar[]> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before being used.');
@@ -850,16 +846,16 @@ export class Sequential extends Model {
    *   a sequential model). The latter case is for models with multiple
    *   inputs and/or multiple outputs. Of the two items in the array, the
    *   first is the input feature(s) and the second is the output target(s).
-   * @param args A `ModelFitDatasetConfig`, containing optional fields.
+   * @param args A `ModelFitDatasetArgs`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
    *   information collected during training.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
    */
-  async fitDataset<T extends TensorContainer>(
-      dataset: Dataset<T>, args: ModelFitDatasetArgs<T>): Promise<History> {
+  async fitDataset<T>(dataset: Dataset<T>, args: ModelFitDatasetArgs<T>):
+      Promise<History> {
     if (!this.built) {
       throw new RuntimeError(
           'The model needs to be compiled before ' +
