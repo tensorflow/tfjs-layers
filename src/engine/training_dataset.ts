@@ -184,7 +184,10 @@ function standardizeDataIteratorOutput(
   let xsBatchSize: number;
   let ysBatchSize: number;
 
+  // Different input standardization strategies for single-input models and
+  // multi-input models.
   if (xs instanceof tfc.Tensor) {
+    // Standardize single input.
     tfc.util.assert(
       model.inputs.length === 1,
       `Model has multiple ${model.inputs.length} inputs, hence it ` +
@@ -194,6 +197,7 @@ function standardizeDataIteratorOutput(
     xsBatchSize = xs.shape[0];
     standardizedXs.push(xs);
   } else {
+    // Standard multiple inputs.
     xs = xs as TensorMap;
     // Check that all the required keys are available and all the batch sizes
     // are equal for multiple inputs.
@@ -214,7 +218,10 @@ function standardizeDataIteratorOutput(
     }
   }
 
+  // Different output standardization strategies for single-output models and
+  // multi-output models.
   if (ys instanceof tfc.Tensor) {
+    // Standardize single output.
     tfc.util.assert(
       model.outputs.length === 1,
       `Model has multiple ${model.outputs.length} outputs, hence it ` +
@@ -224,6 +231,7 @@ function standardizeDataIteratorOutput(
     ysBatchSize = ys.shape[0];
     standardizedYs.push(ys);
   } else {
+    // Standardize multiple outputs.
     ys = ys as TensorMap;
     // Check that all the required keys are available and all the batch sizes
     // are equal for multiple outputs.
