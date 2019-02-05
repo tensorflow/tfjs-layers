@@ -399,8 +399,10 @@ export function dot(
   }
   // Handle basic 2D x 2D case.
   if ((x.rank === 2) && (y.rank === 2)) {
+    const transposeX = false;
+    const transposeY = false;
     return tfc.fused.matMul(
-        x as Tensor2D, y as Tensor2D, false, false,
+        x as Tensor2D, y as Tensor2D, transposeX, transposeY,
         bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null, activation);
   } else {
     // Reshape x into the analogous 2D Tensor.
@@ -428,9 +430,11 @@ export function dot(
 
     // Multiply x and y as 2D Tensors, and then reshape back to original.
     const outputShape = [...xFirstDims, ...yOtherDims];
+    const transposeX = false;
+    const transposeY = false;
     return tfc.fused
         .matMul(
-            x as Tensor2D, y as Tensor2D, false, false,
+            x as Tensor2D, y as Tensor2D, transposeX, transposeY,
             bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null,
             activation)
         .reshape(outputShape);
