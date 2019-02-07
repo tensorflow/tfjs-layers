@@ -59,10 +59,10 @@ export function batchNormalization(
         variance as Tensor3D | Tensor1D, beta as Tensor3D | Tensor1D,
         gamma as Tensor3D | Tensor1D, epsilon);
   } else if (x.rank === 4) {
-  out = tfc.batchNorm4d(
-      x as Tensor4D, mean as Tensor4D | Tensor1D,
-      variance as Tensor4D | Tensor1D, beta as Tensor4D | Tensor1D,
-
+    out = tfc.batchNorm4d(
+        x as Tensor4D, mean as Tensor4D | Tensor1D,
+        variance as Tensor4D | Tensor1D, beta as Tensor4D | Tensor1D,
+        gamma as Tensor4D | Tensor1D, epsilon);
   } else {
     throw new NotImplementedError(
         `batchNormalization is not implemented for array of rank ${x.rank} ` +
