@@ -138,20 +138,25 @@ class FakeNumericIterator extends
 
       let xs: tfc.Tensor|{[name: string]: tfc.Tensor};
       if (Array.isArray(this.xTensorValues)) {
+        // Get preset xs tensors for single-input models.
         xs = (this.xTensorValues as tfc.Tensor[])[index];
         tfc.util.assert(
             tfc.util.arraysEqual(xs.shape, this.xBatchShape as Shape),
             `Shape mismatch: expected: ${JSON.stringify(this.xBatchShape)}; ` +
                 `actual: ${JSON.stringify(xs.shape)}`);
       } else {
+        // Get preset xs tensors for multi-input models.
         xs = {};
+        this.xBatchShape = this.xBatchShape as {[name: string]: Shape};
         for (const key in this.xTensorValues) {
           xs[key] = this.xTensorValues[key][index];
           tfc.util.assert(
-              tfc.util.arraysEqual(xs[key].shape, this.xBatchShape as Shape),
+              tfc.util.arraysEqual(xs[key].shape,
+                  this.xBatchShape[key] as Shape),
               `Shape mismatch: expected: ${
-                  JSON.stringify(this.xBatchShape)}; ` +
-                  `actual: ${JSON.stringify(xs.shape)}`);
+                JSON.stringify(this.xBatchShape)}; ` +
+              `actual: ${JSON.stringify(xs.shape)}`
+          );
         }
       }
 

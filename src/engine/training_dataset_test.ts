@@ -1207,8 +1207,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
            [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
             tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
             tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+
+       const xShape: {[name:string]: number[]} = {};
+       xShape[model.inputNames[0]] = [1];
+       xShape[model.inputNames[1]] = [1];
        const dataset = new FakeNumericDataset({
-         xShape: [1],
+         xShape,
          yShape: [1],
          batchSize,
          numBatches: batchesPerEpoch * epochs,
@@ -1273,8 +1277,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
            () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
              batchSize, 1
            ])];
+
+       const xShape: {[name:string]: number[]} = {};
+       xShape[model.inputNames[0]] = [1];
+       xShape[model.inputNames[1]] = [1];
        const dataset = new FakeNumericDataset({
-         xShape: [1],
+         xShape,
          yShape: [1],
          batchSize,
          numBatches: batchesPerEpoch,
@@ -1388,8 +1396,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
            [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
             tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
             tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+
+       const xShape: {[name:string]: number[]} = {};
+       xShape[model.inputNames[0]] = [1];
+       xShape[model.inputNames[1]] = [1];
        const dataset = new FakeNumericDataset({
-         xShape: [1],
+         xShape,
          yShape: [1],
          batchSize,
          numBatches: batchesPerEpoch * epochs,
@@ -1479,8 +1491,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
            () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
              batchSize, 1
            ])];
+
+       const xShape: {[name:string]: number[]} = {};
+       xShape[model.inputNames[0]] = [1];
+       xShape[model.inputNames[1]] = [1];
        const dataset = new FakeNumericDataset({
-         xShape: [1],
+         xShape,
          yShape: [1],
          batchSize,
          numBatches: batchesPerEpoch,
@@ -1577,7 +1593,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[0])
   // print(model.get_weights()[1])
   // ```
-  it('2 input, 1 output, 1 metric, tensor array validation, ' +
+  it('2 inputs, 1 output, 1 metric, tensor array validation, ' +
          'with batchesPerEpoch',
      async () => {
        // Create a functional model with 2 inputs.
@@ -1617,8 +1633,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
            [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
             tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
             tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+
+       const xShape: {[name:string]: number[]} = {};
+       xShape[model.inputNames[0]] = [1];
+       xShape[model.inputNames[1]] = [1];
        const dataset = new FakeNumericDataset({
-         xShape: [1],
+         xShape,
          yShape: [1],
          batchSize,
          numBatches: batchesPerEpoch * epochs,
@@ -1671,7 +1691,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
      });
 
-  it('2 input, 1 output, 1 metric, tensor array validation, ' +
+  it('2 inputs, 1 output, 1 metric, tensor array validation, ' +
          'no batchesPerEpoch',
      async () => {
        // Create a functional model with 2 inputs.
@@ -1709,8 +1729,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
            () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
              batchSize, 1
            ])];
+
+       const xShape: {[name:string]: number[]} = {};
+       xShape[model.inputNames[0]] = [1];
+       xShape[model.inputNames[1]] = [1];
        const dataset = new FakeNumericDataset({
-         xShape: [1],
+         xShape,
          yShape: [1],
          batchSize,
          numBatches: batchesPerEpoch,
@@ -1761,7 +1785,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
      });
 
-  it('2 input, 1 missing input in dataset, with batchesPerEpoch', async () => {
+  it('2 inputs, 1 missing input in dataset, with batchesPerEpoch', async () => {
     // Create a functional model with 2 inputs.
     const input1 = tfl.layers.input({shape: [1]});
     const input2 = tfl.layers.input({shape: [1]});
@@ -1792,8 +1816,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
         [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+
+    const xShape: {[name:string]: number[]} = {};
+    xShape[model.inputNames[0]] = [1];
+    xShape[model.inputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
-      xShape: [1],
+      xShape,
       yShape: [1],
       batchSize,
       numBatches: batchesPerEpoch * epochs,
@@ -1813,7 +1841,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
             `input key '${input2.name}'.`);
   });
 
-  it('2 input, 1 missing input in dataset, no batchesPerEpoch', async () => {
+  it('2 inputs, 1 missing input in dataset, no batchesPerEpoch', async () => {
     // Create a functional model with 2 inputs.
     const input1 = tfl.layers.input({shape: [1]});
     const input2 = tfl.layers.input({shape: [1]});
@@ -1843,8 +1871,12 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
         () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
           batchSize, 1
         ])];
+
+    const xShape: {[name:string]: number[]} = {};
+    xShape[model.inputNames[0]] = [1];
+    xShape[model.inputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
-      xShape: [1],
+      xShape,
       yShape: [1],
       batchSize,
       numBatches: batchesPerEpoch,
@@ -2605,11 +2637,14 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       return output;
     };
 
+    const xShape: {[name:string]: number[]} = {};
+    xShape[model.inputNames[0]] = [1];
+    xShape[model.inputNames[1]] = [1];
     const yShape: {[name:string]: number[]} = {};
     yShape[model.outputNames[0]] = [1];
     yShape[model.outputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
-      xShape: [1],
+      xShape,
       yShape,
       batchSize,
       numBatches: batchesPerEpoch * epochs,
@@ -2710,11 +2745,14 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
       return output;
     };
 
+    const xShape: {[name:string]: number[]} = {};
+    xShape[model.inputNames[0]] = [1];
+    xShape[model.inputNames[1]] = [1];
     const yShape: {[name:string]: number[]} = {};
     yShape[model.outputNames[0]] = [1];
     yShape[model.outputNames[1]] = [1];
     const dataset = new FakeNumericDataset({
-      xShape: [1],
+      xShape,
       yShape,
       batchSize,
       numBatches: batchesPerEpoch,
@@ -3287,8 +3325,12 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
            () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
              batchSize, 1
            ])];
+
+       const xShape: {[name:string]: number[]} = {};
+       xShape[model.inputNames[0]] = [1];
+       xShape[model.inputNames[1]] = [1];
        const dataset = new FakeNumericDataset({
-         xShape: [1],
+         xShape,
          yShape: [1],
          batchSize,
          numBatches: batches,
@@ -3348,8 +3390,12 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
            () => [tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]), tfc.ones([
              batchSize, 1
            ])];
+
+       const xShape: {[name:string]: number[]} = {};
+       xShape[model.inputNames[0]] = [1];
+       xShape[model.inputNames[1]] = [1];
        const dataset = new FakeNumericDataset({
-         xShape: [1],
+         xShape,
          yShape: [1],
          batchSize,
          numBatches: batches,
