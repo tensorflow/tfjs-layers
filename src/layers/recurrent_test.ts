@@ -547,7 +547,7 @@ describeMathCPU('SimpleRNN Symbolic', () => {
     expect(layerPrime.getConfig().units).toEqual(4);
   });
 
-  it('Invalid units', () => {
+  it('Invalid units leads to Error', () => {
     expect(() => tfl.layers.simpleRNN({units: 12.5}))
         .toThrowError(/units.*positive integer.*12\.5$/);
     expect(() => tfl.layers.simpleRNN({units: 0}))
@@ -1040,7 +1040,7 @@ describeMathCPU('GRU Symbolic', () => {
     });
   }
 
-  it('Invalid units', () => {
+  it('Invalid units leads to Error', () => {
     expect(() => tfl.layers.gru({units: 12.5}))
         .toThrowError(/units.*positive integer.*12\.5$/);
     expect(() => tfl.layers.gru({units: 0}))
@@ -1573,7 +1573,7 @@ describeMathCPU('LSTM Symbolic', () => {
     });
   }
 
-  it('Invalid units', () => {
+  it('Invalid units leads to Error', () => {
     expect(() => tfl.layers.lstm({units: 12.5}))
         .toThrowError(/units.*positive integer.*12\.5$/);
     expect(() => tfl.layers.lstm({units: 0}))

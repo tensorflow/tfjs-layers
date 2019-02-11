@@ -433,7 +433,7 @@ export function checkArrayTypeAndLength(
 /**
  * Assert that a value is a positive integer.
  *
- * @param value The value being asserted on. Maybe a single number or an array
+ * @param value The value being asserted on. May be a single number or an array
  *   of numbers.
  * @param name Name of the value, used to make the error message.
  */

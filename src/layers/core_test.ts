@@ -190,7 +190,7 @@ describeMathCPU('Dense Layer: Symbolic', () => {
     }).toThrowError(/Unknown activation/);
   });
 
-  it('Invalid units', () => {
+  it('Invalid units leads to Error', () => {
     expect(() => tfl.layers.dense({units: 10.9}))
         .toThrowError(/units.*positive integer.*10\.9/);
     expect(() => tfl.layers.dense({units: 0.5}))

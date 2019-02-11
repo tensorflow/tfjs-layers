@@ -332,7 +332,7 @@ describe('Pooling Layers 2D: Symbolic', () => {
         .toThrowError(/poolSize.*positive integer.*-2$/);
   });
 
-  it('Invalid strides', () => {
+  it('Invalid strides leads to Error', () => {
     expect(() => tfl.layers.maxPooling2d({poolSize: 3, strides: 2.5}))
         .toThrowError(/strides.*positive integer.*2\.5$/);
     expect(() => tfl.layers.maxPooling2d({poolSize: 3, strides: 0}))
@@ -443,7 +443,7 @@ describe('1D Global pooling Layers: Symbolic', () => {
         .toThrowError(/poolSize.*positive integer.*-3$/);
   });
 
-  it('Invalid strides', () => {
+  it('Invalid strides leads to Error', () => {
     expect(() => tfl.layers.avgPooling1d({poolSize: 3, strides: 4.5}))
         .toThrowError(/strides.*positive integer.*4\.5/);
   });

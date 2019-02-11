@@ -41,7 +41,7 @@ describeMathCPU('Embedding Layers: Symbolic 1D, 2D & 3D', () => {
     }
   }
 
-  it('Invalid inputDim', () => {
+  it('Invalid inputDim leads to Error', () => {
     expect(() => tfl.layers.embedding({inputDim: 12.5, outputDim: 4}))
         .toThrowError(/inputDim.*positive integer.*12\.5$/);
     expect(() => tfl.layers.embedding({inputDim: 0, outputDim: 4}))
@@ -50,7 +50,7 @@ describeMathCPU('Embedding Layers: Symbolic 1D, 2D & 3D', () => {
         .toThrowError(/inputDim.*positive integer.*-123$/);
   });
 
-  it('Invalid outputDim', () => {
+  it('Invalid outputDim leads to Error', () => {
     expect(() => tfl.layers.embedding({inputDim: 8, outputDim: 16.5}))
         .toThrowError(/outputDim.*positive integer.*16\.5$/);
     expect(() => tfl.layers.embedding({inputDim: 8, outputDim: 0}))
