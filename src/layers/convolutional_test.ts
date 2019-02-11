@@ -163,6 +163,11 @@ describeMathCPUAndGPU('conv2d', () => {
       }
     }
   }
+
+  it('Invalid filters', () => {
+    expect(() => tfl.layers.conv2d({filters: 2.5, kernelSize: 3}))
+        .toThrowError(/filters.*positive integer.*2\.5/);
+  });
 });
 
 describeMathCPUAndGPU('conv2dWithBias', () => {

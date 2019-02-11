@@ -10,7 +10,7 @@
 
 /* Original source: utils/generic_utils.py */
 
-import {DataType, serialization} from '@tensorflow/tfjs-core';
+import {DataType, serialization, util} from '@tensorflow/tfjs-core';
 
 import {AssertionError, ValueError} from '../errors';
 // tslint:enable
@@ -429,3 +429,21 @@ export function checkArrayTypeAndLength(
       x.every(e => typeof e === expectedType));
 }
 // tslint:enable:no-any
+
+/**
+ * Assert that a value is a positive integer.
+ *
+ * @param value The value being asserted on. Maybe a single number or an array
+ *   of numbers.
+ * @param name Name of the value, used to make the error message.
+ */
+export function assertPositiveInteger(value: number|number[], name: string) {
+  if (Array.isArray(value)) {
+    value.forEach(
+        (v, i) => assertPositiveInteger(v, `element ${i + 1} of ${name}`));
+  } else {
+    util.assert(
+        Number.isInteger(value) && value > 0,
+        `Expected ${name} to be a positive integer, but got ${value}`);
+  }
+}
