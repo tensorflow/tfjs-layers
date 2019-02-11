@@ -431,7 +431,7 @@ export function checkArrayTypeAndLength(
 // tslint:enable:no-any
 
 /**
- * Assert that a value is a positive integer.
+ * Assert that a value or an array of value are positive integer.
  *
  * @param value The value being asserted on. May be a single number or an array
  *   of numbers.
@@ -439,11 +439,44 @@ export function checkArrayTypeAndLength(
  */
 export function assertPositiveInteger(value: number|number[], name: string) {
   if (Array.isArray(value)) {
+    util.assert(value.length > 0, `${name} is unexpectedly an empty array.`);
     value.forEach(
         (v, i) => assertPositiveInteger(v, `element ${i + 1} of ${name}`));
   } else {
     util.assert(
         Number.isInteger(value) && value > 0,
-        `Expected ${name} to be a positive integer, but got ${value}`);
+        `Expected ${name} to be a positive integer, but got ` +
+            `${formatAsFriendlyString(value)}.`);
+  }
+}
+
+/**
+ * Format a value into a display-friendly, human-readable fashion.
+ *
+ * - `null` is formatted as `'null'`
+ * - Strings are formated with flanking pair of quotes.
+ * - Arrays are formatted with flanking pair of square brackets.
+ *
+ * @param value The value to display.
+ * @return Formatted string.
+ */
+// tslint:disable-next-line:no-any
+export function formatAsFriendlyString(value: any) {
+  if (value === null) {
+    return 'null';
+  } else if (Array.isArray(value)) {
+    let output = '[';
+    value.forEach((v, i) => {
+      output += formatAsFriendlyString(v);
+      if (i < value.length - 1) {
+        output += ',';
+      }
+    });
+    output += ']';
+    return output;
+  } else if (typeof value === 'string') {
+    return `"${value}"`;
+  } else {
+    return `${value}`;
   }
 }

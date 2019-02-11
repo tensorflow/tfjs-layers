@@ -325,20 +325,20 @@ describe('Pooling Layers 2D: Symbolic', () => {
 
   it('Invalid poolSize', () => {
     expect(() => tfl.layers.maxPooling2d({poolSize: 2.5, strides: 2}))
-        .toThrowError(/poolSize.*positive integer.*2\.5$/);
+        .toThrowError(/poolSize.*positive integer.*2\.5\.$/);
     expect(() => tfl.layers.maxPooling2d({poolSize: 0, strides: 2}))
-        .toThrowError(/poolSize.*positive integer.*0$/);
+        .toThrowError(/poolSize.*positive integer.*0\.$/);
     expect(() => tfl.layers.maxPooling2d({poolSize: -2, strides: 2}))
-        .toThrowError(/poolSize.*positive integer.*-2$/);
+        .toThrowError(/poolSize.*positive integer.*-2\.$/);
   });
 
   it('Invalid strides leads to Error', () => {
     expect(() => tfl.layers.maxPooling2d({poolSize: 3, strides: 2.5}))
-        .toThrowError(/strides.*positive integer.*2\.5$/);
+        .toThrowError(/strides.*positive integer.*2\.5\.$/);
     expect(() => tfl.layers.maxPooling2d({poolSize: 3, strides: 0}))
-        .toThrowError(/strides.*positive integer.*0$/);
+        .toThrowError(/strides.*positive integer.*0\.$/);
     expect(() => tfl.layers.maxPooling2d({poolSize: 3, strides: -2}))
-        .toThrowError(/strides.*positive integer.*-2$/);
+        .toThrowError(/strides.*positive integer.*-2\.$/);
   });
 });
 
@@ -435,17 +435,20 @@ describe('1D Global pooling Layers: Symbolic', () => {
   }
 
   it('Invalid poolSize', () => {
-    expect(() => tfl.layers.avgPooling1d({poolSize: 2.5}))
-        .toThrowError(/poolSize.*positive integer.*2\.5/);
-    expect(() => tfl.layers.avgPooling1d({poolSize: 0}))
-        .toThrowError(/poolSize.*positive integer.*0$/);
-    expect(() => tfl.layers.avgPooling1d({poolSize: -3}))
-        .toThrowError(/poolSize.*positive integer.*-3$/);
+    expect(() => tfl.layers.avgPooling1d({
+      poolSize: 2.5
+    })).toThrowError(/poolSize.*positive integer.*2\.5/);
+    expect(() => tfl.layers.avgPooling1d({
+      poolSize: 0
+    })).toThrowError(/poolSize.*positive integer.*0\.$/);
+    expect(() => tfl.layers.avgPooling1d({
+      poolSize: -3
+    })).toThrowError(/poolSize.*positive integer.*-3\.$/);
   });
 
   it('Invalid strides leads to Error', () => {
     expect(() => tfl.layers.avgPooling1d({poolSize: 3, strides: 4.5}))
-        .toThrowError(/strides.*positive integer.*4\.5/);
+        .toThrowError(/strides.*positive integer.*4\.5\.$/);
   });
 });
 

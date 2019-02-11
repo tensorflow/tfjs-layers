@@ -549,11 +549,11 @@ describeMathCPU('SimpleRNN Symbolic', () => {
 
   it('Invalid units leads to Error', () => {
     expect(() => tfl.layers.simpleRNN({units: 12.5}))
-        .toThrowError(/units.*positive integer.*12\.5$/);
+        .toThrowError(/units.*positive integer.*12\.5\.$/);
     expect(() => tfl.layers.simpleRNN({units: 0}))
-        .toThrowError(/units.*positive integer.*0$/);
+        .toThrowError(/units.*positive integer.*0\.$/);
     expect(() => tfl.layers.simpleRNN({units: -25}))
-        .toThrowError(/units.*positive integer.*-25$/);
+        .toThrowError(/units.*positive integer.*-25\.$/);
   });
 });
 
@@ -1042,11 +1042,11 @@ describeMathCPU('GRU Symbolic', () => {
 
   it('Invalid units leads to Error', () => {
     expect(() => tfl.layers.gru({units: 12.5}))
-        .toThrowError(/units.*positive integer.*12\.5$/);
+        .toThrowError(/units.*positive integer.*12\.5\.$/);
     expect(() => tfl.layers.gru({units: 0}))
-        .toThrowError(/units.*positive integer.*0$/);
+        .toThrowError(/units.*positive integer.*0\.$/);
     expect(() => tfl.layers.gru({units: -25}))
-        .toThrowError(/units.*positive integer.*-25$/);
+        .toThrowError(/units.*positive integer.*-25\.$/);
   });
 });
 
@@ -1575,11 +1575,11 @@ describeMathCPU('LSTM Symbolic', () => {
 
   it('Invalid units leads to Error', () => {
     expect(() => tfl.layers.lstm({units: 12.5}))
-        .toThrowError(/units.*positive integer.*12\.5$/);
+        .toThrowError(/units.*positive integer.*12\.5\.$/);
     expect(() => tfl.layers.lstm({units: 0}))
-        .toThrowError(/units.*positive integer.*0$/);
+        .toThrowError(/units.*positive integer.*0\.$/);
     expect(() => tfl.layers.lstm({units: -25}))
-        .toThrowError(/units.*positive integer.*-25$/);
+        .toThrowError(/units.*positive integer.*-25\.$/);
   });
 });
 
