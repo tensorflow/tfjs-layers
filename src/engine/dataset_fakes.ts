@@ -11,6 +11,7 @@
 import * as tfc from '@tensorflow/tfjs-core';
 
 import {Shape} from '../keras_format/common';
+import {TensorOrArrayOrMap} from '../types';
 
 import {Dataset, LazyIterator} from './dataset_stub';
 import {FitDatasetElement} from './training_dataset';
@@ -185,5 +186,38 @@ export class FakeNumericDataset extends Dataset<FitDatasetElement> {
 
   async iterator(): Promise<LazyIterator<FitDatasetElement>> {
     return new FakeNumericIterator(this.args);
+  }
+}
+
+// Reimplement Dataset.map(...) because we don't depend on tfjs-data here.
+export class FakeNumericDatasetLegacyArrayForm extends
+    Dataset<[TensorOrArrayOrMap, TensorOrArrayOrMap]> {
+  ds: FakeNumericDataset;
+  constructor(readonly args: FakeDatasetArgs) {
+    super();
+    this.ds = new FakeNumericDataset(args);
+  }
+
+  async iterator():
+      Promise<LazyIterator<[TensorOrArrayOrMap, TensorOrArrayOrMap]>> {
+    const it = await this.ds.iterator();
+    return new FakeNumericIteratorLegacyArrayForm(it);
+  }
+}
+
+class FakeNumericIteratorLegacyArrayForm extends
+    LazyIterator<[TensorOrArrayOrMap, TensorOrArrayOrMap]> {
+  constructor(private readonly it: LazyIterator<FitDatasetElement>) {
+    super();
+  }
+
+  async next():
+      Promise<IteratorResult<[TensorOrArrayOrMap, TensorOrArrayOrMap]>> {
+    const result = await this.it.next();
+    return {
+      done: result.done,
+          value: result.value == null ? null :
+                                        [result.value.xs, result.value.ys]
+    }
   }
 }

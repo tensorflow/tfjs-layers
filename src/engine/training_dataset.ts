@@ -203,6 +203,11 @@ function standardizeDataIteratorOutput(
     const iteratorOutObj = iteratorOut as FitDatasetElement;
     xs = iteratorOutObj['xs'];
     ys = iteratorOutObj['ys'];
+    tfc.util.assert(
+        xs != null && ys != null,
+        'A Dataset iterator for fitDataset() is expected to generate objects ' +
+            'of the form {xs: ..., ys: ...}, but instead generates ' +
+            iteratorOut);
   }
 
   const flattenedXs: tfc.Tensor[] =
