@@ -28,8 +28,7 @@ function createDenseModel(): tfl.Model {
   model.add(tfl.layers.dense({
     units: 1,
     inputShape: [1],
-    kernelInitializer: 'zeros',
-    biasInitializer: 'zeros'
+    kernelInitializer: 'zeros'
   }));
   return model;
 }
@@ -53,8 +52,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // model.add(tf.keras.layers.Dense(
   //     1,
   //     input_shape=[1],
-  //     kernel_initializer='zeros',
-  //     bias_initializer='zeros'))
+  //     kernel_initializer='zeros'))
   // model.compile(loss='mean_squared_error', optimizer='sgd')
   //
   // history = model.fit(dataset, steps_per_epoch=num_batches, epochs=epochs)
@@ -167,8 +165,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // model.add(tf.keras.layers.Dense(
   //     1,
   //     input_shape=[1],
-  //     kernel_initializer='zeros',
-  //     bias_initializer='zeros'))
+  //     kernel_initializer='zeros'))
   // model.compile(loss='mean_squared_error',
   //               optimizer='sgd',
   //               metrics=['acc'])
@@ -293,8 +290,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // model.add(tf.keras.layers.Dense(
   //     1,
   //     input_shape=[1],
-  //     kernel_initializer='zeros',
-  //     bias_initializer='zeros'))
+  //     kernel_initializer='zeros'))
   // model.compile(loss='mean_squared_error', optimizer='sgd',
   // metrics=['accuracy'])
   //
@@ -616,8 +612,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // model.add(tf.keras.layers.Dense(
   //     1,
   //     input_shape=[1],
-  //     kernel_initializer='zeros',
-  //     bias_initializer='zeros'))
+  //     kernel_initializer='zeros'))
   // model.compile(loss='mean_squared_error',
   //               optimizer=tf.train.GradientDescentOptimizer(0.01),
   //               metrics=['accuracy'])
@@ -925,8 +920,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // model.add(tf.keras.layers.Dense(
   //     1,
   //     input_shape=[1],
-  //     kernel_initializer='zeros',
-  //     bias_initializer='zeros'))
+  //     kernel_initializer='zeros'))
   // model.compile(loss='mean_squared_error', optimizer='sgd',
   // metrics=['accuracy'])
   //
@@ -1138,7 +1132,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
   // Reference Python tf.keras code:
   //
-  // ```js
+  // ```py
   // import numpy as np
   // import tensorflow as tf
   //
@@ -1150,7 +1144,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // input2 = tf.keras.Input(shape = [1], name = 'x2')
   // concat = tf.keras.layers.concatenate([input1, input2])
   // y = tf.keras.layers.Dense(
-  //     1, kernel_initializer = 'zeros', bias_initializer = 'zeros')(concat)
+  //     1, kernel_initializer = 'zeros')(concat)
   // model = tf.keras.Model(inputs = [input1, input2], outputs = y)
   // model.compile(
   //     loss = 'mean_squared_error', optimizer = 'sgd', metrics =
@@ -1172,7 +1166,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[0])
   // print(model.get_weights()[1])
   // ```
-  it('2 input, 1 output, 1 metric, no validation, with batchesPerEpoch',
+  it('2 inputs, 1 output, 1 metric, no validation, with batchesPerEpoch',
      async () => {
        // Create a functional model with 2 inputs.
        const input1 = tfl.layers.input({shape: [1]});
@@ -1181,8 +1175,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        const y = tfl.layers
                      .dense({
                        units: 1,
-                       kernelInitializer: 'zeros',
-                       biasInitializer: 'zeros'
+                       kernelInitializer: 'zeros'
                      })
                      .apply(concat) as tfl.SymbolicTensor;
        const model = tfl.model({inputs: [input1, input2], outputs: y});
@@ -1241,7 +1234,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
      });
 
-  it('2 input, 1 output, 1 metric, no validation, no batchesPerEpoch',
+  it('2 inputs, 1 output, 1 metric, no validation, no batchesPerEpoch',
      async () => {
        // Create a functional model with 2 inputs.
        const input1 = tfl.layers.input({shape: [1]});
@@ -1250,8 +1243,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        const y = tfl.layers
                      .dense({
                        units: 1,
-                       kernelInitializer: 'zeros',
-                       biasInitializer: 'zeros'
+                       kernelInitializer: 'zeros'
                      })
                      .apply(concat) as tfl.SymbolicTensor;
        const model = tfl.model({inputs: [input1, input2], outputs: y});
@@ -1309,7 +1301,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
   // Reference Python tf.keras code:
   //
-  // ```js
+  // ```py
   // import numpy as np
   // import tensorflow as tf
   //
@@ -1323,7 +1315,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // input2 = tf.keras.Input(shape = [1], name = 'x2')
   // concat = tf.keras.layers.concatenate([input1, input2])
   // y = tf.keras.layers.Dense(
-  //     1, kernel_initializer = 'zeros', bias_initializer = 'zeros')(concat)
+  //     1, kernel_initializer = 'zeros')(concat)
   // model = tf.keras.Model(inputs = [input1, input2], outputs = y)
   // model.compile(
   //     loss='mean_squared_error',
@@ -1352,7 +1344,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // print(model.get_weights()[0])
   // print(model.get_weights()[1])
   // ```
-  it('2 input, 1 output, 1 metric, tensor array validation, ' +
+  it('2 inputs, 1 output, 1 metric, tensor array validation, ' +
          'with batchesPerEpoch',
      async () => {
        // Create a functional model with 2 inputs.
@@ -1362,8 +1354,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        const y = tfl.layers
                      .dense({
                        units: 1,
-                       kernelInitializer: 'zeros',
-                       biasInitializer: 'zeros'
+                       kernelInitializer: 'zeros'
                      })
                      .apply(concat) as tfl.SymbolicTensor;
        const model = tfl.model({inputs: [input1, input2], outputs: y});
@@ -1446,7 +1437,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103377]));
      });
 
-  it('2 input, 1 output, 1 metric, tensor array validation, ' +
+  it('2 inputs, 1 output, 1 metric, tensor array validation, ' +
          'no batchesPerEpoch',
      async () => {
        // Create a functional model with 2 inputs.
@@ -1456,8 +1447,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        const y = tfl.layers
                      .dense({
                        units: 1,
-                       kernelInitializer: 'zeros',
-                       biasInitializer: 'zeros'
+                       kernelInitializer: 'zeros'
                      })
                      .apply(concat) as tfl.SymbolicTensor;
        const model = tfl.model({inputs: [input1, input2], outputs: y});
@@ -1538,7 +1528,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
   // Reference Python tf.keras code:
   //
-  // ```js
+  // ```py
   // import numpy as np
   // import tensorflow as tf
   //
@@ -1552,7 +1542,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
   // input2 = tf.keras.Input(shape = [1], name = 'x2')
   // concat = tf.keras.layers.concatenate([input1, input2])
   // y = tf.keras.layers.Dense(
-  //     1, kernel_initializer = 'zeros', bias_initializer = 'zeros')(concat)
+  //     1, kernel_initializer = 'zeros')(concat)
   // model = tf.keras.Model(inputs = [input1, input2], outputs = y)
   // model.compile(
   //     loss='mean_squared_error',
@@ -1593,8 +1583,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        const y = tfl.layers
                      .dense({
                        units: 1,
-                       kernelInitializer: 'zeros',
-                       biasInitializer: 'zeros'
+                       kernelInitializer: 'zeros'
                      })
                      .apply(concat) as tfl.SymbolicTensor;
        const model = tfl.model({inputs: [input1, input2], outputs: y});
@@ -1688,8 +1677,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        const y = tfl.layers
                      .dense({
                        units: 1,
-                       kernelInitializer: 'zeros',
-                       biasInitializer: 'zeros'
+                       kernelInitializer: 'zeros'
                      })
                      .apply(concat) as tfl.SymbolicTensor;
        const model = tfl.model({inputs: [input1, input2], outputs: y});
@@ -1777,8 +1765,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const y = tfl.layers
                   .dense({
                     units: 1,
-                    kernelInitializer: 'zeros',
-                    biasInitializer: 'zeros'
+                    kernelInitializer: 'zeros'
                   })
                   .apply(concat) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: [input1, input2], outputs: y});
@@ -1830,8 +1817,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const y = tfl.layers
                   .dense({
                     units: 1,
-                    kernelInitializer: 'zeros',
-                    biasInitializer: 'zeros'
+                    kernelInitializer: 'zeros'
                   })
                   .apply(concat) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: [input1, input2], outputs: y});
@@ -1918,6 +1904,906 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
         .toMatch(/You provided `batchesPerEpoch` as .* 9 batches/);
   });
 
+  // Reference Python tf.keras code:
+  //
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // batch_size = 8
+  // num_batches = 3
+  // epochs = 2
+  //
+  // x = tf.keras.Input(shape=[1], name='x')
+  //
+  // output1 = tf.keras.layers.Dense(
+  //     1, kernel_initializer='zeros')(x)
+  // output2 = tf.keras.layers.Dense(
+  //     1, kernel_initializer='zeros')(x)
+  //
+  // model = tf.keras.Model(inputs=x, outputs=[output1, output2])
+  // model.compile(
+  //     loss = 'mean_squared_error', optimizer = 'sgd', metrics =
+  //     ['accuracy'])
+  // model.summary()
+  // output1_name = model.output_names[0]
+  // output2_name = model.output_names[1]
+  // print(output1_name)
+  // print(output2_name)
+  //
+  // xs = np.ones([batch_size * num_batches * epochs, 1])
+  // ys1 = np.ones([batch_size * num_batches * epochs, 1])
+  // ys2 = np.ones([batch_size * num_batches * epochs, 1])
+  // dataset = tf.data.Dataset.from_tensor_slices(
+  //     (xs, {output1_name: ys1, output2_name: ys2})).batch(batch_size)
+  //
+  // history = model.fit(dataset,
+  //                     steps_per_epoch=num_batches,
+  //                     epochs=epochs)
+  // print(history.history)
+  // print(model.get_weights()[0])
+  // print(model.get_weights()[1])
+  // print(model.get_weights()[2])
+  // print(model.get_weights()[3])
+  // ```
+  it('1 input, 2 outputs, 1 metric, no validation, with batchesPerEpoch',
+    async () => {
+    // Create a functional model with 2 outputs.
+    const x = tfl.layers.input({shape: [1]});
+    const output1 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const output2 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: x, outputs: [output1, output2]});
+    model.compile(
+      {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 2;
+    const batchesPerEpoch = 3;
+
+    const xTensorsFunc = () => [
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+    const yTensorsFunc = () => {
+      const output: {[name: string]: tfc.Tensor[]} = {};
+      output[model.outputNames[0]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+      output[model.outputNames[1]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+      return output;
+    };
+
+    const yShape: {[name:string]: number[]} = {};
+    yShape[model.outputNames[0]] = [1];
+    yShape[model.outputNames[1]] = [1];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape,
+      batchSize,
+      numBatches: batchesPerEpoch * epochs,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {
+      batchesPerEpoch,
+      epochs: 1
+    });
+    model.setWeights([
+      tfc.zeros([1, 1]), tfc.zeros([1]), tfc.zeros([1, 1]), tfc.zeros([1])
+    ]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
+
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+
+    const output1AccName = model.outputNames[0] + '_acc';
+    const output1LossName = model.outputNames[0] + '_loss';
+    const output2AccName = model.outputNames[1] + '_acc';
+    const output2LossName = model.outputNames[1] + '_loss';
+
+    expect(Object.keys(history.history)).toEqual(['loss',
+      output1LossName, output2LossName, output1AccName, output2AccName]);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(1.847297);
+    expect(history.history.loss[1]).toBeCloseTo(1.445986);
+    expect(history.history[output1LossName].length).toEqual(2);
+    expect(history.history[output1LossName][0]).toBeCloseTo(0.923648);
+    expect(history.history[output1LossName][1]).toBeCloseTo(0.722993);
+    expect(history.history[output2LossName].length).toEqual(2);
+    expect(history.history[output2LossName][0]).toBeCloseTo(0.923648);
+    expect(history.history[output2LossName][1]).toBeCloseTo(0.722993);
+    expect(history.history[output1AccName].length).toEqual(2);
+    expect(history.history[output1AccName][0]).toBeCloseTo(0);
+    expect(history.history[output1AccName][1]).toBeCloseTo(0);
+    expect(history.history[output2AccName].length).toEqual(2);
+    expect(history.history[output2AccName][0]).toBeCloseTo(0);
+    expect(history.history[output2AccName][1]).toBeCloseTo(0);
+    expectArraysClose(
+      model.getWeights()[0], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+    expectArraysClose(
+      model.getWeights()[2], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.108621]));
+  });
+
+  it('1 input, 2 outputs, 1 metric, no validation, no batchesPerEpoch',
+    async () => {
+    // Create a functional model with 2 outputs.
+    const x = tfl.layers.input({shape: [1]});
+    const output1 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const output2 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: x, outputs: [output1, output2]});
+    model.compile(
+      {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 2;
+    const batchesPerEpoch = 3;
+
+    const xTensorsFunc = () => [
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+      tfc.ones([batchSize, 1])];
+    const yTensorsFunc = () => {
+      const output: {[name: string]: tfc.Tensor[]} = {};
+      output[model.outputNames[0]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1])];
+      output[model.outputNames[1]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1])];
+      return output;
+    };
+
+    const yShape: {[name:string]: number[]} = {};
+    yShape[model.outputNames[0]] = [1];
+    yShape[model.outputNames[1]] = [1];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape,
+      batchSize,
+      numBatches: batchesPerEpoch,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {epochs: 1});
+    model.setWeights([
+      tfc.zeros([1, 1]), tfc.zeros([1]), tfc.zeros([1, 1]), tfc.zeros([1])
+    ]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const history = await model.fitDataset(dataset, {epochs});
+
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+
+    const output1AccName = model.outputNames[0] + '_acc';
+    const output1LossName = model.outputNames[0] + '_loss';
+    const output2AccName = model.outputNames[1] + '_acc';
+    const output2LossName = model.outputNames[1] + '_loss';
+
+    expect(Object.keys(history.history)).toEqual(['loss',
+      output1LossName, output2LossName, output1AccName, output2AccName]);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(1.847297);
+    expect(history.history.loss[1]).toBeCloseTo(1.445986);
+    expect(history.history[output1LossName].length).toEqual(2);
+    expect(history.history[output1LossName][0]).toBeCloseTo(0.923648);
+    expect(history.history[output1LossName][1]).toBeCloseTo(0.722993);
+    expect(history.history[output2LossName].length).toEqual(2);
+    expect(history.history[output2LossName][0]).toBeCloseTo(0.923648);
+    expect(history.history[output2LossName][1]).toBeCloseTo(0.722993);
+    expect(history.history[output1AccName].length).toEqual(2);
+    expect(history.history[output1AccName][0]).toBeCloseTo(0);
+    expect(history.history[output1AccName][1]).toBeCloseTo(0);
+    expect(history.history[output2AccName].length).toEqual(2);
+    expect(history.history[output2AccName][0]).toBeCloseTo(0);
+    expect(history.history[output2AccName][1]).toBeCloseTo(0);
+    expectArraysClose(
+      model.getWeights()[0], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+    expectArraysClose(
+      model.getWeights()[2], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.108621]));
+  });
+
+  // Reference Python tf.keras code:
+  //
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // batch_size = 8
+  // num_batches = 3
+  // epochs = 2
+  //
+  // x = tf.keras.Input(shape=[1], name='x')
+  //
+  // output1 = tf.keras.layers.Dense(
+  //     1, kernel_initializer='zeros')(x)
+  // output2 = tf.keras.layers.Dense(
+  //     1, kernel_initializer='zeros')(x)
+  //
+  // model = tf.keras.Model(inputs=x, outputs=[output1, output2])
+  // model.compile(
+  //     loss = 'mean_squared_error', optimizer = 'sgd', metrics =
+  //     ['accuracy'])
+  // model.summary()
+  // output1_name = model.output_names[0]
+  // output2_name = model.output_names[1]
+  // print(output1_name)
+  // print(output2_name)
+  //
+  // xs = np.ones([batch_size * num_batches * epochs, 1])
+  // ys1 = np.ones([batch_size * num_batches * epochs, 1])
+  // ys2 = np.ones([batch_size * num_batches * epochs, 1])
+  // dataset = tf.data.Dataset.from_tensor_slices(
+  //     (xs, {output1_name: ys1, output2_name: ys2})).batch(batch_size)
+  //
+  // val_xs = np.zeros([batch_size, 1])
+  // val_ys = {output1_name: np.zeros([batch_size, 1]),
+  //           output1_name: np.zeros([batch_size, 1])}
+  //
+  // history = model.fit(dataset,
+  //                     steps_per_epoch=num_batches,
+  //                     epochs=epochs,
+  //                     validation_data=[val_xs, val_ys])
+  // print(history.history)
+  // print(model.get_weights()[0])
+  // print(model.get_weights()[1])
+  // print(model.get_weights()[2])
+  // print(model.get_weights()[3])
+  // ```
+  it('1 input, 2 outputs, 1 metric, tensor array validation, ' +
+    'with batchesPerEpoch', async () => {
+    // Create a functional model with 2 outputs.
+    const x = tfl.layers.input({shape: [1]});
+    const output1 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const output2 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: x, outputs: [output1, output2]});
+    model.compile(
+      {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 2;
+    const batchesPerEpoch = 3;
+
+    const xTensorsFunc = () => [
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+    const yTensorsFunc = () => {
+      const output: {[name: string]: tfc.Tensor[]} = {};
+      output[model.outputNames[0]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+      output[model.outputNames[1]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+      return output;
+    };
+
+    const yShape: {[name:string]: number[]} = {};
+    yShape[model.outputNames[0]] = [1];
+    yShape[model.outputNames[1]] = [1];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape,
+      batchSize,
+      numBatches: batchesPerEpoch * epochs,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    // Validation data.
+    const valXs = tfc.zeros([batchSize, 1]);
+    const valYs: tfc.NamedTensorMap = {};
+    valYs[model.outputNames[0]] = tfc.zeros([batchSize, 1]);
+    valYs[model.outputNames[1]] = tfc.zeros([batchSize, 1]);
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {
+      batchesPerEpoch,
+      epochs: 1,
+      validationData: [valXs, valYs],
+      validationBatchSize: batchSize
+    });
+    model.setWeights([
+      tfc.zeros([1, 1]), tfc.zeros([1]), tfc.zeros([1, 1]), tfc.zeros([1])
+    ]);
+
+    const history = await model.fitDataset(dataset, {
+      batchesPerEpoch,
+      epochs,
+      validationData: [valXs, valYs],
+      validationBatchSize: batchSize
+    });
+
+    const output1AccName = model.outputNames[0] + '_acc';
+    const output1LossName = model.outputNames[0] + '_loss';
+    const output2AccName = model.outputNames[1] + '_acc';
+    const output2LossName = model.outputNames[1] + '_loss';
+    const valOutput1AccName = 'val_' + output1AccName;
+    const valOutput1LossName = 'val_' + output1LossName;
+    const valOutput2AccName = 'val_' + output2AccName;
+    const valOutput2LossName = 'val_' + output2LossName;
+
+    expect(Object.keys(history.history)).toEqual([
+      'val_loss', valOutput1LossName, valOutput2LossName,
+      valOutput1AccName, valOutput2AccName, 'loss',
+      output1LossName, output2LossName, output1AccName, output2AccName]);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(1.847297);
+    expect(history.history.loss[1]).toBeCloseTo(1.445986);
+    expect(history.history[output1LossName].length).toEqual(2);
+    expect(history.history[output1LossName][0]).toBeCloseTo(0.923648);
+    expect(history.history[output1LossName][1]).toBeCloseTo(0.722993);
+    expect(history.history[output2LossName].length).toEqual(2);
+    expect(history.history[output2LossName][0]).toBeCloseTo(0.923648);
+    expect(history.history[output2LossName][1]).toBeCloseTo(0.722993);
+    expect(history.history[output1AccName].length).toEqual(2);
+    expect(history.history[output1AccName][0]).toBeCloseTo(0);
+    expect(history.history[output1AccName][1]).toBeCloseTo(0);
+    expect(history.history[output2AccName].length).toEqual(2);
+    expect(history.history[output2AccName][0]).toBeCloseTo(0);
+    expect(history.history[output2AccName][1]).toBeCloseTo(0);
+    expect(history.history.val_loss.length).toEqual(2);
+    expect(history.history.val_loss[0]).toBeCloseTo(0.003321);
+    expect(history.history.val_loss[1]).toBeCloseTo(0.011798);
+    expect(history.history[valOutput1LossName].length).toEqual(2);
+    expect(history.history[valOutput1LossName][0]).toBeCloseTo(0.006642);
+    expect(history.history[valOutput1LossName][1]).toBeCloseTo(0.023597);
+    expect(history.history[valOutput2LossName].length).toEqual(2);
+    expect(history.history[valOutput2LossName][0]).toBeCloseTo(0.003321);
+    expect(history.history[valOutput2LossName][1]).toBeCloseTo(0.011798);
+    expect(history.history[valOutput1AccName].length).toEqual(2);
+    expect(history.history[valOutput1AccName][0]).toBeCloseTo(0.003321);
+    expect(history.history[valOutput1AccName][1]).toBeCloseTo(0.011798);
+    expect(history.history[valOutput2AccName].length).toEqual(2);
+    expect(history.history[valOutput2AccName][0]).toBeCloseTo(1);
+    expect(history.history[valOutput2AccName][1]).toBeCloseTo(1);
+    expectArraysClose(
+      model.getWeights()[0], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+    expectArraysClose(
+      model.getWeights()[2], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.108621]));
+  });
+
+  it('1 input, 2 outputs, 1 metric, tensor array validation, ' +
+    'no batchesPerEpoch', async () => {
+    // Create a functional model with 2 outputs.
+    const x = tfl.layers.input({shape: [1]});
+    const output1 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const output2 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: x, outputs: [output1, output2]});
+    model.compile(
+      {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 2;
+    const batchesPerEpoch = 3;
+
+    const xTensorsFunc = () => [
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+      tfc.ones([batchSize, 1])];
+    const yTensorsFunc = () => {
+      const output: {[name: string]: tfc.Tensor[]} = {};
+      output[model.outputNames[0]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1])];
+      output[model.outputNames[1]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1])];
+      return output;
+    };
+
+    const yShape: {[name:string]: number[]} = {};
+    yShape[model.outputNames[0]] = [1];
+    yShape[model.outputNames[1]] = [1];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape,
+      batchSize,
+      numBatches: batchesPerEpoch,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    // Validation data.
+    const valXs = tfc.zeros([batchSize, 1]);
+    const valYs: tfc.NamedTensorMap = {};
+    valYs[model.outputNames[0]] = tfc.zeros([batchSize, 1]);
+    valYs[model.outputNames[1]] = tfc.zeros([batchSize, 1]);
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {
+      epochs: 1,
+      validationData: [valXs, valYs],
+      validationBatchSize: batchSize
+    });
+    model.setWeights([
+      tfc.zeros([1, 1]), tfc.zeros([1]), tfc.zeros([1, 1]), tfc.zeros([1])
+    ]);
+
+    const history = await model.fitDataset(dataset, {
+      epochs,
+      validationData: [valXs, valYs],
+      validationBatchSize: batchSize
+    });
+
+    const output1AccName = model.outputNames[0] + '_acc';
+    const output1LossName = model.outputNames[0] + '_loss';
+    const output2AccName = model.outputNames[1] + '_acc';
+    const output2LossName = model.outputNames[1] + '_loss';
+    const valOutput1AccName = 'val_' + output1AccName;
+    const valOutput1LossName = 'val_' + output1LossName;
+    const valOutput2AccName = 'val_' + output2AccName;
+    const valOutput2LossName = 'val_' + output2LossName;
+
+    expect(Object.keys(history.history)).toEqual([
+      'val_loss', valOutput1LossName, valOutput2LossName,
+      valOutput1AccName, valOutput2AccName, 'loss',
+      output1LossName, output2LossName, output1AccName, output2AccName]);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(1.847297);
+    expect(history.history.loss[1]).toBeCloseTo(1.445986);
+    expect(history.history[output1LossName].length).toEqual(2);
+    expect(history.history[output1LossName][0]).toBeCloseTo(0.923648);
+    expect(history.history[output1LossName][1]).toBeCloseTo(0.722993);
+    expect(history.history[output2LossName].length).toEqual(2);
+    expect(history.history[output2LossName][0]).toBeCloseTo(0.923648);
+    expect(history.history[output2LossName][1]).toBeCloseTo(0.722993);
+    expect(history.history[output1AccName].length).toEqual(2);
+    expect(history.history[output1AccName][0]).toBeCloseTo(0);
+    expect(history.history[output1AccName][1]).toBeCloseTo(0);
+    expect(history.history[output2AccName].length).toEqual(2);
+    expect(history.history[output2AccName][0]).toBeCloseTo(0);
+    expect(history.history[output2AccName][1]).toBeCloseTo(0);
+    expect(history.history.val_loss.length).toEqual(2);
+    expect(history.history.val_loss[0]).toBeCloseTo(0.003321);
+    expect(history.history.val_loss[1]).toBeCloseTo(0.011798);
+    expect(history.history[valOutput1LossName].length).toEqual(2);
+    expect(history.history[valOutput1LossName][0]).toBeCloseTo(0.006642);
+    expect(history.history[valOutput1LossName][1]).toBeCloseTo(0.023597);
+    expect(history.history[valOutput2LossName].length).toEqual(2);
+    expect(history.history[valOutput2LossName][0]).toBeCloseTo(0.003321);
+    expect(history.history[valOutput2LossName][1]).toBeCloseTo(0.011798);
+    expect(history.history[valOutput1AccName].length).toEqual(2);
+    expect(history.history[valOutput1AccName][0]).toBeCloseTo(0.003321);
+    expect(history.history[valOutput1AccName][1]).toBeCloseTo(0.011798);
+    expect(history.history[valOutput2AccName].length).toEqual(2);
+    expect(history.history[valOutput2AccName][0]).toBeCloseTo(1);
+    expect(history.history[valOutput2AccName][1]).toBeCloseTo(1);
+    expectArraysClose(
+      model.getWeights()[0], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.108621]));
+    expectArraysClose(
+      model.getWeights()[2], tfc.tensor2d([[0.108621]]));
+    expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.108621]));
+  });
+
+  it('2 outputs, 1 missing output in dataset, with batchesPerEpoch',
+    async () => {
+      // Create a functional model with 2 outputs.
+      const x = tfl.layers.input({shape: [1]});
+      const output1 = tfl.layers.dense({
+        units: 1,
+        kernelInitializer: 'zeros'
+      }).apply(x) as tfl.SymbolicTensor;
+      const output2 = tfl.layers.dense({
+        units: 1,
+        kernelInitializer: 'zeros'
+      }).apply(x) as tfl.SymbolicTensor;
+      const model = tfl.model({inputs: x, outputs: [output1, output2]});
+      model.compile(
+        {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+      const batchSize = 8;
+      const epochs = 2;
+      const batchesPerEpoch = 3;
+
+      const xTensorsFunc = () => [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+      const yTensorsFunc = () => {
+        const output: {[name: string]: tfc.Tensor[]} = {};
+        output[model.outputNames[0]] = [
+          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+          tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+        return output;
+      };
+
+      const yShape: {[name:string]: number[]} = {};
+      yShape[model.outputNames[0]] = [1];
+      yShape[model.outputNames[1]] = [1];
+      const dataset = new FakeNumericDataset({
+        xShape: [1],
+        yShape,
+        batchSize,
+        numBatches: batchesPerEpoch * epochs,
+        xTensorsFunc,
+        yTensorsFunc
+      });
+
+      let errorCaught: Error;
+      try {
+        await model.fitDataset(dataset, {batchesPerEpoch, epochs});
+      } catch (err) {
+        errorCaught = err;
+      }
+      expect(errorCaught.message)
+        .toEqual(
+          'The feature data generated by the dataset lacks the required ' +
+          `output key '${model.outputNames[1]}'.`);
+  });
+
+  it('2 outputs, 1 missing output in dataset, no batchesPerEpoch', async () => {
+    // Create a functional model with 2 outputs.
+    const x = tfl.layers.input({shape: [1]});
+    const output1 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const output2 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(x) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: x, outputs: [output1, output2]});
+    model.compile(
+      {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 2;
+    const batchesPerEpoch = 3;
+
+    const xTensorsFunc = () => [
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+      tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+    const yTensorsFunc = () => {
+      const output: {[name: string]: tfc.Tensor[]} = {};
+      output[model.outputNames[0]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])];
+      return output;
+    };
+
+    const yShape: {[name:string]: number[]} = {};
+    yShape[model.outputNames[0]] = [1];
+    yShape[model.outputNames[1]] = [1];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape,
+      batchSize,
+      numBatches: batchesPerEpoch,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    let errorCaught: Error;
+    try {
+      await model.fitDataset(dataset, {epochs});
+    } catch (err) {
+      errorCaught = err;
+    }
+    expect(errorCaught.message)
+      .toEqual(
+        'The feature data generated by the dataset lacks the required ' +
+        `output key '${model.outputNames[1]}'.`);
+  });
+
+  // Reference Python tf.keras code:
+  //
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // batch_size = 8
+  // num_batches = 3
+  // epochs = 2
+  //
+  // input1 = tf.keras.Input(shape=[1], name='x1')
+  // input2 = tf.keras.Input(shape=[1], name='x2')
+  // concat = tf.keras.layers.concatenate([input1, input2])
+  //
+  // output1 = tf.keras.layers.Dense(
+  //     1, kernel_initializer='zeros')(concat)
+  // output2 = tf.keras.layers.Dense(
+  //     1, kernel_initializer='zeros')(concat)
+  //
+  // model = tf.keras.Model(
+  //      inputs=[input1, input2],
+  //      outputs=[output1, output2])
+  // model.compile(
+  //     loss = 'mean_squared_error', optimizer = 'sgd', metrics =
+  //     ['accuracy'])
+  // model.summary()
+  // output1_name = model.output_names[0]
+  // output2_name = model.output_names[1]
+  // print(x1)
+  // print(x2)
+  // print(output1_name)
+  // print(output2_name)
+  //
+  // xs1 = np.ones([batch_size * num_batches * epochs, 1])
+  // xs2 = np.ones([batch_size * num_batches * epochs, 1])
+  // ys1 = np.ones([batch_size * num_batches * epochs, 1])
+  // ys2 = np.ones([batch_size * num_batches * epochs, 1])
+  // dataset = tf.data.Dataset.from_tensor_slices(
+  //     ({
+  //        x1: xs1,
+  //        x2: xs2
+  //      },{
+  //        output1_name: ys1,
+  //        output2_name: ys2
+  //      })).batch(batch_size)
+  //
+  // history = model.fit(dataset,
+  //                     steps_per_epoch=num_batches,
+  //                     epochs=epochs)
+  // print(history.history)
+  // print(model.get_weights()[0])
+  // print(model.get_weights()[1])
+  // print(model.get_weights()[2])
+  // print(model.get_weights()[3])
+  // ```
+  it('2 inputs, 2 outputs, 1 metric, no validation, with batchesPerEpoch',
+    async () => {
+    // Create a functional model with 2 inputs and 2 outputs.
+    const input1 = tfl.layers.input({shape: [1]});
+    const input2 = tfl.layers.input({shape: [1]});
+    const concat = tfl.layers.concatenate().apply([input1, input2]);
+    const output1 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(concat) as tfl.SymbolicTensor;
+    const output2 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(concat) as tfl.SymbolicTensor;
+    const model = tfl.model({
+      inputs: [input1, input2],
+      outputs: [output1, output2]
+    });
+    model.compile(
+      {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 2;
+    const batchesPerEpoch = 3;
+
+    // Training data.
+    const xTensorsFunc = () => {
+      const output: {[name: string]: tfc.Tensor[]} = {};
+      output[input1.name] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+      ];
+      output[input2.name] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+      ];
+      return output;
+    };
+    const yTensorsFunc = () => {
+      const output: {[name: string]: tfc.Tensor[]} = {};
+      output[model.outputNames[0]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+      ];
+      output[model.outputNames[1]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1])
+      ];
+      return output;
+    };
+
+    const yShape: {[name:string]: number[]} = {};
+    yShape[model.outputNames[0]] = [1];
+    yShape[model.outputNames[1]] = [1];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape,
+      batchSize,
+      numBatches: batchesPerEpoch * epochs,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {
+      batchesPerEpoch,
+      epochs: 1
+    });
+    model.setWeights([
+      tfc.zeros([2, 1]), tfc.zeros([1]), tfc.zeros([2, 1]), tfc.zeros([1])
+    ]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
+
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+
+    const output1AccName = model.outputNames[0] + '_acc';
+    const output1LossName = model.outputNames[0] + '_loss';
+    const output2AccName = model.outputNames[1] + '_acc';
+    const output2LossName = model.outputNames[1] + '_loss';
+
+    expect(Object.keys(history.history)).toEqual(['loss',
+      output1LossName, output2LossName, output1AccName, output2AccName]);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(1.776232);
+    expect(history.history.loss[1]).toBeCloseTo(1.225369);
+    expect(history.history[output1LossName].length).toEqual(2);
+    expect(history.history[output1LossName][0]).toBeCloseTo(0.888116);
+    expect(history.history[output1LossName][1]).toBeCloseTo(0.612684);
+    expect(history.history[output2LossName].length).toEqual(2);
+    expect(history.history[output2LossName][0]).toBeCloseTo(0.888116);
+    expect(history.history[output2LossName][1]).toBeCloseTo(0.612684);
+    expect(history.history[output1AccName].length).toEqual(2);
+    expect(history.history[output1AccName][0]).toBeCloseTo(0);
+    expect(history.history[output1AccName][1]).toBeCloseTo(0);
+    expect(history.history[output2AccName].length).toEqual(2);
+    expect(history.history[output2AccName][0]).toBeCloseTo(0);
+    expect(history.history[output2AccName][1]).toBeCloseTo(0);
+    expectArraysClose(
+      model.getWeights()[0], tfc.tensor2d([[0.103376],[0.103376]]));
+    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103376]));
+    expectArraysClose(
+      model.getWeights()[2], tfc.tensor2d([[0.103376], [0.103376]]));
+    expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.103376]));
+  });
+
+  it('2 inputs, 2 outputs, 1 metric, no validation, no batchesPerEpoch',
+    async () => {
+    // Create a functional model with 2 inputs and 2 outputs.
+    const input1 = tfl.layers.input({shape: [1]});
+    const input2 = tfl.layers.input({shape: [1]});
+    const concat = tfl.layers.concatenate().apply([input1, input2]);
+    const output1 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(concat) as tfl.SymbolicTensor;
+    const output2 = tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'zeros'
+    }).apply(concat) as tfl.SymbolicTensor;
+    const model = tfl.model({
+      inputs: [input1, input2],
+      outputs: [output1, output2]
+    });
+    model.compile(
+      {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
+
+    const batchSize = 8;
+    const epochs = 2;
+    const batchesPerEpoch = 3;
+
+    // Training data.
+    const xTensorsFunc = () => {
+      const output: {[name: string]: tfc.Tensor[]} = {};
+      output[input1.name] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1])];
+      output[input2.name] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1])];
+      return output;
+    };
+    const yTensorsFunc = () => {
+      const output: {[name: string]: tfc.Tensor[]} = {};
+      output[model.outputNames[0]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1])];
+      output[model.outputNames[1]] = [
+        tfc.ones([batchSize, 1]), tfc.ones([batchSize, 1]),
+        tfc.ones([batchSize, 1])];
+      return output;
+    };
+
+    const yShape: {[name:string]: number[]} = {};
+    yShape[model.outputNames[0]] = [1];
+    yShape[model.outputNames[1]] = [1];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape,
+      batchSize,
+      numBatches: batchesPerEpoch,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {epochs: 1});
+    model.setWeights([
+      tfc.zeros([2, 1]), tfc.zeros([1]), tfc.zeros([2, 1]), tfc.zeros([1])
+    ]);
+
+    const numTensors0 = tfc.memory().numTensors;
+    const history = await model.fitDataset(dataset, {epochs});
+
+    const numTensors1 = tfc.memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+
+    const output1AccName = model.outputNames[0] + '_acc';
+    const output1LossName = model.outputNames[0] + '_loss';
+    const output2AccName = model.outputNames[1] + '_acc';
+    const output2LossName = model.outputNames[1] + '_loss';
+
+    expect(Object.keys(history.history)).toEqual(['loss',
+      output1LossName, output2LossName, output1AccName, output2AccName]);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(1.776232);
+    expect(history.history.loss[1]).toBeCloseTo(1.225369);
+    expect(history.history[output1LossName].length).toEqual(2);
+    expect(history.history[output1LossName][0]).toBeCloseTo(0.888116);
+    expect(history.history[output1LossName][1]).toBeCloseTo(0.612684);
+    expect(history.history[output2LossName].length).toEqual(2);
+    expect(history.history[output2LossName][0]).toBeCloseTo(0.888116);
+    expect(history.history[output2LossName][1]).toBeCloseTo(0.612684);
+    expect(history.history[output1AccName].length).toEqual(2);
+    expect(history.history[output1AccName][0]).toBeCloseTo(0);
+    expect(history.history[output1AccName][1]).toBeCloseTo(0);
+    expect(history.history[output2AccName].length).toEqual(2);
+    expect(history.history[output2AccName][0]).toBeCloseTo(0);
+    expect(history.history[output2AccName][1]).toBeCloseTo(0);
+    expectArraysClose(
+      model.getWeights()[0], tfc.tensor2d([[0.103376],[0.103376]]));
+    expectArraysClose(model.getWeights()[1], tfc.tensor1d([0.103376]));
+    expectArraysClose(
+      model.getWeights()[2], tfc.tensor2d([[0.103376], [0.103376]]));
+    expectArraysClose(model.getWeights()[3], tfc.tensor1d([0.103376]));
+  });
 
   it('Exhausting iterator with batchesPerEpoch throws warning', async () => {
     const model = createDenseModel();
@@ -2110,8 +2996,7 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
   // model.add(tf.keras.layers.Dense(
   //     1,
   //     input_shape=[1],
-  //     kernel_initializer='zeros',
-  //     bias_initializer='zeros'))
+  //     kernel_initializer='zeros'))
   // model.compile(loss='mean_squared_error',
   //               optimizer=tf.train.GradientDescentOptimizer(0.01))
   //
@@ -2213,8 +3098,7 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
   // model.add(tf.keras.layers.Dense(
   //     1,
   //     input_shape=[1],
-  //     kernel_initializer='zeros',
-  //     bias_initializer='zeros'))
+  //     kernel_initializer='zeros'))
   // model.compile(loss='mean_squared_error',
   //               optimizer=tf.train.GradientDescentOptimizer(0.01),
   //               metrics=['accuracy'])
@@ -2400,8 +3284,7 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
   // output = tf.keras.layers.Dense(
   //     1,
   //     input_shape=[1],
-  //     kernel_initializer='zeros',
-  //     bias_initializer='zeros').apply(concat)
+  //     kernel_initializer='zeros').apply(concat)
   // model = tf.keras.Model(inputs=[input1, input2], outputs=output)
   // model.compile(loss='mean_squared_error',
   //               optimizer=tf.train.GradientDescentOptimizer(0.01),
@@ -2410,7 +3293,7 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
   // out = model.evaluate(dataset, steps=3, verbose=0)
   // print(out)
   // ```
-  it('2 input, 1 output, 1 metric, no validation, with batches specified',
+  it('2 inputs, 1 output, 1 metric, no validation, with batches specified',
      async () => {
        // Create a functional model with 2 inputs.
        const input1 = tfl.layers.input({shape: [1]});
@@ -2419,8 +3302,7 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
        const y = tfl.layers
                      .dense({
                        units: 1,
-                       kernelInitializer: 'zeros',
-                       biasInitializer: 'zeros'
+                       kernelInitializer: 'zeros'
                      })
                      .apply(concat) as tfl.SymbolicTensor;
        const model = tfl.model({inputs: [input1, input2], outputs: y});
@@ -2472,7 +3354,7 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
        expect(numTensors1).toEqual(numTensors0);
      });
 
-  it('2 input, 1 output, 1 metric, no validation, no batches specified',
+  it('2 inputs, 1 output, 1 metric, no validation, no batches specified',
      async () => {
        // Create a functional model with 2 inputs.
        const input1 = tfl.layers.input({shape: [1]});
@@ -2481,8 +3363,7 @@ describeMathCPUAndGPU('Model.evaluateDataset', () => {
        const y = tfl.layers
                      .dense({
                        units: 1,
-                       kernelInitializer: 'zeros',
-                       biasInitializer: 'zeros'
+                       kernelInitializer: 'zeros'
                      })
                      .apply(concat) as tfl.SymbolicTensor;
        const model = tfl.model({inputs: [input1, input2], outputs: y});

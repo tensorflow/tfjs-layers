@@ -178,12 +178,6 @@ function standardizeDataIteratorOutput(
     // Type `model` as `any` here to avoid circular dependency w/ training.ts.
     // tslint:disable-next-line:no-any
     model: any, iteratorOut: {}): tfc.Tensor[] {
-  if (model.outputs.length > 1) {
-    throw new NotImplementedError(
-        `Support for training a model with multiple output tensors with ` +
-        `a dataset object is not implemented yet.`);
-  }
-
   let xs: TensorOrArrayOrMap;
   let ys: TensorOrArrayOrMap;
   if (Array.isArray(iteratorOut)) {
@@ -413,7 +407,6 @@ export async function fitDataset<T>(
           await callbackList.onBatchBegin(batchIndex, batchLogs);
 
           // Train on batch.
-          // TODO(cais): Take care of models with multiple outputs.
           const outs = trainFunction(xsAndYs);
           tfc.dispose(xsAndYs);
           for (let i = 0; i < outLabels.length; ++i) {
