@@ -16,13 +16,12 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
 
+import {CustomCallback} from '../base_callbacks';
 import * as tfl from '../index';
 import {Logs} from '../logs';
 import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
 import {FakeNumericDataset} from './dataset_fakes';
-import {TensorMap} from './dataset_stub';
-import {CustomCallback} from '../base_callbacks';
 
 function createDenseModel(): tfl.Model {
   const model = tfl.sequential();
@@ -542,10 +541,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     model.compile(
         {loss: 'meanSquaredError', optimizer: 'sgd', metrics: ['accuracy']});
     const epochs = 1;
-    await model.fitDataset(dataset, {
-      epochs,
-      callbacks: new TestCallback()
-    });
+    await model.fitDataset(dataset, {epochs, callbacks: new TestCallback()});
 
     expect(dataset.size).toEqual(batchesPerEpoch);
     expect(recordedSteps).toEqual(batchesPerEpoch);
@@ -1638,7 +1634,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        });
 
        // Validation data.
-       const valXs: TensorMap = {};
+       const valXs: tfc.NamedTensorMap = {};
        valXs[input1.name] = tfc.zeros([batchSize, 1]);
        valXs[input2.name] = tfc.zeros([batchSize, 1]);
        const valYs = tfc.zeros([batchSize, 1]);
@@ -1731,7 +1727,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
        });
 
        // Validation data.
-       const valXs: TensorMap = {};
+       const valXs: tfc.NamedTensorMap = {};
        valXs[input1.name] = tfc.zeros([batchSize, 1]);
        valXs[input2.name] = tfc.zeros([batchSize, 1]);
        const valYs = tfc.zeros([batchSize, 1]);
