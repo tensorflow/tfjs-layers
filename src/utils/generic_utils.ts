@@ -461,19 +461,11 @@ export function assertPositiveInteger(value: number|number[], name: string) {
  * @return Formatted string.
  */
 // tslint:disable-next-line:no-any
-export function formatAsFriendlyString(value: any) {
+export function formatAsFriendlyString(value: any): string {
   if (value === null) {
     return 'null';
   } else if (Array.isArray(value)) {
-    let output = '[';
-    value.forEach((v, i) => {
-      output += formatAsFriendlyString(v);
-      if (i < value.length - 1) {
-        output += ',';
-      }
-    });
-    output += ']';
-    return output;
+    return '[' + value.map(v => formatAsFriendlyString(v)).join(',') + ']';
   } else if (typeof value === 'string') {
     return `"${value}"`;
   } else {
