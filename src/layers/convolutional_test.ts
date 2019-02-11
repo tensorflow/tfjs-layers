@@ -164,7 +164,7 @@ describeMathCPUAndGPU('conv2d', () => {
     }
   }
 
-  it('Invalid filters', () => {
+  it('Invalid filters leads to Error', () => {
     expect(() => tfl.layers.conv2d({filters: 2.5, kernelSize: 3}))
         .toThrowError(/filters.*positive integer.*2\.5/);
   });
