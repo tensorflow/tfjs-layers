@@ -152,7 +152,7 @@ export function loadModel(
 
 /**
  * Load a model composed of Layer objects, including its topology and optionally
- * weights.  See the Tutorial named "How to import a Keras Model" for usage
+ * weights. See the Tutorial named "How to import a Keras Model" for usage
  * examples.
  * 
  * This method is applicable to:
@@ -163,7 +163,7 @@ export function loadModel(
  *    the [tensorflowjs_converter](https://github.com/tensorflow/tfjs-converter)
  * 
  * This mode is *not* applicable to TensoFlow `SavedModel`s or their converted
- * forms.
+ * forms. For those models, use `tf.loadGraphModel()`.
  *
  * Example 1: Save `model`'s topology and weights to browser [local
  * storage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage);
