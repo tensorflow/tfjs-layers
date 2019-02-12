@@ -544,7 +544,7 @@ describeMathCPU('modelFromJSON', () => {
   });
 });
 
-describeMathCPU('loadModel from URL', () => {
+describeMathCPU('loadLayersModel from URL', () => {
   const setupFakeWeightFiles =
       (fileBufferMap:
            {[filename: string]: Float32Array|Int32Array|ArrayBuffer}) => {
@@ -1054,7 +1054,7 @@ describeMathCPU('loadModel from URL', () => {
   });
 });
 
-describeMathCPU('loadModel from IOHandler', () => {
+describeMathCPU('loadLayersModel from IOHandler', () => {
   // The model topology JSON can be obtained with the following Python Keras
   // code:
   //
