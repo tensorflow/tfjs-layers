@@ -245,6 +245,7 @@ export function loadModel(
  *     weights and missing weights will be silently ignored.
  * @returns A `Promise` of `tf.Model`, with the topology and weights loaded.
  */
+/** @doc {heading: 'Models', subheading: 'Loading'} */
 export function loadLayersModel(
     pathOrIOHandler: string|io.IOHandler, options?: io.LoadOptions):
     Promise<Model> {
