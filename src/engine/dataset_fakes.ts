@@ -233,8 +233,7 @@ class FakeNumericIteratorLegacyArrayForm extends
     const result = await this.it.next();
     return {
       done: result.done,
-          value: result.value == null ? null :
-                                        [result.value.xs, result.value.ys]
-    }
+      value: result.value == null ? null : [result.value.xs, result.value.ys]
+    };
   }
 }

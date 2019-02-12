@@ -1825,7 +1825,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
             `input key '${input2.name}'.`);
   });
 
-  fit('Legacy array input format works but throws warnings', async () => {
+  it('Legacy array input format works but throws warnings', async () => {
     const model = createDenseModel();
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
     const batchSize = 8;
