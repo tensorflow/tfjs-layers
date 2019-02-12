@@ -70,12 +70,13 @@ export interface ModelFitDatasetArgs<T> {
    * metrics at the end of each epoch. The model will not be trained on this
    * data. This could be any of the following:
    *
-   *   - an Array of `tf.Tensor` objects: [xVal, yVal]
-   *   - an Array of `tf.Tensor` objects:
-   *       [xVal, yVal, valSampleWeights] (not implemented yet).
-   *   - a dataset object.
+   *   - An array `[xVal, yVal]`, where the two values may be `tf.Tensor`,
+   *     an array of Tensors, or a map of string to Tensor.
+   *   - Similarly, an array ` [xVal, yVal, valSampleWeights]`
+   *     (not implemented yet).
+   *   - a `Dataset` object with elements of the form `{xs: ..., ys: ...}`.
    *
-   * If `validationData` is an Array of Tensor objects, the `tf.Tensor` will be
+   * If `validationData` is an Array of Tensor objects, each `tf.Tensor` will be
    * sliced into batches during validation, using the parameter
    * `validationBatchSize` (which defaults to 32). The entirety of the
    * `tf.Tensor` objects will be used in the validation.
@@ -181,9 +182,10 @@ function standardizeDataIteratorOutput(
   let xs: TensorOrArrayOrMap;
   let ys: TensorOrArrayOrMap;
   if (Array.isArray(iteratorOut)) {
-    console.warn(
-        'fitDataset() expects an object of the form ' +
-        '{xs: ..., ys: ...}, not an array.');
+    tfc.deprecationWarn(
+        'Deprecated argument format: fitDataset() will soon no longer accept ' +
+        'Datasets that produce elements in the array form `[xs, ys]`.  ' +
+        'Instead it now expects elements of the form `{xs: ..., ys: ...}`. ');
     tfc.util.assert(
         iteratorOut.length === 2,
         'When using the legacy array input form, a ' +
@@ -249,6 +251,10 @@ function flattenTensorOrArrayOrMap(
   if (values instanceof tfc.Tensor) {
     return [values];
   } else if (isArray(values)) {
+    tfc.util.assert(
+        values.length === names.length,
+        `Received an array of ${values.length} Tensors, but expected ${
+            names.length} to match the ${inputOrOutput} keys ${names}.`);
     return values;
   } else {
     const result: tfc.Tensor[] = [];
