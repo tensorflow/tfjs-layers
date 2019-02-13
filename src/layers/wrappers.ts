@@ -272,9 +272,13 @@ export declare interface BidirectionalLayerArgs extends WrapperLayerArgs {
    * Mode by which outputs of the forward and backward RNNs are
    * combinied. If `null` or `undefined`, the output will not be
    * combined, they will be returned as an `Array`.
+   *
+   * Defaults to `'concat'`.
    */
   mergeMode?: BidirectionalMergeMode;
 }
+
+const DEFAULT_BIDIRECTOINAL_MERGE_MODE: BidirectionalMergeMode = 'concat';
 
 export class Bidirectional extends Wrapper {
   /** @nocollapse */
@@ -311,8 +315,10 @@ export class Bidirectional extends Wrapper {
     this.backwardLayer = deserialize(backDict) as RNN;
     this.forwardLayer.name = 'forward_' + this.forwardLayer.name;
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
-    checkBidirectionalMergeMode(args.mergeMode);
-    this.mergeMode = args.mergeMode;
+
+    this.mergeMode = args.mergeMode == null ? DEFAULT_BIDIRECTOINAL_MERGE_MODE :
+                                              args.mergeMode;
+    checkBidirectionalMergeMode(this.mergeMode);
     if (args.weights) {
       throw new NotImplementedError(
           'weights support is not implemented for Bidirectional layer yet.');
