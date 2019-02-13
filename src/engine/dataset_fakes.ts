@@ -206,7 +206,8 @@ export class FakeNumericDataset extends Dataset<FitDatasetElement> {
   }
 }
 
-// Reimplement Dataset.map(...) because we don't depend on tfjs-data here.
+// We can't use Dataset.map(...) because we don't depend on tfjs-data here,
+// so we manually transform the above {xs, ys} dataset to the [xs, ys] form.
 export class FakeNumericDatasetLegacyArrayForm extends
     Dataset<[TensorOrArrayOrMap, TensorOrArrayOrMap]> {
   ds: FakeNumericDataset;
