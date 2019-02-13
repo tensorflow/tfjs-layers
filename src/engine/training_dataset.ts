@@ -74,7 +74,9 @@ export interface ModelFitDatasetArgs<T> {
    *     an array of Tensors, or a map of string to Tensor.
    *   - Similarly, an array ` [xVal, yVal, valSampleWeights]`
    *     (not implemented yet).
-   *   - a `Dataset` object with elements of the form `{xs: ..., ys: ...}`.
+   *   - a `Dataset` object with elements of the form `{xs: xVal, ys: yVal}`,
+   *     where the two values may be `tf.Tensor`, an array of Tensors, or a map
+   *     of string to Tensor.
    *
    * If `validationData` is an Array of Tensor objects, each `tf.Tensor` will be
    * sliced into batches during validation, using the parameter
@@ -185,7 +187,9 @@ function standardizeDataIteratorOutput(
     tfc.deprecationWarn(
         'Deprecated argument format: fitDataset() will soon no longer accept ' +
         'Datasets that produce elements in the array form `[xs, ys]`.  ' +
-        'Instead it now expects elements of the form `{xs: ..., ys: ...}`. ');
+        'Instead it now expects elements of the form `{xs: xVal, ys: yVal}`, ' +
+        'where the two values may be `tf.Tensor`, an array of Tensors, or a ' +
+        'map of string to Tensor. ');
     tfc.util.assert(
         iteratorOut.length === 2,
         'When using the legacy array input form, a ' +
@@ -202,8 +206,9 @@ function standardizeDataIteratorOutput(
     tfc.util.assert(
         xs != null && ys != null,
         'A Dataset iterator for fitDataset() is expected to generate objects ' +
-            'of the form {xs: ..., ys: ...}, but instead generates ' +
-            iteratorOut);
+            'of the form `{xs: xVal, ys: yVal}`, where the two values may be ' +
+            '`tf.Tensor`, an array of Tensors, or a map of string to ' +
+            'Tensor.  The provided Dataset instead generates ' + iteratorOut);
   }
 
   const flattenedXs: tfc.Tensor[] =

@@ -1854,8 +1854,10 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     const deprecatedWarning =
       'Deprecated argument format: fitDataset() will soon no longer accept ' +
       'Datasets that produce elements in the array form `[xs, ys]`.  Instead ' +
-      'it now expects elements of the form `{xs: ..., ys: ...}`.  You can ' +
-      'disable deprecation warnings with tf.disableDeprecationWarnings().';
+      'it now expects elements of the form `{xs: xVal, ys: yVal}`, where the ' +
+      'two values may be `tf.Tensor`, an array of Tensors, or a map of ' +
+      'string to Tensor.  You can disable deprecation warnings with ' +
+      'tf.disableDeprecationWarnings().';
 
     expect(warningMessages[0]).toEqual(deprecatedWarning);
     expect(warningMessages[1]).toEqual(deprecatedWarning);
