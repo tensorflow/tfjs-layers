@@ -12,7 +12,7 @@
  * Exported functions.
  */
 
-import {io} from '@tensorflow/tfjs-core';
+import {deprecationWarn, io} from '@tensorflow/tfjs-core';
 
 import {BaseCallbackConstructor, CallbackConstructorRegistry} from './base_callbacks';
 import {ContainerArgs} from './engine/container';
@@ -147,6 +147,9 @@ export function sequential(config?: SequentialArgs): Sequential {
  */
 export function loadModel(
     pathOrIOHandler: string|io.IOHandler, strict = true): Promise<Model> {
+  deprecationWarn(
+      `tf.loadModel() is deprecated and will be removed in TensorFlow.js ` +
+      `1.0. Please switch to tf.loadLayersModel().`);
   return loadModelInternal(pathOrIOHandler, {strict});
 }
 
@@ -239,8 +242,8 @@ export function loadModel(
  */
 /** @doc {heading: 'Models', subheading: 'Loading'} */
 export function loadLayersModel(
-    pathOrIOHandler: string|io.IOHandler, options?: io.LoadOptions):
-    Promise<Model> {
+    pathOrIOHandler: string|io.IOHandler,
+    options?: io.LoadOptions): Promise<Model> {
   if (options == null) {
     options = {};
   }
