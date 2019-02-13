@@ -316,7 +316,7 @@ export async function loadModelFromIOHandler(
     const isNamedTensorMap = true;
     model.loadWeights(
         io.decodeWeights(artifacts.weightData, artifacts.weightSpecs),
-        skipMismatch, isNamedTensorMap, options.strict);
+        skipMismatch, isNamedTensorMap, strict);
   }
   return model;
 }
