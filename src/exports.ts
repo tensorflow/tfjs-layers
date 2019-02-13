@@ -154,18 +154,26 @@ export function loadModel(
  * Load a model composed of Layer objects, including its topology and optionally
  * weights. See the Tutorial named "How to import a Keras Model" for usage
  * examples.
- * 
+ *
  * This method is applicable to:
- * 
- * 1. Models created with the `tf.layres.*`, `tf.sequential()`, and `tf.model()`
- *    APIs of TensorFlow.js and later saved with the `save()` method.
+ *
+ * 1. Models created with the `tf.layers.*`, `tf.sequential`, and `tf.model`
+ *    APIs of TensorFlow.js and later saved with the `tf.Model.save` method.
  * 2. Models converted from Keras or TensorFlow tf.keras using
  *    the [tensorflowjs_converter](https://github.com/tensorflow/tfjs-converter)
- * 
- * This mode is *not* applicable to TensoFlow `SavedModel`s or their converted
- * forms. For those models, use `tf.loadGraphModel()`.
  *
- * Example 1: Save `model`'s topology and weights to browser [local
+ * This mode is *not* applicable to TensorFlow `SavedModel`s or their converted
+ * forms. For those models, use `tf.loadGraphModel`.
+ *
+ * Example 1. Load a model from an HTTP server.
+ *
+ * ```js
+ * const model = await tf.loadLayersModel(
+ *     'https://storage.googleapis.com/tfjs-models/tfjs/iris_v1/model.json');
+ * model.summary();
+ * ```
+ *
+ * Example 2: Save `model`'s topology and weights to browser [local
  * storage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage);
  * then load it back.
  *
@@ -182,7 +190,7 @@ export function loadModel(
  * loadedModel.predict(tf.ones([1, 3])).print();
  * ```
  *
- * Example 2. Saving `model`'s topology and weights to browser
+ * Example 3. Saving `model`'s topology and weights to browser
  * [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API);
  * then load it back.
  *
@@ -199,7 +207,7 @@ export function loadModel(
  * loadedModel.predict(tf.ones([1, 3])).print();
  * ```
  *
- * Example 3. Load a model from user-selected files from HTML
+ * Example 4. Load a model from user-selected files from HTML
  * [file input
  * elements](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/file).
  *
@@ -213,29 +221,11 @@ export function loadModel(
  *     tf.io.browserFiles([jsonUpload.files[0], weightsUpload.files[0]]));
  * ```
  *
- * Example 4. Load a model from an HTTP server.
- *
- * ```js
- * const model = await tf.loadLayersModel(
- *     'https://storage.googleapis.com/tfjs-models/tfjs/iris_v1/model.json');
- * model.summary();
- * ```
- *
  * @param pathOrIOHandler Can be either of the two formats
  *   1. A string path to the `ModelAndWeightsConfig` JSON describing
- *      the model in the canonical TensorFlow.js format. This path will be
- *      interpreted as a relative HTTP path, to which `fetch` will be used to
- *      request the model topology and weight manifest JSON.
- *      The content of the JSON file is assumed to be a JSON object with the
- *      following fields and values:
- *      - 'modelTopology': A JSON object that can be either of:
- *        1. a model architecture JSON consistent with the format of the return
- *            value of `keras.Model.to_json()`
- *        2. a full model JSON in the format of `keras.models.save_model()`.
- *      - 'weightsManifest': A TensorFlow.js weights manifest.
- *      See the Python converter function `save_model()` for more details.
- *      It is also assumed that model weights can be accessed from relative
- *      paths described by the `paths` fields in weights manifest.
+ *      the model in the canonical TensorFlow.js format. For file://
+ *      (tfjs-node-only), http:// and https:// schemas, the path can be
+ *      either absolute or relative.
  *   2. An `tf.io.IOHandler` object that loads model artifacts with its `load`
  *      method.
  * @param options Optional configuration arguments for the model loading,
@@ -243,6 +233,8 @@ export function loadModel(
  *   - `strict`: Require that the provided weights exactly match those required
  *     by the layers.  Default true.  Passing false means that both extra
  *     weights and missing weights will be silently ignored.
+ *   - ｀onProgress｀: A function of the signature `(fraction: number) => void',
+ *     that can be used as the progress callback for the model loading.
  * @returns A `Promise` of `tf.Model`, with the topology and weights loaded.
  */
 /** @doc {heading: 'Models', subheading: 'Loading'} */
