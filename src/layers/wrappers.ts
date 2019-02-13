@@ -278,7 +278,7 @@ export declare interface BidirectionalLayerArgs extends WrapperLayerArgs {
   mergeMode?: BidirectionalMergeMode;
 }
 
-const DEFAULT_BIDIRECTOINAL_MERGE_MODE: BidirectionalMergeMode = 'concat';
+const DEFAULT_BIDIRECTIONAL_MERGE_MODE: BidirectionalMergeMode = 'concat';
 
 export class Bidirectional extends Wrapper {
   /** @nocollapse */
@@ -317,7 +317,7 @@ export class Bidirectional extends Wrapper {
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
 
     this.mergeMode = args.mergeMode === undefined ?
-        DEFAULT_BIDIRECTOINAL_MERGE_MODE : args.mergeMode;
+        DEFAULT_BIDIRECTIONAL_MERGE_MODE : args.mergeMode;
     checkBidirectionalMergeMode(this.mergeMode);
     if (args.weights) {
       throw new NotImplementedError(
