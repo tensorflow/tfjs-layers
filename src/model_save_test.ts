@@ -404,7 +404,6 @@ describeMathGPU('Save-load round trips', () => {
     expect(gramSchmidtSpy).toHaveBeenCalled();
   });
 
-  //
   it('Partial non-strict load calls weight initializers', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.lstm({
