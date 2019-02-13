@@ -283,9 +283,9 @@ const DEFAULT_BIDIRECTOINAL_MERGE_MODE: BidirectionalMergeMode = 'concat';
 export class Bidirectional extends Wrapper {
   /** @nocollapse */
   static className = 'Bidirectional';
+  mergeMode: BidirectionalMergeMode;
   private forwardLayer: RNN;
   private backwardLayer: RNN;
-  private mergeMode: BidirectionalMergeMode;
   private returnSequences: boolean;
   private returnState: boolean;
   private numConstants?: number;
