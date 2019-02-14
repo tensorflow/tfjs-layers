@@ -10,7 +10,7 @@
 
 /* Original source: keras/engine/topology.py */
 
-import {NamedTensorMap, Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+import {NamedTensorMap, Scalar, serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {getUid} from '../backend/state';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
@@ -27,135 +27,6 @@ import {version as layersVersion} from '../version';
 import {execute, FeedDict} from './executor';
 import {InputLayer} from './input_layer';
 import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
-
-/**
- * Converts layers weights to a format suitable for TensorFlow.js Layers.
- *
- * Porting Note: The function `preprocess_weights_for_loading()` in PyKeras
- * performs conversion from Keras 1 to Keras 2. But in TypeScript, we
- * require Keras version to be 2. Thus this conversion is not applicable. We
- * simply check the Keras version and pass the weights through.
- *
- * @param layer Layer instance.
- * @param weights Input weights.
- * @param originalKerasVersion Keras version for the weights.
- * @param originalBackend Keras backend the weights were trained with.
- * @returns Output weights as Tensors.
- */
-function preprocessWeightsForLoading(
-    layer: Layer, weights: LayerVariable[], originalKerasVersion?: string,
-    originalBackend?: string): LayerVariable[] {
-  if (!originalKerasVersion.startsWith('2.')) {
-    throw new ValueError(
-        'Unsupported Keras version in weights being loaded: ' +
-        originalKerasVersion);
-  }
-  return weights;
-}
-
-/**
- * Create an Tensor from info about dtype, shape and values.
- * @param dtype DType string.
- * @param shape Shape.
- * @param value Values of the array, as a scalar or nested Array of proper
- *   shape.
- * @returns An Tensor instance.
- */
-// tslint:disable-next-line:no-any
-function loadTensor(dtype: string, shape: Shape, value: any): Tensor {
-  const dataType = generic_utils.stringToDType(dtype);
-  return Tensor.make(
-      shape, {values: shape.length === 0 ? value : util.flatten(value)},
-      dataType);
-}
-
-// TODO(cais): Maybe remove the following (b/74015805).
-/**
- * Load weights from a weights JSON object to an array of layers.
- *
- * Porting Note: This is ported from the Python function
- *   load_weights_from_hdf5_group_by_name()
- *
- * @param weightsJSON. The input JSON object represent the weights from a
- *   trained Keras model. See scripts/pykeras.py for more details.
- * @param layers An array of target layers.
- * @param skipMismatch Whether to skip loading of layers where there is a
- *   mismatch in the number of weights, or a mismatch in the shape of the
- *   weights.
- */
-export function loadWeightsFromJson(
-    weightsJSON: PyJsonDict, layers: Layer[], skipMismatch = false): void {
-  const originalKerasVersion = weightsJSON['keras_version'] as string;
-  const originalBackend = weightsJSON['backend'] as string;
-  const layerNames = layers.map(layer => layer.name);
-
-  // Reverse index of layer name to list of layers with name.
-  const index: {[layerName: string]: Layer[]} = {};
-  for (const layer of layers) {
-    if (layer.name != null) {
-      if (index[layer.name] == null) {
-        index[layer.name] = [];
-      }
-      index[layer.name].push(layer);
-    }
-  }
-
-  // tslint:disable-next-line:no-any
-  const nameToWeights = weightsJSON['weights'] as {[name: string]: any};
-  const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
-  for (let k = 0; k < layerNames.length; ++k) {
-    const name = layerNames[k];
-    let layerWeights = nameToWeights[name];
-    if (layerWeights == null) {
-      layerWeights = [];
-    }
-
-    let weightValues: LayerVariable[] = [];
-    for (let n = 0; n < layerWeights.length; ++n) {
-      // tslint:disable:no-any
-      const weightEntry =
-          layerWeights[n] as {[key: string]: string | Shape | any};
-      // tslint:enable
-      weightValues.push(new LayerVariable(loadTensor(
-          weightEntry['dtype'], weightEntry['shape'] as Shape,
-          weightEntry['value'])));
-    }
-    for (const layer of index[name]) {
-      const symbolicWeights = layer.weights;
-      weightValues = preprocessWeightsForLoading(
-          layer, weightValues, originalKerasVersion, originalBackend);
-      if (weightValues.length !== symbolicWeights.length) {
-        if (skipMismatch) {
-          console.warn(
-              `Skipping loading of weights of layer ${layer.name} ` +
-              `due to mismatch in number of weights: (${weightValues.length} ` +
-              `vs ${symbolicWeights.length}).`);
-        } else {
-          throw new ValueError(
-              `Layer #${k} (named "${layer.name}") expects ` +
-              `${symbolicWeights.length} weight(s), but the saved weights ` +
-              `have ${weightValues.length} element(s).`);
-        }
-      }
-
-      // Set values.
-      for (let i = 0; i < weightValues.length; ++i) {
-        if (skipMismatch) {
-          if (!util.arraysEqual(
-                  symbolicWeights[i].shape, weightValues[i].shape)) {
-            console.warn(
-                `Skipping loading of weights for layer ${layer.name} due ` +
-                `to mismatch in shape (${symbolicWeights[i].shape} vs ` +
-                `${weightValues[i].shape})`);
-            continue;
-          }
-        }
-        weightValueTuples.push([symbolicWeights[i], weightValues[i].read()]);
-      }
-    }
-  }
-  batchSetValue(weightValueTuples);
-}
 
 /**
  * Load weights from a named tensor map.
@@ -752,18 +623,9 @@ export abstract class Container extends Layer {
    */
   loadWeights(
       weightsJSON: PyJsonDict|NamedTensorMap, skipMismatch = false,
-      isNamedTensorMap = false, strict = true) {
-    // TODO(cais): Maybe the JsonDict support should be removed after serving
-    //   weights from XHR is working. If so, the `loadWeightsFromJson` flag
-    //   should be removed as well. (b/74015805)
-    // TODO(cais): See if we can use smarter type resolution to avoid sending
-    //   the type info as a separate arg (isNamedTensormap).
-    if (isNamedTensorMap) {
-      loadWeightsFromNamedTensorMap(
-          weightsJSON as NamedTensorMap, this.layers, strict);
-    } else {
-      loadWeightsFromJson(weightsJSON as PyJsonDict, this.layers, skipMismatch);
-    }
+      strict = true) {
+    loadWeightsFromNamedTensorMap(
+        weightsJSON as NamedTensorMap, this.layers, strict);
   }
 
   /**
