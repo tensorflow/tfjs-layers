@@ -105,7 +105,8 @@ export async function modelFromJSON(
     const skipMismatches: boolean = null;
     const isNamedTensorMap = true;
     model.loadWeights(uniqueWeightValues, skipMismatches, isNamedTensorMap);
-    dispose(uniqueWeightValues);
+    // Dispose temporary weight values.
+    dispose(weightValues);
   }
   return model;
 }
