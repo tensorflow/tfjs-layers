@@ -210,8 +210,6 @@ export function loadWeightsFromNamedTensorMap(
   }
 
   batchSetValue(weightValueTuples);
-  // Dispose temporay weight values.
-  weightValueTuples.forEach(tuple => tuple[1].dispose());
 }
 
 /** Constructor config for Container. */

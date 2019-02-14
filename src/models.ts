@@ -10,7 +10,7 @@
 
 /* Original source keras/models.py */
 
-import {io, NamedTensorMap, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
+import {dispose, io, NamedTensorMap, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
 import {getUid} from './backend/state';
 import {History} from './base_callbacks';
@@ -28,6 +28,7 @@ import {Kwargs} from './types';
 import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 import {getExactlyOneShape} from './utils/types_utils';
+
 
 /**
  * Parses a JSON model configuration file and returns a model instance.
@@ -314,9 +315,11 @@ export async function loadModelFromIOHandler(
 
     const skipMismatch = false;
     const isNamedTensorMap = true;
-    model.loadWeights(
-        io.decodeWeights(artifacts.weightData, artifacts.weightSpecs),
-        skipMismatch, isNamedTensorMap, strict);
+    const weights =
+        io.decodeWeights(artifacts.weightData, artifacts.weightSpecs);
+    model.loadWeights(weights, skipMismatch, isNamedTensorMap, strict);
+    // Dispose temporary weight values.
+    dispose(weights);
   }
   return model;
 }
