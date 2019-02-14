@@ -29,7 +29,6 @@ import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 import {getExactlyOneShape} from './utils/types_utils';
 
-
 /**
  * Parses a JSON model configuration file and returns a model instance.
  *
@@ -239,8 +238,8 @@ export interface ModelPredictArgs {
  * @returns A `Promise` of `tf.Model`, with the topology and weights loaded.
  */
 export async function loadModelInternal(
-    pathOrIOHandler: string|io.IOHandler, options?: io.LoadOptions):
-    Promise<Model> {
+    pathOrIOHandler: string|io.IOHandler,
+    options?: io.LoadOptions): Promise<Model> {
   if (options == null) {
     options = {};
   }
