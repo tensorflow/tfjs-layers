@@ -562,9 +562,6 @@ export abstract class Container extends Layer {
    *   extra weights and missing weights will be silently ignored.
    */
   loadWeights(weights: NamedTensorMap, strict = true) {
-    // loadWeightsFromNamedTensorMap(
-    //     weightsJSON as NamedTensorMap, this.layers, strict);
-    // Make a dictionary mapping weight name to weight.
     const nameToWeight: {[name: string]: LayerVariable} = {};
     let totalWeightsCount = 0;
     for (const layer of this.layers) {
