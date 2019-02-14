@@ -1392,6 +1392,25 @@ describeMathCPUAndGPU('Model.fit', () => {
     expect(numTensors1 - numTensors2).toEqual(2 + 9 + 2 * 2);
   });
 
+  fit('Model.dispose() skips non-owned optimizer: sequential', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({units: 1, inputShape: [2]}));
+    const optimizer = new tfc.AdamOptimizer(1e-3, 0.9, 0.999, 1e-6);
+    model.compile({loss: 'meanSquaredError', optimizer});
+
+    const xs = zeros([4, 2]);
+    const ys = zeros([4, 1]);
+
+    await model.fit(xs, ys, {epochs: 1});
+    const numTensors1 = memory().numTensors;
+
+    model.dispose();
+    const numTensors2 = memory().numTensors;
+
+    // Only the Model's own weights should have been disposed.
+    expect(numTensors1 - numTensors2).toEqual(2);
+  });
+
   it('Invalid dict loss: nonexistent output name', () => {
     createDenseModelAndData();
     expect(() => model.compile({
