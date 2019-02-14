@@ -269,9 +269,9 @@ export declare interface BidirectionalLayerArgs extends WrapperLayerArgs {
   layer: RNN;
 
   /**
-   * Mode by which outputs of the forward and backward RNNs are combinied.
-   * If `null`, the output will not be combined: they will be returned as an
-   * `Array` of two tensors.
+   * Mode by which outputs of the forward and backward RNNs are
+   * combined. If `null` or `undefined`, the output will not be
+   * combined, they will be returned as an `Array`.
    *
    * If `undefined` (i.e., not provided), defaults to `'concat'`.
    */
@@ -317,7 +317,8 @@ export class Bidirectional extends Wrapper {
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
 
     this.mergeMode = args.mergeMode === undefined ?
-        DEFAULT_BIDIRECTIONAL_MERGE_MODE : args.mergeMode;
+        DEFAULT_BIDIRECTIONAL_MERGE_MODE :
+        args.mergeMode;
     checkBidirectionalMergeMode(this.mergeMode);
     if (args.weights) {
       throw new NotImplementedError(

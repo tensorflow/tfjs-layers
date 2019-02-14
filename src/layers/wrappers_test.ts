@@ -582,7 +582,7 @@ describeMathCPUAndGPU('Bidirectional with initial state', () => {
         biasInitializer: 'ones'
       }) as RNN,
       mergeMode: null,
-    }) as Bidirectional;
+    });
     const outputTensors =
         bidiLayer.apply(
             inputTensor, {initialState: [initState1, initState2]}) as
