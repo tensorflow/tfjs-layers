@@ -12,6 +12,7 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {io, ModelPredictConfig as ModelPredictArgs, NamedTensorMap, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
+
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {History, ModelLoggingVerbosity} from '../base_callbacks';
@@ -26,10 +27,11 @@ import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_ut
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
+
 import {Container, ContainerArgs} from './container';
 import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
-import {SymbolicTensor} from './topology';
+import {DisposeResult, SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
 
@@ -442,7 +444,11 @@ export interface ModelCompileArgs {
 export class Model extends Container implements tfc.InferenceModel {
   /** @nocollapse */
   static className = 'Model';
-  optimizer: Optimizer;
+  protected optimizer_: Optimizer;
+  // Whether the model instance owns the optimizer: `true` if and only if
+  // `optimizer` is created from a string parameter during `compile()` call.
+  protected isOptimizerOwned: boolean;
+
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
       LossOrMetricFn[]|{[outputName: string]: LossOrMetricFn};
   lossFunctions: LossOrMetricFn[];
@@ -544,13 +550,15 @@ export class Model extends Container implements tfc.InferenceModel {
     this.loss = args.loss;
 
     if (typeof args.optimizer === 'string') {
-      this.optimizer = optimizers.getOptimizer(args.optimizer);
+      this.optimizer_ = optimizers.getOptimizer(args.optimizer);
+      this.isOptimizerOwned = true;
     } else {
       if (!(args.optimizer instanceof Optimizer)) {
         throw new ValueError(
             `User-defined optimizer must be an instance of tf.Optimizer.`);
       }
-      this.optimizer = args.optimizer;
+      this.optimizer_ = args.optimizer;
+      this.isOptimizerOwned = false;
     }
 
     // TODO(cais): Add lossWeights.
@@ -1100,7 +1108,7 @@ export class Model extends Container implements tfc.InferenceModel {
       y: Tensor|Tensor[]|{[inputName: string]: Tensor}, checkBatchAxis = true,
       batchSize?: number): [Tensor[], Tensor[], Tensor[]] {
     // TODO(cais): Add sampleWeight, classWeight
-    if (this.optimizer == null) {
+    if (this.optimizer_ == null) {
       throw new RuntimeError(
           'You must compile a model before training/testing. Use ' +
           'Model.compile(modelCompileArgs).');
@@ -1295,7 +1303,7 @@ export class Model extends Container implements tfc.InferenceModel {
           param => param.read() as tfc.Variable);
       const returnCost = true;
       const totalLossValue =
-          this.optimizer.minimize(totalLossFunction, returnCost, variables);
+          this.optimizer_.minimize(totalLossFunction, returnCost, variables);
 
       return [totalLossValue].concat(metricsValues);
     };
@@ -1519,6 +1527,29 @@ export class Model extends Container implements tfc.InferenceModel {
    */
   set stopTraining(stop: boolean) {
     this.stopTraining_ = stop;
+  }
+
+  get optimizer(): Optimizer {
+    return this.optimizer_;
+  }
+
+  set optimizer(optimizer: Optimizer) {
+    this.optimizer_ = optimizer;
+    this.isOptimizerOwned = false;
+  }
+
+  dispose(): DisposeResult {
+    const result = super.dispose();
+    if (this.optimizer != null && this.isOptimizerOwned) {
+      // TODO(cais): Once core exposes the Optimizer.dispose() method, get rid
+      // of the any casting.
+      // tslint:disable-next-line:no-any
+      if (typeof (this.optimizer_ as any).dispose === 'function') {
+        // tslint:disable-next-line:no-any
+        (this.optimizer_ as any).dispose();
+      }
+    }
+    return result;
   }
 
   /**
