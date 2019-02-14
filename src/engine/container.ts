@@ -28,61 +28,6 @@ import {execute, FeedDict} from './executor';
 import {InputLayer} from './input_layer';
 import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
 
-/**
- * Load weights from a named tensor map.
- *
- * Porting Note: This is ported from the Python function
- *   load_weights_from_hdf5_group_by_name()
- *
- * @param weights The named tensor map mapping names of weights to weight
- *   values.
- * @param strict Require that the provided weights exactly match those required
- *   by the layers.  Default true.  Passing false means that both extra weights
- *   and missing weights will be silently ignored.
- * @param layers An array of target layers.
- */
-export function loadWeightsFromNamedTensorMap(
-    weights: NamedTensorMap, layers: Layer[], strict = true): void {
-  // Make a dictionary mapping weight name to weight.
-  const nameToWeight: {[name: string]: LayerVariable} = {};
-  let totalWeightsCount = 0;
-  for (const layer of layers) {
-    for (const weight of layer.weights) {
-      if (nameToWeight[weight.originalName] != null) {
-        throw new ValueError(`Duplicate weight name: ${weight.originalName}`);
-      }
-      nameToWeight[weight.originalName] = weight;
-      totalWeightsCount++;
-    }
-  }
-
-  const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
-  for (const name in weights) {
-    if (nameToWeight[name] != null) {
-      weightValueTuples.push([nameToWeight[name], weights[name]]);
-    } else if (strict) {
-      throw new ValueError(
-          `Provided weight data has no target variable: ${name}`);
-    }
-    delete nameToWeight[name];
-  }
-
-  if (strict) {
-    // Check that all weights are set.
-    const unsetNames: string[] = [];
-    for (const name in nameToWeight) {
-      unsetNames.push(name);
-    }
-    if (unsetNames.length > 0) {
-      throw new ValueError(
-          `${unsetNames.length} of ${totalWeightsCount} weights are not set: ` +
-          `${unsetNames}`);
-    }
-  }
-
-  batchSetValue(weightValueTuples);
-}
-
 /** Constructor config for Container. */
 export interface ContainerArgs {
   inputs: SymbolicTensor|SymbolicTensor[];
@@ -609,23 +554,55 @@ export abstract class Container extends Layer {
    *   to convert them into JSON strings compatible with this method.
    * Porting Note: TensorFlow.js Layers supports only loading by name currently.
    *
-   * @param weightsJSON A JSON mapping weight names to weight values as nested
+   * @param weights A JSON mapping weight names to weight values as nested
    *   arrays of numbers, or a `NamedTensorMap`, i.e., a JSON mapping weight
    *   names to `tf.Tensor` objects.
-   * @param skipMismatch Whether to skip loading of layers where there is a
-   *   mismatch in the number of weights, or a mismatch in the shape of the
-   *   weight (only valid when `by_name`=True).
-   * @param isNamedTensorMap Whether the 1st argument (`weightsJSON`) is a
-   *   `NamedTensorMap`.
    * @param strict Require that the provided weights exactly match those
    *   required by the container.  Default: `true`.  Passing `false` means that
    *   extra weights and missing weights will be silently ignored.
    */
-  loadWeights(
-      weightsJSON: PyJsonDict|NamedTensorMap, skipMismatch = false,
-      strict = true) {
-    loadWeightsFromNamedTensorMap(
-        weightsJSON as NamedTensorMap, this.layers, strict);
+  loadWeights(weights: NamedTensorMap, strict = true) {
+    // loadWeightsFromNamedTensorMap(
+    //     weightsJSON as NamedTensorMap, this.layers, strict);
+    // Make a dictionary mapping weight name to weight.
+    const nameToWeight: {[name: string]: LayerVariable} = {};
+    let totalWeightsCount = 0;
+    for (const layer of this.layers) {
+      for (const weight of layer.weights) {
+        if (nameToWeight[weight.originalName] != null) {
+          throw new ValueError(`Duplicate weight name: ${weight.originalName}`);
+        }
+        nameToWeight[weight.originalName] = weight;
+        totalWeightsCount++;
+      }
+    }
+
+    const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
+    for (const name in weights) {
+      if (nameToWeight[name] != null) {
+        weightValueTuples.push([nameToWeight[name], weights[name]]);
+      } else if (strict) {
+        throw new ValueError(
+            `Provided weight data has no target variable: ${name}`);
+      }
+      delete nameToWeight[name];
+    }
+
+    if (strict) {
+      // Check that all weights are set.
+      const unsetNames: string[] = [];
+      for (const name in nameToWeight) {
+        unsetNames.push(name);
+      }
+      if (unsetNames.length > 0) {
+        throw new ValueError(
+            `${unsetNames.length} of ${
+                totalWeightsCount} weights are not set: ` +
+            `${unsetNames}`);
+      }
+    }
+
+    batchSetValue(weightValueTuples);
   }
 
   /**
