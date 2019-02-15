@@ -1018,7 +1018,7 @@ describeMathCPUAndGPU('Model.fit', () => {
      async () => {
        createDenseModelAndData(true);
 
-       model.compile({optimizer: 'SGD', loss: 'meanSquaredError'}); 
+       model.compile({optimizer: 'SGD', loss: 'meanSquaredError'});
        const history =
            await model.fit(inputs, targets, {batchSize: numSamples, epochs: 1});
        expect(history.epoch).toEqual([0]);
