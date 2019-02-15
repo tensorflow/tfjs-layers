@@ -2387,14 +2387,14 @@ describe('Model trainable setter and getter', () => {
     });
 
     model.trainable = false;
-    expect(model.trainable).toEqual(true);
-
+    expect(model.trainable).toEqual(false);
     // The trainable property of the layers should be unaffected.
     expect(model.layers[0].trainable).toEqual(true);
     expect(model.layers[1].trainable).toEqual(false);
     expect(model.layers[2].trainable).toEqual(true);
 
     model.trainable = true;
+    expect(model.trainable).toEqual(true);
     expect(model.layers[0].trainable).toEqual(true);
     expect(model.layers[1].trainable).toEqual(false);
     expect(model.layers[2].trainable).toEqual(true);
