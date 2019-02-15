@@ -519,6 +519,11 @@ export class Sequential extends Model {
     }
 
     this.layers.push(layer);
+    if (layer.trainable) {
+      this.trainableLayers.push(layer);
+    } else {
+      this.nonTrainableLayers.push(layer);
+    }
     this.built = false;
   }
 
