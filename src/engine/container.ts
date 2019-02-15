@@ -260,8 +260,8 @@ export abstract class Container extends Layer {
   protected feedInputNames: string[];
   protected feedOutputNames: string[];
 
-  protected trainableLayers: Layer[];
-  protected nonTrainableLayers: Layer[];
+  // protected trainableLayers: Layer[];
+  // protected nonTrainableLayers: Layer[];
 
   constructor(args: ContainerArgs) {
     // No args passed to super's constructor.
@@ -332,8 +332,8 @@ export abstract class Container extends Layer {
     // in the beginning will always be non-trainable, regardless of how the
     // `trainable` property of the container changes. The rest will change
     // when the Container's `trainable` property is set.
-    this.trainableLayers = [];
-    this.nonTrainableLayers = [];
+    // this.trainableLayers = [];
+    // this.nonTrainableLayers = [];  // TODO(cais): Remove.
 
     // TODO(michaelterry): Determine if caching still needed with eager
     // backend.
@@ -576,11 +576,11 @@ export abstract class Container extends Layer {
       });
       for (const layer of layersForDepth) {
         this.layers.push(layer);
-        if (layer.trainable) {
-          this.trainableLayers.push(layer);
-        } else {
-          this.nonTrainableLayers.push(layer);
-        }
+        // if (layer.trainable) {
+        //   this.trainableLayers.push(layer);
+        // } else {
+        //   this.nonTrainableLayers.push(layer);
+        // }
       }
     }
     this.layersByDepth = layersByDepth;
@@ -711,7 +711,7 @@ export abstract class Container extends Layer {
   }
 
   set trainable(trainable: boolean) {
-    this.trainableLayers.forEach(layer => layer.trainable = trainable);
+    // this.trainableLayers.forEach(layer => layer.trainable = trainable);
     this.trainable_ = trainable;
   }
 

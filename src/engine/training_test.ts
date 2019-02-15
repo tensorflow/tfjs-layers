@@ -889,122 +889,6 @@ describeMathCPUAndGPU('Model.fit', () => {
         layer2.getWeights()[0], mul(scalar(-0.11295), ones([10, 1])));
   });
 
-  it('Setting trainable of layer sets Variable.trainable', () => {
-    const layer1 = tfl.layers.dense({units: 3});
-    layer1.build([4]);
-    // The weights should start from a trainable = true state.
-    expect(layer1.weights[0].trainable).toEqual(true);
-    expect(layer1.weights[1].trainable).toEqual(true);
-    layer1.trainable = false;
-    expect(layer1.weights[0].trainable).toEqual(false);
-    expect(layer1.weights[1].trainable).toEqual(false);
-    layer1.trainable = true;
-    expect(layer1.weights[0].trainable).toEqual(true);
-    expect(layer1.weights[1].trainable).toEqual(true);
-  });
-
-  it('Setting trainable of nested sequential sets Variable.trainable', () => {
-    // Construct a nested sequential model.
-    const innerModel = tfl.sequential();
-    innerModel.add(tfl.layers.dense({
-      units: 3,
-      inputShape: [4],
-      activation: 'relu'
-    }));
-    const outerModel = tfl.sequential();
-    outerModel.add(innerModel);
-    outerModel.add(tfl.layers.dense({units: 1}));
-
-    outerModel.trainable = false;
-    expect(outerModel.trainable).toEqual(false);
-    expect(innerModel.trainable).toEqual(false);
-    innerModel.layers[0].weights.forEach(w => {
-      expect(w.trainable).toEqual(false);
-    });
-    outerModel.layers[1].weights.forEach(w => {
-      expect(w.trainable).toEqual(false);
-    });
-  });
-
-  it('Setting trainable of functional model sets Variable.trainable', () => {
-    const input1 = tfl.input({shape: [5]});
-    const input2 = tfl.input({shape: [4]});
-    const denseLayer1 = tfl.layers.dense({units: 3});
-    const denseLayer2 = tfl.layers.dense({units: 2});
-    const output1 = denseLayer1.apply(input1) as SymbolicTensor;
-    const output2 = denseLayer2.apply(input2) as SymbolicTensor;
-    const model =
-        tfl.model({inputs: [input1, input2], outputs: [output1, output2]});
-    
-    expect(denseLayer1.weights[0].trainable).toEqual(true);
-    expect(denseLayer1.weights[1].trainable).toEqual(true);
-    expect(denseLayer2.weights[0].trainable).toEqual(true);
-    expect(denseLayer2.weights[1].trainable).toEqual(true);
-
-    model.trainable = false;
-    expect(denseLayer1.weights[0].trainable).toEqual(false);
-    expect(denseLayer1.weights[1].trainable).toEqual(false);
-    expect(denseLayer2.weights[0].trainable).toEqual(false);
-    expect(denseLayer2.weights[1].trainable).toEqual(false);
-
-    model.trainable = true;
-    expect(denseLayer1.weights[0].trainable).toEqual(true);
-    expect(denseLayer1.weights[1].trainable).toEqual(true);
-    expect(denseLayer2.weights[0].trainable).toEqual(true);
-    expect(denseLayer2.weights[1].trainable).toEqual(true);
-  });
-
-  it('Setting trainable does not affect initially non-trainble', () => {
-    const model = tfl.sequential({
-      layers: [
-        tfl.layers.flatten({inputShape: [2, 5]}),
-        // Initially non-trainable.
-        tfl.layers.dense({units: 3, activation: 'relu', trainable: false}),
-        tfl.layers.dense({units: 1}),
-      ]
-    });
-
-    model.trainable = false;
-    expect(model.layers[0].trainable).toEqual(false);
-    expect(model.layers[1].trainable).toEqual(false);
-    expect(model.layers[2].trainable).toEqual(false);
-
-    model.trainable = true;
-    expect(model.layers[0].trainable).toEqual(true);
-    // Should stay non-trainbale.
-    expect(model.layers[1].trainable).toEqual(false);
-    expect(model.layers[2].trainable).toEqual(true);
-  });
-
-  it('Setting trainable does not affect initially non-trainble: nested', () => {
-    const innerModel = tfl.sequential({
-      layers: [
-        tfl.layers.flatten({inputShape: [2, 5]}),
-          // Initially non-trainable.
-        tfl.layers.dense({units: 3, activation: 'relu', trainable: false}),
-        tfl.layers.dense({units: 2, activation: 'relu'}),
-      ]
-    });
-    const outerModel = tfl.sequential();
-    outerModel.add(innerModel);
-    outerModel.add(tfl.layers.dense({units: 1}));
-
-    outerModel.trainable = false;
-    expect(outerModel.layers[0].trainable).toEqual(false);
-    expect(outerModel.layers[1].trainable).toEqual(false);
-    expect(innerModel.layers[0].trainable).toEqual(false);
-    expect(innerModel.layers[1].trainable).toEqual(false);
-    expect(innerModel.layers[2].trainable).toEqual(false);
-
-    outerModel.trainable = true;
-    expect(outerModel.layers[0].trainable).toEqual(true);
-    expect(outerModel.layers[1].trainable).toEqual(true);
-    expect(innerModel.layers[0].trainable).toEqual(true);
-    // Should stay non-trainbale.
-    expect(innerModel.layers[1].trainable).toEqual(false);
-    expect(innerModel.layers[2].trainable).toEqual(true);
-  });
-
   it('Unknown metric', () => {
     createDenseCategoricalModelAndData();
     expect(() => model.compile({
@@ -2488,6 +2372,32 @@ describeMathCPUAndGPU('Load weights', () => {
     expectTensorsClose(
         model.apply(tensor2d([[1, 1, 1]], [1, 3])) as Tensor,
         tensor2d([[0.8, 1.0]], [1, 2]));
+  });
+});
+
+describe('Model trainable setter and getter', () => {
+  it('Setting trainable does not affect Layers', () => {
+    const model = tfl.sequential({
+      layers: [
+        tfl.layers.flatten({inputShape: [2, 5]}),
+        // Initially non-trainable.
+        tfl.layers.dense({units: 3, activation: 'relu', trainable: false}),
+        tfl.layers.dense({units: 1}),
+      ]
+    });
+
+    model.trainable = false;
+    expect(model.trainable).toEqual(true);
+
+    // The trainable property of the layers should be unaffected.
+    expect(model.layers[0].trainable).toEqual(true);
+    expect(model.layers[1].trainable).toEqual(false);
+    expect(model.layers[2].trainable).toEqual(true);
+
+    model.trainable = true;
+    expect(model.layers[0].trainable).toEqual(true);
+    expect(model.layers[1].trainable).toEqual(false);
+    expect(model.layers[2].trainable).toEqual(true);
   });
 });
 
