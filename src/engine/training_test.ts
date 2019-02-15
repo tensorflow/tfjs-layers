@@ -926,7 +926,7 @@ describeMathCPUAndGPU('Model.fit', () => {
     });
   });
 
-  it('Setting trainable of functoinal model sets Variable.trainable', () => {
+  it('Setting trainable of functional model sets Variable.trainable', () => {
     const input1 = tfl.input({shape: [5]});
     const input2 = tfl.input({shape: [4]});
     const denseLayer1 = tfl.layers.dense({units: 3});
