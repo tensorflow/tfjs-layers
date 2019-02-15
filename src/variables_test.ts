@@ -166,7 +166,7 @@ describeMathCPU('Variable', () => {
         .toThrowError(/LayersVariable .*gralk.* disposed/);
   });
 
-  it('Setting trainable sets the trainable of underlying tfc.Varibale', () => {
+  it('Setting trainable sets the trainable of underlying tfc.Variable', () => {
     const v1 = new V.LayerVariable(scalar(1), null, 'foo', true);
     // tslint:disable-next-line:no-any
     const coreVariable = (v1 as any).val as tfc.Variable;

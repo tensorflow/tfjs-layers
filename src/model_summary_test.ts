@@ -174,7 +174,7 @@ describeMathCPU('Model.summary', () => {
     ]);
     consoleLogHistory = [];
 
-    // Setting the entire model to non-trainbale should be reflected
+    // Setting the entire model to non-trainable should be reflected
     // in the summary.
     model.trainable = false;
     model.summary();
