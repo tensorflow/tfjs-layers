@@ -112,5 +112,5 @@ export interface BaseSerialization<
   // To test this, try adding a field with a non-JSON-like value (e.g., Tensor)
   // to any subclass of `BaseSerialization`.  A compilation error will result.
   class_name: N;
-  config: T;
+  config: any;
 }
