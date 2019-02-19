@@ -891,14 +891,18 @@ describeMathCPUAndGPU('Model.fit', () => {
 
   it('Setting trainable of layer from fit callback', async () => {
     const model = tfl.sequential();
-    model.add(
-        tfl.layers.dense({units: 3, activation: 'relu', inputShape: [4]}));
-    model.add(tfl.layers.dense({units: 1}));
+    model.add(tfl.layers.dense({
+      units: 3,
+      activation: 'relu',
+      inputShape: [4],
+      kernelInitializer: 'ones'
+    }));
+    model.add(tfl.layers.dense({units: 1, kernelInitializer: 'ones'}));
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
     expect(model.trainableWeights.length).toEqual(4);
-    const xs = tfc.randomNormal([5, 4]);
-    const ys = tfc.randomNormal([5, 1]);
+    const xs = tfc.ones([5, 4]);
+    const ys = tfc.ones([5, 1]);
     const layer1KernelValues: Float32Array[] = [];
     const layer2KernelValues: Float32Array[] = [];
     await model.fit(xs, ys, {
