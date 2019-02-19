@@ -919,6 +919,7 @@ describeMathCPUAndGPU('Model.fit', () => {
           if (epoch > 0) {
             // The 2nd dense layer is never frozen. So its kernel should
             // be updated in every training epoch.
+            // TODO(cais): Use `expectArraysNotClose()` when available.
             expect(tensor1d(layer2KernelValues[epoch])
                        .subStrict(tensor1d(layer2KernelValues[epoch - 1]))
                        .abs()
