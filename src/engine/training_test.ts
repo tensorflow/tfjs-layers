@@ -909,6 +909,8 @@ describeMathCPUAndGPU('Model.fit', () => {
               model.layers[0].getWeights()[0].dataSync() as Float32Array);
           layer2KernelValues.push(
               model.layers[1].getWeights()[0].dataSync() as Float32Array);
+          // Freeze the first dense layer after the 2nd epoch and unfreeze it
+          // after the 3rd epoch.
           if (epoch === 1) {
             model.layers[0].trainable = false;
           } else if (epoch === 2) {
