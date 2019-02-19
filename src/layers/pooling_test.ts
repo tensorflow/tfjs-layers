@@ -234,7 +234,7 @@ describeMathCPUAndGPU('Pooling Layers 1D: Tensor', () => {
     }
   }
 
-  fit('Tolerates poolSize and strides pass as number arrays', () => {
+  it('Tolerates poolSize and strides passed as number arrays', () => {
     const model = tfl.sequential();
     model.add(tfl.layers.maxPool1d(
         // tslint:disable-next-line:no-any
