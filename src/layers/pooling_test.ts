@@ -14,6 +14,7 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor, tensor2d, Tensor2D, tensor3d, tensor4d, Tensor4D, util} from '@tensorflow/tfjs-core';
+import {expectArraysClose} from '@tensorflow/tfjs-core/dist/test_util';
 
 import {SymbolicTensor} from '../engine/topology';
 import * as tfl from '../index';
@@ -233,14 +234,14 @@ describeMathCPUAndGPU('Pooling Layers 1D: Tensor', () => {
     }
   }
 
-  it('Tolerates poolSize and strides pass as number arrays', () => {
+  fit('Tolerates poolSize and strides pass as number arrays', () => {
     const model = tfl.sequential();
     model.add(tfl.layers.maxPool1d(
         // tslint:disable-next-line:no-any
         {poolSize: [2] as any, strides: [2] as any, inputShape: [4, 3]}));
     const xs = tfc.ones([1, 4, 3]);
     const ys = model.predict(xs) as Tensor;
-    ys.print();
+    expectArraysClose(ys, tfc.tensor3d([1, 1, 1, 1, 1, 1], [1, 2, 3]));
   });
 });
 
