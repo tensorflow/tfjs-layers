@@ -232,6 +232,16 @@ describeMathCPUAndGPU('Pooling Layers 1D: Tensor', () => {
       }
     }
   }
+
+  it('Tolerates poolSize and strides pass as number arrays', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.maxPool1d(
+        // tslint:disable-next-line:no-any
+        {poolSize: [2] as any, strides: [2] as any, inputShape: [4, 3]}));
+    const xs = tfc.ones([1, 4, 3]);
+    const ys = model.predict(xs) as Tensor;
+    ys.print();
+  });
 });
 
 describe('Pooling Layers 2D: Symbolic', () => {
