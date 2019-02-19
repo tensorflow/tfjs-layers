@@ -25,6 +25,7 @@ import {ActivationIdentifier} from '../keras_format/activation_config';
 import {Shape} from '../keras_format/common';
 import {getRegularizer, Regularizer, RegularizerIdentifier, serializeRegularizer} from '../regularizers';
 import {Kwargs} from '../types';
+import {assertPositiveInteger} from '../utils/generic_utils';
 import {arrayProd, range} from '../utils/math_utils';
 import {getExactlyOneShape, getExactlyOneTensor} from '../utils/types_utils';
 import {LayerVariable} from '../variables';
@@ -260,6 +261,7 @@ export class Dense extends Layer {
     }
 
     this.units = args.units;
+    assertPositiveInteger(this.units, 'units');
     this.activation = getActivation(args.activation);
     if (args.useBias != null) {
       this.useBias = args.useBias;
