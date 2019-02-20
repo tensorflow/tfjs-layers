@@ -164,6 +164,36 @@ describeMathCPUAndGPU('conv2d', () => {
     }
   }
 
+  // Reference Python code:
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // tf.enable_eager_execution()
+  //
+  // xs = np.array([
+  //     10, 30, 50, 70, 20, 40, 60, 80, -10, -30, -50, -70,
+  //     -20, -40, -60, -80], np.float32).reshape([1, 4, 4, 1])
+  // kernel = np.array([1, 0.5, 1], np.float32).reshape([1, 1, 1, 3])
+  //
+  // strides = [2, 2]
+  // ys = tf.nn.conv2d(xs, kernel, strides, 'SAME', data_format='NHWC')
+  // print(ys)
+  // ```
+  fit('1x1 kernel', () => {
+    const x4by4Data = [
+        10, 30, 50, 70, 20, 40, 60, 80, -10, -30, -50, -70, -20, -40, -60, -80];    
+    const x = tfc.tensor4d(x4by4Data, [1, 4, 4, 1]);
+    const kernel1by1Data = [1, 0.5, 1];
+    const kernel = tfc.tensor4d(kernel1by1Data, [1, 1, 1, 3]);
+    // TODO(cais): Remove "control case" below.
+    // const kernel1by1Data = [1, 0.5, 1, -1, 1, 0.5, 1, 0.5, 1, -1, 1, 0.5];
+    // const kernel = tfc.tensor4d(kernel1by1Data, [2, 2, 1, 3]);
+    const strides = [2, 2];
+    const y = conv2d(x, kernel, strides, 'same', 'channelsLast');
+    y.print();
+  });
+
   it('Invalid filters leads to Error', () => {
     expect(() => tfl.layers.conv2d({filters: 2.5, kernelSize: 3}))
         .toThrowError(/filters.*positive integer.*2\.5\.$/);
