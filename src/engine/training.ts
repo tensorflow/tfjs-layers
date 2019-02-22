@@ -34,6 +34,9 @@ import {SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
 
+// These type aliases are so the doc generator understands the io namespace.
+type SaveConfig = io.SaveConfig;
+
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
  */
@@ -1470,7 +1473,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * @returns A `NamedTensorMap` mapping original weight names (i.e.,
    *   non-uniqueified weight names) to their values.
    */
-  protected getNamedWeights(config?: io.SaveConfig): NamedTensorMap {
+  protected getNamedWeights(config?: SaveConfig): NamedTensorMap {
     const namedWeights: NamedTensorMap = {};
 
     const trainableOnly = config != null && config.trainableOnly;
@@ -1602,7 +1605,7 @@ export class Model extends Container implements tfc.InferenceModel {
   /**
    * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
    */
-  async save(handlerOrURL: io.IOHandler|string, config?: io.SaveConfig):
+  async save(handlerOrURL: io.IOHandler|string, config?: SaveConfig):
       Promise<io.SaveResult> {
     if (typeof handlerOrURL === 'string') {
       const handlers = io.getSaveHandlers(handlerOrURL);
