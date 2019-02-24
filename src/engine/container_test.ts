@@ -600,7 +600,7 @@ describeMathCPUAndGPU('Model-dispose', () => {
     expect(() => model2.predict(xs)).toThrowError(/already disposed/);
   });
 
-  it('Disposing nested sequential model also disposes the inner model', () => {
+  it('Disposing nested sequential model preserves the inner model', () => {
     const innerModel = tfl.sequential();
     innerModel.add(tfl.layers.reshape({targetShape: [10], inputShape: [2, 5]}));
     innerModel.add(tfl.layers.dense({units: 6, activation: 'relu'}));
@@ -620,10 +620,10 @@ describeMathCPUAndGPU('Model-dispose', () => {
     const result1 = outerModel.dispose();
 
     expect(result1.refCountAfterDispose).toEqual(0);
-    expect(result1.numDisposedVariables).toEqual(6);
+    expect(result1.numDisposedVariables).toEqual(2);
     // Calling dispose on the outer model should have freed the two weights that
     // belong to only the outer model and not to the inner model.
-    expect(memory().numTensors).toEqual(numTensors0 - 6);
+    expect(memory().numTensors).toEqual(numTensors0 - 2);
 
     // Calling dispose on the outer model again should lead to Error.
     expect(() => outerModel.dispose())
@@ -631,6 +631,19 @@ describeMathCPUAndGPU('Model-dispose', () => {
     // Calling predict on the outer model should fail.
     expect(() => outerModel.predict(xsOuter)).toThrowError(/already disposed/);
 
+    // At this point, the inner model is still usable.
+    const ysInner = innerModel.predict(xsInner) as Tensor;
+    expect(ysInner.shape).toEqual([1, 4]);
+    ysInner.dispose();
+
+    // Calling dispose on innerModel should finally freed all the weights.
+    const result2 = innerModel.dispose();
+
+    expect(result2.refCountAfterDispose).toEqual(0);
+    expect(result2.numDisposedVariables).toEqual(4);
+    expect(memory().numTensors).toEqual(numTensors0 - 6);
+
+    // At this point, the inner model should have become unusable.
     expect(() => innerModel.predict(xsInner)).toThrowError(/already disposed/);
   });
 
@@ -671,5 +684,5 @@ describeMathCPUAndGPU('Model-dispose', () => {
     // The four weight variables of the two layers should have been disposed.
     // + the rate from the dropout tensor
     expect(memory().numTensors).toEqual(numTensors0);
-  });
+  }); 
 });
