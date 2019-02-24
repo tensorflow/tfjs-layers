@@ -889,6 +889,72 @@ describeMathCPUAndGPU('Model.fit', () => {
         layer2.getWeights()[0], mul(scalar(-0.11295), ones([10, 1])));
   });
 
+  it('Setting trainable of layer from fit callback', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 3,
+      activation: 'relu',
+      inputShape: [4],
+      kernelInitializer: 'ones'
+    }));
+    model.add(tfl.layers.dense({units: 1, kernelInitializer: 'ones'}));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    expect(model.trainableWeights.length).toEqual(4);
+    const xs = tfc.ones([5, 4]);
+    const ys = tfc.ones([5, 1]);
+    const layer1KernelValues: Float32Array[] = [];
+    const layer2KernelValues: Float32Array[] = [];
+    await model.fit(xs, ys, {
+      epochs: 3,
+      callbacks: {
+        onEpochEnd: async (epoch, logs) => {
+          layer1KernelValues.push(
+              model.layers[0].getWeights()[0].dataSync() as Float32Array);
+          layer2KernelValues.push(
+              model.layers[1].getWeights()[0].dataSync() as Float32Array);
+          // Freeze the first dense layer after the 2nd epoch and unfreeze it
+          // after the 3rd epoch.
+          if (epoch === 1) {
+            model.layers[0].trainable = false;
+          } else if (epoch === 2) {
+            model.layers[0].trainable = true;
+          }
+          if (epoch > 0) {
+            // The 2nd dense layer is never frozen. So its kernel should
+            // be updated in every training epoch.
+            // TODO(cais): Use `expectArraysNotClose()` when available.
+            expect(tensor1d(layer2KernelValues[epoch])
+                       .subStrict(tensor1d(layer2KernelValues[epoch - 1]))
+                       .abs()
+                       .max()
+                       .dataSync()[0])
+                .toBeGreaterThan(0);
+          }
+          // The 1st dense layer is frozen after the 2nd epoch (epoch === 1),
+          // and is then unfrozen after the 3rd (epoch === 2).
+          // So its kernel value should not change between epoch === 1 and epoch
+          // === 2.
+          if (epoch === 2) {
+            expect(tensor1d(layer1KernelValues[epoch])
+                       .subStrict(tensor1d(layer1KernelValues[epoch - 1]))
+                       .abs()
+                       .max()
+                       .dataSync()[0])
+                .toEqual(0);
+          } else if (epoch > 0) {
+            expect(tensor1d(layer1KernelValues[epoch])
+                       .subStrict(tensor1d(layer1KernelValues[epoch - 1]))
+                       .abs()
+                       .max()
+                       .dataSync()[0])
+                .toBeGreaterThan(0);
+          }
+        }
+      }
+    });
+  });
+
   it('Unknown metric', () => {
     createDenseCategoricalModelAndData();
     expect(() => model.compile({
@@ -2407,45 +2473,29 @@ describeMathCPUAndGPU('Model.evaluate', () => {
   });
 });
 
-describeMathCPUAndGPU('Load weights', () => {
-  it('Simple functional model', () => {
-    const inputTensor =
-        tfl.layers.input({shape: [3], name: 'inputLayer', dtype: 'float32'});
-    const denseLayer =
-        tfl.layers.dense({units: 2, useBias: true, name: 'denseLayer'});
-    const output = denseLayer.apply(inputTensor) as tfl.SymbolicTensor;
-    const model = new tfl.Model({
-      inputs: [inputTensor],
-      outputs: [output],
-      name: 'modelWithWeightsToLoad',
+describe('Model trainable setter and getter', () => {
+  it('Setting trainable does not affect Layers', () => {
+    const model = tfl.sequential({
+      layers: [
+        tfl.layers.flatten({inputShape: [2, 5]}),
+        // Initially non-trainable.
+        tfl.layers.dense({units: 3, activation: 'relu', trainable: false}),
+        tfl.layers.dense({units: 1}),
+      ]
     });
-    const weightsJSON = {
-      'keras_version': '2.1.2',
-      'backend': 'tensorflow',
-      'weights': {
-        'denseLayer': [
-          {
-            'name': 'denseLayer/kernel:0',
-            'dtype': 'float32',
-            'shape': [3, 2],
-            'value': [[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]],
-          },
-          {
-            'name': 'denseLayer/bias:0',
-            'dtype': 'float32',
-            'shape': [2],
-            'value': [-0.1, -0.2],
-          },
-        ],
-      },
-    };
-    model.loadWeights(weightsJSON);
 
-    // Run a concrete input value through the layer to check that the weights
-    // are loaded properly.
-    expectTensorsClose(
-        model.apply(tensor2d([[1, 1, 1]], [1, 3])) as Tensor,
-        tensor2d([[0.8, 1.0]], [1, 2]));
+    model.trainable = false;
+    expect(model.trainable).toEqual(false);
+    // The trainable property of the layers should be unaffected.
+    expect(model.layers[0].trainable).toEqual(true);
+    expect(model.layers[1].trainable).toEqual(false);
+    expect(model.layers[2].trainable).toEqual(true);
+
+    model.trainable = true;
+    expect(model.trainable).toEqual(true);
+    expect(model.layers[0].trainable).toEqual(true);
+    expect(model.layers[1].trainable).toEqual(false);
+    expect(model.layers[2].trainable).toEqual(true);
   });
 });
 

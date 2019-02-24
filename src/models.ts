@@ -10,8 +10,8 @@
 
 /* Original source keras/models.py */
 
-import {io, NamedTensorMap, Optimizer, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
+import {dispose,  io, NamedTensorMap, Optimizer, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 import {getUid} from './backend/state';
 import {History} from './base_callbacks';
 import {Dataset} from './engine/dataset_stub';
@@ -101,9 +101,9 @@ export async function modelFromJSON(
           weightValues[weight.originalName];
     }
 
-    const skipMismatches: boolean = null;
-    const isNamedTensorMap = true;
-    model.loadWeights(uniqueWeightValues, skipMismatches, isNamedTensorMap);
+    model.loadWeights(uniqueWeightValues);
+    // Dispose temporary weight values.
+    dispose(weightValues);
   }
   return model;
 }
@@ -312,11 +312,11 @@ export async function loadModelFromIOHandler(
           'Therefore loading of weights cannot proceed.');
     }
 
-    const skipMismatch = false;
-    const isNamedTensorMap = true;
-    model.loadWeights(
-        io.decodeWeights(artifacts.weightData, artifacts.weightSpecs),
-        skipMismatch, isNamedTensorMap, strict);
+    const weights =
+        io.decodeWeights(artifacts.weightData, artifacts.weightSpecs);
+    model.loadWeights(weights, strict);
+    // Dispose temporary weight values.
+    dispose(weights);
   }
   return model;
 }
