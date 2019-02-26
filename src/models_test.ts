@@ -972,7 +972,8 @@ describeMathCPU('loadLayersModel from URL', () => {
            });
 
        const model =
-           await loadLayersModelInternal(io.browserHTTPRequest('model/model.json', {
+           await loadLayersModelInternal(
+             io.browserHTTPRequest('model/model.json', {
              headers: {'header_key_1': 'header_value_1'},
              credentials: 'include',
            }));

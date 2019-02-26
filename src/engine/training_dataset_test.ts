@@ -21,7 +21,7 @@ import * as tfl from '../index';
 import {Logs} from '../logs';
 import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {FakeNumericDataset, FakeNumericDatasetLegacyArrayForm} from './dataset_fakes';
+import {FakeNumericDataset} from './dataset_fakes';
 
 function createDenseModel(): tfl.Model {
   const model = tfl.sequential();

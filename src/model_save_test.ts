@@ -428,7 +428,7 @@ describeMathGPU('Save-load round trips', () => {
         io.fromMemory(
             savedArtifacts.modelTopology, savedArtifacts.weightSpecs,
             savedArtifacts.weightData),
-        strict);
+        {strict});
     const weightsPrime = modelPrime.getWeights();
     expect(weightsPrime.length).toEqual(weights.length);
     expectTensorsClose(weightsPrime[0], weights[0]);
