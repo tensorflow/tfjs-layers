@@ -18,11 +18,12 @@ import {History, ModelLoggingVerbosity} from '../base_callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {Shape} from '../keras_format/common';
+import {PyJsonDict} from '../keras_format/types';
 import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LossOrMetricFn} from '../types';
-import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_utils';
+import {count, pyListRepeat, singletonOrArray, unique, isStringOrNestedStrings} from '../utils/generic_utils';
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
@@ -32,6 +33,7 @@ import {execute, FeedDict} from './executor';
 import {SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
+import {convertTsToPythonic} from '../utils/serialization_utils';
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
@@ -1607,6 +1609,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    */
   async save(handlerOrURL: io.IOHandler|string, config?: io.SaveConfig):
       Promise<io.SaveResult> {
+    config = config || {};
     if (typeof handlerOrURL === 'string') {
       const handlers = io.getSaveHandlers(handlerOrURL);
       if (handlers.length === 0) {
@@ -1628,19 +1631,55 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     const weightDataAndSpecs =
         await io.encodeWeights(this.getNamedWeights(config));
 
-    const includeOptimizer = true;  // TODO(cais): Make configurable.
-    if (includeOptimizer && this.optimizer != null) {
-      const optimizerConfig = this.optimizer.getConfig();
-      // DEBUG
-      console.log(`optimizerConfig: ${JSON.stringify(optimizerConfig)}`);
-    }
+    const modelTopology: PyJsonDict = {};
 
     const returnString = false;
     const unusedArg: {} = null;
-    const modelConfig = this.toJSON(unusedArg, returnString);
+
+    modelTopology['model_config'] = this.toJSON(unusedArg, returnString);
+    
+    const includeOptimizer =
+        config.includeOptimizer == null ? true : config.includeOptimizer;
+    console.log(`includeOptimizer = ${includeOptimizer}`);  // DEBUG
+    if (includeOptimizer && this.optimizer != null) {
+      const trainingConfig: PyJsonDict = {
+        'optimizerConfig': {
+          'className': this.optimizer.getClassName(),
+          'config': this.optimizer.getConfig()
+        }
+      };
+      if (isStringOrNestedStrings(this.loss)) {
+        trainingConfig['loss'] =
+            this.loss as string|string[]|{[outputName: string]: string};
+      } else {
+        throw new Error(
+            'Some of the loss functions of the model being saved are not ' +
+            'represented as strings and hence are not saveable. This error ' +
+            'can be avoided by using the `includeOptimizer: false` option, ' +
+            'which skips saving the optimizer and the training states.');
+      }
+      if (this.metrics != null) {
+        if (isStringOrNestedStrings(this.metrics)) {
+          trainingConfig['metrics'] = this.metrics;
+        } else {
+          throw new Error(
+              'Some of the metric functions of the model being saved are not ' +
+              'represented as strings and hence are not saveable. This error ' +
+              'can be avoided by using the `includeOptimizer: false` option, ' +
+              'which skips saving the optimizer and the training states.');
+        }
+      } else {
+        trainingConfig['metrics'] = [];
+      }
+      // TODO(cais): Add the following fields once they are supported in 
+      // TensorFlow.js: weightedMetrics, sampleWeightMode, lossWeights.
+      modelTopology['training_config'] = convertTsToPythonic(trainingConfig);
+      // DEBUG
+      console.log(`modelTopology: ${JSON.stringify(modelTopology, null, 2)}`);
+    }
 
     return handlerOrURL.save({
-      modelTopology: modelConfig,
+      modelTopology,
       weightData: weightDataAndSpecs.data,
       weightSpecs: weightDataAndSpecs.specs
     });

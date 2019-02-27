@@ -2471,14 +2471,23 @@ describeMathCPU('Functional-model saving and loading', () => {
 });
 
 describeMathCPU('Saving and loading model with optimizer', () => {
-  fit('Save model with optimzier', () => {
+  fit('Save model with optimizer: sgd', async done => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({units: 1, inputShape: [3]}));
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
-    model.save(io.withSaveHandler(async artifacts => {
-      console.log(JSON.stringify(artifacts.modelTopology));
+    await model.save(io.withSaveHandler(async artifacts => {
+      const modelTopology = artifacts.modelTopology as PyJsonDict;
+      const modelConfig = modelTopology['model_config'] as PyJsonDict;
+      expect(modelConfig != null).toEqual(true);
+      const trainingConfig = modelTopology['training_config'] as PyJsonDict;
+      expect(trainingConfig['loss']).toEqual('mean_squared_error'); 
+      expect(trainingConfig['metrics']).toEqual([]);
+      done();
       return null;
     }));
   });
+
+
+  // TODO(cais): Test saving an uncompiled model.
 });

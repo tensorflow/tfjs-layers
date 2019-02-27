@@ -473,3 +473,29 @@ export function formatAsFriendlyString(value: any): string {
     return `${value}`;
   }
 }
+
+/**
+ * TODO(cais): Doc string and unit tests.
+ * @param input 
+ */
+// tslint:disable-next-line:no-any
+export function isStringOrNestedStrings(input: any): boolean {
+  if (typeof input === 'string') {
+    return true;
+  } else if (Array.isArray(input)) {
+    if (input.length === 0) {
+      return true;
+    } else {
+      return input.every(item => typeof item === 'string');
+    }
+  } else if (typeof input === 'object') {
+    const keys = Object.keys(input);
+    if (keys.length === 0) {
+      return true;
+    } else {
+      return keys.every(key => isStringOrNestedStrings(input[key]));
+    }
+  } else {
+    return false;
+  }
+}
