@@ -534,8 +534,9 @@ describeMathCPU('modelFromJSON', () => {
       },
       'backend': 'tensorflow'
     };
-    const model =
-        deserialize(convertPythonicToTs(modelTopology) as ConfigDict) as LayersModel;
+    const model = deserialize(
+      convertPythonicToTs(modelTopology) as ConfigDict) as LayersModel;
+
     expect(model.name.indexOf('BarSequential123')).toEqual(0);
     expect(model.inputs.length).toEqual(1);
     expect(model.inputs[0].shape).toEqual([null, 4]);

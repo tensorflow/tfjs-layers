@@ -1621,8 +1621,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     }
     if (handlerOrURL.save == null) {
       throw new ValueError(
-          'LayersModel.save() cannot proceed because the IOHandler provided does ' +
-          'not have the `save` attribute defined.');
+          'LayersModel.save() cannot proceed because the IOHandler ' +
+          'provided does not have the `save` attribute defined.');
     }
 
     const weightDataAndSpecs =

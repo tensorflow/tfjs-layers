@@ -1465,7 +1465,8 @@ describeMathCPUAndGPU('LayersModel.fit with training-sensitive layers', () => {
 
     const output =
         layer2.apply(layer1.apply(inputTensor)) as tfl.SymbolicTensor;
-    const model = new tfl.LayersModel({inputs: [inputTensor], outputs: [output]});
+    const model =
+        new tfl.LayersModel({inputs: [inputTensor], outputs: [output]});
     model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
     const xs = ones([4, 1]);
     const ys = ones([4, 1]);
