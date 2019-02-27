@@ -1628,6 +1628,13 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     const weightDataAndSpecs =
         await io.encodeWeights(this.getNamedWeights(config));
 
+    const includeOptimizer = true;  // TODO(cais): Make configurable.
+    if (includeOptimizer && this.optimizer != null) {
+      const optimizerConfig = this.optimizer.getConfig();
+      // DEBUG
+      console.log(`optimizerConfig: ${JSON.stringify(optimizerConfig)}`);
+    }
+
     const returnString = false;
     const unusedArg: {} = null;
     const modelConfig = this.toJSON(unusedArg, returnString);

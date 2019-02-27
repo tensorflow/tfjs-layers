@@ -2469,3 +2469,16 @@ describeMathCPU('Functional-model saving and loading', () => {
     expect(output.length).toEqual(10);
   });
 });
+
+describeMathCPU('Saving and loading model with optimizer', () => {
+  fit('Save model with optimzier', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({units: 1, inputShape: [3]}));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    model.save(io.withSaveHandler(async artifacts => {
+      console.log(JSON.stringify(artifacts.modelTopology));
+      return null;
+    }));
+  });
+});
