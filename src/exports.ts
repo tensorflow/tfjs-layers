@@ -84,9 +84,9 @@ export function model(args: ContainerArgs): LayersModel {
  * `inputShape` or `batchInputShape` argument, or for some type of layers
  * (recurrent, Dense...) an `inputDim` argument.
  *
- * The key difference between `tf.LayersModel` and `tf.sequential` is that
+ * The key difference between `tf.model` and `tf.sequential` is that
  * `tf.sequential` is less generic, supporting only a linear stack of layers.
- * `tf.LayersModel` is more generic and supports an arbitrary graph (without
+ * `tf.model` is more generic and supports an arbitrary graph (without
  * cycles) of layers.
  *
  * Examples:
@@ -147,7 +147,7 @@ export function sequential(config?: SequentialArgs): Sequential {
  * This method is applicable to:
  *
  * 1. Models created with the `tf.layers.*`, `tf.sequential`, and
- * `tf.LayersModel` APIs of TensorFlow.js and later saved with the
+ * `tf.model` APIs of TensorFlow.js and later saved with the
  * `tf.LayersModel.save` method.
  * 2. Models converted from Keras or TensorFlow tf.keras using
  *    the [tensorflowjs_converter](https://github.com/tensorflow/tfjs-converter)
