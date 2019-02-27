@@ -56,7 +56,7 @@ import {loadLayersModelInternal, Sequential, SequentialArgs} from './models';
  * const output = denseLayer2.apply(denseLayer1.apply(input));
  *
  * // Create the model based on the inputs.
- * const model = tf.LayersModel({inputs: input, outputs: output});
+ * const model = tf.model({inputs: input, outputs: output});
  *
  * // The model can be used for training, evaluation and prediction.
  * // For example, the following line runs prediction with the model on
