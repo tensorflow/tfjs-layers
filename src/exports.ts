@@ -32,8 +32,8 @@ import {loadLayersModelInternal, Sequential, SequentialArgs} from './models';
  * A model is a data structure that consists of `Layers` and defines inputs
  * and outputs.
  *
- * The key difference between `tf.LayersModel` and `tf.sequential` is that
- * `tf.LayersModel` is more generic, supporting an arbitrary graph (without
+ * The key difference between `tf.model` and `tf.sequential` is that
+ * `tf.model` is more generic, supporting an arbitrary graph (without
  * cycles) of layers. `tf.sequential` is less generic and supports only a linear
  * stack of layers.
  *

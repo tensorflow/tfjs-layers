@@ -191,7 +191,7 @@ describe('History Callback', () => {
   });
 });
 
-class MockModel extends LayersModel {
+class MockLayersModel extends LayersModel {
   constructor(name: string) {
     super({inputs: [], outputs: [], name});
   }
@@ -204,7 +204,7 @@ describe('CallbackList', () => {
     const mockCallback1 = new MockCallback();
     const mockCallback2 = new MockCallback();
     const callbackList = new CallbackList([mockCallback1, mockCallback2]);
-    const model = new MockModel('MockModelA');
+    const model = new MockLayersModel('MockModelA');
     callbackList.setModel(model);
     expect(mockCallback1.model).toEqual(model);
     expect(mockCallback2.model).toEqual(model);
