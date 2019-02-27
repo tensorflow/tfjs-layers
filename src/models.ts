@@ -35,7 +35,7 @@ import {getExactlyOneShape} from './utils/types_utils';
  *
  * ```js
  * // This example shows how to serialize a model using `toJSON()` and
- * // deserialize it as another model using `tf.LayersModels.modelFROMJSON()`.
+ * // deserialize it as another model using `tf.models.modelFromJSON()`.
  * // Note: this example serializes and deserializes only the topology
  * // of the model; the weights of the loaded model will be different
  * // from those of the the original model, due to random weight
@@ -47,7 +47,7 @@ import {getExactlyOneShape} from './utils/types_utils';
  * const model1JSON = model1.toJSON(null, false);
  * model1.summary();
  *
- * const model2 = await tf.LayersModels.modelFromJSON(model1JSON);
+ * const model2 = await tf.models.modelFromJSON(model1JSON);
  * model2.summary();
  * ```
  *
