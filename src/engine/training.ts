@@ -18,7 +18,6 @@ import {History, ModelLoggingVerbosity} from '../base_callbacks';
 import {nameScope} from '../common';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {Shape} from '../keras_format/common';
-import {PyJsonDict} from '../keras_format/types';
 import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
@@ -1631,7 +1630,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     const weightDataAndSpecs =
         await io.encodeWeights(this.getNamedWeights(config));
 
-    const modelTopology: PyJsonDict = {};
+    const modelTopology: serialization.ConfigDict = {};
 
     const returnString = false;
     const unusedArg: {} = null;
@@ -1640,9 +1639,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     
     const includeOptimizer =
         config.includeOptimizer == null ? true : config.includeOptimizer;
-    console.log(`includeOptimizer = ${includeOptimizer}`);  // DEBUG
     if (includeOptimizer && this.optimizer != null) {
-      const trainingConfig: PyJsonDict = {
+      const trainingConfig: serialization.ConfigDict = {
         'optimizerConfig': {
           'className': this.optimizer.getClassName(),
           'config': this.optimizer.getConfig()
@@ -1674,9 +1672,9 @@ export class LayersModel extends Container implements tfc.InferenceModel {
       // TODO(cais): Add the following fields once they are supported in 
       // TensorFlow.js: weightedMetrics, sampleWeightMode, lossWeights.
       modelTopology['training_config'] = convertTsToPythonic(trainingConfig);
-      // DEBUG
-      console.log(`modelTopology: ${JSON.stringify(modelTopology, null, 2)}`);
     }
+
+    // TODO(cais): Save optimizer weights. DO NOT SUBMIT.
 
     return handlerOrURL.save({
       modelTopology,

@@ -10,7 +10,7 @@
 
 /* Original source keras/models.py */
 
-import {dispose, io, NamedTensorMap, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
+import {dispose, io, NamedTensorMap, Optimizer, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
 import {getUid} from './backend/state';
 import {History} from './base_callbacks';
@@ -72,17 +72,19 @@ export async function modelFromJSON(
   }
   modelAndWeightsConfig = modelAndWeightsConfig as ModelAndWeightsConfig;
 
-  let modelTopology = modelAndWeightsConfig.modelTopology as PyJsonDict;
-  if (modelTopology['model_config'] != null) {
+  const modelTopology = modelAndWeightsConfig.modelTopology as PyJsonDict;
+  let modelConfig: PyJsonDict;
+  if (modelTopology['model_config'] == null) {
+    modelConfig = modelTopology;
+  } else {
     // If the model-topology JSON contains a 'model_config' field, then it is
     // a full model JSON (e.g., from `keras.Model.save()`), which contains
     // not only the model's architecture in its 'model_config' field, but
     // additional information such as the model's optimizer. We use only the
     // 'model_config' field currently.
-    modelTopology = modelTopology['model_config'] as PyJsonDict;
+    modelConfig = modelTopology['model_config'] as PyJsonDict;
   }
-  const tsConfig =
-      convertPythonicToTs(modelTopology) as serialization.ConfigDict;
+  const tsConfig = convertPythonicToTs(modelConfig) as serialization.ConfigDict;
   const model = deserialize(tsConfig, customObjects) as LayersModel;
 
   if (modelAndWeightsConfig.weightsManifest != null) {
@@ -106,6 +108,27 @@ export async function modelFromJSON(
     // Dispose temporary weight values.
     dispose(weightValues);
   }
+
+  if ('training_config' in modelTopology) {
+    const trainingConfig =
+        convertPythonicToTs(modelTopology['training_config']) as
+        serialization.ConfigDict;
+    if (trainingConfig != null) {
+      const optimizerConfig =
+          trainingConfig['optimizerConfig'] as serialization.ConfigDict;
+      const optimizer =
+          deserialize(optimizerConfig, customObjects) as Optimizer;
+
+      const loss = trainingConfig['loss'] as
+          string|string[]|{[output: string]: string};
+      const metrics = trainingConfig['metrics']  as string[];
+      model.compile({loss, metrics, optimizer});
+
+      // TODO(cais): Handle weightedMetrics, sampleWeightMode, and
+      // lossWeights.
+    }
+  }
+
   return model;
 }
 
