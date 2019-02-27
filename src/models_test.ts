@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {DataType, io, memory, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, tensor3d, zeros} from '@tensorflow/tfjs-core';
+import {DataType, io, memory, ones, randomNormal, Scalar, scalar, serialization, sum, Tensor, tensor1d, tensor2d, tensor3d, zeros, train} from '@tensorflow/tfjs-core';
 import {ConfigDict} from '@tensorflow/tfjs-core/dist/serialization';
 
 import {LayersModel} from './engine/training';
@@ -2491,7 +2491,7 @@ describeMathCPU('Saving and loading model with optimizer', () => {
   it('Save model with sgd optimizer and load it back', async done => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({units: 1, inputShape: [3]}));
-    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    model.compile({loss: 'meanSquaredError', optimizer: train.sgd(0.03)});
 
     await model.save(io.withSaveHandler(async artifacts => {
       const modelTopology = artifacts.modelTopology as PyJsonDict;
@@ -2500,6 +2500,8 @@ describeMathCPU('Saving and loading model with optimizer', () => {
       expect(modelPrime.optimizer != null).toEqual(true);
       expect(modelPrime.loss).toEqual('meanSquaredError');
       expect(modelPrime.metrics).toEqual([]);
+      expect((modelPrime.optimizer.getConfig() as serialization.ConfigDict)
+          ['learning_rate']).toEqual(0.03);
       done();
       return null;
     }));
