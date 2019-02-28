@@ -14,7 +14,6 @@ import * as tfl from './index';
 import * as initializers from './initializers';
 // tslint:disable-next-line:max-line-length
 import {describeMathCPUAndGPU, describeMathGPU, expectTensorsClose} from './utils/test_utils';
-import { PyJsonDict } from './keras_format/types';
 
 describeMathCPUAndGPU('LayersModel.save', () => {
   class IOHandlerForTest implements io.IOHandler {
@@ -47,14 +46,14 @@ describeMathCPUAndGPU('LayersModel.save', () => {
     expect(handler.savedArtifacts.weightSpecs[1].dtype).toEqual('float32');
   });
 
-  fit('Saving only trainable weights succeeds', async () => {
+  it('Saving only trainable weights succeeds', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({units: 3, inputShape: [5], trainable: false}));
     model.add(tfl.layers.dense({units: 2}));
     const handler = new IOHandlerForTest();
 
     await model.save(handler, {trainableOnly: true});
-    expect(handler.savedArtifacts.modelTopology['model_config'])
+    expect(handler.savedArtifacts.modelTopology)
         .toEqual(model.toJSON(null, false));
     // Verify that only the trainable weights (i.e., weights from the
     // 2nd, trainable Dense layer) are saved.

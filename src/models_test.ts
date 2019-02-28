@@ -2488,6 +2488,27 @@ describeMathCPU('Saving and loading model with optimizer', () => {
     }));
   });
 
+  fit('Save model with optimizer: adam', async done => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({units: 1, inputShape: [3]}));
+    model.compile({loss: 'meanSquaredError', optimizer: 'adam'});
+
+    await model.save(io.withSaveHandler(async artifacts => {
+      const modelTopology = artifacts.modelTopology as PyJsonDict;
+      const modelConfig = modelTopology['model_config'] as PyJsonDict;
+      expect(modelConfig != null).toEqual(true);
+      const trainingConfig = modelTopology['training_config'] as PyJsonDict;
+      expect(trainingConfig['loss']).toEqual('mean_squared_error'); 
+      expect(trainingConfig['metrics']).toEqual([]);
+      const optimizerConfig = trainingConfig['optimizer_config'] as PyJsonDict;
+      expect(optimizerConfig['class_name']).toEqual('Adam');
+      const adamConfig = optimizerConfig['config'] as PyJsonDict;
+      expect(adamConfig['learning_rate']).toEqual(1e-3);
+      done();
+      return null;
+    }));
+  });
+
   it('Save model with sgd optimizer and load it back', async done => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({units: 1, inputShape: [3]}));
@@ -2501,7 +2522,27 @@ describeMathCPU('Saving and loading model with optimizer', () => {
       expect(modelPrime.loss).toEqual('meanSquaredError');
       expect(modelPrime.metrics).toEqual([]);
       expect((modelPrime.optimizer.getConfig() as serialization.ConfigDict)
-          ['learning_rate']).toEqual(0.03);
+          ['learningRate']).toEqual(0.03);
+      done();
+      return null;
+    }));
+  });
+
+  fit('Save model with Adam optimizer and load it back', async done => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({units: 1, inputShape: [3]}));
+    model.compile({loss: 'meanSquaredError', optimizer: train.adam(2e-3)});
+
+    await model.save(io.withSaveHandler(async artifacts => {
+      const modelTopology = artifacts.modelTopology as PyJsonDict;
+      const modelPrime = await modelFromJSON(modelTopology);
+      expect(modelPrime.layers.length).toEqual(1);
+      expect(modelPrime.optimizer != null).toEqual(true);
+      expect(modelPrime.loss).toEqual('meanSquaredError');
+      expect(modelPrime.metrics).toEqual([]);
+      console.log(modelPrime.optimizer.getConfig());  // DEBUG
+      expect((modelPrime.optimizer.getConfig() as serialization.ConfigDict)
+          ['learningRate']).toEqual(2e-3);
       done();
       return null;
     }));
