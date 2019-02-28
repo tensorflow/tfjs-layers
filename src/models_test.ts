@@ -20,6 +20,7 @@ import {loadLayersModelInternal, ModelAndWeightsConfig, modelFromJSON} from './m
 import {convertPythonicToTs, convertTsToPythonic} from './utils/serialization_utils';
 import {describeMathCPU, describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 import {version as layersVersion} from './version';
+import { expectArraysEqual } from '@tensorflow/tfjs-core/dist/test_util';
 
 const OCTET_STREAM_TYPE = 'application/octet-stream';
 const JSON_TYPE = 'application/json';
@@ -2488,7 +2489,7 @@ describeMathCPU('Saving and loading model with optimizer', () => {
     }));
   });
 
-  fit('Save model with optimizer: adam', async done => {
+  it('Save model with optimizer: adam', async done => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({units: 1, inputShape: [3]}));
     model.compile({loss: 'meanSquaredError', optimizer: 'adam'});
@@ -2530,13 +2531,40 @@ describeMathCPU('Saving and loading model with optimizer', () => {
 
   fit('Save model with Adam optimizer and load it back', async done => {
     const model = tfl.sequential();
-    model.add(tfl.layers.dense({units: 1, inputShape: [3]}));
-    model.compile({loss: 'meanSquaredError', optimizer: train.adam(2e-3)});
+    model.add(tfl.layers.dense({units: 2, inputShape: [3], activation: 'relu'}));
+    model.add(tfl.layers.dense({units: 1}));
+    model.compile({
+      loss: 'meanSquaredError',
+      optimizer: train.adam(2e-3, 0.8, 0.88)
+    });
+
+    // Perform some training to alter the optimizer's weight values.
+    const xs = ones([2, 3]);
+    const ys = ones([2, 1]);
+    const epochs = 2;
+    await model.fit(xs, ys, {epochs});
+
+    const adamWeights = model.optimizer.getWeights();
+    console.log(model.optimizer.getWeights().length);
+    // 1 + 2 * n, where n is the number of weights of the model.
+    expect(adamWeights.length).toEqual(9);  
+    expectArraysEqual(adamWeights[0], scalar(epochs, 'int32'));
+    // All the weights of the Adam optimizer should be in the correct order.
+    // 1st moments.
+    expect(adamWeights[1].shape).toEqual([3, 2]);
+    expect(adamWeights[2].shape).toEqual([2]);
+    expect(adamWeights[3].shape).toEqual([2, 1]);
+    expect(adamWeights[4].shape).toEqual([1]);
+    // 2nd moments.
+    expect(adamWeights[5].shape).toEqual([3, 2]);
+    expect(adamWeights[6].shape).toEqual([2]);
+    expect(adamWeights[7].shape).toEqual([2, 1]);
+    expect(adamWeights[8].shape).toEqual([1]);
 
     await model.save(io.withSaveHandler(async artifacts => {
       const modelTopology = artifacts.modelTopology as PyJsonDict;
       const modelPrime = await modelFromJSON(modelTopology);
-      expect(modelPrime.layers.length).toEqual(1);
+      expect(modelPrime.layers.length).toEqual(2);
       expect(modelPrime.optimizer != null).toEqual(true);
       expect(modelPrime.loss).toEqual('meanSquaredError');
       expect(modelPrime.metrics).toEqual([]);
