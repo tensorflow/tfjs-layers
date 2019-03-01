@@ -425,7 +425,7 @@ export declare interface ActivationLayerArgs extends LayerArgs {
  * const activationOutput = activationLayer.apply(denseOutput);
  *
  * // Create the model based on the inputs.
- * const model = tf.model({
+ * const model = tf.LayersModel({
  *     inputs: input,
  *     outputs: [denseOutput, activationOutput]
  * });

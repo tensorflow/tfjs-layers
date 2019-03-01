@@ -18,25 +18,26 @@ import {BaseCallbackConstructor, CallbackConstructorRegistry} from './base_callb
 import {ContainerArgs} from './engine/container';
 import {Input, InputConfig,} from './engine/input_layer';
 import {SymbolicTensor} from './engine/topology';
-import {Model} from './engine/training';
-import {loadModelInternal, Sequential, SequentialArgs} from './models';
+import {LayersModel} from './engine/training';
+import {loadLayersModelInternal, Sequential, SequentialArgs} from './models';
 
 
 // TODO(cais): Add doc string to all the public static functions in this
 //   class; include exectuable JavaScript code snippets where applicable
 //   (b/74074458).
 
-// Model and related factory methods.
+// LayersModel and related factory methods.
 
 /**
  * A model is a data structure that consists of `Layers` and defines inputs
  * and outputs.
  *
- * The key difference between `tf.model` and `tf.sequential` is that `tf.model`
- * is more generic, supporting an arbitrary graph (without cycles) of layers.
- * `tf.sequential` is less generic and supports only a linear stack of layers.
+ * The key difference between `tf.model` and `tf.sequential` is that
+ * `tf.model` is more generic, supporting an arbitrary graph (without
+ * cycles) of layers. `tf.sequential` is less generic and supports only a linear
+ * stack of layers.
  *
- * When creating a `tf.Model`, specify its input(s) and output(s). Layers
+ * When creating a `tf.LayersModel`, specify its input(s) and output(s). Layers
  * are used to wire input(s) to output(s).
  *
  * For example, the following code snippet defines a model consisting of
@@ -63,14 +64,14 @@ import {loadModelInternal, Sequential, SequentialArgs} from './models';
  * model.predict(tf.ones([2, 5])).print();
  * ```
  * See also:
- *   `tf.sequential`, `tf.loadModel`.
+ *   `tf.sequential`, `tf.loadLayersModel`.
  */
 
 /**
- * @doc {heading: 'Models', subheading: 'Creation', configParamIndices: [0]}
+ * @doc {heading: 'Models', subheading: 'Creation'}
  */
-export function model(args: ContainerArgs): Model {
-  return new Model(args);
+export function model(args: ContainerArgs): LayersModel {
+  return new LayersModel(args);
 }
 
 /**
@@ -85,8 +86,8 @@ export function model(args: ContainerArgs): Model {
  *
  * The key difference between `tf.model` and `tf.sequential` is that
  * `tf.sequential` is less generic, supporting only a linear stack of layers.
- * `tf.model` is more generic and supports an arbitrary graph (without cycles)
- * of layers.
+ * `tf.model` is more generic and supports an arbitrary graph (without
+ * cycles) of layers.
  *
  * Examples:
  *
@@ -132,22 +133,10 @@ export function model(args: ContainerArgs): Model {
  * ```
  */
 /**
- * @doc {heading: 'Models', subheading: 'Creation', configParamIndices: [0]}
+ * @doc {heading: 'Models', subheading: 'Creation'}
  */
 export function sequential(config?: SequentialArgs): Sequential {
   return new Sequential(config);
-}
-
-/**
- * @doc {
- *   heading: 'Models',
- *   subheading: 'Loading',
- *   useDocsFrom: 'loadModelInternal'
- * }
- */
-export function loadModel(
-    pathOrIOHandler: string|io.IOHandler, strict = true): Promise<Model> {
-  return loadModelInternal(pathOrIOHandler, {strict});
 }
 
 /**
@@ -157,8 +146,9 @@ export function loadModel(
  *
  * This method is applicable to:
  *
- * 1. Models created with the `tf.layers.*`, `tf.sequential`, and `tf.model`
- *    APIs of TensorFlow.js and later saved with the `tf.Model.save` method.
+ * 1. Models created with the `tf.layers.*`, `tf.sequential`, and
+ * `tf.model` APIs of TensorFlow.js and later saved with the
+ * `tf.LayersModel.save` method.
  * 2. Models converted from Keras or TensorFlow tf.keras using
  *    the [tensorflowjs_converter](https://github.com/tensorflow/tfjs-converter)
  *
@@ -235,24 +225,24 @@ export function loadModel(
  *     weights and missing weights will be silently ignored.
  *   - ｀onProgress｀: A function of the signature `(fraction: number) => void',
  *     that can be used as the progress callback for the model loading.
- * @returns A `Promise` of `tf.Model`, with the topology and weights loaded.
+ * @returns A `Promise` of `tf.LayersModel`, with the topology and weights
+ *     loaded.
  */
 /** @doc {heading: 'Models', subheading: 'Loading'} */
 export function loadLayersModel(
-    pathOrIOHandler: string|io.IOHandler, options?: io.LoadOptions):
-    Promise<Model> {
+    pathOrIOHandler: string|io.IOHandler,
+    options?: io.LoadOptions): Promise<LayersModel> {
   if (options == null) {
     options = {};
   }
-  return loadModelInternal(pathOrIOHandler, options);
+  return loadLayersModelInternal(pathOrIOHandler, options);
 }
 
 /**
  * @doc {
  *   heading: 'Models',
  *   subheading: 'Inputs',
- *   useDocsFrom: 'Input',
- *   configParamIndices: [0]
+ *   useDocsFrom: 'Input'
  * }
  */
 export function input(config: InputConfig): SymbolicTensor {

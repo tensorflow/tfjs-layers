@@ -9,8 +9,8 @@
  */
 
 /**
- * Unit tests for training.ts, focusing on the tf.Model.fitDataset() and
- * tf.Model.evaluateDataset() methods.
+ * Unit tests for training.ts, focusing on the tf.LayersModel.fitDataset() and
+ * tf.LayersModel.evaluateDataset() methods.
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
@@ -21,16 +21,16 @@ import * as tfl from '../index';
 import {Logs} from '../logs';
 import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 
-import {FakeNumericDataset, FakeNumericDatasetLegacyArrayForm} from './dataset_fakes';
+import {FakeNumericDataset} from './dataset_fakes';
 
-function createDenseModel(): tfl.Model {
+function createDenseModel(): tfl.LayersModel {
   const model = tfl.sequential();
   model.add(tfl.layers.dense(
       {units: 1, inputShape: [1], kernelInitializer: 'zeros'}));
   return model;
 }
 
-describeMathCPUAndGPU('Model.fitDataset', () => {
+describeMathCPUAndGPU('LayersModel.fitDataset', () => {
   // Reference Python tf.keras code:
   //
   // ```py
@@ -1825,49 +1825,6 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
             `input key '${input2.name}'.`);
   });
 
-  it('Legacy array input format works but throws warnings', async () => {
-    const model = createDenseModel();
-    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
-    const batchSize = 8;
-    const batchesPerEpoch = 3;
-    const dataset = new FakeNumericDatasetLegacyArrayForm(
-        {xShape: [1], yShape: [1], batchSize, numBatches: batchesPerEpoch});
-    // Do a burn-in call to account for initialization of cached tensors (for
-    // the memory-leak check below).
-    await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1});
-    model.setWeights([tfc.zeros([1, 1]), tfc.zeros([1])]);
-    const warningMessages: string[] = [];
-    spyOn(console, 'warn')
-        .and.callFake((msg: string) => warningMessages.push(msg));
-    const numTensors0 = tfc.memory().numTensors;
-    const epochs = 3;
-    const history = await model.fitDataset(dataset, {batchesPerEpoch, epochs});
-    const numTensors1 = tfc.memory().numTensors;
-    expect(numTensors1).toEqual(numTensors0);
-    expect(Object.keys(history.history)).toEqual(['loss']);
-    // Only the loss value from the first epoch should be logged.
-    // The 2nd and 3rd epochs are cut short because of dataset iterator
-    // exhaustion.
-    expect(history.history.loss.length).toEqual(1);
-    expect(warningMessages.length).toEqual(5);
-
-    const deprecatedWarning =
-      'Deprecated argument format: fitDataset() will soon no longer accept ' +
-      'Datasets that produce elements in the array form `[xs, ys]`.  Instead ' +
-      'it now expects elements of the form `{xs: xVal, ys: yVal}`, where the ' +
-      'two values may be `tf.Tensor`, an array of Tensors, or a map of ' +
-      'string to Tensor.  You can disable deprecation warnings with ' +
-      'tf.disableDeprecationWarnings().';
-
-    expect(warningMessages[0]).toEqual(deprecatedWarning);
-    expect(warningMessages[1]).toEqual(deprecatedWarning);
-    expect(warningMessages[2]).toEqual(deprecatedWarning);
-    expect(warningMessages[3])
-        .toMatch(/You provided `batchesPerEpoch` as .* 9 batches/);
-    expect(warningMessages[4])
-        .toMatch(/You provided `batchesPerEpoch` as .* 9 batches/);
-  });
-
   // Reference Python tf.keras code:
   //
   // ```py
@@ -2897,7 +2854,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
     }
   }
 
-  it('Stop training resets at start of Model.fitDataset()', async () => {
+  it('Stop training resets at start of LayersModel.fitDataset()', async () => {
     const model = createDenseModel();
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
 
@@ -2932,7 +2889,7 @@ describeMathCPUAndGPU('Model.fitDataset', () => {
 
 // TODO(cais): The corresponding test for predict() and evaluate().
 
-describeMathCPUAndGPU('Model.evaluateDataset', () => {
+describeMathCPUAndGPU('LayersModel.evaluateDataset', () => {
   // Reference Python tf.keras code:
   //
   // ```py
