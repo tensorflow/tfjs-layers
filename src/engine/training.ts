@@ -449,7 +449,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   protected optimizer_: Optimizer;
   // Whether the model instance owns the optimizer: `true` if and only if
   // `optimizer` is created from a string parameter during `compile()` call.
-  protected isOptimizerOwned: boolean;
+  protected isOptimizerOwned_: boolean;
 
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
       LossOrMetricFn[]|{[outputName: string]: LossOrMetricFn};
@@ -553,14 +553,14 @@ export class LayersModel extends Container implements tfc.InferenceModel {
 
     if (typeof args.optimizer === 'string') {
       this.optimizer_ = optimizers.getOptimizer(args.optimizer);
-      this.isOptimizerOwned = true;
+      this.isOptimizerOwned_ = true;
     } else {
       if (!(args.optimizer instanceof Optimizer)) {
         throw new ValueError(
             `User-defined optimizer must be an instance of tf.Optimizer.`);
       }
       this.optimizer_ = args.optimizer;
-      this.isOptimizerOwned = false;
+      this.isOptimizerOwned_ = false;
     }
 
     // TODO(cais): Add lossWeights.
@@ -1536,20 +1536,20 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   }
 
   set optimizer(optimizer: Optimizer) {
-    this.optimizer_ = optimizer;
-    this.isOptimizerOwned = false;
+    if (this.optimizer_ !== optimizer) {
+      this.optimizer_ = optimizer;
+      this.isOptimizerOwned_ = false;
+    }
   }
 
   dispose(): DisposeResult {
     const result = super.dispose();
-    if (this.optimizer != null && this.isOptimizerOwned) {
-      // TODO(cais): Once core exposes the Optimizer.dispose() method, get rid
-      // of the any casting.
-      // tslint:disable-next-line:no-any
-      if (typeof (this.optimizer_ as any).dispose === 'function') {
-        // tslint:disable-next-line:no-any
-        (this.optimizer_ as any).dispose();
-      }
+    if (result.refCountAfterDispose === 0 && this.optimizer != null &&
+        this.isOptimizerOwned_) {
+      const numTensorsBeforeOptmizerDisposal = tfc.memory().numTensors;
+      this.optimizer_.dispose();
+      result.numDisposedVariables +=
+          numTensorsBeforeOptmizerDisposal - tfc.memory().numTensors;
     }
     return result;
   }

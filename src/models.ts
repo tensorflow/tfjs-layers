@@ -17,7 +17,7 @@ import {getUid} from './backend/state';
 import {History} from './base_callbacks';
 import {Dataset} from './engine/dataset_stub';
 import {Input} from './engine/input_layer';
-import {DisposeResult, getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
+import {getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
 import {LayersModel, ModelCompileArgs, ModelEvaluateArgs} from './engine/training';
 import {ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './engine/training_dataset';
 import {ModelFitArgs} from './engine/training_tensors';
@@ -789,6 +789,8 @@ export class Sequential extends LayersModel {
     this.build();
     this.model.compile(args);
     this.optimizer_ = this.model.optimizer;
+    // tslint:disable-next-line:no-any
+    this.isOptimizerOwned_ = (this.model as any).isOptimizerOwned_;
     this.loss = this.model.loss;
     this.metrics = this.model.metrics;
     // TODO(cais): Add this.lossWeights, this.sampleWeightMode,
@@ -799,12 +801,11 @@ export class Sequential extends LayersModel {
   }
 
   get optimizer(): Optimizer {
-    return this.optimizer_;
+    return this.model.optimizer;
   }
 
   set optimizer(optimizer: Optimizer) {
-    this.optimizer_ = optimizer;
-    this.isOptimizerOwned = false;
+    this.model.optimizer = optimizer;
   }
 
   /**
@@ -991,10 +992,6 @@ export class Sequential extends LayersModel {
     // TODO(cais): When refactoring to remove the composition pattern happens,
     // remove this method overriding.
     this.model.stopTraining = stop;
-  }
-
-  dispose(): DisposeResult {
-    return this.model.dispose();
   }
 
   // TODO(cais): Override get trainableWeights() here
