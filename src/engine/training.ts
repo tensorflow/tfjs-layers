@@ -429,6 +429,8 @@ export interface ModelCompileArgs {
   //   targetTensors.
 }
 
+const LAYERS_MODEL_FORMAT_NAME = 'layers-model';
+
 /**
  * A `tf.LayersModel` is a directed, acyclic graph of `tf.Layer`s plus methods
  * for training, evaluation, prediction and saving.
@@ -445,6 +447,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   // compatibility since this class name shows up in the serialization format.
   /** @nocollapse */
   static className = 'Model';
+
   optimizer: Optimizer;
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
       LossOrMetricFn[]|{[outputName: string]: LossOrMetricFn};
@@ -1637,7 +1640,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
       modelTopology: modelConfig,
       weightData: weightDataAndSpecs.data,
       weightSpecs: weightDataAndSpecs.specs,
-      format: 'layers-model',
+      format: LAYERS_MODEL_FORMAT_NAME,
       generatedBy: `TensorFlow.js tfjs-layers v${version}`,
       convertedBy: null,
     });
