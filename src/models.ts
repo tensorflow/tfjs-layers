@@ -842,10 +842,29 @@ export class Sequential extends LayersModel {
     return this.model.fit(x, y, args);
   }
 
-  // TODO(cais): Add code snippet below when it's possible to instantiate
-  //   actual dataset objects.
   /**
    * Trains the model using a dataset object.
+   *
+   * ```js
+   * const xArray = [
+   *   [1, 1, 1, 1, 1, 1, 1, 1, 1],
+   *   [1, 1, 1, 1, 1, 1, 1, 1, 1],
+   *   [1, 1, 1, 1, 1, 1, 1, 1, 1],
+   *   [1, 1, 1, 1, 1, 1, 1, 1, 1],
+   * ];
+   * const yArray = [1, 1, 1, 1];
+   * const xDataset = tf.data.array(xArray);
+   * const yDataset = tf.data.array(yArray);
+   * const ds = tf.data.zip([xDataset, yDataset]).batch(4);
+   * const model = tf.sequential({
+   *   layers: [tf.layers.dense({units: 1, inputShape: [9]})]
+   * });
+   * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+   * const history = await model.fitDataset(ds, {
+   *   epochs: 4,
+   *   callbacks: {onEpochEnd: (epoch, logs) => {console.log(logs.loss);}}
+   * });
+   * ```
    *
    * @param dataset A dataset object. Its `iterator()` method is expected
    *   to generate a dataset iterator object, the `next()` method of which
