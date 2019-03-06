@@ -14,8 +14,8 @@ import {stringLiteralArray} from './utils';
  * List of all known activation names.
  */
 export const activationOptions = stringLiteralArray([
-  'elu', 'hardSigmoid', 'linear', 'relu', 'relu6', 'selu', 'sigmoid', 'softmax',
-  'softplus', 'softsign', 'tanh'
+  'elu', 'hard_sigmoid', 'linear', 'relu', 'relu6', 'selu', 'sigmoid',
+  'softmax', 'softplus', 'softsign', 'tanh'
 ]);
 
 /**

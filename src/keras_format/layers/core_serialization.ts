@@ -59,7 +59,7 @@ export type RepeatVectorLayerSerialization =
     BaseLayerSerialization<'RepeatVector', RepeatVectorLayerConfig>;
 
 export interface ReshapeLayerConfig extends LayerConfig {
-  targetShape: Shape;
+  target_shape: Shape;
 }
 
 export type ReshapeLayerSerialization =
