@@ -26,6 +26,7 @@ import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_ut
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
+import {version} from '../version';
 import {Container, ContainerArgs} from './container';
 import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
@@ -398,7 +399,7 @@ export interface ModelEvaluateArgs {
 }
 
 /**
- * Configuration for calls to `Model.compile()`.
+ * Configuration for calls to `LayersModel.compile()`.
  */
 export interface ModelCompileArgs {
   /**
@@ -428,20 +429,25 @@ export interface ModelCompileArgs {
   //   targetTensors.
 }
 
+const LAYERS_MODEL_FORMAT_NAME = 'layers-model';
+
 /**
- * A `tf.Model` is a directed, acyclic graph of `tf.Layer`s plus methods for
- * training, evaluation, prediction and saving.
+ * A `tf.LayersModel` is a directed, acyclic graph of `tf.Layer`s plus methods
+ * for training, evaluation, prediction and saving.
  *
- * `tf.Model` is the basic unit of training, inference and evaluation in
- * TensorFlow.js. To create a `tf.Model`, use `tf.model`.
+ * `tf.LayersModel` is the basic unit of training, inference and evaluation in
+ * TensorFlow.js. To create a `tf.LayersModel`, use `tf.LayersModel`.
  *
  * See also:
- *   `tf.Sequential`, `tf.loadModel`.
+ *   `tf.Sequential`, `tf.loadLayersModel`.
  */
 /** @doc {heading: 'Models', subheading: 'Classes'} */
-export class Model extends Container implements tfc.InferenceModel {
+export class LayersModel extends Container implements tfc.InferenceModel {
+  // The class name is 'Model' rather than 'LayersModel' for backwards
+  // compatibility since this class name shows up in the serialization format.
   /** @nocollapse */
   static className = 'Model';
+
   optimizer: Optimizer;
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
       LossOrMetricFn[]|{[outputName: string]: LossOrMetricFn};
@@ -467,10 +473,10 @@ export class Model extends Container implements tfc.InferenceModel {
   //   the imperative nature of tfjs-core, `metricsTensors` is a
   //   TypeScript function here.
   //   Also note that due to the imperative nature of tfjs-core, `metricsTensor`
-  //   here needs an output index to keep track of which output of the Model
-  //   a metric belongs to. This is unlike `metrics_tensors` in PyKeras,
-  //   which is a `list` of symbolic tensors, each of which has implicit
-  //   "knowledge" of the outputs it depends on.
+  //   here needs an output index to keep track of which output of the
+  //   LayersModel a metric belongs to. This is unlike `metrics_tensors` in
+  //   PyKeras, which is a `list` of symbolic tensors, each of which has
+  //   implicit "knowledge" of the outputs it depends on.
   metricsTensors: Array<[LossOrMetricFn, number]>;
 
   constructor(args: ContainerArgs) {
@@ -498,7 +504,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * const output =
    *     tf.layers.dense({units: 3, activation: 'softmax'}).apply(concat);
    *
-   * const model = tf.model({inputs: [input1, input2], outputs: output});
+   * const model = tf.LayersModel({inputs: [input1, input2], outputs: output});
    * model.summary();
    * ```
    *
@@ -535,7 +541,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * metrics to be used for fitting and evaluating this model.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [0]}
+   * @doc {heading: 'Models', subheading: 'Classes'}
    */
   compile(args: ModelCompileArgs): void {
     if (args.loss == null) {
@@ -790,7 +796,7 @@ export class Model extends Container implements tfc.InferenceModel {
    *   will give you the display labels for the scalar outputs.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   * @doc {heading: 'Models', subheading: 'Classes'}
    */
   evaluate(
       x: Tensor|Tensor[], y: Tensor|Tensor[],
@@ -837,7 +843,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * @returns Loss and metric values as an Array of `Scalar` objects.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
+   * @doc {heading: 'Models', subheading: 'Classes'}
    */
   async evaluateDataset(dataset: Dataset<{}>, args?: ModelEvaluateDatasetArgs):
       Promise<Scalar|Scalar[]> {
@@ -1056,7 +1062,7 @@ export class Model extends Container implements tfc.InferenceModel {
    *   number of samples that is not a multiple of the batch size.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
+   * @doc {heading: 'Models', subheading: 'Classes'}
    */
   predict(x: Tensor|Tensor[], args: ModelPredictArgs = {}): Tensor|Tensor[] {
     const xsRank2OrHigher = ensureTensorsRank2OrHigher(x);
@@ -1103,7 +1109,7 @@ export class Model extends Container implements tfc.InferenceModel {
     if (this.optimizer == null) {
       throw new RuntimeError(
           'You must compile a model before training/testing. Use ' +
-          'Model.compile(modelCompileArgs).');
+          'LayersModel.compile(modelCompileArgs).');
     }
     const outputShapes: Shape[] = [];
     for (let i = 0; i < this.feedOutputShapes.length; ++i) {
@@ -1219,7 +1225,7 @@ export class Model extends Container implements tfc.InferenceModel {
    *
    * 1. computes the losses
    * 2. sums them to get the total loss
-   * 3. call the optimizer computes the gradients of the Model's
+   * 3. call the optimizer computes the gradients of the LayersModel's
    *    trainable weights w.r.t. the total loss and update the variables
    * 4. calculates the metrics
    * 5. returns the values of the losses and metrics.
@@ -1380,7 +1386,7 @@ export class Model extends Container implements tfc.InferenceModel {
    * data and what the model expects.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [2]}
+   * @doc {heading: 'Models', subheading: 'Classes'}
    */
   async fit(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
@@ -1411,7 +1417,7 @@ export class Model extends Container implements tfc.InferenceModel {
    *   information collected during training.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
+   * @doc {heading: 'Models', subheading: 'Classes'}
    */
   async fitDataset<T>(dataset: Dataset<T>, args: ModelFitDatasetArgs<T>):
       Promise<History> {
@@ -1488,14 +1494,14 @@ export class Model extends Container implements tfc.InferenceModel {
   }
 
   /**
-   * Setter used for force stopping of Model.fit() (i.e., training).
+   * Setter used for force stopping of LayersModel.fit() (i.e., training).
    *
    * Example:
    *
    * ```js
    * const input = tf.input({shape: [10]});
    * const output = tf.layers.dense({units: 1}).apply(input);
-   * const model = tf.model({inputs: [input], outputs: [output]});
+   * const model = tf.LayersModel({inputs: [input], outputs: [output]});
    * model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
    * const xs = tf.ones([8, 10]);
    * const ys = tf.zeros([8, 1]);
@@ -1522,7 +1528,7 @@ export class Model extends Container implements tfc.InferenceModel {
   }
 
   /**
-   * Save the configuration and/or weights of the Model.
+   * Save the configuration and/or weights of the LayersModel.
    *
    * An `IOHandler` is an object that has a `save` method of the proper
    * signature defined. The `save` method manages the storing or
@@ -1550,7 +1556,7 @@ export class Model extends Container implements tfc.InferenceModel {
    *
    * const saveResults = await model.save('localstorage://my-model-1');
    *
-   * const loadedModel = await tf.loadModel('localstorage://my-model-1');
+   * const loadedModel = await tf.loadLayersModel('localstorage://my-model-1');
    * console.log('Prediction from loaded model:');
    * loadedModel.predict(tf.ones([1, 3])).print();
    * ```
@@ -1567,7 +1573,7 @@ export class Model extends Container implements tfc.InferenceModel {
    *
    * const saveResults = await model.save('indexeddb://my-model-1');
    *
-   * const loadedModel = await tf.loadModel('indexeddb://my-model-1');
+   * const loadedModel = await tf.loadLayersModel('indexeddb://my-model-1');
    * console.log('Prediction from loaded model:');
    * loadedModel.predict(tf.ones([1, 3])).print();
    * ```
@@ -1601,7 +1607,7 @@ export class Model extends Container implements tfc.InferenceModel {
    *   topology and weight values.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes', configParamIndices: [1]}
+   * @doc {heading: 'Models', subheading: 'Classes'}
    */
   async save(handlerOrURL: io.IOHandler|string, config?: io.SaveConfig):
       Promise<io.SaveResult> {
@@ -1619,8 +1625,8 @@ export class Model extends Container implements tfc.InferenceModel {
     }
     if (handlerOrURL.save == null) {
       throw new ValueError(
-          'Model.save() cannot proceed because the IOHandler provided does ' +
-          'not have the `save` attribute defined.');
+          'LayersModel.save() cannot proceed because the IOHandler ' +
+          'provided does not have the `save` attribute defined.');
     }
 
     const weightDataAndSpecs =
@@ -1633,8 +1639,11 @@ export class Model extends Container implements tfc.InferenceModel {
     return handlerOrURL.save({
       modelTopology: modelConfig,
       weightData: weightDataAndSpecs.data,
-      weightSpecs: weightDataAndSpecs.specs
+      weightSpecs: weightDataAndSpecs.specs,
+      format: LAYERS_MODEL_FORMAT_NAME,
+      generatedBy: `TensorFlow.js tfjs-layers v${version}`,
+      convertedBy: null,
     });
   }
 }
-serialization.registerClass(Model);
+serialization.registerClass(LayersModel);

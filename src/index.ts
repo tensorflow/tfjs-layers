@@ -20,10 +20,10 @@ import * as regularizers from './exports_regularizers';
 export {CallbackList, CustomCallback, CustomCallbackArgs, History} from './base_callbacks';
 export {Callback} from './callbacks';
 export {InputSpec, SymbolicTensor} from './engine/topology';
-export {Model, ModelCompileArgs, ModelEvaluateArgs} from './engine/training';
+export {LayersModel, ModelCompileArgs, ModelEvaluateArgs} from './engine/training';
 export {ModelFitDatasetArgs} from './engine/training_dataset';
 export {ModelFitArgs} from './engine/training_tensors';
-export {input, loadLayersModel, loadModel, model, registerCallbackConstructor, sequential} from './exports';
+export {input, loadLayersModel, model, registerCallbackConstructor, sequential} from './exports';
 export {Shape} from './keras_format/common';
 // tslint:disable-next-line:max-line-length
 export {GRUCellLayerArgs, GRULayerArgs, LSTMCellLayerArgs, LSTMLayerArgs, RNN, RNNLayerArgs, SimpleRNNCellLayerArgs, SimpleRNNLayerArgs} from './layers/recurrent';

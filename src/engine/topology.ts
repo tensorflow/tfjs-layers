@@ -91,7 +91,7 @@ export class InputSpec {
  * `tf.SymbolicTensor` is a placeholder for a Tensor without any concrete value.
  *
  * They are most often encountered when building a graph of `Layer`s for a
- * a `tf.Model` and the input data's shape, but not values are known.
+ * a `tf.LayersModel` and the input data's shape, but not values are known.
  */
 /** @doc {heading: 'Models', 'subheading': 'Classes'} */
 export class SymbolicTensor {
@@ -393,7 +393,7 @@ let _nextLayerID = 0;
 
 /**
  * A layer is a grouping of operations and weights that can be composed to
- * create a `tf.Model`.
+ * create a `tf.LayersModel`.
  *
  * Layers are constructed by using the functions under the
  * [tf.layers](#Layers-Basic) namespace.
@@ -413,7 +413,7 @@ export abstract class Layer extends serialization.Serializable {
   inputSpec: InputSpec[];
   supportsMasking: boolean;
   /** Whether the layer weights will be updated during training. */
-  trainable: boolean;
+  protected trainable_: boolean;
   updatable: boolean;
   batchInputShape: Shape;
   dtype: DataType;
@@ -481,7 +481,7 @@ export abstract class Layer extends serialization.Serializable {
     }
     this.name = name;
 
-    this.trainable = args.trainable == null ? true : args.trainable;
+    this.trainable_ = args.trainable == null ? true : args.trainable;
     this.updatable = args.updatable == null ? true : args.updatable;
 
     if (args.inputShape != null || args.batchInputShape != null) {
@@ -675,8 +675,19 @@ export abstract class Layer extends serialization.Serializable {
     this._built = built;
   }
 
+  get trainable(): boolean {
+    return this.trainable_;
+  }
+
+  set trainable(trainable: boolean) {
+    this._trainableWeights.forEach(w => {
+      w.trainable = trainable;
+    });
+    this.trainable_ = trainable;
+  }
+
   get trainableWeights(): LayerVariable[] {
-    if (this.trainable) {
+    if (this.trainable_) {
       return this._trainableWeights;
     } else {
       return [];
@@ -688,7 +699,7 @@ export abstract class Layer extends serialization.Serializable {
   }
 
   get nonTrainableWeights(): LayerVariable[] {
-    if (!this.trainable) {
+    if (!this.trainable_) {
       return this._trainableWeights.concat(this._nonTrainableWeights);
     } else {
       return this._nonTrainableWeights;
@@ -919,7 +930,7 @@ export abstract class Layer extends serialization.Serializable {
    *
    * // The input and output and be used to construct a model that consists
    * // of the flatten and dense layers.
-   * const model = tf.model({inputs: input, outputs: output2});
+   * const model = tf.LayersModel({inputs: input, outputs: output2});
    * ```
    *
    * @param inputs a `tf.Tensor` or `tf.SymbolicTensor` or an Array of them.
@@ -1462,8 +1473,10 @@ export abstract class Layer extends serialization.Serializable {
    */
   /** @doc {heading: 'Models', 'subheading': 'Classes'} */
   getConfig(): serialization.ConfigDict {
-    const config:
-        serialization.ConfigDict = {name: this.name, trainable: this.trainable};
+    const config: serialization.ConfigDict = {
+      name: this.name,
+      trainable: this.trainable
+    };
     if (this.batchInputShape != null) {
       config['batchInputShape'] = this.batchInputShape;
     }

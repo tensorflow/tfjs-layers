@@ -10,7 +10,7 @@
 
 /* Original source: keras/engine/topology.py */
 
-import {NamedTensorMap, Scalar, serialization, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+import {NamedTensorMap, Scalar, serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 
 import {getUid} from '../backend/state';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
@@ -28,190 +28,6 @@ import {execute, FeedDict} from './executor';
 import {InputLayer} from './input_layer';
 import {DisposeResult, Layer, Node, SymbolicTensor} from './topology';
 
-/**
- * Converts layers weights to a format suitable for TensorFlow.js Layers.
- *
- * Porting Note: The function `preprocess_weights_for_loading()` in PyKeras
- * performs conversion from Keras 1 to Keras 2. But in TypeScript, we
- * require Keras version to be 2. Thus this conversion is not applicable. We
- * simply check the Keras version and pass the weights through.
- *
- * @param layer Layer instance.
- * @param weights Input weights.
- * @param originalKerasVersion Keras version for the weights.
- * @param originalBackend Keras backend the weights were trained with.
- * @returns Output weights as Tensors.
- */
-function preprocessWeightsForLoading(
-    layer: Layer, weights: LayerVariable[], originalKerasVersion?: string,
-    originalBackend?: string): LayerVariable[] {
-  if (!originalKerasVersion.startsWith('2.')) {
-    throw new ValueError(
-        'Unsupported Keras version in weights being loaded: ' +
-        originalKerasVersion);
-  }
-  return weights;
-}
-
-/**
- * Create an Tensor from info about dtype, shape and values.
- * @param dtype DType string.
- * @param shape Shape.
- * @param value Values of the array, as a scalar or nested Array of proper
- *   shape.
- * @returns An Tensor instance.
- */
-// tslint:disable-next-line:no-any
-function loadTensor(dtype: string, shape: Shape, value: any): Tensor {
-  const dataType = generic_utils.stringToDType(dtype);
-  return Tensor.make(
-      shape, {values: shape.length === 0 ? value : util.flatten(value)},
-      dataType);
-}
-
-// TODO(cais): Maybe remove the following (b/74015805).
-/**
- * Load weights from a weights JSON object to an array of layers.
- *
- * Porting Note: This is ported from the Python function
- *   load_weights_from_hdf5_group_by_name()
- *
- * @param weightsJSON. The input JSON object represent the weights from a
- *   trained Keras model. See scripts/pykeras.py for more details.
- * @param layers An array of target layers.
- * @param skipMismatch Whether to skip loading of layers where there is a
- *   mismatch in the number of weights, or a mismatch in the shape of the
- *   weights.
- */
-export function loadWeightsFromJson(
-    weightsJSON: PyJsonDict, layers: Layer[], skipMismatch = false): void {
-  const originalKerasVersion = weightsJSON['keras_version'] as string;
-  const originalBackend = weightsJSON['backend'] as string;
-  const layerNames = layers.map(layer => layer.name);
-
-  // Reverse index of layer name to list of layers with name.
-  const index: {[layerName: string]: Layer[]} = {};
-  for (const layer of layers) {
-    if (layer.name != null) {
-      if (index[layer.name] == null) {
-        index[layer.name] = [];
-      }
-      index[layer.name].push(layer);
-    }
-  }
-
-  // tslint:disable-next-line:no-any
-  const nameToWeights = weightsJSON['weights'] as {[name: string]: any};
-  const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
-  for (let k = 0; k < layerNames.length; ++k) {
-    const name = layerNames[k];
-    let layerWeights = nameToWeights[name];
-    if (layerWeights == null) {
-      layerWeights = [];
-    }
-
-    let weightValues: LayerVariable[] = [];
-    for (let n = 0; n < layerWeights.length; ++n) {
-      // tslint:disable:no-any
-      const weightEntry =
-          layerWeights[n] as {[key: string]: string | Shape | any};
-      // tslint:enable
-      weightValues.push(new LayerVariable(loadTensor(
-          weightEntry['dtype'], weightEntry['shape'] as Shape,
-          weightEntry['value'])));
-    }
-    for (const layer of index[name]) {
-      const symbolicWeights = layer.weights;
-      weightValues = preprocessWeightsForLoading(
-          layer, weightValues, originalKerasVersion, originalBackend);
-      if (weightValues.length !== symbolicWeights.length) {
-        if (skipMismatch) {
-          console.warn(
-              `Skipping loading of weights of layer ${layer.name} ` +
-              `due to mismatch in number of weights: (${weightValues.length} ` +
-              `vs ${symbolicWeights.length}).`);
-        } else {
-          throw new ValueError(
-              `Layer #${k} (named "${layer.name}") expects ` +
-              `${symbolicWeights.length} weight(s), but the saved weights ` +
-              `have ${weightValues.length} element(s).`);
-        }
-      }
-
-      // Set values.
-      for (let i = 0; i < weightValues.length; ++i) {
-        if (skipMismatch) {
-          if (!util.arraysEqual(
-                  symbolicWeights[i].shape, weightValues[i].shape)) {
-            console.warn(
-                `Skipping loading of weights for layer ${layer.name} due ` +
-                `to mismatch in shape (${symbolicWeights[i].shape} vs ` +
-                `${weightValues[i].shape})`);
-            continue;
-          }
-        }
-        weightValueTuples.push([symbolicWeights[i], weightValues[i].read()]);
-      }
-    }
-  }
-  batchSetValue(weightValueTuples);
-}
-
-/**
- * Load weights from a named tensor map.
- *
- * Porting Note: This is ported from the Python function
- *   load_weights_from_hdf5_group_by_name()
- *
- * @param weights The named tensor map mapping names of weights to weight
- *   values.
- * @param strict Require that the provided weights exactly match those required
- *   by the layers.  Default true.  Passing false means that both extra weights
- *   and missing weights will be silently ignored.
- * @param layers An array of target layers.
- */
-export function loadWeightsFromNamedTensorMap(
-    weights: NamedTensorMap, layers: Layer[], strict = true): void {
-  // Make a dictionary mapping weight name to weight.
-  const nameToWeight: {[name: string]: LayerVariable} = {};
-  let totalWeightsCount = 0;
-  for (const layer of layers) {
-    for (const weight of layer.weights) {
-      if (nameToWeight[weight.originalName] != null) {
-        throw new ValueError(`Duplicate weight name: ${weight.originalName}`);
-      }
-      nameToWeight[weight.originalName] = weight;
-      totalWeightsCount++;
-    }
-  }
-
-  const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
-  for (const name in weights) {
-    if (nameToWeight[name] != null) {
-      weightValueTuples.push([nameToWeight[name], weights[name]]);
-    } else if (strict) {
-      throw new ValueError(
-          `Provided weight data has no target variable: ${name}`);
-    }
-    delete nameToWeight[name];
-  }
-
-  if (strict) {
-    // Check that all weights are set.
-    const unsetNames: string[] = [];
-    for (const name in nameToWeight) {
-      unsetNames.push(name);
-    }
-    if (unsetNames.length > 0) {
-      throw new ValueError(
-          `${unsetNames.length} of ${totalWeightsCount} weights are not set: ` +
-          `${unsetNames}`);
-    }
-  }
-
-  batchSetValue(weightValueTuples);
-}
-
 /** Constructor config for Container. */
 export interface ContainerArgs {
   inputs: SymbolicTensor|SymbolicTensor[];
@@ -222,7 +38,7 @@ export interface ContainerArgs {
 /**
  * A Container is a directed acyclic graph of layers.
  *
- * It is the topological form of a "model". A Model
+ * It is the topological form of a "model". A LayersModel
  * is simply a Container with added training routines.
  *
  */
@@ -270,7 +86,7 @@ export abstract class Container extends Layer {
     }
 
     this.supportsMasking = false;
-    this.trainable = true;
+    this.trainable_ = true;
     this.updatable = true;
 
     // TODO(michaelterry): Initialize perInputLosses/Updates here.
@@ -374,7 +190,7 @@ export abstract class Container extends Layer {
       // Check that layer is an InputLayer.
       if (!(layer instanceof InputLayer)) {
         throw new TypeError(
-            'Input layers to a Model must be InputLayer objects. ' +
+            'Input layers to a LayersModel must be InputLayer objects. ' +
             `Received inputs: ${args.inputs}. ` +
             `Input ${i} (0-based) originates ` +
             `from layer type ${layer.getClassName()}.`);
@@ -651,29 +467,29 @@ export abstract class Container extends Layer {
   }
 
   /**
-   * Attempt to dispose a Model's weights.
+   * Attempt to dispose a LayersModel's weights.
    *
-   * This method decrease the reference count of the Model object by 1.
+   * This method decrease the reference count of the LayersModel object by 1.
    *
-   * A Model is reference-counted. Its reference count is incremented by 1
+   * A LayersModel is reference-counted. Its reference count is incremented by 1
    * when it is first constructed and when it is used as a Layer of another
-   * Model.
+   * LayersModel.
    *
-   * If the reference count of a Model becomes 0, the `dispose` method of
+   * If the reference count of a LayersModel becomes 0, the `dispose` method of
    * all its constituent `Layer`s will be called.
    *
    * Note: If the reference count is greater than 0 after the decrement, the
    * `dispose` method of its constituent `Layer`s will *not* be called.
    *
-   * After a Model is disposed, it cannot be used in calls such as
+   * After a LayersModel is disposed, it cannot be used in calls such as
    * 'predict`, `evaluate` or `fit` anymore.
    *
    * @returns A DisposeResult Object with the following fields:
-   *   - refCountAfterDispose: The reference count of the Model after this
+   *   - refCountAfterDispose: The reference count of the LayersModel after this
    *     `dispose()` call.
    *   - numDisposedVariables: Number of `tf.Variable`s (i.e., weights) disposed
    *     during this `dispose()` call.
-   * @throws {Error} If the layer is not built yet, or if the Model has
+   * @throws {Error} If the layer is not built yet, or if the LayersModel has
    *   already been disposed.
    */
   dispose(): DisposeResult {
@@ -738,37 +554,57 @@ export abstract class Container extends Layer {
    *   to convert them into JSON strings compatible with this method.
    * Porting Note: TensorFlow.js Layers supports only loading by name currently.
    *
-   * @param weightsJSON A JSON mapping weight names to weight values as nested
+   * @param weights A JSON mapping weight names to weight values as nested
    *   arrays of numbers, or a `NamedTensorMap`, i.e., a JSON mapping weight
    *   names to `tf.Tensor` objects.
-   * @param skipMismatch Whether to skip loading of layers where there is a
-   *   mismatch in the number of weights, or a mismatch in the shape of the
-   *   weight (only valid when `by_name`=True).
-   * @param isNamedTensorMap Whether the 1st argument (`weightsJSON`) is a
-   *   `NamedTensorMap`.
    * @param strict Require that the provided weights exactly match those
    *   required by the container.  Default: `true`.  Passing `false` means that
    *   extra weights and missing weights will be silently ignored.
    */
-  loadWeights(
-      weightsJSON: PyJsonDict|NamedTensorMap, skipMismatch = false,
-      isNamedTensorMap = false, strict = true) {
-    // TODO(cais): Maybe the JsonDict support should be removed after serving
-    //   weights from XHR is working. If so, the `loadWeightsFromJson` flag
-    //   should be removed as well. (b/74015805)
-    // TODO(cais): See if we can use smarter type resolution to avoid sending
-    //   the type info as a separate arg (isNamedTensormap).
-    if (isNamedTensorMap) {
-      loadWeightsFromNamedTensorMap(
-          weightsJSON as NamedTensorMap, this.layers, strict);
-    } else {
-      loadWeightsFromJson(weightsJSON as PyJsonDict, this.layers, skipMismatch);
+  loadWeights(weights: NamedTensorMap, strict = true) {
+    const nameToWeight: {[name: string]: LayerVariable} = {};
+    let totalWeightsCount = 0;
+    for (const layer of this.layers) {
+      for (const weight of layer.weights) {
+        if (nameToWeight[weight.originalName] != null) {
+          throw new ValueError(`Duplicate weight name: ${weight.originalName}`);
+        }
+        nameToWeight[weight.originalName] = weight;
+        totalWeightsCount++;
+      }
     }
+
+    const weightValueTuples: Array<[LayerVariable, Tensor]> = [];
+    for (const name in weights) {
+      if (nameToWeight[name] != null) {
+        weightValueTuples.push([nameToWeight[name], weights[name]]);
+      } else if (strict) {
+        throw new ValueError(
+            `Provided weight data has no target variable: ${name}`);
+      }
+      delete nameToWeight[name];
+    }
+
+    if (strict) {
+      // Check that all weights are set.
+      const unsetNames: string[] = [];
+      for (const name in nameToWeight) {
+        unsetNames.push(name);
+      }
+      if (unsetNames.length > 0) {
+        throw new ValueError(
+            `${unsetNames.length} of ${
+                totalWeightsCount} weights are not set: ` +
+            `${unsetNames}`);
+      }
+    }
+
+    batchSetValue(weightValueTuples);
   }
 
   /**
    * Util shared between different serialization methods.
-   * @returns Model config with Keras version information added.
+   * @returns LayersModel config with Keras version information added.
    */
   private updatedConfig(): serialization.ConfigDict {
     const theConfig = this.getConfig();
@@ -1019,7 +855,7 @@ export abstract class Container extends Layer {
 
           if (layer.activityRegularizer) {
             throw new NotImplementedError(
-                'Model invocation with concrete Tensor value(s) in the ' +
+                'LayersModel invocation with concrete Tensor value(s) in the ' +
                 'presence of activity regularizer(s) is not supported yet.');
           }
           // TODO(michaelterry): Add model updates and losses
@@ -1094,7 +930,7 @@ export abstract class Container extends Layer {
    *    heading: 'Layers',
    *    subheading: 'Classes',
    *    namespace: 'layers',
-   *    subclasses: ['Model']
+   *    subclasses: ['LayersModel']
    * }
    */
   getLayer(name?: string, index?: number): Layer {
@@ -1249,15 +1085,15 @@ export abstract class Container extends Layer {
   }
 
   /**
-   * Instantiates a Model from its config (output of `get_config()`).
+   * Instantiates a LayersModel from its config (output of `get_config()`).
    * @param cls the class to create
-   * @param config Model config dictionary.
+   * @param config LayersModel config dictionary.
    * @param customObjects An optional dictionary of custom objects.
    * @param fastWeightInit Optional flag to use fast weight initialization
    *   during deserialization. This is applicable to cases in which
    *   the initialization will be immediately overwritten by loaded weight
    *   values. Default: `false`.
-   * @returns A model instance.
+   * @returns A LayersModel instance.
    * @throws ValueError: In case of improperly formatted config dict.
    */
   /** @nocollapse */
