@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-/** @docalias number[] */
+/** @docalias (null | number)[] */
 export type Shape = (null | number)[];
 
 // The tfjs-core version of DataType must stay synced with this.
