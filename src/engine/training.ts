@@ -27,6 +27,7 @@ import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_ut
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
+import {version} from '../version';
 import {Container, ContainerArgs} from './container';
 import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
@@ -428,6 +429,8 @@ export interface ModelCompileArgs {
   // TODO(cais): Add lossWeights, sampleWeightMode, weightedMetrics, and
   //   targetTensors.
 }
+
+const LAYERS_MODEL_FORMAT_NAME = 'layers-model';
 
 /**
  * A `tf.LayersModel` is a directed, acyclic graph of `tf.Layer`s plus methods
@@ -1665,7 +1668,10 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     return handlerOrURL.save({
       modelTopology: modelConfig,
       weightData: weightDataAndSpecs.data,
-      weightSpecs: weightDataAndSpecs.specs
+      weightSpecs: weightDataAndSpecs.specs,
+      format: LAYERS_MODEL_FORMAT_NAME,
+      generatedBy: `TensorFlow.js tfjs-layers v${version}`,
+      convertedBy: null,
     });
   }
 }
