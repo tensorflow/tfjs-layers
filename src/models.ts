@@ -789,7 +789,7 @@ export class Sequential extends LayersModel {
     this.model.compile(args);
     this.optimizer_ = this.model.optimizer;
     // tslint:disable-next-line:no-any
-    this.isOptimizerOwned_ = (this.model as any).isOptimizerOwned_;
+    this.isOptimizerOwned = (this.model as any).isOptimizerOwned;
     this.loss = this.model.loss;
     this.metrics = this.model.metrics;
     // TODO(cais): Add this.lossWeights, this.sampleWeightMode,

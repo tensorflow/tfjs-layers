@@ -451,7 +451,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   protected optimizer_: Optimizer;
   // Whether the model instance owns the optimizer: `true` if and only if
   // `optimizer` is created from a string parameter during `compile()` call.
-  protected isOptimizerOwned_: boolean;
+  protected isOptimizerOwned: boolean;
 
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
       LossOrMetricFn[]|{[outputName: string]: LossOrMetricFn};
@@ -555,14 +555,14 @@ export class LayersModel extends Container implements tfc.InferenceModel {
 
     if (typeof args.optimizer === 'string') {
       this.optimizer_ = optimizers.getOptimizer(args.optimizer);
-      this.isOptimizerOwned_ = true;
+      this.isOptimizerOwned = true;
     } else {
       if (!(args.optimizer instanceof Optimizer)) {
         throw new ValueError(
             `User-defined optimizer must be an instance of tf.Optimizer.`);
       }
       this.optimizer_ = args.optimizer;
-      this.isOptimizerOwned_ = false;
+      this.isOptimizerOwned = false;
     }
 
     // TODO(cais): Add lossWeights.
@@ -1540,14 +1540,14 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   set optimizer(optimizer: Optimizer) {
     if (this.optimizer_ !== optimizer) {
       this.optimizer_ = optimizer;
-      this.isOptimizerOwned_ = false;
+      this.isOptimizerOwned = false;
     }
   }
 
   dispose(): DisposeResult {
     const result = super.dispose();
     if (result.refCountAfterDispose === 0 && this.optimizer != null &&
-        this.isOptimizerOwned_) {
+        this.isOptimizerOwned) {
       const numTensorsBeforeOptmizerDisposal = tfc.memory().numTensors;
       this.optimizer_.dispose();
       result.numDisposedVariables +=
