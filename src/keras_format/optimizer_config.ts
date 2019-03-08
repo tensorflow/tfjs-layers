@@ -86,8 +86,7 @@ export type OptimizerSerialization = AdadeltaSerialization|AdagradSerialization|
 export type OptimizerClassName = OptimizerSerialization['class_name'];
 
 // We can't easily extract a string[] from the string union type, but we can
-// recapitulate the list, enforcing at compile time that the values are valid
-// and that we have the right number of them.
+// recapitulate the list, enforcing at compile time that the values are valid.
 
 /**
  * A string array of valid Optimizer class names.
