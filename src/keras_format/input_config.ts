@@ -14,7 +14,7 @@ import {BaseLayerSerialization} from './topology_config';
 
 
 export type InputLayerConfig = {
-  name: string;
+  name?: string;
   input_shape?: Shape;
   batch_size?: number;
   batch_input_shape?: Shape;
