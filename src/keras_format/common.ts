@@ -8,6 +8,7 @@
  * =============================================================================
  */
 
+// TODO(huan): add layer-specific input shape types (see: https://github.com/tensorflow/tfjs-layers/pull/492)
 /** @docalias (null | number)[] */
 export type Shape = (null | number)[];
 
