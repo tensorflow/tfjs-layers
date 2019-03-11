@@ -863,7 +863,9 @@ export class Sequential extends LayersModel {
    * // dimension.  Shuffling here doesn't actually do anything, since all the
    * // samples are the same, but in general shuffling your data is best
    * // practice.
-   * const xyDataset = tf.data.zip([xDataset, yDataset]).batch(4).shuffle();
+   * const xyDataset = tf.data.zip({xs: xDataset, ys: yDataset})
+   *     .batch(4)
+   *     .shuffle(4);
    * const model = tf.sequential({
    *   layers: [tf.layers.dense({units: 1, inputShape: [9]})]
    * });
