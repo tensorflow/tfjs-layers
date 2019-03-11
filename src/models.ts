@@ -853,16 +853,24 @@ export class Sequential extends LayersModel {
    *   [1, 1, 1, 1, 1, 1, 1, 1, 1],
    * ];
    * const yArray = [1, 1, 1, 1];
+   * // Create a dataset from the JavaScript array.
    * const xDataset = tf.data.array(xArray);
    * const yDataset = tf.data.array(yArray);
-   * const ds = tf.data.zip([xDataset, yDataset]).batch(4);
+   * // Zip combines the `x` and `y` Datasets into a single Dataset, the
+   * // iterator of which will return an arrays consisting of two tensors,
+   * // corresponding to `x` and `y`.  The call to `batch(4)` will cause each
+   * // iteration to yield a tensor combining 4 examples, along the batch
+   * // dimension.  Shuffling here doesn't actually do anything, since all the
+   * // samples are the same, but in general shuffling your data is best
+   * // practice.
+   * const xyDataset = tf.data.zip([xDataset, yDataset]).batch(4).shuffle();
    * const model = tf.sequential({
    *   layers: [tf.layers.dense({units: 1, inputShape: [9]})]
    * });
    * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-   * const history = await model.fitDataset(ds, {
+   * const history = await model.fitDataset(xyDataset, {
    *   epochs: 4,
-   *   callbacks: {onEpochEnd: (epoch, logs) => {console.log(logs.loss);}}
+   *   callbacks: {onEpochEnd: (epoch, logs) => console.log(logs.loss)}
    * });
    * ```
    *
