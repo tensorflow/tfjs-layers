@@ -857,12 +857,12 @@ export class Sequential extends LayersModel {
    * const xDataset = tf.data.array(xArray);
    * const yDataset = tf.data.array(yArray);
    * // Zip combines the `x` and `y` Datasets into a single Dataset, the
-   * // iterator of which will return an arrays consisting of two tensors,
-   * // corresponding to `x` and `y`.  The call to `batch(4)` will cause each
-   * // iteration to yield a tensor combining 4 examples, along the batch
-   * // dimension.  Shuffling here doesn't actually do anything, since all the
-   * // samples are the same, but in general shuffling your data is best
-   * // practice.
+   * // iterator of which will return an object containing of two tensors,
+   * // corresponding to `x` and `y`.  The call to `batch(4)` will bundle
+   * // four such samples into a single object, with the same keys now pointing
+   * // to tensors that hold 4 examples, organized along the batch dimension.
+   * // The call to `shuffle(4)` causes each iteration through the dataset to
+   * // happen in a different order.  The size of the shuffle window is 4.
    * const xyDataset = tf.data.zip({xs: xDataset, ys: yDataset})
    *     .batch(4)
    *     .shuffle(4);
@@ -876,16 +876,16 @@ export class Sequential extends LayersModel {
    * });
    * ```
    *
-   * @param dataset A dataset object. Its `iterator()` method is expected
-   *   to generate a dataset iterator object, the `next()` method of which
-   *   is expected to produce data batches for evaluation. The return value
-   *   of the `next()` call ought to contain a boolean `done` field and a
-   *   `value` field. The `value` field is expected to be an array of two
-   *   `tf.Tensor`s or an array of two nested `tf.Tensor` structures. The former
-   *   case is for models with exactly one input and one output (e.g..
-   *   a sequential model). The latter case is for models with multiple
-   *   inputs and/or multiple outputs. Of the two items in the array, the
-   *   first is the input feature(s) and the second is the output target(s).
+   * @param dataset A dataset object. Its `iterator()` method is expected to
+   *   generate a dataset iterator object, the `next()` method of which is
+   *   expected to produce data batches for evaluation. The return value of the
+   *   `next()` call ought to contain a boolean `done` field and a `value`
+   *   field. The `value` field is expected to be an array of two `tf.Tensor`s
+   *   or an array of two nested `tf.Tensor` structures. The former case is for
+   *   models with exactly one input and one output (e.g.. a sequential model).
+   *   The latter case is for models with multiple inputs and/or multiple
+   *   outputs. Of the two items in the array, the first is the input feature(s)
+   *   and the second is the output target(s).
    * @param args A `ModelFitDatasetArgs`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
