@@ -317,12 +317,12 @@ export declare interface BaseConvLayerArgs extends LayerArgs {
 
   /**
    * The dilation rate to use for the dilated convolution in each dimension.
-   * Should be an integer or array of two integers.
+   * Should be an integer or array of two or three integers.
    *
    * Currently, specifying any `dilationRate` value != 1 is incompatible with
    * specifying any `strides` value != 1.
    */
-  dilationRate?: number|[number]|[number, number];
+  dilationRate?: number|[number]|[number, number]|[number, number, number];
 
   /**
    * Activation function of the layer.
@@ -374,7 +374,8 @@ export declare interface BaseConvLayerArgs extends LayerArgs {
 
 /**
  * LayerConfig for non-depthwise convolutional layers.
- * Applies to non-depthwise convolution of all ranks (e.g, Conv1D, Conv2D).
+ * Applies to non-depthwise convolution of all ranks (e.g, Conv1D, Conv2D,
+ * Conv3D).
  */
 export declare interface ConvLayerArgs extends BaseConvLayerArgs {
   /**
