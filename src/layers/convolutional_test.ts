@@ -529,7 +529,7 @@ describeMathCPUAndGPU('conv3d', () => {
         it(testTitle, () => {
           let x = tensor5d(x4by4by4Data, [1, 1, 4, 4, 4]);
           if (dataFormat !== 'channelsFirst') {
-            x = tfc.transpose(x, [0, 2, 3, 4, 1]);  // NCHDW -> NHWDC.
+            x = tfc.transpose(x, [0, 2, 3, 4, 1]);  // NCDHW -> NDHWC.
           }
           const kernel = tensor5d(kernel2by2by2Data, [2, 2, 2, 1, 1]);
           const y = conv3d(
@@ -569,7 +569,7 @@ describeMathCPUAndGPU('conv3d', () => {
           it(testTitle, () => {
             let x: Tensor = tensor5d(x4by4by4Data, [1, 1, 4, 4, 4]);
             if (dataFormat !== 'channelsFirst') {
-              x = tfc.transpose(x, [0, 2, 3, 4, 1]);  // NCHDW -> NHWDC.
+              x = tfc.transpose(x, [0, 2, 3, 4, 1]);  // NCDHW -> NDHWC.
             }
 
             let kernelData: number[] = [];
