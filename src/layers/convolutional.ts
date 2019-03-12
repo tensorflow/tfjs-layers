@@ -713,7 +713,7 @@ export class Conv3D extends Conv {
             (args.kernelSize.length === 1 || args.kernelSize.length === 3)))
         throw new ValueError(
             `Conv3D expects config.kernelSize to be number or` +
-            ` [number, number, number] with length 1 or 3, but received ${
+            ` [number, number, number], but received ${
                 JSON.stringify(args.kernelSize)}.`);
     }
   }
