@@ -60,7 +60,7 @@ export function preprocessConv3DInput(
   return tidy(() => {
     checkDataFormat(dataFormat);
     if (dataFormat === 'channelsFirst') {
-      return tfc.transpose(x, [0, 2, 3, 4, 1]);  // NCHWD -> NHWDC.
+      return tfc.transpose(x, [0, 2, 3, 4, 1]);  // NCDHW -> NDHWC.
     } else {
       return x;
     }
