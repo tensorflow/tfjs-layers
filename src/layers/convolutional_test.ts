@@ -320,7 +320,7 @@ describeMathCPU('Conv2D Layers: Symbolic', () => {
   it('bad config.kernelSize shape throws exception', () => {
     expect(() => tfl.layers.conv2d({filters: 1, kernelSize: [1, 1, 1]}))
         .toThrowError(
-          /kernelSize argument must be an integer or tuple of 2 integers/);
+            /kernelSize argument must be an integer or tuple of 2 integers/);
   });
   it('bad config.kernelSize shape throws exception', () => {
     expect(() => tfl.layers.conv2d({filters: 1, kernelSize: [1, 1, 1, 1]}))
@@ -482,6 +482,7 @@ describeMathCPUAndGPU('conv3d', () => {
   // # The following TensorFlow Python code is used to verify the results of
   // # the 3D convolutions.
   //
+  // ```python
   // import numpy as np
   // import tensorflow as tf
   // tf.enable_eager_execution()
@@ -497,9 +498,9 @@ describeMathCPUAndGPU('conv3d', () => {
   //     input=x, filter=kernel, strides=[1, 1, 1, 1, 1], padding='VALID')
   // outputs.numpy().flatten()
   // # Output:
-  //   array([ 42.,  46.,  50.,  58.,  62.,  66.,  74.,  78.,  82., 106., 110.,
-  //        114., 122., 126., 130., 138., 142., 146., 170., 174., 178., 186.,
-  //        190., 194., 202., 206., 210.], dtype=float32)
+  // #   array([ 42.,  46.,  50.,  58.,  62.,  66.,  74.,  78.,  82., 106.,
+  // #           110., 114., 122., 126., 130., 138., 142., 146., 170., 174.,
+  // #           178., 186., 190., 194., 202., 206., 210.], dtype=float32)
   // outputs.numpy().shape  # (1, 3, 3, 3, 1)
   //
   // # Strides (2, 2, 2)
@@ -507,17 +508,20 @@ describeMathCPUAndGPU('conv3d', () => {
   //     input=x, filter=kernel, strides=[1, 2, 2, 2, 1], padding='VALID')
   // outputs.numpy().flatten()
   // # Output:
-  //   array([ 42.,  50.,  74.,  82., 170., 178., 202., 210.], dtype=float32)
+  // #   array([ 42.,  50.,  74.,  82., 170., 178., 202., 210.], dtype=float32)
   // outputs.numpy().shape  # (1, 2, 2, 2, 1)
+  // ```
 
-  const x4by4by4Data = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-    16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
-    34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
-    51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63];
+  const x4by4by4Data = [
+    0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
+    16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+    32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+    48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63
+  ];
   const kernel2by2by2Data = [1, 1, 1, -1, -1, 1, 1, 1];
 
   const dataFormats: DataFormat[] =
-    [undefined, 'channelsFirst', 'channelsLast'];
+      [undefined, 'channelsFirst', 'channelsLast'];
   const paddingModes: PaddingMode[] = [undefined, 'same', 'valid'];
   const stridesArray = [1, 2];
 
@@ -525,28 +529,30 @@ describeMathCPUAndGPU('conv3d', () => {
     for (const paddingMode of paddingModes) {
       for (const stride of stridesArray) {
         const testTitle = `stride=${stride}, ${paddingMode}, ` +
-          `${dataFormat}`;
+            `${dataFormat}`;
         it(testTitle, () => {
           let x = tensor5d(x4by4by4Data, [1, 1, 4, 4, 4]);
           if (dataFormat !== 'channelsFirst') {
             x = tfc.transpose(x, [0, 2, 3, 4, 1]);  // NCDHW -> NDHWC.
           }
           const kernel = tensor5d(kernel2by2by2Data, [2, 2, 2, 1, 1]);
-          const y = conv3d(
-            x, kernel, [stride, stride, stride], 'valid', dataFormat);
+          const y =
+              conv3d(x, kernel, [stride, stride, stride], 'valid', dataFormat);
 
           let yExpected: Tensor;
           if (stride === 1) {
             // See validation Python code in comment above.
             yExpected = tensor5d(
-              [42., 46., 50., 58., 62., 66., 74., 78., 82., 106., 110.,
-                114., 122., 126., 130., 138., 142., 146., 170., 174., 178.,
-                186., 190., 194., 202., 206., 210.],
-              [1, 1, 3, 3, 3]);
+                [
+                  42.,  46.,  50.,  58.,  62.,  66.,  74.,  78.,  82.,
+                  106., 110., 114., 122., 126., 130., 138., 142., 146.,
+                  170., 174., 178., 186., 190., 194., 202., 206., 210.
+                ],
+                [1, 1, 3, 3, 3]);
           } else if (stride === 2) {
             // See validation Python code in comment above.
             yExpected = tensor5d(
-              [42., 50., 74., 82., 170., 178., 202., 210.], [1, 1, 2, 2, 2]);
+                [42., 50., 74., 82., 170., 178., 202., 210.], [1, 1, 2, 2, 2]);
           }
           if (dataFormat !== 'channelsFirst') {
             yExpected = tfc.transpose(yExpected, [0, 2, 3, 4, 1]);
@@ -565,7 +571,7 @@ describeMathCPUAndGPU('conv3d', () => {
       for (const paddingMode of paddingModes) {
         for (const stride of stridesArray) {
           const testTitle = `outChannels=${outChannels}, stride=${stride}, ` +
-            `${paddingMode}, ${dataFormat}`;
+              `${paddingMode}, ${dataFormat}`;
           it(testTitle, () => {
             let x: Tensor = tensor5d(x4by4by4Data, [1, 1, 4, 4, 4]);
             if (dataFormat !== 'channelsFirst') {
@@ -579,26 +585,28 @@ describeMathCPUAndGPU('conv3d', () => {
               biasData = biasData.concat(biasScalarData);
             }
             const kernel = tfc.transpose(
-              tensor5d(kernelData, [outChannels, 2, 2, 2, 1]), [1, 2, 3, 4, 0]);
+                tensor5d(kernelData, [outChannels, 2, 2, 2, 1]),
+                [1, 2, 3, 4, 0]);
             const bias = tensor1d(biasData);
 
             const y = conv3dWithBias(
-              x, kernel, bias, [stride, stride, stride], 'valid', dataFormat);
+                x, kernel, bias, [stride, stride, stride], 'valid', dataFormat);
 
             let yExpectedShape: [number, number, number, number, number];
             let yExpectedDataPerChannel: number[];
             if (stride === 1) {
               yExpectedShape = [1, outChannels, 3, 3, 3];
               // See validation Python code above.
-              yExpectedDataPerChannel =
-                [42., 46., 50., 58., 62., 66., 74., 78., 82., 106., 110.,
-                  114., 122., 126., 130., 138., 142., 146., 170., 174., 178.,
-                  186., 190., 194., 202., 206., 210.];
+              yExpectedDataPerChannel = [
+                42.,  46.,  50.,  58.,  62.,  66.,  74.,  78.,  82.,
+                106., 110., 114., 122., 126., 130., 138., 142., 146.,
+                170., 174., 178., 186., 190., 194., 202., 206., 210.
+              ];
             } else if (stride === 2) {
               yExpectedShape = [1, outChannels, 2, 2, 2];
               // See validation Python code above.
-              yExpectedDataPerChannel = [
-                42., 50., 74., 82., 170., 178., 202., 210.];
+              yExpectedDataPerChannel =
+                  [42., 50., 74., 82., 170., 178., 202., 210.];
             }
             for (let i = 0; i < yExpectedDataPerChannel.length; ++i) {
               yExpectedDataPerChannel[i] += biasScalarData[0];
@@ -635,15 +643,15 @@ describeMathCPU('Conv3D Layers: Symbolic', () => {
           for (const stride of stridesArray) {
             const strides = stride || kernelSize;
             const testTitle = `filters=${filters}, kernelSize=${
-              JSON.stringify(kernelSize)}, ` +
-              `strides=${JSON.stringify(strides)}, ` +
-              `${dataFormat}, ${padding}`;
+                                  JSON.stringify(kernelSize)}, ` +
+                `strides=${JSON.stringify(strides)}, ` +
+                `${dataFormat}, ${padding}`;
             it(testTitle, () => {
               const inputShape = dataFormat === 'channelsFirst' ?
-                [2, 16, 11, 9, 9] :
-                [2, 11, 9, 9, 16];
+                  [2, 16, 11, 9, 9] :
+                  [2, 11, 9, 9, 16];
               const symbolicInput =
-                new tfl.SymbolicTensor('float32', inputShape, null, [], null);
+                  new tfl.SymbolicTensor('float32', inputShape, null, [], null);
 
               const conv3dLayer = tfl.layers.conv3d({
                 filters,
@@ -688,11 +696,11 @@ describeMathCPU('Conv3D Layers: Symbolic', () => {
               }
               let expectedShape: [number, number, number, number, number];
               if (dataFormat === 'channelsFirst') {
-                expectedShape = [
-                  2, filters, outputRows, outputCols, outputDepth];
+                expectedShape =
+                    [2, filters, outputRows, outputCols, outputDepth];
               } else {
-                expectedShape = [
-                  2, outputRows, outputCols, outputDepth, filters];
+                expectedShape =
+                    [2, outputRows, outputCols, outputDepth, filters];
               }
 
               expect(output.shape).toEqual(expectedShape);
@@ -711,7 +719,7 @@ describeMathCPU('Conv3D Layers: Symbolic', () => {
   it('missing config.kernelSize throws exception', () => {
     // tslint:disable-next-line:no-any
     expect((filters: 1) => tfl.layers.conv3d({filters: 1} as any))
-      .toThrowError(/kernelSize/);
+        .toThrowError(/kernelSize/);
   });
   it('scalar config.kernelSize shape does not throw exception', () => {
     expect(() => tfl.layers.conv3d({filters: 1, kernelSize: 1}))
@@ -719,23 +727,23 @@ describeMathCPU('Conv3D Layers: Symbolic', () => {
   });
   it('bad config.kernelSize shape throws exception', () => {
     expect(() => tfl.layers.conv3d({filters: 1, kernelSize: [1, 1]}))
-      .toThrowError(
-        /kernelSize argument must be an integer or tuple of 3 integers/);
+        .toThrowError(
+            /kernelSize argument must be an integer or tuple of 3 integers/);
   });
   it('bad config.kernelSize shape throws exception', () => {
     expect(() => tfl.layers.conv2d({filters: 1, kernelSize: [1, 1, 1, 1]}))
-      .toThrowError(
-        /kernelSize to be number or number\[\] with length 1, 2, or 3/);
+        .toThrowError(
+            /kernelSize to be number or number\[\] with length 1, 2, or 3/);
   });
   it('missing config.filters throws exception', () => {
     // tslint:disable-next-line:no-any
     expect(() => tfl.layers.conv3d({kernelSize: 1} as any))
-      .toThrowError(/filters to be a 'number' > 0/);
+        .toThrowError(/filters to be a 'number' > 0/);
   });
   it('bad config.filters value throws exception', () => {
     // tslint:disable-next-line:no-any
     expect(() => tfl.layers.conv3d({kernelSize: 1, filters: 0} as any))
-      .toThrowError(/filters to be a 'number' > 0/);
+        .toThrowError(/filters to be a 'number' > 0/);
   });
 });
 
@@ -743,6 +751,7 @@ describeMathCPUAndGPU('Conv3D Layer: Tensor', () => {
   // # The following TensorFlow Python code is used to verify the results of
   // # the 3D convolution layer.
   //
+  // ```python
   // import numpy as np
   // import tensorflow as tf
   // tf.enable_eager_execution()
@@ -754,16 +763,17 @@ describeMathCPUAndGPU('Conv3D Layer: Tensor', () => {
   // outputs = layer(x)
   // outputs.numpy().flatten()
   // # Output:
-  //   array([ 84., 100., 148., 164., 340., 356., 404., 420.], dtype=float32)
+  // #  array([ 84., 100., 148., 164., 340., 356., 404., 420.], dtype=float32)
   // outputs.numpy().shape
   // # Output:
-  //   (1, 2, 2, 2, 1)
+  // #  (1, 2, 2, 2, 1)
   // # TensorFlow Keras (Python) does not have a CPU implementation for channels
   // # first yet, so the validation code uses channels last. Axes 1 and 4 would
   // # be swapped to get channels first.
+  // ```
 
   const x4by4by4Data = [
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+    0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
     16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
     32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63
@@ -777,8 +787,8 @@ describeMathCPUAndGPU('Conv3D Layer: Tensor', () => {
     for (const biasInitializer of biasInitializers) {
       for (const activation of activations) {
         const testTitle =
-          `useBias=${useBias}, biasInitializer=${biasInitializer}, ` +
-          `activation=${activation}`;
+            `useBias=${useBias}, biasInitializer=${biasInitializer}, ` +
+            `activation=${activation}`;
         it(testTitle, () => {
           const x = tensor5d(x4by4by4Data, [1, 1, 4, 4, 4]);
           const conv3dLayer = tfl.layers.conv3d({
@@ -799,7 +809,7 @@ describeMathCPUAndGPU('Conv3D Layer: Tensor', () => {
           }
           if (activation === 'relu') {
             yExpectedData =
-              yExpectedData.map(element => element >= 0 ? element : 0);
+                yExpectedData.map(element => element >= 0 ? element : 0);
           }
           const yExpected = tensor5d(yExpectedData, [1, 1, 2, 2, 2]);
           expectTensorsClose(y, yExpected);
@@ -810,8 +820,8 @@ describeMathCPUAndGPU('Conv3D Layer: Tensor', () => {
 
   it('CHANNEL_LAST', () => {
     // Convert input to CHANNEL_LAST.
-    const x = tfc.transpose(
-      tensor5d(x4by4by4Data, [1, 1, 4, 4, 4]), [0, 2, 3, 4, 1]);
+    const x =
+        tfc.transpose(tensor5d(x4by4by4Data, [1, 1, 4, 4, 4]), [0, 2, 3, 4, 1]);
     const conv3dLayer = tfl.layers.conv3d({
       filters: 1,
       kernelSize: [2, 2, 2],
@@ -824,13 +834,14 @@ describeMathCPUAndGPU('Conv3D Layer: Tensor', () => {
     const y = conv3dLayer.apply(x) as Tensor;
     // See validation Python code above.
     const yExpected = tensor5d(
-      [84., 100., 148., 164., 340., 356., 404., 420.], [1, 2, 2, 2, 1]);
+        [84., 100., 148., 164., 340., 356., 404., 420.], [1, 2, 2, 2, 1]);
     expectTensorsClose(y, yExpected);
   });
 
   // # The following TensorFlow Python code is used to verify the results of
   // # the 3D convolution layer with dilation.
   //
+  // ```python
   // import numpy as np
   // import tensorflow as tf
   // tf.enable_eager_execution()
@@ -843,14 +854,15 @@ describeMathCPUAndGPU('Conv3D Layer: Tensor', () => {
   // outputs = layer(x)
   // outputs.numpy().flatten()
   // # Output:
-  //   array([2.91534395, 6.38913542, 2.78770771, 3.1383292 , 3.04194573,
-  //          3.59669644, 4.85877068, 3.16763418])
+  // #   array([2.91534395, 6.38913542, 2.78770771, 3.1383292 , 3.04194573,
+  // #          3.59669644, 4.85877068, 3.16763418])
   // outputs.numpy().shape
   // # Output:
-  //   (1, 2, 2, 2, 1)
+  // #   (1, 2, 2, 2, 1)
+  // ```
 
-  const dilationRateValues: Array<number | [number, number, number]> = [
-    2, [2, 2, 2]];
+  const dilationRateValues: Array<number|[number, number, number]> =
+      [2, [2, 2, 2]];
   for (const dilationRate of dilationRateValues) {
     it(`CHANNEL_LAST, dilationRate=${dilationRate}`, () => {
       const x = tensor5d(
@@ -892,11 +904,11 @@ describeMathCPUAndGPU('Conv3D Layer: Tensor', () => {
     });
   }
 
-  const explicitDefaultDilations: Array<number | [number, number, number]> = [
-    1, [1, 1, 1]];
+  const explicitDefaultDilations: Array<number|[number, number, number]> =
+      [1, [1, 1, 1]];
   for (const explicitDefaultDilation of explicitDefaultDilations) {
     const testTitle = 'Explicit default dilation rate: ' +
-      JSON.stringify(explicitDefaultDilation);
+        JSON.stringify(explicitDefaultDilation);
     it(testTitle, () => {
       const conv3dLayer = tfl.layers.conv3d({
         filters: 1,
@@ -910,7 +922,7 @@ describeMathCPUAndGPU('Conv3D Layer: Tensor', () => {
       const x = tensor5d(x4by4by4Data, [1, 1, 4, 4, 4]);
       const y = conv3dLayer.apply(x) as Tensor;
       const yExpected = tensor5d(
-        [84., 100., 148., 164., 340., 356., 404., 420.], [1, 1, 2, 2, 2]);
+          [84., 100., 148., 164., 340., 356., 404., 420.], [1, 1, 2, 2, 2]);
       expectTensorsClose(y, yExpected);
     });
   }
@@ -1134,7 +1146,7 @@ describeMathCPUAndGPU('Conv1D Layer: Tensor', () => {
   it('bad config.kernelSize throws exception', () => {
     expect(() => tfl.layers.conv1d({filters: 1, kernelSize: [1, 1, 1]}))
         .toThrowError(
-          /kernelSize argument must be an integer or tuple of 1 integers/);
+            /kernelSize argument must be an integer or tuple of 1 integers/);
   });
   it('missing config.filters throws exception', () => {
     // tslint:disable-next-line:no-any
