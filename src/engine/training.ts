@@ -12,6 +12,7 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {io, ModelPredictConfig as ModelPredictArgs, NamedTensorMap, Optimizer, Scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
+
 import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {History, ModelLoggingVerbosity} from '../base_callbacks';
@@ -26,10 +27,11 @@ import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_ut
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
+import {version} from '../version';
 import {Container, ContainerArgs} from './container';
 import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
-import {SymbolicTensor} from './topology';
+import {DisposeResult, SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
 
@@ -428,6 +430,8 @@ export interface ModelCompileArgs {
   //   targetTensors.
 }
 
+const LAYERS_MODEL_FORMAT_NAME = 'layers-model';
+
 /**
  * A `tf.LayersModel` is a directed, acyclic graph of `tf.Layer`s plus methods
  * for training, evaluation, prediction and saving.
@@ -444,7 +448,11 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   // compatibility since this class name shows up in the serialization format.
   /** @nocollapse */
   static className = 'Model';
-  optimizer: Optimizer;
+  protected optimizer_: Optimizer;
+  // Whether the model instance owns the optimizer: `true` if and only if
+  // `optimizer` is created from a string parameter during `compile()` call.
+  protected isOptimizerOwned: boolean;
+
   loss: string|string[]|{[outputName: string]: string}|LossOrMetricFn|
       LossOrMetricFn[]|{[outputName: string]: LossOrMetricFn};
   lossFunctions: LossOrMetricFn[];
@@ -546,13 +554,15 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     this.loss = args.loss;
 
     if (typeof args.optimizer === 'string') {
-      this.optimizer = optimizers.getOptimizer(args.optimizer);
+      this.optimizer_ = optimizers.getOptimizer(args.optimizer);
+      this.isOptimizerOwned = true;
     } else {
       if (!(args.optimizer instanceof Optimizer)) {
         throw new ValueError(
             `User-defined optimizer must be an instance of tf.Optimizer.`);
       }
-      this.optimizer = args.optimizer;
+      this.optimizer_ = args.optimizer;
+      this.isOptimizerOwned = false;
     }
 
     // TODO(cais): Add lossWeights.
@@ -1102,7 +1112,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
       y: Tensor|Tensor[]|{[inputName: string]: Tensor}, checkBatchAxis = true,
       batchSize?: number): [Tensor[], Tensor[], Tensor[]] {
     // TODO(cais): Add sampleWeight, classWeight
-    if (this.optimizer == null) {
+    if (this.optimizer_ == null) {
       throw new RuntimeError(
           'You must compile a model before training/testing. Use ' +
           'LayersModel.compile(modelCompileArgs).');
@@ -1297,7 +1307,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           param => param.read() as tfc.Variable);
       const returnCost = true;
       const totalLossValue =
-          this.optimizer.minimize(totalLossFunction, returnCost, variables);
+          this.optimizer_.minimize(totalLossFunction, returnCost, variables);
 
       return [totalLossValue].concat(metricsValues);
     };
@@ -1523,6 +1533,29 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     this.stopTraining_ = stop;
   }
 
+  get optimizer(): Optimizer {
+    return this.optimizer_;
+  }
+
+  set optimizer(optimizer: Optimizer) {
+    if (this.optimizer_ !== optimizer) {
+      this.optimizer_ = optimizer;
+      this.isOptimizerOwned = false;
+    }
+  }
+
+  dispose(): DisposeResult {
+    const result = super.dispose();
+    if (result.refCountAfterDispose === 0 && this.optimizer != null &&
+        this.isOptimizerOwned) {
+      const numTensorsBeforeOptmizerDisposal = tfc.memory().numTensors;
+      this.optimizer_.dispose();
+      result.numDisposedVariables +=
+          numTensorsBeforeOptmizerDisposal - tfc.memory().numTensors;
+    }
+    return result;
+  }
+
   /**
    * Save the configuration and/or weights of the LayersModel.
    *
@@ -1635,7 +1668,10 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     return handlerOrURL.save({
       modelTopology: modelConfig,
       weightData: weightDataAndSpecs.data,
-      weightSpecs: weightDataAndSpecs.specs
+      weightSpecs: weightDataAndSpecs.specs,
+      format: LAYERS_MODEL_FORMAT_NAME,
+      generatedBy: `TensorFlow.js tfjs-layers v${version}`,
+      convertedBy: null,
     });
   }
 }

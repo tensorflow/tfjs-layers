@@ -10,7 +10,7 @@
 
 /* Original source keras/models.py */
 
-import {dispose, io, NamedTensorMap, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
+import {dispose, io, NamedTensorMap, Optimizer, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
 
 import {getUid} from './backend/state';
 import {History} from './base_callbacks';
@@ -28,7 +28,6 @@ import {Kwargs} from './types';
 import * as generic_utils from './utils/generic_utils';
 import {convertPythonicToTs} from './utils/serialization_utils';
 import {getExactlyOneShape} from './utils/types_utils';
-
 
 /**
  * Parses a JSON model configuration file and returns a model instance.
@@ -249,8 +248,7 @@ export async function loadLayersModelInternal(
       // assume it is a relative http path.
       // TODO(cais): Reformat the args into a single `LoadOptions` once the core
       // is refactored.
-      handlers.push(io.browserHTTPRequest(
-          pathOrIOHandler, null, null, null, options.onProgress));
+      handlers.push(io.browserHTTPRequest(pathOrIOHandler, options));
     } else if (handlers.length > 1) {
       throw new ValueError(
           `Found more than one (${handlers.length}) load handlers for ` +
@@ -789,7 +787,9 @@ export class Sequential extends LayersModel {
   compile(args: ModelCompileArgs): void {
     this.build();
     this.model.compile(args);
-    this.optimizer = this.model.optimizer;
+    this.optimizer_ = this.model.optimizer;
+    // tslint:disable-next-line:no-any
+    this.isOptimizerOwned = (this.model as any).isOptimizerOwned;
     this.loss = this.model.loss;
     this.metrics = this.model.metrics;
     // TODO(cais): Add this.lossWeights, this.sampleWeightMode,
@@ -797,6 +797,14 @@ export class Sequential extends LayersModel {
     this.metricsTensors = this.model.metricsTensors;
     this.metricsNames = this.model.metricsNames;
     // TODO(cais): Add sampleWeights.
+  }
+
+  get optimizer(): Optimizer {
+    return this.model.optimizer;
+  }
+
+  set optimizer(optimizer: Optimizer) {
+    this.model.optimizer = optimizer;
   }
 
   /**
@@ -843,21 +851,50 @@ export class Sequential extends LayersModel {
     return this.model.fit(x, y, args);
   }
 
-  // TODO(cais): Add code snippet below when it's possible to instantiate
-  //   actual dataset objects.
   /**
    * Trains the model using a dataset object.
    *
-   * @param dataset A dataset object. Its `iterator()` method is expected
-   *   to generate a dataset iterator object, the `next()` method of which
-   *   is expected to produce data batches for evaluation. The return value
-   *   of the `next()` call ought to contain a boolean `done` field and a
-   *   `value` field. The `value` field is expected to be an array of two
-   *   `tf.Tensor`s or an array of two nested `tf.Tensor` structures. The former
-   *   case is for models with exactly one input and one output (e.g..
-   *   a sequential model). The latter case is for models with multiple
-   *   inputs and/or multiple outputs. Of the two items in the array, the
-   *   first is the input feature(s) and the second is the output target(s).
+   * ```js
+   * const xArray = [
+   *   [1, 1, 1, 1, 1, 1, 1, 1, 1],
+   *   [1, 1, 1, 1, 1, 1, 1, 1, 1],
+   *   [1, 1, 1, 1, 1, 1, 1, 1, 1],
+   *   [1, 1, 1, 1, 1, 1, 1, 1, 1],
+   * ];
+   * const yArray = [1, 1, 1, 1];
+   * // Create a dataset from the JavaScript array.
+   * const xDataset = tf.data.array(xArray);
+   * const yDataset = tf.data.array(yArray);
+   * // Zip combines the `x` and `y` Datasets into a single Dataset, the
+   * // iterator of which will return an object containing of two tensors,
+   * // corresponding to `x` and `y`.  The call to `batch(4)` will bundle
+   * // four such samples into a single object, with the same keys now pointing
+   * // to tensors that hold 4 examples, organized along the batch dimension.
+   * // The call to `shuffle(4)` causes each iteration through the dataset to
+   * // happen in a different order.  The size of the shuffle window is 4.
+   * const xyDataset = tf.data.zip({xs: xDataset, ys: yDataset})
+   *     .batch(4)
+   *     .shuffle(4);
+   * const model = tf.sequential({
+   *   layers: [tf.layers.dense({units: 1, inputShape: [9]})]
+   * });
+   * model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+   * const history = await model.fitDataset(xyDataset, {
+   *   epochs: 4,
+   *   callbacks: {onEpochEnd: (epoch, logs) => console.log(logs.loss)}
+   * });
+   * ```
+   *
+   * @param dataset A dataset object. Its `iterator()` method is expected to
+   *   generate a dataset iterator object, the `next()` method of which is
+   *   expected to produce data batches for evaluation. The return value of the
+   *   `next()` call ought to contain a boolean `done` field and a `value`
+   *   field. The `value` field is expected to be an array of two `tf.Tensor`s
+   *   or an array of two nested `tf.Tensor` structures. The former case is for
+   *   models with exactly one input and one output (e.g.. a sequential model).
+   *   The latter case is for models with multiple inputs and/or multiple
+   *   outputs. Of the two items in the array, the first is the input feature(s)
+   *   and the second is the output target(s).
    * @param args A `ModelFitDatasetArgs`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
