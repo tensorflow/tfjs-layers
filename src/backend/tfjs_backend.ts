@@ -377,7 +377,7 @@ export function randomNormal(
  * @param x A tensor of at least rank 2.
  * @param y A tensor of at least rank 2.
  * @param fusedActivation (optional) A string identifying the activation
- * function.
+ *                                   function.
  * @return Result of the dot operation.
  */
 export function dot(
@@ -403,6 +403,9 @@ export function dot(
   if ((x.rank === 2) && (y.rank === 2)) {
     const transposeX = false;
     const transposeY = false;
+    // tfc.fused.matMul only fuses certain activation functions. Unsupported
+    // activation functions are treated as 'linear' activations, which is
+    // equivalent to a no-op.
     return tfc.fused.matMul(
         x as Tensor2D, y as Tensor2D, transposeX, transposeY,
         bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null,
