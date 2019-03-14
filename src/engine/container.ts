@@ -1122,10 +1122,22 @@ export abstract class Container extends Layer {
       }
     }
 
-    function processNode(layer: Layer, nodeData: serialization.ConfigDict[]) {
+    function processNode(
+        layer: Layer, nodeData: serialization.ConfigDictArray[]) {
       const inputTensors: SymbolicTensor[] = [];
       let kwargs;
+      if (!Array.isArray(nodeData[0])) {
+        nodeData = [nodeData];
+      }
       for (const inputData of nodeData) {
+        // let inboundLayerName: string;
+        // let inboundNodeIndex: number;
+        // let inboundTensorIndex: number;
+        // if (typeof inputData === 'string') {
+        //   inboundLayerName = inputData;
+        //   inboundNodeIndex = 0;
+        //   inboundTensorIndex = 0;
+        // } else {
         const inboundLayerName = inputData[0] as string;
         const inboundNodeIndex = inputData[1] as number;
         const inboundTensorIndex = inputData[2] as number;
@@ -1137,13 +1149,16 @@ export abstract class Container extends Layer {
           throw new ValueError(`Improperly formatted model config for layer ${
               JSON.stringify(layer)}: ${JSON.stringify(inputData)}`);
         }
+        // }
         if (!(inboundLayerName in createdLayers)) {
-          addUnprocessedNode(layer, nodeData);
+          // tslint:disable-next-line:no-any
+          addUnprocessedNode(layer, nodeData as any);
           return;
         }
         const inboundLayer = createdLayers[inboundLayerName];
         if (inboundLayer.inboundNodes.length <= inboundNodeIndex) {
-          addUnprocessedNode(layer, nodeData);
+          // tslint:disable-next-line:no-any
+          addUnprocessedNode(layer, nodeData as any);
           return;
         }
         const inboundNode = inboundLayer.inboundNodes[inboundNodeIndex];
@@ -1210,7 +1225,8 @@ export abstract class Container extends Layer {
           const currentUnprocessedNodesForLayer = unprocessedNodes[layer.name];
           delete unprocessedNodes[layer.name];
           for (const nodeData of currentUnprocessedNodesForLayer) {
-            processNode(layer, nodeData);
+            // tslint:disable-next-line:no-any
+            processNode(layer, nodeData as any);
           }
         }
       }
@@ -1218,8 +1234,11 @@ export abstract class Container extends Layer {
 
     const inputTensors: SymbolicTensor[] = [];
     const outputTensors: SymbolicTensor[] = [];
-    const inputLayersFromConfig =
-        config.inputLayers as serialization.ConfigDict[];
+    let inputLayersFromConfig =
+        config.inputLayers as serialization.ConfigDictArray[];
+    if (!Array.isArray(inputLayersFromConfig[0])) {
+      inputLayersFromConfig = [inputLayersFromConfig];
+    }
     for (const layerData of inputLayersFromConfig) {
       const layerName = layerData[0] as string;
       const nodeIndex = layerData[1] as number;
@@ -1229,8 +1248,11 @@ export abstract class Container extends Layer {
       const layerOutputTensors = layer.inboundNodes[nodeIndex].outputTensors;
       inputTensors.push(layerOutputTensors[tensorIndex]);
     }
-    const outputLayersFromConfig =
-        config.outputLayers as serialization.ConfigDict[];
+    let outputLayersFromConfig =
+        config.outputLayers as serialization.ConfigDictArray[];
+    if (!Array.isArray(outputLayersFromConfig[0])) {
+      outputLayersFromConfig = [outputLayersFromConfig];
+    }
     for (const layerData of outputLayersFromConfig) {
       const layerName = layerData[0] as string;
       const nodeIndex = layerData[1] as number;
