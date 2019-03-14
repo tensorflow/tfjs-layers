@@ -376,10 +376,12 @@ export function randomNormal(
  *
  * @param x A tensor of at least rank 2.
  * @param y A tensor of at least rank 2.
+ * @param fusedActivation (optional) A string identifying the activation
+ * function.
  * @return Result of the dot operation.
  */
 export function dot(
-    x: Tensor, y: Tensor, activation?: tfc.fused.Activation,
+    x: Tensor, y: Tensor, fusedActivation?: tfc.fused.Activation,
     bias?: Tensor): Tensor {
   if ((x.rank < 2) || (y.rank < 2)) {
     throw new NotImplementedError(
@@ -403,7 +405,8 @@ export function dot(
     const transposeY = false;
     return tfc.fused.matMul(
         x as Tensor2D, y as Tensor2D, transposeX, transposeY,
-        bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null, activation);
+        bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null,
+        fusedActivation);
   } else {
     // Reshape x into the analogous 2D Tensor.
     const xFirstDims = x.shape.slice();  // Holds all but the last dim of x.
@@ -436,7 +439,7 @@ export function dot(
         .matMul(
             x as Tensor2D, y as Tensor2D, transposeX, transposeY,
             bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null,
-            activation)
+            fusedActivation)
         .reshape(outputShape);
   }
 }
@@ -539,6 +542,9 @@ export function pow(x: Tensor, a: Tensor|number): Tensor {
   });
 }
 
+/**
+ * Reshapes bias tensor according to rank of x.
+ */
 function reshapeBias(xRank: number, bias: Tensor, dataFormat: string) {
   const biasShape = bias.shape;
 
