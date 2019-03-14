@@ -1130,14 +1130,6 @@ export abstract class Container extends Layer {
         nodeData = [nodeData];
       }
       for (const inputData of nodeData) {
-        // let inboundLayerName: string;
-        // let inboundNodeIndex: number;
-        // let inboundTensorIndex: number;
-        // if (typeof inputData === 'string') {
-        //   inboundLayerName = inputData;
-        //   inboundNodeIndex = 0;
-        //   inboundTensorIndex = 0;
-        // } else {
         const inboundLayerName = inputData[0] as string;
         const inboundNodeIndex = inputData[1] as number;
         const inboundTensorIndex = inputData[2] as number;
@@ -1149,7 +1141,6 @@ export abstract class Container extends Layer {
           throw new ValueError(`Improperly formatted model config for layer ${
               JSON.stringify(layer)}: ${JSON.stringify(inputData)}`);
         }
-        // }
         if (!(inboundLayerName in createdLayers)) {
           // tslint:disable-next-line:no-any
           addUnprocessedNode(layer, nodeData as any);
