@@ -1126,7 +1126,7 @@ export abstract class Container extends Layer {
         layer: Layer, nodeData: serialization.ConfigDictArray[]) {
       const inputTensors: SymbolicTensor[] = [];
       let kwargs;
-      if (!Array.isArray(nodeData[0])) {
+      if (nodeData.length > 0 && !Array.isArray(nodeData[0])) {
         nodeData = [nodeData];
       }
       for (const inputData of nodeData) {
@@ -1227,7 +1227,8 @@ export abstract class Container extends Layer {
     const outputTensors: SymbolicTensor[] = [];
     let inputLayersFromConfig =
         config.inputLayers as serialization.ConfigDictArray[];
-    if (!Array.isArray(inputLayersFromConfig[0])) {
+    if (inputLayersFromConfig.length > 0 &&
+        !Array.isArray(inputLayersFromConfig[0])) {
       inputLayersFromConfig = [inputLayersFromConfig];
     }
     for (const layerData of inputLayersFromConfig) {
@@ -1241,7 +1242,8 @@ export abstract class Container extends Layer {
     }
     let outputLayersFromConfig =
         config.outputLayers as serialization.ConfigDictArray[];
-    if (!Array.isArray(outputLayersFromConfig[0])) {
+    if (outputLayersFromConfig.length > 0 &&
+        !Array.isArray(outputLayersFromConfig[0])) {
       outputLayersFromConfig = [outputLayersFromConfig];
     }
     for (const layerData of outputLayersFromConfig) {
