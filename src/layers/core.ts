@@ -310,13 +310,13 @@ export class Dense extends Layer {
       this.invokeCallHook(inputs, kwargs);
       // Dense layer accepts only a single input.
       const input = getExactlyOneTensor(inputs);
-      const activationName =
+      const fusedActivationName =
           mapActivationToFusedKernel(this.activation.getClassName());
       let output: Tensor;
 
-      if (activationName != null) {
+      if (fusedActivationName != null) {
         output = K.dot(
-            input, this.kernel.read(), activationName,
+            input, this.kernel.read(), fusedActivationName,
             this.bias ? this.bias.read() : null);
       } else {
         output = K.dot(input, this.kernel.read());
