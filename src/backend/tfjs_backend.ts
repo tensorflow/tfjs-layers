@@ -377,7 +377,7 @@ export function randomNormal(
  * @param x A tensor of at least rank 2.
  * @param y A tensor of at least rank 2.
  * @param fusedActivation (optional) A string identifying the activation
- *                                   function.
+ *   function.
  * @return Result of the dot operation.
  */
 export function dot(
