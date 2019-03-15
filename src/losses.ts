@@ -10,7 +10,7 @@
 
 /* Original Source: losses.py */
 import * as tfc from '@tensorflow/tfjs-core';
-import {scalar, Tensor, Tensor1D, tidy, util} from '@tensorflow/tfjs-core';
+import {Tensor, Tensor1D, tidy, util} from '@tensorflow/tfjs-core';
 
 import {epsilon} from './backend/common';
 import {getScalar} from './backend/state';
