@@ -485,6 +485,18 @@ describeMathCPUAndGPU('LayersModel.fit', () => {
     }
   });
 
+  it('training with cosineProximity loss should not crash', async () => {
+    createDenseModelAndData();
+    model.compile({optimizer: 'SGD', loss: 'cosineProximity'});
+    // Use batchSize === numSamples to get exactly one batch.
+    const history = await model.fit(
+        inputs, targets,
+        {batchSize: numSamples, epochs: 2, validationSplit: 0.2});
+    expect(history.epoch).toEqual([0, 1]);
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.val_loss.length).toEqual(2);
+  });
+
   it('training with custom loss', async () => {
     // Use the following Python code snippet to get reference values
     // for assertion:
