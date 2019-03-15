@@ -21,38 +21,41 @@ import {Shape} from '../keras_format/common';
 import {Kwargs} from '../types';
 import {getExactlyOneTensor} from '../utils/types_utils';
 
+export declare interface GaussianNoiseArgs extends LayerArgs {
+  /** Standard Deviation  */
+  stddev: number;
+}
+
+/**
+ * Apply additive zero-centered Gaussian noise.
+ *
+ * This is useful to mitigate overfitting
+ * (you could see it as a form of random data augmentation).
+ * Gaussian Noise (GS) is a natural choice as corruption process
+ * for real valued inputs.
+ *
+ * As it is a regularization layer, it is only active at training time.
+ *
+ * # Arguments
+ *     stddev: float, standard deviation of the noise distribution.
+ *
+ * # Input shape
+ *         Arbitrary. Use the keyword argument `input_shape`
+ *         (tuple of integers, does not include the samples axis)
+ *         when using this layer as the first layer in a model.
+ *
+ * # Output shape
+ *         Same shape as input.
+ */
 export class GaussianNoise extends Layer {
-  /**
-   * Apply additive zero-centered Gaussian noise.
-   *
-   * This is useful to mitigate overfitting
-   * (you could see it as a form of random data augmentation).
-   * Gaussian Noise (GS) is a natural choice as corruption process
-   * for real valued inputs.
-   *
-   * As it is a regularization layer, it is only active at training time.
-   *
-   * # Arguments
-   *     stddev: float, standard deviation of the noise distribution.
-   *
-   * # Input shape
-   *         Arbitrary. Use the keyword argument `input_shape`
-   *         (tuple of integers, does not include the samples axis)
-   *         when using this layer as the first layer in a model.
-   *
-   * # Output shape
-   *         Same shape as input.
-   */
-
-
 
   static className = 'GaussianNoise';
   readonly stddev: number;
 
-  constructor(stddev: number, args?: LayerArgs) {
-    super(args || {});
+  constructor(args: GaussianNoiseArgs) {
+    super(args);
     this.supportsMasking = true;
-    this.stddev = stddev;
+    this.stddev = args.stddev;
   }
 
   computeOutputShape(inputShape: Shape | Shape[]): Shape | Shape[] {
@@ -81,38 +84,41 @@ export class GaussianNoise extends Layer {
 }
 serialization.registerClass(GaussianNoise);
 
+export declare interface GaussianDropoutArgs extends LayerArgs {
+  /** drop probability  */
+  rate: number;
+}
 
+/**
+ * Apply multiplicative 1-centered Gaussian noise.
+ *
+ * # Arguments
+ *     rate: float, drop probability (as with `Dropout`).
+ *        The multiplicative noise will have
+ *        standard deviation `sqrt(rate / (1 - rate))`.
+ *
+ * # Input shape
+ *     Arbitrary. Use the keyword argument `input_shape`
+ *     (tuple of integers, does not include the samples axis)
+ *     when using this layer as the first layer in a model.
+ *
+ * # Output shape
+ *     Same shape as input.
+ *
+ * # References
+ *     - [Dropout: A Simple Way to Prevent Neural Networks from Overfitting](
+ *        http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf)
+ *
+ */
 export class GaussianDropout extends Layer {
-
-  /**
-   * Apply multiplicative 1-centered Gaussian noise.
-   *
-   * # Arguments
-   *     rate: float, drop probability (as with `Dropout`).
-   *        The multiplicative noise will have
-   *        standard deviation `sqrt(rate / (1 - rate))`.
-   *
-   * # Input shape
-   *     Arbitrary. Use the keyword argument `input_shape`
-   *     (tuple of integers, does not include the samples axis)
-   *     when using this layer as the first layer in a model.
-   *
-   * # Output shape
-   *     Same shape as input.
-   *
-   * # References
-   *     - [Dropout: A Simple Way to Prevent Neural Networks from Overfitting](
-   *        http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf)
-   *
-   */
 
   static className = 'GaussianDropout';
   readonly rate: number;
 
-  constructor(rate: number, args?: LayerArgs) {
-    super(args || {});
+  constructor(args: GaussianDropoutArgs) {
+    super(args);
     this.supportsMasking = true;
-    this.rate = rate;
+    this.rate = args.rate;
   }
 
   computeOutputShape(inputShape: Shape | Shape[]): Shape | Shape[] {
@@ -143,48 +149,55 @@ export class GaussianDropout extends Layer {
 }
 serialization.registerClass(GaussianDropout);
 
-export class AlphaDropout extends Layer {
-  /**
-   * Applies Alpha Dropout to the input.
-   *
-   * Alpha Dropout is a `Dropout` that keeps mean and variance of inputs
-   * to their original values, in order to ensure the self-normalizing property
-   * even after this dropout.
-   * Alpha Dropout fits well to Scaled Exponential Linear Units
-   * by randomly setting activations to the negative saturation value.
-   *
-   *
-   * # Arguments
-   *    rate: float, drop probability (as with `Dropout`).
-   *        The multiplicative noise will have
-   *        standard deviation `sqrt(rate / (1 - rate))`.
-   *    noise_shape: A 1-D `Tensor` of type `int32`, representing the
-   *         shape for randomly generated keep/drop flags.
-   *
-   *
-   * # Input shape
-   *         Arbitrary. Use the keyword argument `input_shape`
-   *         (tuple of integers, does not include the samples axis)
-   *         when using this layer as the first layer in a model.
-   *
-   * # Output shape
-   *         Same shape as input.
-   *
-   * # References
-   *     - [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515)
+export declare interface AlphaDropoutArgs extends LayerArgs {
+  /** drop probability  */
+  rate: number;
+  /** A 1-D `Tensor` of type `int32`, representing the
+   * shape for randomly generated keep/drop flags.
    */
+  noiseShape?: Shape;
+}
 
-
+/**
+ * Applies Alpha Dropout to the input.
+ *
+ * Alpha Dropout is a `Dropout` that keeps mean and variance of inputs
+ * to their original values, in order to ensure the self-normalizing property
+ * even after this dropout.
+ * Alpha Dropout fits well to Scaled Exponential Linear Units
+ * by randomly setting activations to the negative saturation value.
+ *
+ *
+ * # Arguments
+ *    rate: float, drop probability (as with `Dropout`).
+ *        The multiplicative noise will have
+ *        standard deviation `sqrt(rate / (1 - rate))`.
+ *    noise_shape: A 1-D `Tensor` of type `int32`, representing the
+ *         shape for randomly generated keep/drop flags.
+ *
+ *
+ * # Input shape
+ *         Arbitrary. Use the keyword argument `input_shape`
+ *         (tuple of integers, does not include the samples axis)
+ *         when using this layer as the first layer in a model.
+ *
+ * # Output shape
+ *         Same shape as input.
+ *
+ * # References
+ *     - [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515)
+ */
+export class AlphaDropout extends Layer {
 
   static className = 'AlphaDropout';
   readonly rate: number;
   readonly noiseShape: Shape;
 
-  constructor(rate: number, noiseShape?: Shape, args?: LayerArgs) {
-    super(args || {});
+  constructor(args: AlphaDropoutArgs) {
+    super(args);
     this.supportsMasking = true;
-    this.rate = rate;
-    this.noiseShape = noiseShape;
+    this.rate = args.rate;
+    this.noiseShape = args.noiseShape;
   }
 
   _getNoiseShape(inputs: Tensor | Tensor[]) {
