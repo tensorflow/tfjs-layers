@@ -672,3 +672,39 @@ export const maxPool1d = maxPooling1d;
 export const maxPool2d = maxPooling2d;
 
 export {Layer, RNN, RNNCell, input /* alias for tf.input */};
+
+/**
+ * @doc {
+ *   heading: 'Layers',
+ *   subheading: 'Noise',
+ *   namespace: 'layers',
+ *   useDocsFrom: 'GaussianNoise'
+ * }
+ */
+export function gaussianNoise(args: GaussianNoiseArgs): GaussianNoise {
+  return new GaussianNoise(args);
+}
+
+/**
+ * @doc {
+ *   heading: 'Layers',
+ *   subheading: 'Noise',
+ *   namespace: 'layers',
+ *   useDocsFrom: 'GaussianDropout'
+ * }
+ */
+export function gaussianDropout(args: GaussianDropoutArgs): GaussianDropout {
+  return new GaussianDropout(args);
+}
+
+/**
+ * @doc {
+ *   heading: 'Layers',
+ *   subheading: 'Noise',
+ *   namespace: 'layers',
+ *   useDocsFrom: 'AlphaDropout'
+ * }
+ */
+export function alphaDropout(args: AlphaDropoutArgs): AlphaDropout {
+  return new AlphaDropout(args);
+}
