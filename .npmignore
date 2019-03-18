@@ -1,6 +1,6 @@
 .rpt2_cache/
 .vscode/
-src/**/**_test.ts
+src/**/*_test.ts
 demos/
 python/
 scripts/
