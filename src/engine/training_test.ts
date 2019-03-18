@@ -495,8 +495,12 @@ describeMathCPUAndGPU('LayersModel.fit', () => {
     expect(history.epoch).toEqual([0, 1]);
     expect(history.history.loss.length).toEqual(2);
     expect(history.history.val_loss.length).toEqual(2);
-    test_util.expectArraysClose(history.history['loss'] as number[], [-0.70710688829422, -0.7077317237854004]);
-    test_util.expectArraysClose(history.history['val_loss'] as number[], [-0.70710688829422, -0.7077317237854004]);
+    test_util.expectArraysClose(
+      history.history['loss'] as number[], 
+      [-0.70710688829422, -0.7077317237854004]);
+    test_util.expectArraysClose(
+      history.history['val_loss'] as number[], 
+      [-0.70710688829422, -0.7077317237854004]);
   });
 
   it('training with custom loss', async () => {
