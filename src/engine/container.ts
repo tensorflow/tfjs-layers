@@ -15,6 +15,7 @@ import {NamedTensorMap, Scalar, serialization, Tensor, tidy} from '@tensorflow/t
 import {getUid} from '../backend/state';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {Shape} from '../keras_format/common';
+import {TensorKeyArray, TensorKeyWithArgsArray} from '../keras_format/node_config';
 import {PyJsonDict} from '../keras_format/types';
 import {deserialize as deserializeLayer} from '../layers/serialization';
 import {Kwargs} from '../types';
@@ -1112,9 +1113,9 @@ export abstract class Container extends Layer {
     // layer call until it becomes possible to process it
     // (i.e. until the input tensors to the call all exist).
     const unprocessedNodes:
-        {[layer: string]: serialization.ConfigDict[][]} = {};
+        {[layer: string]: [[TensorKeyArray | TensorKeyWithArgsArray]]} = {};
     function addUnprocessedNode(
-        layer: Layer, nodeData: serialization.ConfigDict[]) {
+        layer: Layer, nodeData: [TensorKeyArray|TensorKeyWithArgsArray]) {
       if (!(layer.name in unprocessedNodes)) {
         unprocessedNodes[layer.name] = [nodeData];
       } else {
@@ -1123,12 +1124,15 @@ export abstract class Container extends Layer {
     }
 
     function processNode(
-        layer: Layer, nodeData: serialization.ConfigDictArray[]) {
+        layer: Layer,
+        nodeData: TensorKeyArray|
+        TensorKeyWithArgsArray|[TensorKeyArray | TensorKeyWithArgsArray]) {
       const inputTensors: SymbolicTensor[] = [];
       let kwargs;
       if (nodeData.length > 0 && !Array.isArray(nodeData[0])) {
-        nodeData = [nodeData];
+        nodeData = [nodeData as TensorKeyWithArgsArray];
       }
+      nodeData = nodeData as [TensorKeyArray | TensorKeyWithArgsArray];
       for (const inputData of nodeData) {
         const inboundLayerName = inputData[0] as string;
         const inboundNodeIndex = inputData[1] as number;
@@ -1142,14 +1146,12 @@ export abstract class Container extends Layer {
               JSON.stringify(layer)}: ${JSON.stringify(inputData)}`);
         }
         if (!(inboundLayerName in createdLayers)) {
-          // tslint:disable-next-line:no-any
-          addUnprocessedNode(layer, nodeData as any);
+          addUnprocessedNode(layer, nodeData);
           return;
         }
         const inboundLayer = createdLayers[inboundLayerName];
         if (inboundLayer.inboundNodes.length <= inboundNodeIndex) {
-          // tslint:disable-next-line:no-any
-          addUnprocessedNode(layer, nodeData as any);
+          addUnprocessedNode(layer, nodeData);
           return;
         }
         const inboundNode = inboundLayer.inboundNodes[inboundNodeIndex];
@@ -1183,7 +1185,7 @@ export abstract class Container extends Layer {
       createdLayers[layerName] = layer;
       // Gather layer inputs.
       const inboundNodesData =
-          layerData.inboundNodes as serialization.ConfigDict[];
+          layerData.inboundNodes as [[TensorKeyWithArgsArray]];
       for (const nodeData of inboundNodesData) {
         if (!(nodeData instanceof Array)) {
           throw new ValueError(
