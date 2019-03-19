@@ -1,8 +1,8 @@
 {
   "name": "@tensorflow/tfjs-layers",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TensorFlow layers API in JavaScript",
-  "license": "Apache-2.0",
+  "license": "Apache-2.0 AND MIT",
   "private": false,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,7 @@
   "jsdelivr": "dist/tf-layers.min.js",
   "unpkg": "dist/tf-layers.min.js",
   "devDependencies": {
-    "@tensorflow/tfjs-core": "1.0.0",
+    "@tensorflow/tfjs-core": "1.0.1",
     "@types/jasmine": "~2.5.53",
     "clang-format": "~1.2.2",
     "http-server": "~0.10.0",
@@ -30,7 +30,7 @@
     "rollup-plugin-uglify": "~3.0.0",
     "tslint": "~5.11.0",
     "tslint-no-circular-imports": "^0.5.0",
-    "typescript": "2.9.2",
+    "typescript": "3.3.3333",
     "yalc": "~1.0.0-pre.21"
   },
   "scripts": {
@@ -46,6 +46,6 @@
     "lint": "tslint -p . -t verbose"
   },
   "peerDependencies": {
-    "@tensorflow/tfjs-core": "1.0.0"
+    "@tensorflow/tfjs-core": "1.0.1"
   }
 }
