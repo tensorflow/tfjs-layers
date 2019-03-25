@@ -259,8 +259,8 @@ async function fitLoop(
     outLabels?: string[], batchSize?: number, epochs?: number, verbose?: number,
     callbacks?: BaseCallback[], valF?: (data: Tensor[]) => Scalar[],
     valIns?: Tensor[], shuffle?: boolean|string, callbackMetrics?: string[],
-    initialEpoch?: number, stepsPerEpoch?: number, validationSteps?: number,
-    yieldEvery?: YieldEveryOptions): Promise<History> {
+    initialEpoch?: number, stepsPerEpoch?: number,
+    validationSteps?: number): Promise<History> {
   if (batchSize == null) {
     batchSize = 32;
   }
@@ -301,8 +301,8 @@ async function fitLoop(
   }
 
   const {callbackList, history} = configureCallbacks(
-      callbacks, yieldEvery, verbose, epochs, initialEpoch, numTrainSamples,
-      stepsPerEpoch, batchSize, doValidation, callbackMetrics);
+      callbacks, verbose, epochs, initialEpoch, numTrainSamples, stepsPerEpoch,
+      batchSize, doValidation, callbackMetrics);
   callbackList.setModel(model);
   model.history = history;
   await callbackList.onTrainBegin();
@@ -504,11 +504,11 @@ export async function fitTensors(
       callbackMetrics = outLabels.slice();
     }
 
-    const callbacks = standardizeCallbacks(args.callbacks);
+    const callbacks = standardizeCallbacks(args.callbacks, args.yieldEvery);
     const out = await fitLoop(
         model, trainFunction, ins, outLabels, batchSize, args.epochs,
         args.verbose, callbacks, valFunction, valIns, args.shuffle,
-        callbackMetrics, args.initialEpoch, null, null, args.yieldEvery);
+        callbackMetrics, args.initialEpoch, null, null);
     return out;
   } finally {
     model.isTraining = false;

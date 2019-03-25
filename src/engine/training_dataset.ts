@@ -350,10 +350,10 @@ export async function fitDataset<T>(
       callbackMetrics = outLabels.slice();
     }
 
-    const callbacks = standardizeCallbacks(args.callbacks);
+    const callbacks = standardizeCallbacks(args.callbacks, args.yieldEvery);
     const verbose = args.verbose == null ? 1 : args.verbose;
     const {callbackList, history} = configureCallbacks(
-        callbacks, args.yieldEvery, verbose, args.epochs, null, null,
+        callbacks, verbose, args.epochs, null, null,
         getStepsPerEpoch(dataset, args),
         null,  // Batch size determined by the dataset itself.
         doValidation, callbackMetrics);
