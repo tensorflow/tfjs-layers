@@ -249,3 +249,42 @@ describe('formatValueAsFriendlyString', () => {
     ])).toEqual('[[1],3,[3],7]');
   });
 });
+
+function sleep(waitMs: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, waitMs));
+}
+
+describe('debouce', () => {
+  it('first call happens after waitMs', async () => {
+    let numCalls = 0;
+    const f = () => numCalls++;
+    const waitMs = 10;
+    const f2 = utils.debounce(f, waitMs);
+    // The first call is ignored since waitMs hasn't passed yet.
+    f2();
+    expect(numCalls).toBe(0);
+    await sleep(waitMs);
+    f2();
+    expect(numCalls).toBe(1);
+    // The second call is ignored.
+    f2();
+    expect(numCalls).toBe(1);
+  });
+
+  it('allows at most period/wait calls in a given period', async () => {
+    let numCalls = 0;
+    const f = () => numCalls++;
+    const waitMs = 10;
+    const f2 = utils.debounce(f, waitMs);
+    await sleep(waitMs);
+    // Call f2 20 times in a period of 100ms.
+    for (let i = 0; i < 20; i++) {
+      f2();
+      await sleep(5);
+    }
+    // Expect f2 to be called ~10 times in 100ms because wait time is
+    // 10ms.
+    expect(numCalls).toBeLessThanOrEqual(11);
+    expect(numCalls).toBeGreaterThanOrEqual(9);
+  });
+});

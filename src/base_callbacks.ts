@@ -216,30 +216,6 @@ export class CallbackList {
 }
 
 /**
- * Returns a function `f2` (decorator) which wraps the original function
- * `f`. `f2` guarantees that `f` can be called at most once
- * every `waitMs` ms. If `f2` is called more often, it will return
- * the last returned result of `f`.
- *
- * @param f The original function `f` to wrap.
- * @param waitMs The time between two consecutive calls to `f` in ms.
- */
-function debounce<T>(f: (...args: Array<{}>) => T, waitMs: number) {
-  let lastTime = performance.now();
-  let lastResult: T;
-  const f2 = (...args: Array<{}>) => {
-    const now = performance.now();
-    if (now - lastTime < waitMs) {
-      return lastResult;
-    }
-    lastTime = now;
-    lastResult = f(...args);
-    return lastResult;
-  };
-  return f2;
-}
-
-/**
  * Callback that accumulates epoch averages of metrics.
  *
  * This callback is automatically applied to every LayersModel.
@@ -397,8 +373,8 @@ export class CustomCallback extends BaseCallback {
     if (util.isNumber(this.yieldEvery)) {
       // Decorate `maybeWait` so it will be called at most once every
       // `yieldEvery` ms.
-      this.maybeWait =
-          debounce(this.maybeWait.bind(this), this.yieldEvery as number);
+      this.maybeWait = generic_utils.debounce(
+          this.maybeWait.bind(this), this.yieldEvery as number);
     }
     this.trainBegin = args.onTrainBegin;
     this.trainEnd = args.onTrainEnd;
