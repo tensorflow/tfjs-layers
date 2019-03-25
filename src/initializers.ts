@@ -323,13 +323,13 @@ function computeFans(
 
 export interface VarianceScalingArgs {
   /** Scaling factor (positive float). */
-  scale: number;
+  scale?: number;
 
   /** Fanning mode for inputs and outputs. */
-  mode: FanMode;
+  mode?: FanMode;
 
   /** Probabilistic distribution of the values. */
-  distribution: Distribution;
+  distribution?: Distribution;
 
   /** Random number generator seed. */
   seed?: number;
