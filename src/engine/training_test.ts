@@ -2078,11 +2078,24 @@ describeMathGPU('LayersModel.fit: yieldEvery', () => {
     const model = createDummyModel(inputSize);
     const xs = ones([numExamples, inputSize]);
     const ys = ones([numExamples, 1]);
-    const history = await model.fit(xs, ys, {epochs, batchSize: numExamples});
+    const onYieldEpochIds: number[] = [];
+    const onYieldBatchesIds: number[] = [];
+    const history = await model.fit(xs, ys, {
+      epochs,
+      batchSize: numExamples,
+      callbacks: {
+        onYield: async (epoch, batch, _logs) => {
+          onYieldBatchesIds.push(batch);
+          onYieldEpochIds.push(epoch);
+        }
+      }
+    });
     expect(history.history.loss.length).toEqual(epochs);
     // There are 5 batches in total (1 batch per epoch). We expect next frame
-    // to be called twice, after batch 2 and after batch 3.
+    // to be called twice, after epoch 1 and after epoch 2.
     expect(nextFrameCallCount).toBe(2);
+    expect(onYieldEpochIds).toEqual([1, 2]);
+    expect(onYieldBatchesIds).toEqual([0, 0]);
   });
 
   it('auto: 2 batches per epoch; 4 epochs', async () => {
@@ -2093,7 +2106,7 @@ describeMathGPU('LayersModel.fit: yieldEvery', () => {
       yieldEvery + 1,  // Should call.
       yieldEvery + 1,  // Should call.
       1,
-      1,
+      yieldEvery + 1,  // SHould call.
       yieldEvery + 1,  // Should call.
       1,
       1,
@@ -2115,12 +2128,25 @@ describeMathGPU('LayersModel.fit: yieldEvery', () => {
     const model = createDummyModel(inputSize);
     const xs = ones([numExamples, inputSize]);
     const ys = ones([numExamples, 1]);
-    const history =
-        await model.fit(xs, ys, {epochs, batchSize: numExamples / 2});
+    const onYieldEpochIds: number[] = [];
+    const onYieldBatchesIds: number[] = [];
+    const history = await model.fit(xs, ys, {
+      epochs,
+      batchSize: numExamples / 2,
+      callbacks: {
+        onYield: async (epoch, batch, _logs) => {
+          onYieldBatchesIds.push(batch);
+          onYieldEpochIds.push(epoch);
+        }
+      }
+    });
     expect(history.history.loss.length).toEqual(epochs);
     // There are 8 batches in total (2 batches per epoch). We expect next
-    // frame to be called 3 times, after batch 2, batch 3 and batch 6.
-    expect(nextFrameCallCount).toBe(3);
+    // frame to be called 3 times, after (epoch 0, batch 1), (epoch 1, batch 0)
+    // (epoch 2, batch 0) and (epoch 2, batch 1).
+    expect(nextFrameCallCount).toBe(4);
+    expect(onYieldEpochIds).toEqual([0, 1, 2, 2]);
+    expect(onYieldBatchesIds).toEqual([1, 0, 0, 1]);
   });
 
   it('yieldEvery: 5, 1 batch per epoch; 5 epochs', async () => {
@@ -2148,12 +2174,25 @@ describeMathGPU('LayersModel.fit: yieldEvery', () => {
     const model = createDummyModel(inputSize);
     const xs = ones([numExamples, inputSize]);
     const ys = ones([numExamples, 1]);
-    const history =
-        await model.fit(xs, ys, {epochs, batchSize: numExamples, yieldEvery});
+    const onYieldEpochIds: number[] = [];
+    const onYieldBatchesIds: number[] = [];
+    const history = await model.fit(xs, ys, {
+      epochs,
+      batchSize: numExamples,
+      yieldEvery,
+      callbacks: {
+        onYield: async (epoch, batch, _logs) => {
+          onYieldBatchesIds.push(batch);
+          onYieldEpochIds.push(epoch);
+        }
+      }
+    });
     expect(history.history.loss.length).toEqual(epochs);
     // There are 5 batches in total (1 batch per epoch). We expect next frame
-    // to be called 3 times, after batch 2, batch 3 and batch 5.
+    // to be called 3 times, after epoch 1, epoch 3 and epoch 4.
     expect(nextFrameCallCount).toBe(3);
+    expect(onYieldEpochIds).toEqual([1, 3, 4]);
+    expect(onYieldBatchesIds).toEqual([0, 0, 0]);
   });
 
   it('batch: uneven 9 batches per epoch; 2 epochs', async () => {

@@ -339,27 +339,31 @@ export class History extends BaseCallback {
 }
 
 export interface CustomCallbackArgs {
-  onTrainBegin?: (logs?: Logs) => Promise<void>;
-  onTrainEnd?: (logs?: Logs) => Promise<void>;
-  onEpochBegin?: (epoch: number, logs?: Logs) => Promise<void>;
-  onEpochEnd?: (epoch: number, logs?: Logs) => Promise<void>;
-  onBatchBegin?: (batch: number, logs?: Logs) => Promise<void>;
-  onBatchEnd?: (batch: number, logs?: Logs) => Promise<void>;
-  onYield?: (epoch: number, batch: number, logs: Logs) => Promise<void>;
+  onTrainBegin?: (logs?: Logs) => void | Promise<void>;
+  onTrainEnd?: (logs?: Logs) => void | Promise<void>;
+  onEpochBegin?: (epoch: number, logs?: Logs) => void | Promise<void>;
+  onEpochEnd?: (epoch: number, logs?: Logs) => void | Promise<void>;
+  onBatchBegin?: (batch: number, logs?: Logs) => void | Promise<void>;
+  onBatchEnd?: (batch: number, logs?: Logs) => void | Promise<void>;
+  onYield?: (epoch: number, batch: number, logs: Logs) => void | Promise<void>;
 }
 
 /**
  * Custom callback for training.
  */
 export class CustomCallback extends BaseCallback {
-  protected readonly trainBegin: (logs?: Logs) => Promise<void>;
-  protected readonly trainEnd: (logs?: Logs) => Promise<void>;
-  protected readonly epochBegin: (epoch: number, logs?: Logs) => Promise<void>;
-  protected readonly epochEnd: (epoch: number, logs?: Logs) => Promise<void>;
-  protected readonly batchBegin: (batch: number, logs?: Logs) => Promise<void>;
-  protected readonly batchEnd: (batch: number, logs?: Logs) => Promise<void>;
+  protected readonly trainBegin: (logs?: Logs) => void | Promise<void>;
+  protected readonly trainEnd: (logs?: Logs) => void | Promise<void>;
+  protected readonly epochBegin:
+      (epoch: number, logs?: Logs) => void | Promise<void>;
+  protected readonly epochEnd:
+      (epoch: number, logs?: Logs) => void | Promise<void>;
+  protected readonly batchBegin:
+      (batch: number, logs?: Logs) => void | Promise<void>;
+  protected readonly batchEnd:
+      (batch: number, logs?: Logs) => void | Promise<void>;
   protected readonly yield:
-      (epoch: number, batch: number, logs: Logs) => Promise<void>;
+      (epoch: number, batch: number, logs: Logs) => void | Promise<void>;
 
   private yieldEvery: YieldEveryOptions;
   private lastEpoch = 0;
@@ -386,7 +390,7 @@ export class CustomCallback extends BaseCallback {
   }
 
   async maybeWait(epoch: number, batch: number, logs: UnresolvedLogs) {
-    const ps: Array<Promise<void>> = [];
+    const ps: Array<void|Promise<void>> = [];
     if (this.yield != null) {
       await resolveScalarsInLogs(logs);
       ps.push(this.yield(epoch, batch, logs as Logs));
@@ -404,7 +408,7 @@ export class CustomCallback extends BaseCallback {
   }
 
   async onEpochEnd(epoch: number, logs?: UnresolvedLogs): Promise<void> {
-    const ps: Array<Promise<void>> = [];
+    const ps: Array<void|Promise<void>> = [];
     if (this.epochEnd != null) {
       await resolveScalarsInLogs(logs);
       ps.push(this.epochEnd(epoch, logs as Logs));
@@ -423,7 +427,7 @@ export class CustomCallback extends BaseCallback {
   }
 
   async onBatchEnd(batch: number, logs?: UnresolvedLogs): Promise<void> {
-    const ps: Array<Promise<void>> = [];
+    const ps: Array<void|Promise<void>> = [];
     if (this.batchEnd != null) {
       await resolveScalarsInLogs(logs);
       ps.push(this.batchEnd(batch, logs as Logs));
