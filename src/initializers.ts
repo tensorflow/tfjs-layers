@@ -752,7 +752,7 @@ export function getInitializer(identifier: InitializerIdentifier|Initializer|
       return new LeCunUniform();
     } else {
       const config: serialization.ConfigDict = {};
-      config.className = className;
+      config['className'] = className;
       config.config = {};
       return deserializeInitializer(config);
     }

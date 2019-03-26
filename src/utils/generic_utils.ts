@@ -223,13 +223,13 @@ export function deserializeKerasObject(
   } else {
     // In this case we are dealing with a Keras config dictionary.
     const config = identifier;
-    if (config.className == null || config.config == null) {
+    if (config['className'] == null || config.config == null) {
       throw new ValueError(
           `${printableModuleName}: Improper config format: ` +
           `${JSON.stringify(config)}.\n` +
           `'className' and 'config' must set.`);
     }
-    const className = config.className as string;
+    const className = config['className'] as string;
     let cls, fromConfig;
     if (className in customObjects) {
       [cls, fromConfig] = customObjects.get(className);

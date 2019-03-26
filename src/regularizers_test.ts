@@ -82,7 +82,7 @@ describeMathCPU('Regularizer Serialization', () => {
     const reconstituted = deserializeRegularizer(config);
     const roundTripConfig =
         serializeRegularizer(reconstituted) as serialization.ConfigDict;
-    expect(roundTripConfig.className).toEqual('L1L2');
+    expect(roundTripconfig['className']).toEqual('L1L2');
     const nestedConfig = roundTripConfig.config as serialization.ConfigDict;
     expect(nestedConfig.l1).toEqual(1);
     expect(nestedConfig.l2).toEqual(2);

@@ -609,7 +609,7 @@ export abstract class Container extends Layer {
   private updatedConfig(): serialization.ConfigDict {
     const theConfig = this.getConfig();
     const modelConfig: serialization.ConfigDict = {};
-    modelConfig.className = this.getClassName();
+    modelconfig['className'] = this.getClassName();
     modelConfig.config = theConfig;
     modelConfig.kerasVersion = `tfjs-layers ${layersVersion}`;
     // TODO(nielsene): Replace something like K.backend() once
