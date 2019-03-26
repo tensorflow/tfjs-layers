@@ -10,7 +10,7 @@
 
 /* Original source: keras/callbacks.py */
 
-import {add, div, keep, mul, nextFrame, Scalar, Tensor, tidy, util} from '@tensorflow/tfjs-core';
+import {add, dispose, div, keep, mul, nextFrame, Scalar, stack, Tensor, tidy, util} from '@tensorflow/tfjs-core';
 
 import {getScalar} from './backend/state';
 import {Container} from './engine/container';
@@ -315,25 +315,28 @@ export class History extends BaseCallback {
    * Await the values of all losses and metrics.
    */
   async syncData() {
-    const promises: Array<Promise<Float32Array|Int32Array|Uint8Array>> = [];
+    const scalars: Scalar[] = [];
     const keys: string[] = [];
     const indices: number[] = [];
     for (const key in this.history) {
       const valueArray = this.history[key];
       for (let i = 0; i < valueArray.length; ++i) {
         if (typeof valueArray[i] !== 'number') {
-          const valueScalar = valueArray[i] as Tensor;
-          promises.push(valueScalar.data());
+          const valueScalar = valueArray[i] as Scalar;
+          scalars.push(valueScalar);
           keys.push(key);
           indices.push(i);
         }
       }
     }
-    const values = await Promise.all(promises);
-    for (let n = 0; n < values.length; ++n) {
-      const tensorToDispose = this.history[keys[n]][indices[n]] as Tensor;
-      tensorToDispose.dispose();
-      this.history[keys[n]][indices[n]] = values[n][0];
+    if (scalars.length > 0) {
+      const stacked = stack(scalars);
+      const values = await stacked.data();
+      stacked.dispose();
+      for (let n = 0; n < values.length; ++n) {
+        this.history[keys[n]][indices[n]] = values[n];
+      }
+      dispose(scalars);
     }
   }
 }

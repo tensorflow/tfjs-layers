@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {dispose, Scalar} from '@tensorflow/tfjs-core';
+import {dispose, Scalar, stack} from '@tensorflow/tfjs-core';
 
 /**
  * Logs in which values can be either numbers or Tensors (Scalars).
@@ -28,25 +28,25 @@ export async function resolveScalarsInLogs(logs: UnresolvedLogs) {
   if (logs == null) {
     return;
   }
-  const promises: Array<Promise<Float32Array|Int32Array|Uint8Array>> = [];
   const keys: string[] = [];
-  const scalarsToDispose: Scalar[] = [];
+  const scalars: Scalar[] = [];
   for (const key in logs) {
     const value = logs[key];
     if (typeof value !== 'number') {
       const valueScalar = value as Scalar;
-      promises.push(valueScalar.data());
       keys.push(key);
-      scalarsToDispose.push(valueScalar);
+      scalars.push(valueScalar);
     }
   }
-  if (promises.length > 0) {
-    const values = await Promise.all(promises);
+  if (scalars.length > 0) {
+    const stacked = stack(scalars);
+    const values = await stacked.data();
+    stacked.dispose();
     for (let i = 0; i < values.length; ++i) {
-      logs[keys[i]] = values[i][0];
+      logs[keys[i]] = values[i];
     }
     // Dispose the original scalar tensors.
-    dispose(scalarsToDispose);
+    dispose(scalars);
   }
 }
 
