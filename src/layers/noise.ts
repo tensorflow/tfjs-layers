@@ -244,7 +244,7 @@ export class AlphaDropout extends Layer {
         };
         return K.inTrainPhase(
             droppedInputs, () => getExactlyOneTensor(inputs),
-            kwargs.training || false);
+            kwargs['training'] || false);
       }
       return inputs;
     });

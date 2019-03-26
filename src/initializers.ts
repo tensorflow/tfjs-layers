@@ -753,7 +753,7 @@ export function getInitializer(identifier: InitializerIdentifier|Initializer|
     } else {
       const config: serialization.ConfigDict = {};
       config['className'] = className;
-      config.config = {};
+      config['config'] = {};
       return deserializeInitializer(config);
     }
   } else if (identifier instanceof Initializer) {
