@@ -1126,17 +1126,21 @@ export abstract class Container extends Layer {
       const inputTensors: SymbolicTensor[] = [];
       let kwargs;
       for (const inputData of nodeData) {
-        const inboundLayerName = inputData[0] as string;
-        const inboundNodeIndex = inputData[1] as number;
-        const inboundTensorIndex = inputData[2] as number;
-        const numKeys = Object.keys(inputData).length;
+        const inputDataArray = inputData as unknown as
+            Array<number|string|serialization.ConfigDict>;
+
+        const inboundLayerName = inputDataArray[0] as string;
+        const inboundNodeIndex = inputDataArray[1] as number;
+        const inboundTensorIndex = inputDataArray[2] as number;
+
+        const numKeys = Object.keys(inputDataArray).length;
         if (numKeys === 3) {
           kwargs = {};
         } else if (numKeys === 4) {
-          kwargs = inputData[3] as serialization.ConfigDict;
+          kwargs = inputDataArray[3] as serialization.ConfigDict;
         } else {
           throw new ValueError(`Improperly formatted model config for layer ${
-              JSON.stringify(layer)}: ${JSON.stringify(inputData)}`);
+              JSON.stringify(layer)}: ${JSON.stringify(inputDataArray)}`);
         }
         if (!(inboundLayerName in createdLayers)) {
           addUnprocessedNode(layer, nodeData);
