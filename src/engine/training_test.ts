@@ -16,7 +16,7 @@ import * as tfc from '@tensorflow/tfjs-core';
 import {abs, mean, memory, mul, NamedTensorMap, ones, Scalar, scalar, SGDOptimizer, Tensor, tensor1d, tensor2d, tensor3d, test_util, util, zeros} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
-import {CustomCallback, CustomCallbackArgs, Params} from '../base_callbacks';
+import {CustomCallback, CustomCallbackArgs, DEFAULT_YIELD_EVERY_MS, Params} from '../base_callbacks';
 import * as tfl from '../index';
 import * as logs from '../logs';
 import {Logs, UnresolvedLogs} from '../logs';
@@ -2050,6 +2050,111 @@ describeMathGPU('LayersModel.fit: yieldEvery', () => {
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
     return model;
   }
+
+  it('auto: 1 batch per epoch; 5 epochs', async () => {
+    const wait = DEFAULT_YIELD_EVERY_MS;
+    const timeBetweenCalls = [
+      0,
+      1,
+      wait + 1,  // Should call.
+      wait + 1,  // Should call.
+      1,
+      1,
+    ];
+    let counter = 0;
+    let prevTime = 0;
+    spyOn(util, 'now').and.callFake(() => {
+      prevTime += timeBetweenCalls[counter++];
+      return prevTime;
+    });
+    let nextFrameCallCount = 0;
+    spyOn(tfc, 'nextFrame').and.callFake(async () => {
+      nextFrameCallCount++;
+    });
+
+    const inputSize = 2;
+    const numExamples = 10;
+    const epochs = 5;
+    const model = createDummyModel(inputSize);
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+    const history = await model.fit(xs, ys, {epochs, batchSize: numExamples});
+    expect(history.history.loss.length).toEqual(epochs);
+    // There are 5 batches in total (1 batch per epoch). We expect next frame
+    // to be called twice, after batch 2 and after batch 3.
+    expect(nextFrameCallCount).toBe(2);
+  });
+
+  it('auto: 2 batches per epoch; 4 epochs', async () => {
+    const yieldEvery = DEFAULT_YIELD_EVERY_MS;
+    const timeBetweenCalls = [
+      0,
+      1,
+      yieldEvery + 1,  // Should call.
+      yieldEvery + 1,  // Should call.
+      1,
+      1,
+      yieldEvery + 1,  // Should call.
+      1,
+      1,
+    ];
+    let counter = 0;
+    let prevTime = 0;
+    spyOn(util, 'now').and.callFake(() => {
+      prevTime += timeBetweenCalls[counter++];
+      return prevTime;
+    });
+    let nextFrameCallCount = 0;
+    spyOn(tfc, 'nextFrame').and.callFake(async () => {
+      nextFrameCallCount++;
+    });
+
+    const inputSize = 2;
+    const numExamples = 10;
+    const epochs = 4;
+    const model = createDummyModel(inputSize);
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+    const history =
+        await model.fit(xs, ys, {epochs, batchSize: numExamples / 2});
+    expect(history.history.loss.length).toEqual(epochs);
+    // There are 8 batches in total (2 batches per epoch). We expect next
+    // frame to be called 3 times, after batch 2, batch 3 and batch 6.
+    expect(nextFrameCallCount).toBe(3);
+  });
+
+  it('yieldEvery: 5, 1 batch per epoch; 5 epochs', async () => {
+    const yieldEvery = 5;
+    const timeBetweenCalls = [
+      0, 1,
+      yieldEvery + 1,     // Should call.
+      1, yieldEvery + 1,  // Should call.
+      yieldEvery + 1,     // Should call.
+    ];
+    let counter = 0;
+    let prevTime = 0;
+    spyOn(util, 'now').and.callFake(() => {
+      prevTime += timeBetweenCalls[counter++];
+      return prevTime;
+    });
+    let nextFrameCallCount = 0;
+    spyOn(tfc, 'nextFrame').and.callFake(async () => {
+      nextFrameCallCount++;
+    });
+
+    const inputSize = 2;
+    const numExamples = 10;
+    const epochs = 5;
+    const model = createDummyModel(inputSize);
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+    const history =
+        await model.fit(xs, ys, {epochs, batchSize: numExamples, yieldEvery});
+    expect(history.history.loss.length).toEqual(epochs);
+    // There are 5 batches in total (1 batch per epoch). We expect next frame
+    // to be called 3 times, after batch 2, batch 3 and batch 5.
+    expect(nextFrameCallCount).toBe(3);
+  });
 
   it('batch: uneven 9 batches per epoch; 2 epochs', async () => {
     const presetBatchTimestamps = [0, 2, 4, 6, 8, 10];

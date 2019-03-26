@@ -8,6 +8,8 @@
  * =============================================================================
  */
 
+import {util} from '@tensorflow/tfjs-core';
+
 import * as utils from './generic_utils';
 
 describe('pyListRepeat() ', () => {
@@ -272,19 +274,18 @@ describe('debouce', () => {
   });
 
   it('allows at most period/wait calls in a given period', async () => {
+    const timestamps = [0, 2, 4, 6, 8, 10];
+    let counter = 0;
+    spyOn(util, 'now').and.callFake(() => timestamps[counter++]);
     let numCalls = 0;
     const f = () => numCalls++;
-    const waitMs = 10;
+    const waitMs = 3;
     const f2 = utils.debounce(f, waitMs);
-    await sleep(waitMs);
-    // Call f2 20 times in a period of 100ms.
-    for (let i = 0; i < 20; i++) {
+    // Call f2 5 times.
+    for (let i = 1; i < 5; i++) {
       f2();
-      await sleep(5);
     }
-    // Expect f2 to be called ~10 times in 100ms because wait time is
-    // 10ms.
-    expect(numCalls).toBeLessThanOrEqual(11);
-    expect(numCalls).toBeGreaterThanOrEqual(9);
+    // Expect f to be called 2 times (between timestamps 4 and 2, and 8 and 4).
+    expect(numCalls).toBe(2);
   });
 });

@@ -25,7 +25,7 @@ export enum ModelLoggingVerbosity {
 }
 
 /** How often to yield to the main thread when training (in ms). */
-const DEFAULT_YIELD_EVERY_MS = 250;
+export const DEFAULT_YIELD_EVERY_MS = 250;
 
 export type Params = {
   [key: string]: number|string|boolean|number[]|string[]|boolean[];
