@@ -1133,10 +1133,9 @@ export abstract class Container extends Layer {
         const inboundNodeIndex = inputDataArray[1] as number;
         const inboundTensorIndex = inputDataArray[2] as number;
 
-        const numKeys = Object.keys(inputDataArray).length;
-        if (numKeys === 3) {
+        if (inputDataArray.length === 3) {
           kwargs = {};
-        } else if (numKeys === 4) {
+        } else if (inputDataArray.length === 4) {
           kwargs = inputDataArray[3] as serialization.ConfigDict;
         } else {
           throw new ValueError(`Improperly formatted model config for layer ${
