@@ -889,12 +889,14 @@ export class Sequential extends LayersModel {
    *   generate a dataset iterator object, the `next()` method of which is
    *   expected to produce data batches for evaluation. The return value of the
    *   `next()` call ought to contain a boolean `done` field and a `value`
-   *   field. The `value` field is expected to be an array of two `tf.Tensor`s
-   *   or an array of two nested `tf.Tensor` structures. The former case is for
-   *   models with exactly one input and one output (e.g.. a sequential model).
-   *   The latter case is for models with multiple inputs and/or multiple
-   *   outputs. Of the two items in the array, the first is the input feature(s)
-   *   and the second is the output target(s).
+   *   field. The `value` field is expected to be an object of with fields
+   *   `xs` and `ys`, which point to the feature tensor and the target tensor,
+   *   respectively. This case is for models with exactly one input and one output
+   *   (e.g.. a sequential model).
+   *   If the model has multiple inputs, the `xs` field of `value` should
+   *   be an object mapping input names to their respective feature tensors.
+   *   If the model has multiple outputs, the `ys` field of `value` should
+   *   be an object mapping output names to their respective target tensors.
    * @param args A `ModelFitDatasetArgs`, containing optional fields.
    *
    * @return A `History` instance. Its `history` attribute contains all
