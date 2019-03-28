@@ -15,6 +15,7 @@ import {NamedTensorMap, Scalar, serialization, Tensor, tidy} from '@tensorflow/t
 import {getUid} from '../backend/state';
 import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {Shape} from '../keras_format/common';
+import {TensorKeyWithArgsArray} from '../keras_format/node_config';
 import {PyJsonDict} from '../keras_format/types';
 import {deserialize as deserializeLayer} from '../layers/serialization';
 import {Kwargs} from '../types';
@@ -1111,10 +1112,9 @@ export abstract class Container extends Layer {
     // It acts as a queue that maintains any unprocessed
     // layer call until it becomes possible to process it
     // (i.e. until the input tensors to the call all exist).
-    const unprocessedNodes:
-        {[layer: string]: serialization.ConfigDict[][]} = {};
+    const unprocessedNodes: {[layer: string]: TensorKeyWithArgsArray[][]} = {};
     function addUnprocessedNode(
-        layer: Layer, nodeData: serialization.ConfigDict[]) {
+        layer: Layer, nodeData: TensorKeyWithArgsArray[]) {
       if (!(layer.name in unprocessedNodes)) {
         unprocessedNodes[layer.name] = [nodeData];
       } else {
@@ -1122,7 +1122,7 @@ export abstract class Container extends Layer {
       }
     }
 
-    function processNode(layer: Layer, nodeData: serialization.ConfigDict[]) {
+    function processNode(layer: Layer, nodeData: TensorKeyWithArgsArray[]) {
       const inputTensors: SymbolicTensor[] = [];
       let kwargs;
       for (const inputData of nodeData) {

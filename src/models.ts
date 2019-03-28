@@ -891,8 +891,8 @@ export class Sequential extends LayersModel {
    *   `next()` call ought to contain a boolean `done` field and a `value`
    *   field. The `value` field is expected to be an object of with fields
    *   `xs` and `ys`, which point to the feature tensor and the target tensor,
-   *   respectively. This case is for models with exactly one input and one output
-   *   (e.g.. a sequential model).
+   *   respectively. This case is for models with exactly one input and one
+   *   output (e.g.. a sequential model).
    *   If the model has multiple inputs, the `xs` field of `value` should
    *   be an object mapping input names to their respective feature tensors.
    *   If the model has multiple outputs, the `ys` field of `value` should
