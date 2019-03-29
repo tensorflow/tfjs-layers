@@ -1130,7 +1130,8 @@ export abstract class Container extends Layer {
         const inboundNodeIndex = inputData[1];
         const inboundTensorIndex = inputData[2];
 
-        kwargs = inputData[3] == null ? {} :
+        kwargs = inputData[3] == null ?
+            {} :
             inputData[3] as serialization.ConfigDict;
         if (!(inboundLayerName in createdLayers)) {
           addUnprocessedNode(layer, nodeData);
@@ -1173,8 +1174,8 @@ export abstract class Container extends Layer {
       createdLayers[layerName] = layer;
       // Gather layer inputs.
       const inboundNodesData =
-          layerData['inboundNodes'] as serialization.ConfigDict[];
-      for (const nodeData of inboundNodesData) {
+          layerData['inboundNodes'] as TensorKeyWithArgsArray[][];
+      inboundNodesData.forEach(nodeData => {
         if (!(nodeData instanceof Array)) {
           throw new ValueError(
               `Corrupted configuration, expected array for nodeData: ${
@@ -1185,7 +1186,7 @@ export abstract class Container extends Layer {
         // in case of layer shared at different topological depths
         // (e.g.a model such as A(B(A(B(x)))))
         addUnprocessedNode(layer, nodeData);
-      }
+      });
     }
 
     // First, we create all layers and enqueue nodes to be processed.
