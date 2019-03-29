@@ -1130,11 +1130,8 @@ export abstract class Container extends Layer {
         const inboundNodeIndex = inputData[1];
         const inboundTensorIndex = inputData[2];
 
-        if (inputData[3] == null) {
-          kwargs = {};
-        } else {
-          kwargs = inputData[3] as serialization.ConfigDict;
-        }
+        kwargs = inputData[3] == null ? {} :
+            inputData[3] as serialization.ConfigDict;
         if (!(inboundLayerName in createdLayers)) {
           addUnprocessedNode(layer, nodeData);
           return;
