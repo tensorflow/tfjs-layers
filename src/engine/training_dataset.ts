@@ -13,7 +13,7 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-
+import {scalar} from '@tensorflow/tfjs-core';
 import {BaseCallback, configureCallbacks, CustomCallbackArgs, History, ModelLoggingVerbosity, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {NotImplementedError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
@@ -529,7 +529,7 @@ export async function evaluateDataset<T>(
 
       if (batch === 0) {
         for (let i = 0; i < batchOuts.length; ++i) {
-          outs.push(0);
+          outs.push(scalar(0));
         }
       }
       const batchSize = xsAndYs[0].shape[0];

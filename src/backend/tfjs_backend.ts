@@ -13,8 +13,7 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
-import {disposeScalarCache} from '../backend/state';
+import {onesLike as coreOnesLike, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
 import {checkDataFormat} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
 import {DataFormat, Shape} from '../keras_format/common';
@@ -33,7 +32,6 @@ let backend: 'cpu'|'webgl' = 'webgl';
 export function setBackend(requestedBackend: 'cpu'|'webgl') {
   tfc.setBackend(requestedBackend);
   backend = requestedBackend;
-  disposeScalarCache();
 }
 
 export function getBackend(): 'cpu'|'webgl' {
@@ -667,7 +665,7 @@ export function softsign(x: Tensor): Tensor {
  * @returns Result of the dropout operation.
  */
 export function dropout(
-    x: Tensor, level: Scalar, noiseShape?: number[], seed?: number): Tensor {
+    x: Tensor, level: number, noiseShape?: number[], seed?: number): Tensor {
   return tidy(() => {
     // TODO(cais): Switch to deeplearn.js implementation of dropout when it
     //   becomes avaialable.
@@ -679,10 +677,10 @@ export function dropout(
     if (seed != null) {
       throw new NotImplementedError('seed is not implemented for dropout yet.');
     }
-    let multiplier = tfc.step(tfc.add(
-        tfc.neg(level) as Scalar, tfc.randomUniform(x.shape, 0, 1, 'float32')));
+    let multiplier =
+        tfc.step(tfc.add(-level, tfc.randomUniform(x.shape, 0, 1, 'float32')));
     // Scale the kept elements, so the expected sum is unchanged.
-    multiplier = tfc.mul(tfc.div(1, tfc.sub(1, level)) as Scalar, multiplier);
+    multiplier = tfc.mul(1 / (1 - level), multiplier);
     return tfc.mul(x, multiplier);
   });
 }
