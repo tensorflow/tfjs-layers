@@ -14,7 +14,7 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {onesLike as coreOnesLike, Scalar, scalar, Tensor, Tensor1D, tensor1d, Tensor2D, Tensor3D, Tensor4D, tidy, util, where, zerosLike as coreZerosLike} from '@tensorflow/tfjs-core';
-import {disposeScalarCache, getScalar} from '../backend/state';
+import {disposeScalarCache} from '../backend/state';
 import {checkDataFormat} from '../common';
 import {NotImplementedError, ValueError} from '../errors';
 import {DataFormat, Shape} from '../keras_format/common';
@@ -466,7 +466,7 @@ export function sign(x: Tensor): Tensor {
         tfc.equal(x, zerosLikeX), zerosLikeX,
         where(
             tfc.greater(x, coreZerosLike(x)), onesLikeX,
-            tfc.mul(getScalar(-1), onesLikeX)));
+            tfc.mul(-1, onesLikeX)));
   });
 }
 
@@ -653,7 +653,7 @@ export function elu(x: Tensor, alpha = 1): Tensor {
  * @returns Output.
  */
 export function softsign(x: Tensor): Tensor {
-  return tidy(() => tfc.div(x, tfc.add(getScalar(1), tfc.abs(x))));
+  return tidy(() => tfc.div(x, tfc.abs(x).add(1)));
 }
 
 /**
@@ -682,9 +682,7 @@ export function dropout(
     let multiplier = tfc.step(tfc.add(
         tfc.neg(level) as Scalar, tfc.randomUniform(x.shape, 0, 1, 'float32')));
     // Scale the kept elements, so the expected sum is unchanged.
-    multiplier = tfc.mul(
-        tfc.div(getScalar(1), tfc.sub(getScalar(1), level)) as Scalar,
-        multiplier);
+    multiplier = tfc.mul(tfc.div(1, tfc.sub(1, level)) as Scalar, multiplier);
     return tfc.mul(x, multiplier);
   });
 }
@@ -700,7 +698,7 @@ export function dropout(
  */
 export function hardSigmoid(x: Tensor): Tensor {
   return tidy(() => {
-    const y = tfc.add(getScalar(0.5), tfc.mul(getScalar(0.2), x));
+    const y = tfc.add(.5, tfc.mul(.2, x));
     return tfc.clipByValue(y, 0, 1);
   });
 }

@@ -14,7 +14,6 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 
-import {getScalar} from '../backend/state';
 import {BaseCallback, configureCallbacks, CustomCallbackArgs, History, ModelLoggingVerbosity, standardizeCallbacks, YieldEveryOptions} from '../base_callbacks';
 import {NotImplementedError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
@@ -530,7 +529,7 @@ export async function evaluateDataset<T>(
 
       if (batch === 0) {
         for (let i = 0; i < batchOuts.length; ++i) {
-          outs.push(getScalar(0));
+          outs.push(0);
         }
       }
       const batchSize = xsAndYs[0].shape[0];
@@ -538,8 +537,7 @@ export async function evaluateDataset<T>(
         const batchOut = batchOuts[i];
         const oldScalar = outs[i];
         outs[i] = tfc.tidy(
-            () => tfc.add(outs[i], tfc.mul(getScalar(batchSize), batchOut)) as
-                tfc.Scalar);
+            () => tfc.add(outs[i], tfc.mul(batchSize, batchOut)) as tfc.Scalar);
         if (batch > 0) {
           tfc.dispose(oldScalar);
         }
@@ -564,8 +562,7 @@ export async function evaluateDataset<T>(
   }
   for (let i = 0; i < outs.length; ++i) {
     const oldScalar = outs[i];
-    outs[i] =
-        tfc.tidy(() => tfc.div(outs[i], getScalar(numExamples)) as tfc.Scalar);
+    outs[i] = tfc.tidy(() => tfc.div(outs[i], numExamples) as tfc.Scalar);
     tfc.dispose(oldScalar);
   }
 
