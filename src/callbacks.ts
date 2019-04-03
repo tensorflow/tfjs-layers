@@ -91,7 +91,7 @@ function less(currVal: number, prevVal: number) {
 }
 
 function greater(currVal: number, prevVal: number) {
-  return currVal < prevVal;
+  return currVal > prevVal;
 }
 
 /**
@@ -152,7 +152,7 @@ export class EarlyStopping extends Callback {
     }
   }
 
-  async onEpochBegin(epoch: number, logs?: Logs) {
+  async onTrainBegin(logs?: Logs) {
     this.wait = 0;
     this.stoppedEpoch = 0;
     if (this.baseline != null) {
@@ -167,6 +167,7 @@ export class EarlyStopping extends Callback {
     if (current == null) {
       return;
     }
+
     if (this.monitorFunc(current - this.minDelta, this.best)) {
       this.best = current;
       this.wait = 0;
@@ -200,3 +201,22 @@ export class EarlyStopping extends Callback {
     return monitorValue;
   }
 }
+
+/**
+ * Factory function for a Callback that stops training when a monitored
+ * quantity has stopped improving.
+ */
+/**
+ * @doc {
+ *   heading: 'Callbacks',
+ *   namespace: 'callbacks',
+ *   useDocsFrom: 'EarlyStopping'
+ * }
+ */
+export function earlyStopping(args?: EarlyStopingCallbackArgs) {
+   return new EarlyStopping(args);
+}
+
+export const callbacks = {
+  earlyStopping
+};
