@@ -245,7 +245,8 @@ export class TimeDistributed extends Wrapper {
       const rnnOutputs =
           rnn(step, inputs, [], false /* goBackwards */, null /* mask */,
               null /* constants */, false /* unroll */,
-              true /* needPerStepOutputs */);
+              true /* needPerStepOutputs */,
+              false /* reverseSequences */);
       const y = rnnOutputs[1];
       // TODO(cais): Add activity regularization.
       // TODO(cais): Add useLearningPhase.

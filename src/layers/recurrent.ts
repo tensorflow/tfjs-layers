@@ -126,6 +126,9 @@ export function standardizeArgs(
  *   expensive concatenation of the stepwise outputs can be omitted unless
  *   the stepwise outputs need to be kept (e.g., for an LSTM layer of which
  *   `returnSequence` is `true`.)
+ * @param reverseStepOutputs If `needsPerStepOutputs` is true, whether the order
+ *   of the outputs per step should be reversed or not (useful if you have
+ *   set `goBackwards` to true and want to perform a bidirectional operation)
  * @returns An Array: `[lastOutput, outputs, newStates]`.
  *   lastOutput: the lastest output of the RNN, of shape `[samples, ...]`.
  *   outputs: tensor with shape `[samples, time, ...]` where each entry
@@ -142,7 +145,8 @@ export function standardizeArgs(
 export function rnn(
     stepFunction: RnnStepFunction, inputs: Tensor, initialStates: Tensor[],
     goBackwards = false, mask?: Tensor, constants?: Tensor[], unroll = false,
-    needPerStepOutputs = false): [Tensor, Tensor, Tensor[]] {
+    needPerStepOutputs = false, reverseStepOutputs = false
+    ): [Tensor, Tensor, Tensor[]] {
   return tfc.tidy(() => {
     const ndim = inputs.shape.length;
     if (ndim < 3) {
@@ -233,6 +237,7 @@ export function rnn(
     let outputs: Tensor;
     if (needPerStepOutputs) {
       const axis = 1;
+      if (reverseStepOutputs) perStepOutputs.reverse();
       outputs = tfc.stack(perStepOutputs, axis);
     }
     return [lastOutput, outputs, states] as [Tensor, Tensor, Tensor[]];
@@ -271,6 +276,12 @@ export declare interface BaseRNNLayerArgs extends LayerArgs {
   returnSequences?: boolean;
 
   /**
+   * Whether to return the output sequence in the reverse order,
+   * if `returnSequences` is set to true.
+   */
+  reverseSequences?: boolean;
+
+  /**
    * Whether to return the last state in addition to the output.
    */
   returnState?: boolean;
@@ -278,6 +289,8 @@ export declare interface BaseRNNLayerArgs extends LayerArgs {
   /**
    * If `true`, process the input sequence backwards and return the reversed
    * sequence (default: `false`).
+   *
+   * Use `reverseSeqences` to return the sequence in the non-reversed order.
    */
   goBackwards?: boolean;
 
@@ -412,6 +425,7 @@ export class RNN extends Layer {
   static className = 'RNN';
   public readonly cell: RNNCell;
   public readonly returnSequences: boolean;
+  public readonly reverseSequences: boolean;
   public readonly returnState: boolean;
   public readonly goBackwards: boolean;
   public readonly unroll: boolean;
@@ -447,6 +461,8 @@ export class RNN extends Layer {
     this.cell = cell;
     this.returnSequences =
         args.returnSequences == null ? false : args.returnSequences;
+    this.reverseSequences =
+      args.reverseSequences == null ? false : args.reverseSequences;
     this.returnState = args.returnState == null ? false : args.returnState;
     this.goBackwards = args.goBackwards == null ? false : args.goBackwards;
     this._stateful = args.stateful == null ? false : args.stateful;
@@ -811,7 +827,7 @@ export class RNN extends Layer {
 
       const rnnOutputs =
           rnn(step, inputs, initialState, this.goBackwards, mask, null,
-              this.unroll, this.returnSequences);
+              this.unroll, this.returnSequences, this.reverseSequences);
       const lastOutput = rnnOutputs[0];
       const outputs = rnnOutputs[1];
       const states = rnnOutputs[2];

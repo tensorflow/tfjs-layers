@@ -56,7 +56,8 @@ describeMathCPUAndGPU('rnn', () => {
         null /* mask */,
         null /* constants */,
         false /* unroll */,
-        true /* needPerStepOutputs */);
+        true /* needPerStepOutputs */,
+        false /* reverseSequences */);
     const lastOutput = rnnOutputs[0];
     const outputs = rnnOutputs[1];
     const newStates = rnnOutputs[2];
@@ -101,7 +102,8 @@ describeMathCPUAndGPU('rnn', () => {
         null /* mask */,
         null /* constants */,
         false /* unroll */,
-        true /* needPerStepOutputs */);
+        true /* needPerStepOutputs */,
+        false /* reverseSequences */);
     const lastOutput = rnnOutputs[0];
     const outputs = rnnOutputs[1];
     const newStates = rnnOutputs[2];
@@ -153,7 +155,8 @@ describeMathCPUAndGPU('rnn', () => {
         null /* mask */,
         null /* constants */,
         false /* unroll */,
-        true /* needPerStepOutputs */);
+        true /* needPerStepOutputs */,
+        false /* reverseSequences */);
     const lastOutput = rnnOutputs[0];
     const outputs = rnnOutputs[1];
     const newStates = rnnOutputs[2];
@@ -236,6 +239,7 @@ describeMathCPU('RNN-Layer', () => {
     const cell = new RNNCellForTest(5);
     const rnn = tfl.layers.rnn({cell}) as RNN;
     expect(rnn.returnSequences).toEqual(false);
+    expect(rnn.reverseSequences).toEqual(false);
     expect(rnn.returnState).toEqual(false);
     expect(rnn.goBackwards).toEqual(false);
   });
@@ -245,10 +249,12 @@ describeMathCPU('RNN-Layer', () => {
     const rnn = tfl.layers.rnn({
       cell,
       returnSequences: true,
+      reverseSequences: true,
       returnState: true,
-      goBackwards: true
+      goBackwards: true,
     }) as RNN;
     expect(rnn.returnSequences).toEqual(true);
+    expect(rnn.reverseSequences).toEqual(true);
     expect(rnn.returnState).toEqual(true);
     expect(rnn.goBackwards).toEqual(true);
   });
