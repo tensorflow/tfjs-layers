@@ -14,7 +14,7 @@ import {BaseCallback} from './base_callbacks';
 import {Container} from './engine/container';
 import {LayersModel} from './engine/training';
 import {NotImplementedError} from './errors';
-import {Logs} from './logs';
+import {Logs, resolveScalarsInLogs} from './logs';
 
 export abstract class Callback extends BaseCallback {
   /** Instance of `keras.models.Model`. Reference of the model being trained. */
@@ -99,12 +99,12 @@ function greater(currVal: number, prevVal: number) {
  * improving.
  */
 export class EarlyStopping extends Callback {
-  protected monitor: string;
-  protected minDelta: number;
-  protected patience: number;
-  protected baseline: number;
-  protected verbose: number;
-  protected mode: 'auto'|'min'|'max';
+  protected readonly monitor: string;
+  protected readonly minDelta: number;
+  protected readonly patience: number;
+  protected readonly baseline: number;
+  protected readonly verbose: number;
+  protected readonly mode: 'auto'|'min'|'max';
 
   protected monitorFunc: (currVal: number, prevVal: number) => boolean;
 
@@ -123,14 +123,15 @@ export class EarlyStopping extends Callback {
     }
 
     this.monitor = args.monitor || 'val_loss';
-    this.minDelta = args.minDelta || 0;
+    this.minDelta = Math.abs(args.minDelta || 0);
     this.patience = args.patience || 0;
     this.verbose = args.verbose || 0;
     this.mode = args.mode || 'auto';
     this.baseline = args.baseline;
 
     if (['auto', 'min', 'max'].indexOf(this.mode) === -1) {
-      console.warn(`EarlyStopping mode '${this.mode}' is invalid. ` +
+      console.warn(
+          `EarlyStopping mode '${this.mode}' is invalid. ` +
           `Falling back to mode 'auto'.`);
       this.mode = 'auto';
     }
@@ -163,11 +164,15 @@ export class EarlyStopping extends Callback {
   }
 
   async onEpochEnd(epoch: number, logs?: Logs) {
+    await resolveScalarsInLogs(logs);
     const current = this.getMonitorValue(logs);
     if (current == null) {
       return;
     }
 
+    // console.log(
+    //     `onEpochEnd(): epoch=${epoch}; current=${current}; ` +
+    //     `this.minDelta=${this.minDelta}; this.best=${this.best}`);  // DEBUG
     if (this.monitorFunc(current - this.minDelta, this.best)) {
       this.best = current;
       this.wait = 0;
@@ -214,9 +219,7 @@ export class EarlyStopping extends Callback {
  * }
  */
 export function earlyStopping(args?: EarlyStopingCallbackArgs) {
-   return new EarlyStopping(args);
+  return new EarlyStopping(args);
 }
 
-export const callbacks = {
-  earlyStopping
-};
+export const callbacks = {earlyStopping};
