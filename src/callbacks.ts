@@ -215,17 +215,17 @@ export class EarlyStopping extends Callback {
  * can be used during `tf.LayersModel.fit()`:
  *
  * ```js
- * const model = tfl.sequential();
- * model.add(tfl.layers.dense({
+ * const model = tf.sequential();
+ * model.add(tf.layers.dense({
  *   units: 3,
  *   activation: 'softmax',
  *   kernelInitializer: 'ones',
  *   inputShape: [2]
  * }));
- * const xs = tensor2d([1, 2, 3, 4], [2, 2]);
- * const ys = tensor2d([[1, 0, 0], [0, 1, 0]], [2, 3]);
- * const xsVal = tensor2d([4, 3, 2, 1], [2, 2]);
- * const ysVal = tensor2d([[0, 0, 1], [0, 1, 0]], [2, 3]);
+ * const xs = tf.tensor2d([1, 2, 3, 4], [2, 2]);
+ * const ys = tf.tensor2d([[1, 0, 0], [0, 1, 0]], [2, 3]);
+ * const xsVal = tf.tensor2d([4, 3, 2, 1], [2, 2]);
+ * const ysVal = tf.tensor2d([[0, 0, 1], [0, 1, 0]], [2, 3]);
  * model.compile(
  *     {loss: 'categoricalCrossentropy', optimizer: 'sgd', metrics: ['acc']});
  * 
@@ -235,7 +235,7 @@ export class EarlyStopping extends Callback {
  * const history = await model.fit(xs, ys, {
  *   epochs: 10,
  *   validationData: [xsVal, ysVal],
- *   callbacks: tfl.callbacks.earlyStopping({monitor: 'val_acc', patience: 4})
+ *   callbacks: tf.callbacks.earlyStopping({monitor: 'val_acc', patience: 4})
  * });
  * 
  * // Expect to see a length-2 array.
