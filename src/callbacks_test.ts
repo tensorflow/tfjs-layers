@@ -11,6 +11,7 @@
 import {tensor2d} from '@tensorflow/tfjs-core';
 
 import * as tfl from './index';
+import {describeMathCPUAndGPU} from './utils/test_utils';
 
 describe('EarlyStopping', () => {
   function createDummyModel(): tfl.LayersModel {
@@ -216,7 +217,7 @@ describe('EarlyStopping', () => {
   });
 });
 
-describe('EarlyStopping LayersModel.fit() integration', () => {
+describeMathCPUAndGPU('EarlyStopping LayersModel.fit() integration', () => {
   it('Functional model, monitor loss, With minDelta', async () => {
     const input = tfl.input({shape: [1]});
     const output =
