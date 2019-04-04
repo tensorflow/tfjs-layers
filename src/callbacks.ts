@@ -170,9 +170,6 @@ export class EarlyStopping extends Callback {
       return;
     }
 
-    // console.log(
-    //     `onEpochEnd(): epoch=${epoch}; current=${current}; ` +
-    //     `this.minDelta=${this.minDelta}; this.best=${this.best}`);  // DEBUG
     if (this.monitorFunc(current - this.minDelta, this.best)) {
       this.best = current;
       this.wait = 0;
@@ -210,12 +207,45 @@ export class EarlyStopping extends Callback {
 /**
  * Factory function for a Callback that stops training when a monitored
  * quantity has stopped improving.
+ * 
+ * Early stopping is a type of regularization, and protectes model against
+ * overfitting.
+ * 
+ * The following example is based on fake data illustrates how this callback
+ * can be used during `tf.LayersModel.fit()`:
+ *
+ * ```js
+ * const model = tfl.sequential();
+ * model.add(tfl.layers.dense({
+ *   units: 3,
+ *   activation: 'softmax',
+ *   kernelInitializer: 'ones',
+ *   inputShape: [2]
+ * }));
+ * const xs = tensor2d([1, 2, 3, 4], [2, 2]);
+ * const ys = tensor2d([[1, 0, 0], [0, 1, 0]], [2, 3]);
+ * const xsVal = tensor2d([4, 3, 2, 1], [2, 2]);
+ * const ysVal = tensor2d([[0, 0, 1], [0, 1, 0]], [2, 3]);
+ * model.compile(
+ *     {loss: 'categoricalCrossentropy', optimizer: 'sgd', metrics: ['acc']});
+ * 
+ * // Without the EarlyStopping callback, the val_acc value would be:
+ * //   0.5, 0.5, 0.5, 0.5, ...
+ * // With val_acc being monitored, training should stop after the 2nd epoch.
+ * const history = await model.fit(xs, ys, {
+ *   epochs: 10,
+ *   validationData: [xsVal, ysVal],
+ *   callbacks: tfl.callbacks.earlyStopping({monitor: 'val_acc', patience: 4})
+ * });
+ * 
+ * // Expect to see a length-2 array.
+ * console.log(history.history.val_acc);
+ * ```
  */
 /**
  * @doc {
  *   heading: 'Callbacks',
- *   namespace: 'callbacks',
- *   useDocsFrom: 'EarlyStopping'
+ *   namespace: 'callbacks'
  * }
  */
 export function earlyStopping(args?: EarlyStopingCallbackArgs) {
