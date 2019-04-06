@@ -141,6 +141,7 @@ export class EarlyStopping extends Callback {
     } else if (this.mode === 'max') {
       this.monitorFunc = greater;
     } else {
+      // For mode === 'auto'.
       if (this.monitor.indexOf('acc') !== -1) {
         this.monitorFunc = greater;
       } else {
@@ -173,14 +174,14 @@ export class EarlyStopping extends Callback {
     if (this.monitorFunc(current - this.minDelta, this.best)) {
       this.best = current;
       this.wait = 0;
-      // TODO(cais): Logic for restorBestWeights.
+      // TODO(cais): Logic for restoreBestWeights.
     } else {
       this.wait++;
       if (this.wait >= this.patience) {
         this.stoppedEpoch = epoch;
         this.model.stopTraining = true;
       }
-      // TODO(cais): Logic for restorBestWeights.
+      // TODO(cais): Logic for restoreBestWeights.
     }
   }
 
@@ -207,10 +208,10 @@ export class EarlyStopping extends Callback {
 /**
  * Factory function for a Callback that stops training when a monitored
  * quantity has stopped improving.
- * 
+ *
  * Early stopping is a type of regularization, and protectes model against
  * overfitting.
- * 
+ *
  * The following example is based on fake data illustrates how this callback
  * can be used during `tf.LayersModel.fit()`:
  *
@@ -228,7 +229,7 @@ export class EarlyStopping extends Callback {
  * const ysVal = tf.tensor2d([[0, 0, 1], [0, 1, 0]], [2, 3]);
  * model.compile(
  *     {loss: 'categoricalCrossentropy', optimizer: 'sgd', metrics: ['acc']});
- * 
+ *
  * // Without the EarlyStopping callback, the val_acc value would be:
  * //   0.5, 0.5, 0.5, 0.5, ...
  * // With val_acc being monitored, training should stop after the 2nd epoch.
@@ -237,7 +238,7 @@ export class EarlyStopping extends Callback {
  *   validationData: [xsVal, ysVal],
  *   callbacks: tf.callbacks.earlyStopping({monitor: 'val_acc', patience: 4})
  * });
- * 
+ *
  * // Expect to see a length-2 array.
  * console.log(history.history.val_acc);
  * ```

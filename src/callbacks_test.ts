@@ -191,7 +191,7 @@ describe('EarlyStopping', () => {
     expect(model.stopTraining).toEqual(true);
   });
 
-  it('Missing monitor lears to warning', async () => {
+  it('Missing monitor leads to warning', async () => {
     const model = createDummyModel();
     const callback = tfl.callbacks.earlyStopping();
     callback.setModel(model);
