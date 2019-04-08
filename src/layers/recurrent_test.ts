@@ -765,7 +765,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
     // print(model.predict(x))
     // print(model.predict(x))
     // ```
-    it('stateful forward', () => {
+    it('stateful forward: only RNN layer', () => {
       const sequenceLength = 3;
       const rnn = tfl.layers.simpleRNN({
         units,
@@ -802,6 +802,41 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
       expect(tfc.memory().numTensors).toEqual(numTensors0);
     });
   }
+
+  it('stateful forward: RNN and dense layers', () => {
+    const sequenceLength = 3;
+    const model = tfl.sequential();
+    model.add(tfl.layers.simpleRNN({
+      units,
+      kernelInitializer: 'ones',
+      recurrentInitializer: 'ones',
+      biasInitializer: 'zeros',
+      activation: 'linear',
+      stateful: true,
+      batchInputShape: [batchSize, sequenceLength, inputSize]
+    }));
+    model.add(tfl.layers.dense({units: 1}));
+    const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+    let y1: Tensor;
+    let y2: Tensor;
+    tfc.tidy(() => {
+      y1 = model.predict(x) as Tensor;
+      expect(y1.shape).toEqual([batchSize, 1]);
+      y2 = model.predict(x) as Tensor;
+      expect(y2.shape).toEqual([batchSize, 1]);
+    });
+    model.resetStates();
+    const numTensors0 = tfc.memory().numTensors;
+
+    tfc.tidy(() => {
+      y1 = model.predict(x) as Tensor;
+      expect(y1.shape).toEqual([batchSize, 1]);
+      y2 = model.predict(x) as Tensor;
+      expect(y2.shape).toEqual([batchSize, 1]);
+    });
+    // Assert no memory leak, even without resetStates() being called.
+    expect(tfc.memory().numTensors).toEqual(numTensors0);
+  });
 
   it('computeMask: returnSequence = false, returnState = false', () => {
     const sequenceLength = 3;
