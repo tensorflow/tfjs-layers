@@ -803,6 +803,29 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
     });
   }
 
+  // Reference Python code:
+  // ```py
+  // import numpy as np
+  // from tensorflow import keras
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.SimpleRNN(
+  //     units=5,
+  //     kernel_initializer='ones',
+  //     recurrent_initializer='ones',
+  //     bias_initializer='zeros',
+  //     activation='linear',
+  //     stateful=True,
+  //     batch_input_shape=[4, 3, 2]))
+  // model.add(keras.layers.Dense(units=1, kernel_initializer='ones'))
+  // model.summary()
+  //
+  // xs = np.ones([4, 3, 2])
+  // y1 = model.predict(xs)
+  // print(y1)
+  // y2 = model.predict(xs)
+  // print(y2)
+  // ```
   it('stateful forward: RNN and dense layers', () => {
     const sequenceLength = 3;
     const model = tfl.sequential();
@@ -815,15 +838,19 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
       stateful: true,
       batchInputShape: [batchSize, sequenceLength, inputSize]
     }));
-    model.add(tfl.layers.dense({units: 1}));
+    model.add(tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'ones'
+    }));
     const x = tfc.ones([batchSize, sequenceLength, inputSize]);
     let y1: Tensor;
     let y2: Tensor;
     tfc.tidy(() => {
       y1 = model.predict(x) as Tensor;
-      expect(y1.shape).toEqual([batchSize, 1]);
+      expectTensorsClose(y1, tfc.tensor2d([310, 310, 310, 310], [4, 1]));
       y2 = model.predict(x) as Tensor;
-      expect(y2.shape).toEqual([batchSize, 1]);
+      expectTensorsClose(
+          y2, tfc.tensor2d([39060, 39060, 39060, 39060], [4, 1]));
     });
     model.resetStates();
     const numTensors0 = tfc.memory().numTensors;
@@ -831,8 +858,10 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
     tfc.tidy(() => {
       y1 = model.predict(x) as Tensor;
       expect(y1.shape).toEqual([batchSize, 1]);
+      expectTensorsClose(y1, tfc.tensor2d([310, 310, 310, 310], [4, 1]));
       y2 = model.predict(x) as Tensor;
-      expect(y2.shape).toEqual([batchSize, 1]);
+      expectTensorsClose(
+          y2, tfc.tensor2d([39060, 39060, 39060, 39060], [4, 1]));
     });
     // Assert no memory leak, even without resetStates() being called.
     expect(tfc.memory().numTensors).toEqual(numTensors0);
