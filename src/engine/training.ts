@@ -1529,6 +1529,10 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     this.stopTraining_ = stop;
   }
 
+  get stopTraining(): boolean {
+    return this.stopTraining_;
+  }
+
   get optimizer(): Optimizer {
     return this.optimizer_;
   }
