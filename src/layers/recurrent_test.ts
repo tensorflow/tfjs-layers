@@ -818,6 +818,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
   //     stateful=True,
   //     batch_input_shape=[4, 3, 2]))
   // model.add(keras.layers.Dense(units=1, kernel_initializer='ones'))
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
   // model.summary()
   //
   // xs = np.ones([4, 3, 2])
@@ -825,8 +826,11 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
   // print(y1)
   // y2 = model.predict(xs)
   // print(y2)
+  //
+  // history = model.fit(xs, ys, batch_size=4, epochs=3)
+  // print(history.history)
   // ```
-  it('stateful forward: RNN and dense layers', () => {
+  it('stateful forward: RNN and dense layers', async () => {
     const sequenceLength = 3;
     const model = tfl.sequential();
     model.add(tfl.layers.simpleRNN({
@@ -842,13 +846,15 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
       units: 1,
       kernelInitializer: 'ones'
     }));
-    const x = tfc.ones([batchSize, sequenceLength, inputSize]);
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+    const xs = tfc.ones([batchSize, sequenceLength, inputSize]);
+    const ys = tfc.ones([batchSize, 1]);
     let y1: Tensor;
     let y2: Tensor;
     tfc.tidy(() => {
-      y1 = model.predict(x) as Tensor;
+      y1 = model.predict(xs) as Tensor;
       expectTensorsClose(y1, tfc.tensor2d([310, 310, 310, 310], [4, 1]));
-      y2 = model.predict(x) as Tensor;
+      y2 = model.predict(xs) as Tensor;
       expectTensorsClose(
           y2, tfc.tensor2d([39060, 39060, 39060, 39060], [4, 1]));
     });
@@ -856,15 +862,18 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
     const numTensors0 = tfc.memory().numTensors;
 
     tfc.tidy(() => {
-      y1 = model.predict(x) as Tensor;
+      y1 = model.predict(xs) as Tensor;
       expect(y1.shape).toEqual([batchSize, 1]);
       expectTensorsClose(y1, tfc.tensor2d([310, 310, 310, 310], [4, 1]));
-      y2 = model.predict(x) as Tensor;
+      y2 = model.predict(xs) as Tensor;
       expectTensorsClose(
           y2, tfc.tensor2d([39060, 39060, 39060, 39060], [4, 1]));
     });
     // Assert no memory leak, even without resetStates() being called.
     expect(tfc.memory().numTensors).toEqual(numTensors0);
+
+    const history = await model.fit(xs, ys, {epochs: 1, batchSize: 4});
+    expect(history.history.loss[0]).toBeCloseTo(23841822736384);
   });
 
   it('computeMask: returnSequence = false, returnState = false', () => {
