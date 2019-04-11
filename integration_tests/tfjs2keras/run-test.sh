@@ -36,7 +36,7 @@ fi
 if [[ "${DEV_VERSION}" == "dev" &&
       "${TFJS2KERAS_TEST_USING_TF_KERAS}" == "0" ]]; then
   echo "--dev && keras-team/keras is not a valid combination."
-  echo "Use `--dev --tfkeras` together."
+  echo "Use --dev and --tfkeras together."
   exit 1
 fi
 
