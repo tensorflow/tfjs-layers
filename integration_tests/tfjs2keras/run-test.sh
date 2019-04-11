@@ -45,8 +45,6 @@ echo "Creating virtualenv at ${VENV_DIR} ..."
 virtualenv "${VENV_DIR}"
 source "${VENV_DIR}/bin/activate"
 
-# If in Travis, use the `--user` flag when performing `pip install` of
-# dependencies.
 if [[ "${DEV_VERSION}" == "stable" ]]; then
   pip install -r requirements-stable.txt
 else
