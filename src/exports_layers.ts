@@ -11,6 +11,7 @@
 import {InputLayer, InputLayerArgs} from './engine/input_layer';
 import {Layer, LayerArgs} from './engine/topology';
 import {input} from './exports';
+import {Masking, MaskingArgs} from './layers/masking';
 import {ELU, ELULayerArgs, LeakyReLU, LeakyReLULayerArgs, PReLU, PReLULayerArgs, ReLU, ReLULayerArgs, Softmax, SoftmaxLayerArgs, ThresholdedReLU, ThresholdedReLULayerArgs} from './layers/advanced_activations';
 import {Conv1D, Conv2D, Conv2DTranspose, Conv3D, ConvLayerArgs, Cropping2D, Cropping2DLayerArgs, SeparableConv2D, SeparableConvLayerArgs, UpSampling2D, UpSampling2DLayerArgs} from './layers/convolutional';
 import {DepthwiseConv2D, DepthwiseConv2DLayerArgs} from './layers/convolutional_depthwise';
@@ -707,4 +708,16 @@ export function gaussianDropout(args: GaussianDropoutArgs): GaussianDropout {
  */
 export function alphaDropout(args: AlphaDropoutArgs): AlphaDropout {
   return new AlphaDropout(args);
+}
+
+/**
+ * @doc {
+ *   heading: 'Layers',
+ *   subheading: 'Mask',
+ *   namespace: 'layers',
+ *   useDocsFrom: 'Masking'
+ * }
+ */
+export function masking(args: MaskingArgs): Masking {
+  return new Masking(args);
 }
