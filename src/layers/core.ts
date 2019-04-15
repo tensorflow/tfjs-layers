@@ -764,8 +764,8 @@ export class Masking extends Layer {
   static className = 'Masking';
   readonly maskValue: number;
 
-  constructor(args: MaskingArgs) {
-    super(args);
+  constructor(args?: MaskingArgs) {
+    super(args == null ? {} : args);
     this.supportsMasking = true;
     this.maskValue = args.maskValue == null ? 0 : args.maskValue;
   }
