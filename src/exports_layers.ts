@@ -717,6 +717,6 @@ export function alphaDropout(args: AlphaDropoutArgs): AlphaDropout {
  *   useDocsFrom: 'Masking'
  * }
  */
-export function masking(args: MaskingArgs): Masking {
+export function masking(args?: MaskingArgs): Masking {
   return new Masking(args);
 }
