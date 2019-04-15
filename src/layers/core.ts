@@ -762,12 +762,16 @@ export declare interface MaskingArgs extends LayerArgs {
 export class Masking extends Layer {
 
   static className = 'Masking';
-  readonly maskValue: number;
+  maskValue: number;
 
   constructor(args?: MaskingArgs) {
     super(args == null ? {} : args);
     this.supportsMasking = true;
-    this.maskValue = args.maskValue == null ? 0 : args.maskValue;
+    if (args != null) {
+      this.maskValue = args.maskValue == null ? 0 : args.maskValue;
+    } else {
+      this.maskValue = 0;
+    }
   }
 
   computeOutputShape(inputShape: Shape | Shape[]): Shape | Shape[] {
