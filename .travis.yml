@@ -1,0 +1,29 @@
+cache: yarn
+git:
+  depth: 5
+matrix:
+  include:
+    - language: node_js
+      node_js:
+        - "8"
+        - "10"
+      script:
+        - yarn test-ci
+      cache: yarn
+      git:
+        depth: 5
+
+    - language: node_js
+      node_js: "8"
+      stage: integ
+      script:
+        - yarn tfjs2keras
+      git:
+        depth: 5
+notifications:
+  email:
+    recipients:
+      - tensorflowjs-build@google.com
+    on_success: never
+    on_failure: always
+    on_pull_requests: false
