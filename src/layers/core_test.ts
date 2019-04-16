@@ -686,3 +686,37 @@ describeMathCPUAndGPU('Permute Layer: Tensor', () => {
     expectTensorsClose(permuteLayer.apply(x) as Tensor, expectedOutput);
   });
 });
+
+describeMathCPUAndGPU('Masking Layer: Tensor', () => {
+  // Reference Python code:
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // model = tf.keras.Sequential()
+  // model.add(tf.keras.layers.Masking(input_shape=[3, 2]))
+  // model.add(tf.keras.layers.SimpleRNN(
+  //   units=1,
+  //   recurrent_initializer='ones',
+  //   kernel_initializer='ones'))
+  //
+  // xs = np.array([[[1, 1], [1, 0], [0, 0]]], dtype=np.float32)
+  // print(xs.shape)
+  // ys = model.predict(xs)
+  //
+  // print(ys)
+  // ```
+  fit('3D', () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.masking({inputShape: [3, 2]}));
+    model.add(tfl.layers.simpleRNN({
+      units: 1,
+      recurrentInitializer: 'ones',
+      kernelInitializer: 'ones'
+    }));
+
+    const xs = tensor3d([[[1, 1], [1, 0], [0, 0]]]);
+    const ys = model.predict(xs) as Tensor;
+    expectTensorsClose(ys, tensor2d([[0.961396]]));
+  });
+});

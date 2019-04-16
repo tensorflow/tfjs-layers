@@ -1325,6 +1325,7 @@ export class SimpleRNN extends RNN {
         this.cell.recurrentDropoutMask = null;
       }
       const mask = kwargs == null ? null : kwargs['mask'];
+      console.log(`SimpleRNN.call(): mask=`, mask);  // DEBUG
       const training = kwargs == null ? null : kwargs['training'];
       const initialState: Tensor[] =
           kwargs == null ? null : kwargs['initialState'];
