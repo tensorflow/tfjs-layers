@@ -17,10 +17,8 @@ import {ALL_ENVS, describeWithFlags, registerTestEnv} from '@tensorflow/tfjs-cor
 import {disposeScalarCache} from '../backend/state';
 import {ValueError} from '../errors';
 
-// Register backends
+// Register backends.
 registerTestEnv({name: 'cpu', backendName: 'cpu'});
-
-// Register backends
 registerTestEnv({
   name: 'webgl2',
   backendName: 'webgl',
