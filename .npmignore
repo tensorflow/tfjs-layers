@@ -15,6 +15,7 @@ dist/**/*_test.js
 dist/**/*_test.d.ts
 integration_tests/
 *.tgz
+.travis.yml
 cloudbuild.yml
 .npmignore
 .pylintrc
