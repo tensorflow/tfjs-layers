@@ -41,7 +41,7 @@
     "link-local": "yalc link",
     "publish-local": "yarn build-npm && yalc push",
     "test": "karma start",
-    "tfjs2keras": "yarn tfjs2keras-js && yarn tfjs2keras-py",
+    "tfjs2keras": "yarn tfjs2keras-js && yarn tfjs2keras-py --stable && yarn tfjs2keras-py --stable --tfkeras && yarn tfjs2keras-py --dev --tfkeras",
     "tfjs2keras-js": "./scripts/tfjs2keras-js.sh",
     "tfjs2keras-py": "./scripts/tfjs2keras-py.sh",
     "test-ci": "./scripts/test-ci.sh",
