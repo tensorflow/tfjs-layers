@@ -496,10 +496,10 @@ describeMathCPUAndGPU('LayersModel.fit', () => {
     expect(history.history.loss.length).toEqual(2);
     expect(history.history.val_loss.length).toEqual(2);
     test_util.expectArraysClose(
-        history.history['loss'] as number[], 
+        history.history['loss'] as number[],
         [-0.70710688829422, -0.7077317237854004]);
     test_util.expectArraysClose(
-        history.history['val_loss'] as number[], 
+        history.history['val_loss'] as number[],
         [-0.70710688829422, -0.7077317237854004]);
   });
 
@@ -1449,13 +1449,14 @@ describeMathCPUAndGPU('LayersModel.fit', () => {
 
     const disposalResult = model.dispose();
     const numTensors2 = memory().numTensors;
-    // The 9 comes from the intrinsic weights of the ADAM optimizer, e.g.,
-    // c, epsScalar, beta1Scalar, etc.
-    // The 4 * 2 are the accumulated first and second moments for the 4 weights
-    // of the neural network.
-    expect(disposalResult.numDisposedVariables).toEqual(4 + 9 + 4 * 2);
+    // The optimizerNumWeights comes from the intrinsic weights of the ADAM
+    // optimizer, e.g., accBeta1, accBeta2. The 4 * 2 are the accumulated first
+    // and second moments for the 4 weights of the neural network.
+    const optimizerNumWeights = 2;
+    expect(disposalResult.numDisposedVariables)
+        .toEqual(4 + optimizerNumWeights + 4 * 2);
     expect(disposalResult.refCountAfterDispose).toEqual(0);
-    expect(numTensors1 - numTensors2).toEqual(4 + 9 + 4 * 2);
+    expect(numTensors1 - numTensors2).toEqual(4 + optimizerNumWeights + 4 * 2);
   });
 
   it('Model.dispose() cleans up owned optimizer: Sequential', async () => {
@@ -1472,13 +1473,14 @@ describeMathCPUAndGPU('LayersModel.fit', () => {
     const disposalResult = model.dispose();
     const numTensors2 = memory().numTensors;
 
-    // The 9 comes from the intrinsic weights of the ADAM optimizer, e.g.,
-    // c, epsScalar, beta1Scalar, etc.
-    // The 2 * 2 are the accumulated first and second moments for the 2 weights
-    // of the neural network.
-    expect(disposalResult.numDisposedVariables).toEqual(2 + 9 + 2 * 2);
+    // The optimizerNumWeights comes from the intrinsic weights of the ADAM
+    // optimizer, e.g., accBeta1, accBeta2.  The 2 * 2 are the accumulated first
+    // and second moments for the 2 weights of the neural network.
+    const optimizerNumWeights = 2;
+    expect(disposalResult.numDisposedVariables)
+        .toEqual(2 + optimizerNumWeights + 2 * 2);
     expect(disposalResult.refCountAfterDispose).toEqual(0);
-    expect(numTensors1 - numTensors2).toEqual(2 + 9 + 2 * 2);
+    expect(numTensors1 - numTensors2).toEqual(2 + optimizerNumWeights + 2 * 2);
   });
 
   it('Model.dispose() skips non-owned optimizer: Functional', async () => {

@@ -13,10 +13,23 @@
  */
 
 import {memory, Tensor, test_util} from '@tensorflow/tfjs-core';
-import {ALL_ENVS, describeWithFlags} from '@tensorflow/tfjs-core/dist/jasmine_util';
+import {ALL_ENVS, describeWithFlags, registerTestEnv} from '@tensorflow/tfjs-core/dist/jasmine_util';
 import {disposeScalarCache} from '../backend/state';
 import {ValueError} from '../errors';
 
+// Register backends
+registerTestEnv({name: 'cpu', backendName: 'cpu'});
+
+// Register backends
+registerTestEnv({
+  name: 'webgl2',
+  backendName: 'webgl',
+  flags: {
+    'WEBGL_VERSION': 2,
+    'WEBGL_CPU_FORWARD': false,
+    'WEBGL_SIZE_UPLOAD_UNIFORM': 0
+  }
+});
 
 /**
  * Expect values are close between an Tensor or number array.
