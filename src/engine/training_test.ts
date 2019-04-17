@@ -1449,14 +1449,22 @@ describeMathCPUAndGPU('LayersModel.fit', () => {
 
     const disposalResult = model.dispose();
     const numTensors2 = memory().numTensors;
-    // The optimizerNumWeights comes from the intrinsic weights of the ADAM
-    // optimizer, e.g., accBeta1, accBeta2. The 4 * 2 are the accumulated first
-    // and second moments for the 4 weights of the neural network.
-    const optimizerNumWeights = 2;
+    // The optimizerNumGlobalVariables comes from the intrinsic weights of the
+    // ADAM optimizer, e.g., accBeta1, accBeta2.
+    const optimizerNumGlobalVariables = 2;
+    // The optimizerNumVariablesPerWeight comes from accumulatedFirstMoment and
+    // accumulatedSecondMoment, which are computed per model weight.
+    const optimizerNumVariablesPerWeight = 2;
+    const numModelWeights = 4;
     expect(disposalResult.numDisposedVariables)
-        .toEqual(4 + optimizerNumWeights + 4 * 2);
+        .toEqual(
+            numModelWeights + optimizerNumGlobalVariables +
+            numModelWeights * optimizerNumVariablesPerWeight);
     expect(disposalResult.refCountAfterDispose).toEqual(0);
-    expect(numTensors1 - numTensors2).toEqual(4 + optimizerNumWeights + 4 * 2);
+    expect(numTensors1 - numTensors2)
+        .toEqual(
+            numModelWeights + optimizerNumGlobalVariables +
+            numModelWeights * optimizerNumVariablesPerWeight);
   });
 
   it('Model.dispose() cleans up owned optimizer: Sequential', async () => {
@@ -1473,14 +1481,22 @@ describeMathCPUAndGPU('LayersModel.fit', () => {
     const disposalResult = model.dispose();
     const numTensors2 = memory().numTensors;
 
-    // The optimizerNumWeights comes from the intrinsic weights of the ADAM
-    // optimizer, e.g., accBeta1, accBeta2.  The 2 * 2 are the accumulated first
-    // and second moments for the 2 weights of the neural network.
-    const optimizerNumWeights = 2;
+    // The optimizerNumGlobalVariables comes from the intrinsic weights of the
+    // ADAM optimizer, e.g., accBeta1, accBeta2.
+    const optimizerNumGlobalVariables = 2;
+    // The optimizerNumVariablesPerWeight comes from accumulatedFirstMoment and
+    // accumulatedSecondMoment, which are computed per model weight.
+    const optimizerNumVariablesPerWeight = 2;
+    const numModelWeights = 2;
     expect(disposalResult.numDisposedVariables)
-        .toEqual(2 + optimizerNumWeights + 2 * 2);
+        .toEqual(
+            numModelWeights + optimizerNumGlobalVariables +
+            numModelWeights * optimizerNumVariablesPerWeight);
     expect(disposalResult.refCountAfterDispose).toEqual(0);
-    expect(numTensors1 - numTensors2).toEqual(2 + optimizerNumWeights + 2 * 2);
+    expect(numTensors1 - numTensors2)
+        .toEqual(
+            numModelWeights + optimizerNumGlobalVariables +
+            numModelWeights * optimizerNumVariablesPerWeight);
   });
 
   it('Model.dispose() skips non-owned optimizer: Functional', async () => {
