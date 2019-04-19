@@ -379,7 +379,7 @@ export declare interface LayerArgs {
   /**
    * Initial weight values of the layer.
    */
-  weights?: Tensor[];
+  weights?: Tensor[]|Tensor;
   /** Legacy support. Do not use for new code. */
   inputDType?: DataType;
 }
