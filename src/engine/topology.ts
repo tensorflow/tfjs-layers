@@ -1219,9 +1219,10 @@ export abstract class Layer extends serialization.Serializable {
    *   layer's specifications.
    */
   /** @doc {heading: 'Models', 'subheading': 'Classes'} */
-  setWeights(weights: Tensor[]): void {
+  setWeights(weights: Tensor[]|Tensor): void {
     tidy(() => {
       const params = this.weights;
+      if (weights instanceof Tensor) weights = [weights];
       if (params.length !== weights.length) {
         // TODO(cais): Restore the following and use `providedWeights`, instead
         // of `weights` in the error message, once the deeplearn.js bug is
