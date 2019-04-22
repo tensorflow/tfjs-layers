@@ -24,7 +24,7 @@ export enum ModelLoggingVerbosity {
 }
 
 /** How often to yield to the main thread when training (in ms). */
-export const DEFAULT_YIELD_EVERY_MS = 250;
+export const DEFAULT_YIELD_EVERY_MS = 125;
 
 export type Params = {
   [key: string]: number|string|boolean|number[]|string[]|boolean[];
@@ -365,13 +365,18 @@ export class CustomCallback extends BaseCallback {
       (epoch: number, batch: number, logs: Logs) => void | Promise<void>;
 
   private yieldEvery: YieldEveryOptions;
-  private lastEpoch = 0;
+  private currentEpoch = 0;
 
   constructor(args: CustomCallbackArgs, yieldEvery?: YieldEveryOptions) {
     super();
     this.yieldEvery = yieldEvery || 'auto';
     if (this.yieldEvery === 'auto') {
       this.yieldEvery = DEFAULT_YIELD_EVERY_MS;
+    }
+    if (this.yieldEvery === 'never' && args.onYield != null) {
+      throw new Error(
+          'yieldEvery is `never` but you provided an `onYield` callback. ' +
+          'Either change `yieldEvery` or remove the callback');
     }
     if (util.isNumber(this.yieldEvery)) {
       // Decorate `maybeWait` so it will be called at most once every
@@ -399,7 +404,7 @@ export class CustomCallback extends BaseCallback {
   }
 
   async onEpochBegin(epoch: number, logs?: UnresolvedLogs): Promise<void> {
-    this.lastEpoch = epoch;
+    this.currentEpoch = epoch;
     if (this.epochBegin != null) {
       await resolveScalarsInLogs(logs);
       await this.epochBegin(epoch, logs as Logs);
@@ -434,7 +439,7 @@ export class CustomCallback extends BaseCallback {
     if (this.yieldEvery === 'batch') {
       ps.push(nextFrame());
     } else if (util.isNumber(this.yieldEvery)) {
-      ps.push(this.maybeWait(this.lastEpoch, batch, logs));
+      ps.push(this.maybeWait(this.currentEpoch, batch, logs));
     }
     await Promise.all(ps);
   }

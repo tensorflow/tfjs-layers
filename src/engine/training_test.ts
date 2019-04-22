@@ -2213,6 +2213,26 @@ describeMathGPU('LayersModel.fit: yieldEvery', () => {
     expect(onYieldBatchesIds).toEqual([0, 0, 0]);
   });
 
+  it('fails when onYield is provided, but yieldEvery is never', async done => {
+    const inputSize = 2;
+    const numExamples = 10;
+    const epochs = 5;
+    const model = createDummyModel(inputSize);
+    const xs = ones([numExamples, inputSize]);
+    const ys = ones([numExamples, 1]);
+    try {
+      await model.fit(xs, ys, {
+        epochs,
+        batchSize: numExamples,
+        yieldEvery: 'never',
+        callbacks: {onYield: async (_epoch, _batch, _logs) => {}}
+      });
+      done.fail('Model.fit should fail');
+    } catch {
+      done();
+    }
+  });
+
   it('batch: uneven 9 batches per epoch; 2 epochs', async () => {
     const presetBatchTimestamps = [0, 2, 4, 6, 8, 10];
     let counter = 0;
