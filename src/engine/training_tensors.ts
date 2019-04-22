@@ -57,8 +57,9 @@ export interface ModelFitArgs {
    *   - `onBatchBegin(batch, logs)`: called at the start of every batch.
    *   - `onBatchEnd(batch, logs)`: called at the end of every batch.
    *   - `onYield(epoch, batch, logs)`: called every `yieldEvery` milliseconds
-   *      with the current epoch, batch and logs. Can skip batches or epochs.
-   *      See docs for `yieldEvery` below for more details.
+   *      with the current epoch, batch and logs. The logs are the same
+   *      as in `onBatchEnd()`. Note that `onYield` can skip batches or
+   *      epochs. See also docs for `yieldEvery` below.
    */
   callbacks?: BaseCallback[]|CustomCallbackArgs|CustomCallbackArgs[];
 
