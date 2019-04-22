@@ -410,6 +410,30 @@ describeMathCPU('Glorot uniform initializer', () => {
   });
 });
 
+describeMathCPU('VarianceScaling initializer', () => {
+  ['varianceScaling', 'VarianceScaling'].forEach(initializer => {
+    it('Default argument values', () => {
+      const init = getInitializer(initializer);
+      const config = init.getConfig();
+      expect(config['scale']).toEqual(1);
+      expect(config['mode']).toEqual('fanIn');
+      expect(config['distribution']).toEqual('normal');
+      expect(config['seed']).toEqual(undefined);
+    });
+  });
+
+  ['uniform', 'normal', 'truncatedNormal'].forEach(distribution => {
+    it('Can be constructed from config dict', () => {
+      const baseInit = getInitializer('varianceScaling');
+      const baseConfig = baseInit.getConfig() as serialization.ConfigDict;
+      baseConfig.distribution = distribution;
+      const newInit = new VarianceScaling(baseConfig);
+      const newConfig = newInit.getConfig();
+      expect(newConfig['distribution']).toEqual(baseConfig['distribution']);
+    });
+  });
+});
+
 describeMathCPU('Glorot normal initializer', () => {
   ['glorotNormal', 'GlorotNormal'].forEach(initializer => {
     it('1D ' + initializer, () => {

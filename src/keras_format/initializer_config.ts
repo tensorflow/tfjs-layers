@@ -20,8 +20,11 @@ export const VALID_FAN_MODE_VALUES = ['fanIn', 'fanOut', 'fanAvg'];
 export type FanModeSerialization = 'fan_in'|'fan_out'|'fan_avg';
 
 /** @docinline */
-export type Distribution = 'normal'|'uniform';
-export const VALID_DISTRIBUTION_VALUES = ['normal', 'uniform'];
+export type Distribution = 'normal'|'uniform'|'truncatedNormal';
+export const VALID_DISTRIBUTION_VALUES =
+    ['normal', 'uniform', 'truncatedNormal'];
+// These constants have a snake vs. camel distinction.
+export type DistributionSerialization = 'normal'|'uniform'|'truncated_normal';
 
 export type ZerosSerialization = BaseSerialization<'Zeros', {}>;
 
@@ -62,10 +65,10 @@ export type TruncatedNormalSerialization =
     BaseSerialization<'TruncatedNormal', TruncatedNormalConfig>;
 
 export type VarianceScalingConfig = {
-  scale: number;
+  scale?: number;
 
-  mode: FanModeSerialization;
-  distribution: Distribution;
+  mode?: FanModeSerialization;
+  distribution?: DistributionSerialization;
   seed?: number;
 };
 

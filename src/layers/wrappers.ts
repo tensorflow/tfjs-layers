@@ -14,8 +14,6 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
-
-import {getScalar} from '../backend/state';
 import * as K from '../backend/tfjs_backend';
 import {nameScope} from '../common';
 import {InputSpec, Layer, LayerArgs, SymbolicTensor} from '../engine/topology';
@@ -304,14 +302,14 @@ export class Bidirectional extends Wrapper {
     //   methods.
     const layerConfig = args.layer.getConfig();
     const forwDict: serialization.ConfigDict = {};
-    forwDict.className = args.layer.getClassName();
-    forwDict.config = layerConfig;
+    forwDict['className'] = args.layer.getClassName();
+    forwDict['config'] = layerConfig;
     this.forwardLayer = deserialize(forwDict) as RNN;
     layerConfig['goBackwards'] =
         layerConfig['goBackwards'] === true ? false : true;
     const backDict: serialization.ConfigDict = {};
-    backDict.className = args.layer.getClassName();
-    backDict.config = layerConfig;
+    backDict['className'] = args.layer.getClassName();
+    backDict['config'] = layerConfig;
     this.backwardLayer = deserialize(backDict) as RNN;
     this.forwardLayer.name = 'forward_' + this.forwardLayer.name;
     this.backwardLayer.name = 'backward_' + this.backwardLayer.name;
@@ -523,7 +521,7 @@ export class Bidirectional extends Wrapper {
       } else if (this.mergeMode === 'sum') {
         output = tfc.add(y as Tensor, yRev as Tensor);
       } else if (this.mergeMode === 'ave') {
-        output = tfc.mul(getScalar(0.5), tfc.add(y as Tensor, yRev as Tensor));
+        output = tfc.mul(.5, tfc.add(y as Tensor, yRev as Tensor));
       } else if (this.mergeMode === 'mul') {
         output = tfc.mul(y as Tensor, yRev as Tensor);
       } else if (this.mergeMode == null) {
