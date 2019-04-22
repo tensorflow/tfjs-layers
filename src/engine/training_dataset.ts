@@ -187,7 +187,8 @@ const DEFAULT_VALIDATION_BATCH_SIZE = 32;
  */
 function standardizeDataIteratorOutput(
     // Type `model` as `any` here to avoid circular dependency w/
-    // training.ts. tslint:disable-next-line:no-any
+    // training.ts.
+    // tslint:disable-next-line:no-any
     model: any, iteratorOut: {}): tfc.Tensor[] {
   let xs: TensorOrArrayOrMap;
   let ys: TensorOrArrayOrMap;
@@ -286,7 +287,8 @@ function standardizeTensorValidationData<T>(
 
 export async function fitDataset<T>(
     // Type `model` as `any` here to avoid circular dependency w/
-    // training.ts. tslint:disable-next-line:no-any
+    // training.ts.
+    // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>,
     args: ModelFitDatasetArgs<T>): Promise<History> {
   const hasBatchesPerEpoch = args.batchesPerEpoch != null;
@@ -507,7 +509,8 @@ function isLazyIteratorObject<T>(iterator: Dataset<T>|
 
 export async function evaluateDataset<T>(
     // Type `model` as `any` here to avoid circular dependency w/
-    // training.ts. tslint:disable-next-line:no-any
+    // training.ts.
+    // tslint:disable-next-line:no-any
     model: any, dataset: Dataset<T>|LazyIterator<T>,
     args: ModelEvaluateDatasetArgs): Promise<tfc.Scalar|tfc.Scalar[]> {
   args = args || {};
