@@ -2579,12 +2579,8 @@ describe('LayersModel trainable setter and getter', () => {
 
   it('Setting trainable of layer sets trainable bit of Variable', async () => {
     const model = tfl.sequential();
-    model.add(tfl.layers.dense({
-      units: 3,
-      activation: 'relu',
-      inputShape: [4],
-      kernelInitializer: 'ones'
-    }));
+    model.add(
+        tfl.layers.dense({units: 3, activation: 'relu', inputShape: [4]}));
     model.add(tfl.layers.dense({units: 1, kernelInitializer: 'ones'}));
     model.trainable = false;
     expect(model.layers[0].weights[0].trainable).toEqual(false);
