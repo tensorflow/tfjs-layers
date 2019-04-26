@@ -38,6 +38,7 @@ export class LayerVariable {
   // original name is used as a key.
   readonly originalName: string;
   private trainable_: boolean;
+  // private readonly originallyTrainable_: boolean;
 
   protected readonly val: tfc.Variable;
   readonly constraint: Constraint;
@@ -68,6 +69,7 @@ export class LayerVariable {
     this.name = getUniqueTensorName(this.originalName);
 
     this.trainable_ = trainable;
+    // this.originallyTrainable_ = trainable;
     this.constraint = constraint;
 
     this.val = tfc.variable(val, this.trainable_, this.name, this.dtype);
@@ -123,6 +125,10 @@ export class LayerVariable {
   get trainable(): boolean {
     return this.trainable_;
   }
+
+  // get originallyTrainable(): boolean {
+  //   return this.originallyTrainable_;
+  // }
 
   set trainable(trainable: boolean) {
     this.trainable_ = trainable;
