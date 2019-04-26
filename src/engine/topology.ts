@@ -703,8 +703,6 @@ export abstract class Layer extends serialization.Serializable {
     } else {
       return this._trainableWeights.concat(this._nonTrainableWeights);
     }
-    //   return this._nonTrainableWeights;
-    // }
   }
 
   set nonTrainableWeights(weights: LayerVariable[]) {
