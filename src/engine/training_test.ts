@@ -2599,8 +2599,6 @@ describe('LayersModel trainable setter and getter', () => {
   });
 });
 
-
-
 describeMathCPUAndGPU('LayersModel.execute', () => {
   function createFunctionalModel():
       [tfl.LayersModel, {[name: string]: tfl.SymbolicTensor}] {
