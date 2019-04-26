@@ -357,9 +357,8 @@ describeMathCPU('Layer', () => {
      () => {
        const layer = new LayerForTest({trainable: false});
        const expectedWeights = trainableWeights.concat(nonTrainableWeights);
-       layer.trainableWeights =  // DEBUGtrainableWeights;
-           layer.nonTrainableWeights = nonTrainableWeights;
-       console.log(layer.nonTrainableWeights);  // DEBUG
+       layer.trainableWeights = trainableWeights;
+       layer.nonTrainableWeights = nonTrainableWeights;
        expect(layer.nonTrainableWeights.length).toEqual(expectedWeights.length);
      });
 
