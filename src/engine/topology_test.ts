@@ -359,7 +359,7 @@ describeMathCPU('Layer', () => {
        const expectedWeights = trainableWeights.concat(nonTrainableWeights);
        layer.trainableWeights = trainableWeights;
        layer.nonTrainableWeights = nonTrainableWeights;
-       expect(layer.nonTrainableWeights.length).toEqual(expectedWeights.length);
+       expect(layer.nonTrainableWeights).toEqual(expectedWeights);
      });
 
   it('Setting trainable of layer sets Variable.trainable', () => {
