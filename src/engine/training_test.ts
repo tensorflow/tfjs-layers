@@ -2576,42 +2576,30 @@ describe('LayersModel trainable setter and getter', () => {
     expect(model.layers[1].trainable).toEqual(false);
     expect(model.layers[2].trainable).toEqual(true);
   });
+
+  it('Setting trainable of layer sets trainable bit of Variable', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 3,
+      activation: 'relu',
+      inputShape: [4],
+      kernelInitializer: 'ones'
+    }));
+    model.add(tfl.layers.dense({units: 1, kernelInitializer: 'ones'}));
+    model.trainable = false;
+    expect(model.layers[0].weights[0].trainable).toEqual(false);
+    expect(model.layers[0].weights[1].trainable).toEqual(false);
+    expect(model.layers[1].weights[0].trainable).toEqual(false);
+    expect(model.layers[1].weights[1].trainable).toEqual(false);
+    model.trainable = true;
+    expect(model.layers[0].weights[0].trainable).toEqual(true);
+    expect(model.layers[0].weights[1].trainable).toEqual(true);
+    expect(model.layers[1].weights[0].trainable).toEqual(true);
+    expect(model.layers[1].weights[1].trainable).toEqual(true);
+  });
 });
 
-it('Setting trainable of layer sets trainable bit of Variable', async () => {
-  console.log('=== BEGIN ===');  // DEBUG
-  const model = tfl.sequential();
-  model.add(tfl.layers.dense({
-    units: 3,
-    activation: 'relu',
-    inputShape: [4],
-    kernelInitializer: 'ones'
-  }));
-  model.add(tfl.layers.dense({units: 1, kernelInitializer: 'ones'}));
-  console.log('Trainable weights before:');  // DEBUG
-  console.log(model.trainableWeights);       // DEBUG
-  console.log('== Setting to false');        // DEBUG
-  model.trainable = false;
-  // model.layers[0].trainable = false;
-  console.log('Trainable weights after:');           // DEBUG
-  console.log(model.trainableWeights);               // DEBUG
-  console.log(model.layers[0].trainable);            // DEBUG
-  console.log('Weight trainable bit after:');        // DEBUG
-  console.log('weights:', model.layers[0].weights);  // DEBUG
-  expect(model.layers[0].weights[0].trainable).toEqual(false);
-  // expect(model.layers[0].weights[1].trainable).toEqual(false);
-  // expect(model.layers[1].weights[0].trainable).toEqual(false);
-  // expect(model.layers[1].weights[1].trainable).toEqual(false);
-  // model.trainable = true;
-  // expect(model.layers[0].weights[0].trainable).toEqual(true);
-  // expect(model.layers[0].weights[1].trainable).toEqual(true);
-  // expect(model.layers[1].weights[0].trainable).toEqual(true);
-  // expect(model.layers[1].weights[1].trainable).toEqual(true);
-});
 
-it('Setting trainable: layer with originally untrainable weights', async () => {
-  console.log('TODO(cais):');  // DEBUG
-});
 
 describeMathCPUAndGPU('LayersModel.execute', () => {
   function createFunctionalModel():

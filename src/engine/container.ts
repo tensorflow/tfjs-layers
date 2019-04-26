@@ -531,7 +531,6 @@ export abstract class Container extends Layer {
           '_trainableWeights must remain an empty Array.');
     }
 
-    // console.log(`${this.name} trainable: ${this.trainable}`);  // DEBUG
     if (!this.trainable) {
       return [];
     }
