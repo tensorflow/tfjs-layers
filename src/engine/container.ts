@@ -506,6 +506,10 @@ export abstract class Container extends Layer {
     return result;
   }
 
+  get trainable() {
+    return this.trainable_;
+  }
+
   set trainable(trainable: boolean) {
     this.layers.forEach(layer => {
       // tslint:disable-next-line:no-any
@@ -527,6 +531,7 @@ export abstract class Container extends Layer {
           '_trainableWeights must remain an empty Array.');
     }
 
+    // console.log(`${this.name} trainable: ${this.trainable}`);  // DEBUG
     if (!this.trainable) {
       return [];
     }
