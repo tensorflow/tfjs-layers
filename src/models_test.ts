@@ -1151,6 +1151,26 @@ describeMathCPU('loadLayersModel from URL', () => {
   });
 });
 
+describeMathCPUAndGPU('Saving model with optimizer', () => {
+  fit('RMSProp',  async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 1,
+      inputShape: [8],
+      kernelInitializer: 'ones'
+    }));
+    model.compile({loss: 'meanSquaredError', optimizer: 'rmsprop'});
+
+    const xs = ones([4, 8]);
+    const ys = zeros([4, 1]);
+    await model.fit(xs, ys, {epochs: 1});
+
+    // TODO(cais): Test saving without calling fit first.
+  });
+
+
+});
+
 describeMathCPU('loadLayersModel from IOHandler', () => {
   // The model topology JSON can be obtained with the following Python Keras
   // code:

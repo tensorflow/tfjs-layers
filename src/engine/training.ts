@@ -33,6 +33,12 @@ import {DisposeResult, SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
 
+// TODO(cais): Deduplicate with tfjs-core?
+export interface NamedTensor {
+  name: string;
+  tensor: Tensor;
+}
+
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
  */
@@ -1479,8 +1485,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    * @returns A `NamedTensorMap` mapping original weight names (i.e.,
    *   non-uniqueified weight names) to their values.
    */
-  protected getNamedWeights(config?: io.SaveConfig): NamedTensorMap {
-    const namedWeights: NamedTensorMap = {};
+  protected getNamedWeights(config?: io.SaveConfig): NamedTensor[] {
+    const namedWeights: NamedTensor[] = [];
 
     const trainableOnly = config != null && config.trainableOnly;
     const weights = trainableOnly ? this.trainableWeights : this.weights;
@@ -1490,7 +1496,10 @@ export class LayersModel extends Container implements tfc.InferenceModel {
         // Optionally skip non-trainable weights.
         continue;
       }
-      namedWeights[weights[i].originalName] = weightValues[i];
+      namedWeights.push({
+        name: weights[i].originalName,
+        tensor: weightValues[i]
+      });
     }
     return namedWeights;
   }
@@ -1555,6 +1564,28 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     }
     return result;
   }
+
+  protected getTrainingConfig(): serialization.ConfigDict {
+    // TODO(cais): Add weightedMetrics when they are supported.
+    // TODO(cais): Add sampleWeightMode when it's supported.
+    // TODO(cais): Add lossWeights when it's support.
+    return {
+      // 'loss':  this.loss,
+      'metrics': this.metrics,
+      'optimizerConfig': this.optimizer.getConfig()
+    };
+  }
+
+  // /**
+  //  * Util shared between different serialization methods.
+  //  * @returns LayersModel config with Keras version information added.
+  //  */
+  // protected updatedConfig(): serialization.ConfigDict {
+  //   const modelConfig = super.updatedConfig();
+  //   const out: serialization.ConfigDict = {modelConfig};
+  //   out['trainingConfig'] = this.getTrainingConfig();
+  //   return out;
+  // }
 
   /**
    * Save the configuration and/or weights of the LayersModel.
@@ -1658,12 +1689,26 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           'provided does not have the `save` attribute defined.');
     }
 
-    const weightDataAndSpecs =
-        await io.encodeWeights(this.getNamedWeights(config));
+    const namedWeights = this.getNamedWeights(config);
+    const weightDataAndSpecs = await io.encodeWeights(namedWeights);
 
     const returnString = false;
     const unusedArg: {} = null;
-    const modelConfig = this.toJSON(unusedArg, returnString);
+    let modelConfig = this.toJSON(unusedArg, returnString);
+
+    if (config.includeOptimizer === true && this.optimizer != null) {
+      const weightType = 'optimizer';
+      const {data, specs} =
+          await io.encodeWeights(this.optimizer.getWeights(), weightType);
+      weightDataAndSpecs.specs.push(...specs);
+      weightDataAndSpecs.data =
+          io.concatenateArrayBuffers([weightDataAndSpecs.data, data]);
+
+      modelConfig = {modelConfig};
+      modelConfig['trainingConfig'] = this.getTrainingConfig();
+    }
+
+    // TODO(cais): This ought to include training_config.
 
     return handlerOrURL.save({
       modelTopology: modelConfig,
