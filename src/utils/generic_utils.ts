@@ -483,7 +483,8 @@ export function formatAsFriendlyString(value: any): string {
  * @param f The original function `f` to wrap.
  * @param waitMs The time between two consecutive calls to `f` in ms.
  */
-export function debounce<T>(f: (...args: Array<{}>) => T, waitMs: number) {
+export function debounce<T>(
+    f: (...args: Array<{}>) => T, waitMs: number): (...args: Array<{}>) => T {
   let lastTime = util.now();
   let lastResult: T;
   const f2 = (...args: Array<{}>) => {

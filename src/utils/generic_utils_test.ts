@@ -252,12 +252,11 @@ describe('formatValueAsFriendlyString', () => {
   });
 });
 
-function sleep(waitMs: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, waitMs));
-}
-
 describe('debouce', () => {
   it('first call happens after waitMs', async () => {
+    const timestamps = [0, 1, 11, 12];
+    let counter = 0;
+    spyOn(util, 'now').and.callFake(() => timestamps[counter++]);
     let numCalls = 0;
     const f = () => numCalls++;
     const waitMs = 10;
@@ -265,7 +264,6 @@ describe('debouce', () => {
     // The first call is ignored since waitMs hasn't passed yet.
     f2();
     expect(numCalls).toBe(0);
-    await sleep(waitMs);
     f2();
     expect(numCalls).toBe(1);
     // The second call is ignored.
