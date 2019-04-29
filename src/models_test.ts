@@ -1209,7 +1209,11 @@ describeMathCPUAndGPU('Saving model with optimizer', () => {
       expectTensorsClose(
           optimizer2Weights[i].tensor, optimizer1Weights[i].tensor);
     }
-    model2.summary();
+
+    // Call fit() on the loaded model and assert that the effect is the
+    // same as calling fit() again on the original model.
+    const history = await model2.fit(xs, ys, {epochs: 1});
+    expect(history.history.loss[0]).toBeCloseTo(51.768246);
   });
 });
 
