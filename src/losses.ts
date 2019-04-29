@@ -17,7 +17,6 @@ import * as K from './backend/tfjs_backend';
 import {ValueError} from './errors';
 import {LossOrMetricFn} from './types';
 
-
 /**
  * Normalizes a tensor wrt the L2 norm alongside the specified axis.
  * @param x
@@ -319,9 +318,13 @@ export const cosine = cosineProximity;
 // change based on (de)serialization requirements.
 export function get(identifierOrFn: string|LossOrMetricFn): LossOrMetricFn {
   const lossesMap: {[functionName: string]: LossOrMetricFn} = {
+    mean_squared_error: meanSquaredError,
     meanSquaredError,
+    mean_absolute_error: meanAbsoluteError,
     meanAbsoluteError,
+    mean_absolute_percentage_error: meanAbsolutePercentageError,
     meanAbsolutePercentageError,
+    mean_squared_logarithmic_error: meanSquaredLogarithmicError,
     meanSquaredLogarithmicError,
     squaredHinge,
     hinge,
