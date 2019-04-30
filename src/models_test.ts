@@ -1277,7 +1277,7 @@ describeMathCPUAndGPU('Saving model with optimizer', () => {
     expect(history.history.loss[0]).toBeCloseTo(51.768246);
   });
 
-  it('Adam', async () => {
+  it('Adam as explicit object', async () => {
     const model1 = tfl.sequential();
     model1.add(tfl.layers.dense({
       units: 1,
@@ -1343,6 +1343,68 @@ describeMathCPUAndGPU('Saving model with optimizer', () => {
     // same as calling fit() again on the original model.
     const history = await model2.fit(xs, ys, {epochs: 1});
     expect(history.history.loss[0]).toBeCloseTo(61.1524);
+  });
+
+  it('Adam as string name', async () => {
+    const model1 = tfl.sequential();
+    model1.add(tfl.layers.dense({
+      units: 1,
+      inputShape: [8],
+      kernelInitializer: 'ones'
+    }));
+    model1.compile({loss: 'meanSquaredError', optimizer: 'adam'});
+
+    const xs = ones([4, 8]);
+    const ys = zeros([4, 1]);
+    await model1.fit(xs, ys, {epochs: 1});
+
+    // TODO(cais): Test saving without calling fit first.
+    let savedArtifacts: io.ModelArtifacts;
+    await model1.save(
+        io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return null;
+        }), {includeOptimizer: true});
+
+    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
+    expect(modelTopology['model_config'] == null).toEqual(false);
+    const trainingConfig = modelTopology['training_config'] as ConfigDict;
+    expect(trainingConfig['loss']).toEqual('mean_squared_error');
+
+    const weightSpecs = savedArtifacts.weightSpecs;
+    // The first two weights belong to the model proper.
+    // The next weight is the iterations counter.
+    // The last four weights belong to the rmsprop optimizer.
+    expect(weightSpecs.length).toEqual(2 + 1 + 2 * 2);
+    expect(weightSpecs[2].name).toEqual('iter');
+    expect(weightSpecs[3].name).toEqual(`${weightSpecs[0].name}/m`);
+    expect(weightSpecs[4].name).toEqual(`${weightSpecs[1].name}/m`);
+    expect(weightSpecs[5].name).toEqual(`${weightSpecs[0].name}/v`);
+    expect(weightSpecs[6].name).toEqual(`${weightSpecs[1].name}/v`);
+    // The first part comes from the kernel of the dense layer, which has a
+    // 8 elements and each is 4 bytes.
+    // The second part comes from the bias of the dense layer, which has 1
+    // element and is also 4 bytes.
+    const weightData = savedArtifacts.weightData;
+    expect(weightData.byteLength).toEqual(4 + 4 * 8 * 3 + 4 * 1 * 3);
+
+    // Load the model back, with the optimizer.
+    const model2 = await tfl.loadLayersModel(
+        io.fromMemory(modelTopology, weightSpecs, weightData));
+    expect(model2.optimizer.getConfig()['learningRate']).toEqual(1e-3);
+
+    const optimizer1Weights = model1.optimizer.getWeights();
+    const optimizer2Weights = model2.optimizer.getWeights();
+    expect(optimizer2Weights.length).toEqual(optimizer1Weights.length);
+    for (let i = 0; i < optimizer1Weights.length; ++i) {
+      expectTensorsClose(
+          optimizer2Weights[i].tensor, optimizer1Weights[i].tensor);
+    }
+
+    // Call fit() on the loaded model and assert that the effect is the
+    // same as calling fit() again on the original model.
+    const history = await model2.fit(xs, ys, {epochs: 1});
+    expect(history.history.loss[0]).toBeCloseTo(63.8561);
   });
 
   // TODO(cais): Test saving with metrics.
