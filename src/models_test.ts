@@ -1152,7 +1152,66 @@ describeMathCPU('loadLayersModel from URL', () => {
 });
 
 describeMathCPUAndGPU('Saving model with optimizer', () => {
-  fit('RMSProp', async () => {
+  it('SGD', async () => {
+    const model1 = tfl.sequential();
+    model1.add(tfl.layers.dense({
+      units: 1,
+      inputShape: [8],
+      kernelInitializer: 'ones'
+    }));
+    const learningRate = 0.02;
+    const optimizer = train.sgd(learningRate);
+    model1.compile({loss: 'meanSquaredError', optimizer});
+
+    const xs = ones([4, 8]);
+    const ys = zeros([4, 1]);
+    await model1.fit(xs, ys, {epochs: 1});
+
+    // TODO(cais): Test saving without calling fit first.
+    let savedArtifacts: io.ModelArtifacts;
+    await model1.save(
+        io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return null;
+        }), {includeOptimizer: true});
+
+    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
+    expect(modelTopology['model_config'] == null).toEqual(false);
+    const trainingConfig = modelTopology['training_config'] as ConfigDict;
+    expect(trainingConfig['loss']).toEqual('mean_squared_error');
+
+    const weightSpecs = savedArtifacts.weightSpecs;
+    // The first two weights belong to the model proper.
+    // The next weight is the iterations counter.
+    expect(weightSpecs.length).toEqual(2 + 1);
+    expect(weightSpecs[2].name).toEqual('iter');
+    // The first part comes from the kernel of the dense layer, which has a
+    // 8 elements and each is 4 bytes.
+    // The second part comes from the bias of the dense layer, which has 1
+    // element and is also 4 bytes.
+    const weightData = savedArtifacts.weightData;
+    expect(weightData.byteLength).toEqual(4 * 8 + 4 * 1 + 4);
+
+    // Load the model back, with the optimizer.
+    const model2 = await tfl.loadLayersModel(
+        io.fromMemory(modelTopology, weightSpecs, weightData));
+    expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
+
+    const optimizer1Weights = model1.optimizer.getWeights();
+    const optimizer2Weights = model2.optimizer.getWeights();
+    expect(optimizer2Weights.length).toEqual(optimizer1Weights.length);
+    for (let i = 0; i < optimizer1Weights.length; ++i) {
+      expectTensorsClose(
+          optimizer2Weights[i].tensor, optimizer1Weights[i].tensor);
+    }
+
+    // Call fit() on the loaded model and assert that the effect is the
+    // same as calling fit() again on the original model.
+    const history = await model2.fit(xs, ys, {epochs: 1});
+    expect(history.history.loss[0]).toBeCloseTo(26.2144);
+  });
+
+  it('RMSProp', async () => {
     const model1 = tfl.sequential();
     model1.add(tfl.layers.dense({
       units: 1,
@@ -1218,7 +1277,7 @@ describeMathCPUAndGPU('Saving model with optimizer', () => {
     expect(history.history.loss[0]).toBeCloseTo(51.768246);
   });
 
-  fit('Adam', async () => {
+  it('Adam', async () => {
     const model1 = tfl.sequential();
     model1.add(tfl.layers.dense({
       units: 1,
@@ -1285,6 +1344,9 @@ describeMathCPUAndGPU('Saving model with optimizer', () => {
     const history = await model2.fit(xs, ys, {epochs: 1});
     expect(history.history.loss[0]).toBeCloseTo(61.1524);
   });
+
+  // TODO(cais): Test saving with metrics.
+  // TODO(cais): Test saving with >1 losses.
 });
 
 describeMathCPU('loadLayersModel from IOHandler', () => {
