@@ -43,7 +43,10 @@ export function expectTensorsClose(
     throw new ValueError(
         'Second argument to expectTensorsClose() is not defined.');
   }
-  test_util.expectArraysClose(actual, expected, epsilon);
+  const actualData = actual instanceof Tensor ? actual.dataSync() : actual;
+  const expectedData =
+      expected instanceof Tensor ? expected.dataSync() : expected;
+  test_util.expectArraysClose(actualData, expectedData, epsilon);
 }
 
 /**
