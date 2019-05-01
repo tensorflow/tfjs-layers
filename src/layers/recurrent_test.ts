@@ -1001,7 +1001,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
     //                            use_bias=False)
     // output = dense(simple_rnn(t_input))
     // model = keras.Model(t_input, output)
-    // optimizer = keras.optimizers.SGD(1)
+    // optimizer = keras.optimizers.SGD(5)
     // model.compile(optimizer=optimizer, loss='mean_squared_error')
     //
     // x = np.ones([batch_size, sequence_length, input_size])
