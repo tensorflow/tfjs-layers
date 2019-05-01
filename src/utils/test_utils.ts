@@ -12,7 +12,7 @@
  * Testing utilities.
  */
 
-import {memory, Tensor, test_util} from '@tensorflow/tfjs-core';
+import {memory, Tensor, test_util, util} from '@tensorflow/tfjs-core';
 import {ALL_ENVS, describeWithFlags, registerTestEnv} from '@tensorflow/tfjs-core/dist/jasmine_util';
 import {ValueError} from '../errors';
 
@@ -42,6 +42,13 @@ export function expectTensorsClose(
   if (expected == null) {
     throw new ValueError(
         'Second argument to expectTensorsClose() is not defined.');
+  }
+  if (actual instanceof Tensor && expected instanceof Tensor) {
+    if (!util.arraysEqual(actual.shape, expected.shape)) {
+      throw new Error(
+          `Shapes do not match. Actual: [${actual.shape}]. ` +
+          `Expected: [${expected.shape}].`);
+    }
   }
   const actualData = actual instanceof Tensor ? actual.dataSync() : actual;
   const expectedData =
