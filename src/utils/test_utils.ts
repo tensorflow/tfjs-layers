@@ -44,6 +44,11 @@ export function expectTensorsClose(
         'Second argument to expectTensorsClose() is not defined.');
   }
   if (actual instanceof Tensor && expected instanceof Tensor) {
+    if (actual.dtype !== expected.dtype) {
+      throw new Error(
+          `Data types do not match. Actual: '${actual.dtype}'. ` +
+          `Expected: '${expected.dtype}'`);
+    }
     if (!util.arraysEqual(actual.shape, expected.shape)) {
       throw new Error(
           `Shapes do not match. Actual: [${actual.shape}]. ` +
