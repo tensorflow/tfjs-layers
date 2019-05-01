@@ -13,7 +13,7 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-import {randomNormal, Scalar, scalar, Tensor, tensor1d, tensor2d, tensor3d, tensor4d, test_util} from '@tensorflow/tfjs-core';
+import {randomNormal, Scalar, scalar, Tensor, tensor1d, tensor2d, tensor3d, tensor4d} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
@@ -25,8 +25,6 @@ import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsCl
 
 import {GRU, LSTM, rnn, RNN, RNNCell} from './recurrent';
 import {ActivationIdentifier} from '../keras_format/activation_config';
-
-const expectArraysClose = test_util.expectArraysClose;
 
 /**
  * A simplistic RNN step function for testing.
@@ -786,7 +784,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
       expect(y1.kept).toBe(false);
       let y1Expected =
           tfc.tidy(() => tfc.ones([batchSize, units]).mul(scalar1));
-      expectArraysClose(await y1.array(), await y1Expected.array());
+      expectTensorsClose(y1, y1Expected);
 
       let y2 = model.predict(x) as Tensor;
       expect(y2.kept).toBe(false);
@@ -794,7 +792,7 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
       expect(y1.isDisposed).toBe(false);
       let y2Expected =
           tfc.tidy(() => tfc.ones([batchSize, units]).mul(scalar2));
-      expectArraysClose(await y2.array(), await y2Expected.array());
+      expectTensorsClose(y2, y2Expected);
       tfc.dispose([y1, y2, y1Expected, y2Expected]);
 
       model.resetStates();
@@ -803,14 +801,14 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
       y1 = model.predict(x) as Tensor;
       expect(y1.kept).toBe(false);
       y1Expected = tfc.tidy(() => tfc.ones([batchSize, units]).mul(scalar1));
-      expectArraysClose(await y1.array(), await y1Expected.array());
+      expectTensorsClose(y1, y1Expected);
 
       y2 = model.predict(x) as Tensor;
       expect(y2.kept).toBe(false);
       // Future predicts should not dispose previous outputs.
       expect(y1.isDisposed).toBe(false);
       y2Expected = tfc.tidy(() => tfc.ones([batchSize, units]).mul(scalar2));
-      expectArraysClose(await y2.array(), await y2Expected.array());
+      expectTensorsClose(y2, y2Expected);
       tfc.dispose([y1, y2, y1Expected, y2Expected]);
 
       // Assert no memory leak, even without resetStates() being called.
@@ -1365,14 +1363,14 @@ describeMathCPUAndGPU('GRU Tensor', () => {
     expect(y1.kept).toBe(false);
     const y1Expected =
         tfc.tidy(() => tfc.ones([batchSize, units]).mul(tfc.scalar(0.542)));
-    expectArraysClose(await y1.array(), await y1Expected.array());
+    expectTensorsClose(y1, y1Expected);
     const y2 = model.predict(x) as Tensor;
     expect(y2.kept).toBe(false);
     // Future predicts should not dispose previous outputs.
     expect(y1.isDisposed).toBe(false);
     const y2Expected =
         tfc.tidy(() => tfc.ones([batchSize, units]).mul(tfc.scalar(0.9371182)));
-    expectArraysClose(await y2.array(), await y2Expected.array());
+    expectTensorsClose(y2, y2Expected);
 
     tfc.dispose([y1, y2, y1Expected, y2Expected]);
     model.resetStates();
@@ -1382,14 +1380,14 @@ describeMathCPUAndGPU('GRU Tensor', () => {
     expect(y3.kept).toBe(false);
     const y3Expected =
         tfc.tidy(() => tfc.ones([batchSize, units]).mul(tfc.scalar(0.542)));
-    expectArraysClose(await y3.array(), await y3Expected.array());
+    expectTensorsClose(y3, y3Expected);
     const y4 = model.predict(x) as Tensor;
     expect(y4.kept).toBe(false);
     // Future predicts should not dispose previous outputs.
     expect(y3.isDisposed).toBe(false);
     const y4Expected =
         tfc.tidy(() => tfc.ones([batchSize, units]).mul(tfc.scalar(0.9371182)));
-    expectArraysClose(await y4.array(), await y4Expected.array());
+    expectTensorsClose(y4, y4Expected);
     tfc.dispose([y3, y3Expected, y4, y4Expected]);
     // Assert no memory leak, even without resetStates() being called.
     expect(tfc.memory().numTensors).toEqual(numTensors0);
@@ -1917,14 +1915,14 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
       expect(y1.kept).toBe(false);
       let y1Expected =
           tfc.tidy(() => tfc.ones([batchSize, units]).mul(tfc.scalar(0.995)));
-      expectArraysClose(await y1.array(), await y1Expected.array());
+      expectTensorsClose(y1, y1Expected);
       let y2 = model.predict(x) as Tensor;
       expect(y2.kept).toBe(false);
       // Future predicts should not dispose previous outputs.
       expect(y1.isDisposed).toBe(false);
       let y2Expected = tfc.tidy(
           () => tfc.ones([batchSize, units]).mul(tfc.scalar(0.99998766)));
-      expectArraysClose(await y2.array(), await y2Expected.array());
+      expectTensorsClose(y2, y2Expected);
 
       tfc.dispose([y1, y2, y1Expected, y2Expected]);
       model.resetStates();
@@ -1934,14 +1932,14 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
       expect(y1.kept).toBe(false);
       y1Expected =
           tfc.tidy(() => tfc.ones([batchSize, units]).mul(tfc.scalar(0.995)));
-      expectArraysClose(await y1.array(), await y1Expected.array());
+      expectTensorsClose(y1, y1Expected);
       y2 = model.predict(x) as Tensor;
       expect(y2.kept).toBe(false);
       // Future predicts should not dispose previous outputs.
       expect(y1.isDisposed).toBe(false);
       y2Expected = tfc.tidy(
           () => tfc.ones([batchSize, units]).mul(tfc.scalar(0.99998766)));
-      expectArraysClose(await y2.array(), await y2Expected.array());
+      expectTensorsClose(y2, y2Expected);
       tfc.dispose([y1, y2, y1Expected, y2Expected]);
       // Assert no memory leak, even without resetStates() being called.
       expect(tfc.memory().numTensors).toEqual(numTensors0);
