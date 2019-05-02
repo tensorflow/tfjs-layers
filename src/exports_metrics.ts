@@ -72,6 +72,30 @@ export function categoricalCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
+ *   useDocsFrom: 'topKCategoricalAccuracy'
+ * }
+ */
+export function topKCategoricalAccuracy(
+  yTrue: Tensor, yPred: Tensor, k?: number): Tensor {
+  return metrics.topKCategoricalAccuracy(yTrue, yPred, k);
+}
+
+/**
+ * @doc {
+ *   heading: 'Metrics',
+ *   namespace: 'metrics',
+ *   useDocsFrom: 'sparseTopKCategoricalAccuracy'
+ * }
+ */
+export function sparseTopKCategoricalAccuracy(
+  yTrue: Tensor, yPred: Tensor, k?: number): Tensor {
+  return metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
+}
+
+/**
+ * @doc {
+ *   heading: 'Metrics',
+ *   namespace: 'metrics',
  *   useDocsFrom: 'precision'
  * }
  */

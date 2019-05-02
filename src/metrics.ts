@@ -15,7 +15,7 @@
 import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor, tidy} from '@tensorflow/tfjs-core';
 import * as K from './backend/tfjs_backend';
-import {NotImplementedError, ValueError} from './errors';
+import {ValueError} from './errors';
 import {categoricalCrossentropy as categoricalCrossentropyLoss, cosineProximity, meanAbsoluteError, meanAbsolutePercentageError, meanSquaredError, sparseCategoricalCrossentropy as sparseCategoricalCrossentropyLoss} from './losses';
 import {binaryCrossentropy as lossBinaryCrossentropy} from './losses';
 import {LossOrMetricFn} from './types';
@@ -231,13 +231,55 @@ export function sparseCategoricalAccuracy(
   return tfc.equal(yTrue, yPred).asType('float32');
 }
 
-export function topKCategoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
-  throw new NotImplementedError();
+/**
+ * top-k categorical accuracy metric function.
+ *
+ * ```Example:
+ * const yTrue = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
+ * const yPred = tensor2d([[0, 1, 0], [1, 0, 0]]);
+ * const k = 2;
+ * const accuracy = tf.metrics.topKCategoricalAccuracy(yTrue, yPred, k);
+ * accuracy.print();
+ * ```
+ *
+ * @param yTrue True values.
+ * @param yPred Predicted values.
+ * @param k Optional Number of top elements to look at for computing metrics,
+ *    default to 5.
+ * @returns Accuracy tensor.
+ */
+export function topKCategoricalAccuracy(
+  yTrue: Tensor, yPred: Tensor, k = 5): Tensor {
+  return tidy(
+    () => K.cast(
+      tfc.inTopK(yPred, tfc.argMax(yTrue, -1), k), 'float32')
+  );
 }
 
+/**
+ * top-k sparse categorical accuracy metric function.
+ *
+ * ```Example:
+ * const yTrue = tensor1d([1, 0]);
+ * const yPred = tensor2d([[0, 1, 0], [1, 0, 0]]);
+ * const k = 2;
+ * const accuracy = tf.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
+ * accuracy.print();
+ * ```
+ *
+ * @param yTrue True labels: indices.
+ * @param yPred Predicted values.
+ * @param k Optional Number of top elements to look at for computing metrics,
+ *    default to 5.
+ * @returns Accuracy tensor.
+ */
 export function sparseTopKCategoricalAccuracy(
-    yTrue: Tensor, yPred: Tensor): Tensor {
-  throw new NotImplementedError();
+    yTrue: Tensor, yPred: Tensor, k = 5): Tensor {
+  return tidy(
+    () => K.cast(
+      tfc.inTopK(yPred, K.cast(K.flatten(yTrue), 'int32'), k), 'float32'
+    )
+  );
 }
 
 // Aliases.
