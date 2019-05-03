@@ -319,7 +319,7 @@ export async function loadLayersModelFromIOHandler(
     model.loadWeights(modelWeights, strict);
 
     if (trainingConfig != null && optimizerWeights.length > 0) {
-      model.optimizer.setWeights(optimizerWeights);
+      await model.optimizer.setWeights(optimizerWeights);
     }
 
     // Dispose temporary weight values.

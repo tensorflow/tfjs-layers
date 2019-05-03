@@ -326,15 +326,22 @@ export function get(identifierOrFn: string|LossOrMetricFn): LossOrMetricFn {
     meanAbsolutePercentageError,
     mean_squared_logarithmic_error: meanSquaredLogarithmicError,
     meanSquaredLogarithmicError,
+    squared_hinge: squaredHinge,
     squaredHinge,
     hinge,
+    categorical_hinge: categoricalHinge,
     categoricalHinge,
     logcosh,
+    categorical_crossentropy: categoricalCrossentropy,
     categoricalCrossentropy,
+    sparse_categorical_crossentropy: sparseCategoricalCrossentropy,
     sparseCategoricalCrossentropy,
+    binary_crossentropy: binaryCrossentropy,
     binaryCrossentropy,
+    kullback_leibler_divergence: kullbackLeiblerDivergence,
     kullbackLeiblerDivergence,
     poisson,
+    cosine_proximity: cosineProximity,
     cosineProximity
   };
   if (typeof identifierOrFn === 'string') {

@@ -1644,6 +1644,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
 
     this.compile({
       loss: trainingConfig.loss,
+      metrics: trainingConfig.metrics,
       optimizer
     });
   }

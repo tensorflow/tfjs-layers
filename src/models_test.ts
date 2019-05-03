@@ -1151,7 +1151,7 @@ describeMathCPU('loadLayersModel from URL', () => {
   });
 });
 
-describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
+describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
   it('SGD', async () => {
     const model1 = tfl.sequential();
     model1.add(tfl.layers.dense({
@@ -1552,7 +1552,6 @@ describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
     const ys = zeros([4, 1]);
     await model1.fit(xs, ys, {epochs: 1});
 
-    // TODO(cais): Test saving without calling fit first.
     let savedArtifacts: io.ModelArtifacts;
     await model1.save(
         io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
@@ -1599,8 +1598,165 @@ describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
     expect(history.history.loss[0]).toBeCloseTo(26.2144);
   });
 
-  // TODO(cais): Test saving with metrics.
-  // TODO(cais): Test saving with >1 losses.
+  it('Saving model with metrics', async () => {
+    const model1 = tfl.sequential();
+    model1.add(tfl.layers.dense({
+      units: 3,
+      inputShape: [8],
+      kernelInitializer: 'ones',
+      activation: 'softmax'
+    }));
+    model1.compile({
+      loss: 'categoricalCrossentropy',
+      optimizer: 'adam',
+      metrics: ['acc']
+    });
+
+    const xs = ones([4, 8]);
+    const ys = tensor2d([[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]]);
+    let h = await model1.fit(xs, ys, {epochs: 1});
+    expect(h.history.loss[0]).toBeCloseTo(1.0986123);
+    expect(h.history.acc).toEqual([0]);
+
+    let savedArtifacts: io.ModelArtifacts;
+    await model1.save(
+        io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return null;
+        }), {includeOptimizer: true});
+
+    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
+    expect(modelTopology['model_config'] == null).toEqual(false);
+    const trainingConfig = modelTopology['training_config'] as ConfigDict;
+    expect(trainingConfig['loss']).toEqual('categorical_crossentropy');
+    expect(trainingConfig['metrics']).toEqual(['acc']);
+
+    const weightSpecs = savedArtifacts.weightSpecs;
+    const weightData = savedArtifacts.weightData;
+    const model2 = await tfl.loadLayersModel(
+      io.fromMemory(modelTopology, weightSpecs, weightData));
+    h = await model2.fit(xs, ys, {epochs: 1});
+    expect(h.history.loss.length).toEqual(1);
+    expect(h.history.loss[0]).toBeCloseTo(1.086648);
+    expect(h.history.acc).toEqual([1]);
+  });
+
+  it('Saving model without calling fit first', async () => {
+    const model1 = tfl.sequential();
+    model1.add(tfl.layers.dense({
+      units: 3,
+      inputShape: [8],
+      kernelInitializer: 'ones',
+      activation: 'softmax'
+    }));
+    model1.compile({
+      loss: 'categoricalCrossentropy',
+      optimizer: 'adam',
+      metrics: ['acc']
+    });
+
+    let savedArtifacts: io.ModelArtifacts;
+    await model1.save(
+        io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return null;
+        }), {includeOptimizer: true});
+
+    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
+    expect(modelTopology['model_config'] == null).toEqual(false);
+    const trainingConfig = modelTopology['training_config'] as ConfigDict;
+    expect(trainingConfig['loss']).toEqual('categorical_crossentropy');
+    expect(trainingConfig['metrics']).toEqual(['acc']);
+
+    const weightSpecs = savedArtifacts.weightSpecs;
+    const weightData = savedArtifacts.weightData;
+    const model2 = await tfl.loadLayersModel(
+      io.fromMemory(modelTopology, weightSpecs, weightData));
+
+    const xs = ones([4, 8]);
+    const ys = tensor2d([[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]]);
+    const h = await model2.fit(xs, ys, {epochs: 1});
+    expect(h.history.loss.length).toEqual(1);
+    expect(h.history.loss[0]).toBeCloseTo(1.0986123);
+    expect(h.history.acc).toEqual([0]);
+    expect(model2.optimizer.iterations).toEqual(1);
+  });
+
+  it('Saving functional model with more than one output', async () => {
+    const input = tfl.input({shape: [8]});
+    const x = tfl.layers.dense({
+      units: 5,
+      kernelInitializer: 'ones',
+      activation: 'relu'
+    }).apply(input) as tfl.SymbolicTensor;
+    const outLayer1 = tfl.layers.dense({
+      units: 3,
+      inputShape: [8],
+      kernelInitializer: 'ones',
+      activation: 'softmax'
+    });
+    const y1 = outLayer1.apply(x) as tfl.SymbolicTensor;
+    const outLayer2 = tfl.layers.dense({
+      units: 1,
+      inputShape: [8],
+      kernelInitializer: 'ones',
+      activation: 'sigmoid'
+    });
+    const y2 = outLayer2.apply(x) as tfl.SymbolicTensor;
+    const model1 = tfl.model({inputs: input, outputs: [y1, y2]});
+    model1.compile({
+      loss: ['categoricalCrossentropy', 'binaryCrossentropy'],
+      optimizer: 'adam',
+      metrics: ['acc']
+    });
+
+    const xs = ones([4, 8]);
+    const ys1 = tensor2d([[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]]);
+    const ys2 = tensor2d([[1], [1], [1], [1]]);
+
+    let h = await model1.fit(xs, [ys1, ys2], {epochs: 1});
+
+    let savedArtifacts: io.ModelArtifacts;
+    await model1.save(
+        io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
+          savedArtifacts = artifacts;
+          return null;
+        }), {includeOptimizer: true});
+
+    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
+    expect(modelTopology['model_config'] == null).toEqual(false);
+    const trainingConfig = modelTopology['training_config'] as ConfigDict;
+    expect(trainingConfig['loss']).toEqual(
+        ['categorical_crossentropy', 'binary_crossentropy']);
+    expect(trainingConfig['metrics']).toEqual(['acc']);
+
+    const weightSpecs = savedArtifacts.weightSpecs;
+    const weightData = savedArtifacts.weightData;
+    const model2 = await tfl.loadLayersModel(
+      io.fromMemory(modelTopology, weightSpecs, weightData));
+
+    h = await model2.fit(xs, [ys1, ys2], {epochs: 1});
+    expect(h.history.loss.length).toEqual(1);
+    expect(h.history.loss[0]).toBeCloseTo(1.044699);
+
+    const lossKey1 = `${outLayer1.name}_loss`;
+    const outputLoss1 = h.history[lossKey1] as number[];
+    expect(outputLoss1.length).toEqual(1);
+    expect(outputLoss1[0]).toBeCloseTo(1.0446988);
+    const lossKey2 = `${outLayer2.name}_loss`;
+    const outputLoss2 = h.history[lossKey2] as number[];
+    expect(outputLoss2.length).toEqual(1);
+    expect(outputLoss2[0]).toBeCloseTo(1.936124e-7);
+
+    const metricKey1 = `${outLayer1.name}_acc`;
+    const metricValues1 = h.history[metricKey1] as number[];
+    expect(metricValues1.length).toEqual(1);
+    expect(metricValues1[0]).toEqual(1);
+    const metricKey2 = `${outLayer2.name}_acc`;
+    const metricValues2 = h.history[metricKey2] as number[];
+    expect(metricValues2.length).toEqual(1);
+    expect(metricValues2[0]).toBeCloseTo(1);
+  });
 });
 
 describeMathCPU('loadLayersModel from IOHandler', () => {

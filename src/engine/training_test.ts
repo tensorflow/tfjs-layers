@@ -1459,12 +1459,12 @@ describeMathCPUAndGPU('LayersModel.fit', () => {
     expect(disposalResult.numDisposedVariables)
         .toEqual(
             numModelWeights + optimizerNumGlobalVariables +
-            numModelWeights * optimizerNumVariablesPerWeight + 1);
+            numModelWeights * optimizerNumVariablesPerWeight);
     expect(disposalResult.refCountAfterDispose).toEqual(0);
     expect(numTensors1 - numTensors2)
         .toEqual(
             numModelWeights + optimizerNumGlobalVariables +
-            numModelWeights * optimizerNumVariablesPerWeight + 1);
+            numModelWeights * optimizerNumVariablesPerWeight);
   });
 
   it('Model.dispose() cleans up owned optimizer: Sequential', async () => {
@@ -1491,12 +1491,12 @@ describeMathCPUAndGPU('LayersModel.fit', () => {
     expect(disposalResult.numDisposedVariables)
         .toEqual(
             numModelWeights + optimizerNumGlobalVariables +
-            numModelWeights * optimizerNumVariablesPerWeight + 1);
+            numModelWeights * optimizerNumVariablesPerWeight);
     expect(disposalResult.refCountAfterDispose).toEqual(0);
     expect(numTensors1 - numTensors2)
         .toEqual(
             numModelWeights + optimizerNumGlobalVariables +
-            numModelWeights * optimizerNumVariablesPerWeight + 1);
+            numModelWeights * optimizerNumVariablesPerWeight);
   });
 
   it('Model.dispose() skips non-owned optimizer: Functional', async () => {
