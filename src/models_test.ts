@@ -1167,7 +1167,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     const ys = zeros([4, 1]);
     await model1.fit(xs, ys, {epochs: 1});
 
-    // TODO(cais): Test saving without calling fit first.
     let savedArtifacts: io.ModelArtifacts;
     await model1.save(
         io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
@@ -1227,7 +1226,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     const ys = zeros([4, 1]);
     await model1.fit(xs, ys, {epochs: 1});
 
-    // TODO(cais): Test saving without calling fit first.
     let savedArtifacts: io.ModelArtifacts;
     await model1.save(
         io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
@@ -1292,7 +1290,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     const ys = zeros([4, 1]);
     await model1.fit(xs, ys, {epochs: 1});
 
-    // TODO(cais): Test saving without calling fit first.
     let savedArtifacts: io.ModelArtifacts;
     await model1.save(
         io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
@@ -1357,7 +1354,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     const ys = zeros([4, 1]);
     await model1.fit(xs, ys, {epochs: 1});
 
-    // TODO(cais): Test saving without calling fit first.
     let savedArtifacts: io.ModelArtifacts;
     await model1.save(
         io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
@@ -1423,7 +1419,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     const ys = zeros([4, 1]);
     await model1.fit(xs, ys, {epochs: 1});
 
-    // TODO(cais): Test saving without calling fit first.
     let savedArtifacts: io.ModelArtifacts;
     await model1.save(
         io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
@@ -1487,7 +1482,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     const ys = zeros([4, 1]);
     await model1.fit(xs, ys, {epochs: 1});
 
-    // TODO(cais): Test saving without calling fit first.
     let savedArtifacts: io.ModelArtifacts;
     await model1.save(
         io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
