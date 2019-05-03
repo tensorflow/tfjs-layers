@@ -830,7 +830,7 @@ export class Sequential extends LayersModel {
   }
 
   get optimizer(): Optimizer {
-    return this.model.optimizer;
+    return this.model == null ? undefined : this.model.optimizer;
   }
 
   set optimizer(optimizer: Optimizer) {
