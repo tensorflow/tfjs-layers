@@ -336,7 +336,7 @@ function decodeModelAndOptimizerWeights(
   const modelWeights: NamedTensorMap = {};
   const optimizerWeights: NamedTensor[] = [];
   specs.forEach(spec => {
-    if (spec.type === 'optimizer') {
+    if (spec.group === 'optimizer') {
       optimizerWeights.push({
         name: spec.name,
         tensor: name2Tensor[spec.name]

@@ -13,7 +13,7 @@
  */
 
 import * as tfc from '@tensorflow/tfjs-core';
-import {randomNormal, Scalar, scalar, Tensor, tensor1d, tensor2d, tensor3d, tensor4d, test_util} from '@tensorflow/tfjs-core';
+import {randomNormal, Scalar, scalar, Tensor, tensor1d, tensor2d, tensor3d, tensor4d} from '@tensorflow/tfjs-core';
 
 import * as K from '../backend/tfjs_backend';
 import * as tfl from '../index';
@@ -25,8 +25,6 @@ import {describeMathCPU, describeMathCPUAndGPU, describeMathGPU, expectTensorsCl
 
 import {GRU, LSTM, rnn, RNN, RNNCell} from './recurrent';
 import {ActivationIdentifier} from '../keras_format/activation_config';
-
-const expectArraysClose = test_util.expectArraysClose;
 
 /**
  * A simplistic RNN step function for testing.
@@ -785,18 +783,18 @@ describeMathCPUAndGPU('SimpleRNN Tensor', () => {
       let y2: Tensor;
       tfc.tidy(() => {
         y1 = model.predict(x) as Tensor;
-        expectArraysClose(y1, tfc.ones([batchSize, units]).mul(scalar1));
+        expectTensorsClose(y1, tfc.ones([batchSize, units]).mul(scalar1));
         y2 = model.predict(x) as Tensor;
-        expectArraysClose(y2, tfc.ones([batchSize, units]).mul(scalar2));
+        expectTensorsClose(y2, tfc.ones([batchSize, units]).mul(scalar2));
       });
       model.resetStates();
       const numTensors0 = tfc.memory().numTensors;
 
       tfc.tidy(() => {
         y1 = model.predict(x) as Tensor;
-        expectArraysClose(y1, tfc.ones([batchSize, units]).mul(scalar1));
+        expectTensorsClose(y1, tfc.ones([batchSize, units]).mul(scalar1));
         y2 = model.predict(x) as Tensor;
-        expectArraysClose(y2, tfc.ones([batchSize, units]).mul(scalar2));
+        expectTensorsClose(y2, tfc.ones([batchSize, units]).mul(scalar2));
       });
       // Assert no memory leak, even without resetStates() being called.
       expect(tfc.memory().numTensors).toEqual(numTensors0);
@@ -1348,10 +1346,10 @@ describeMathCPUAndGPU('GRU Tensor', () => {
     const x = tfc.ones([batchSize, sequenceLength, inputSize]);
     tfc.tidy(() => {
       const y1 = model.predict(x) as Tensor;
-      expectArraysClose(
+      expectTensorsClose(
           y1, tfc.ones([batchSize, units]).mul(tfc.scalar(0.542)));
       const y2 = model.predict(x) as Tensor;
-      expectArraysClose(
+      expectTensorsClose(
           y2, tfc.ones([batchSize, units]).mul(tfc.scalar(0.9371182)));
     });
     model.resetStates();
@@ -1359,10 +1357,10 @@ describeMathCPUAndGPU('GRU Tensor', () => {
 
     tfc.tidy(() => {
       const y3 = model.predict(x) as Tensor;
-      expectArraysClose(
+      expectTensorsClose(
           y3, tfc.ones([batchSize, units]).mul(tfc.scalar(0.542)));
       const y4 = model.predict(x) as Tensor;
-      expectArraysClose(
+      expectTensorsClose(
           y4, tfc.ones([batchSize, units]).mul(tfc.scalar(0.9371182)));
     });
     // Assert no memory leak, even without resetStates() being called.
@@ -1889,10 +1887,10 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
 
       tfc.tidy(() => {
         const y1 = model.predict(x) as Tensor;
-        expectArraysClose(
+        expectTensorsClose(
             y1, tfc.ones([batchSize, units]).mul(tfc.scalar(0.995)));
         const y2 = model.predict(x) as Tensor;
-        expectArraysClose(
+        expectTensorsClose(
             y2, tfc.ones([batchSize, units]).mul(tfc.scalar(0.99998766)));
       });
       model.resetStates();
@@ -1900,10 +1898,10 @@ describeMathCPUAndGPU('LSTM Tensor', () => {
 
       tfc.tidy(() => {
         const y1 = model.predict(x) as Tensor;
-        expectArraysClose(
+        expectTensorsClose(
             y1, tfc.ones([batchSize, units]).mul(tfc.scalar(0.995)));
         const y2 = model.predict(x) as Tensor;
-        expectArraysClose(
+        expectTensorsClose(
             y2, tfc.ones([batchSize, units]).mul(tfc.scalar(0.99998766)));
       });
       // Assert no memory leak, even without resetStates() being called.

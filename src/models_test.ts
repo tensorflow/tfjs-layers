@@ -1197,8 +1197,8 @@ describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
         io.fromMemory(modelTopology, weightSpecs, weightData));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
 
-    const optimizer1Weights = model1.optimizer.getWeights();
-    const optimizer2Weights = model2.optimizer.getWeights();
+    const optimizer1Weights = await model1.optimizer.getWeights();
+    const optimizer2Weights = await model2.optimizer.getWeights();
     expect(optimizer2Weights.length).toEqual(optimizer1Weights.length);
     for (let i = 0; i < optimizer1Weights.length; ++i) {
       expectTensorsClose(
@@ -1263,8 +1263,8 @@ describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
     expect(model2.optimizer.getConfig()['decay']).toEqual(decay);
 
-    const optimizer1Weights = model1.optimizer.getWeights();
-    const optimizer2Weights = model2.optimizer.getWeights();
+    const optimizer1Weights = await model1.optimizer.getWeights();
+    const optimizer2Weights = await model2.optimizer.getWeights();
     expect(optimizer2Weights.length).toEqual(optimizer1Weights.length);
     for (let i = 0; i < optimizer1Weights.length; ++i) {
       expectTensorsClose(
@@ -1327,8 +1327,8 @@ describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
         io.fromMemory(modelTopology, weightSpecs, weightData));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
 
-    const optimizer1Weights = model1.optimizer.getWeights();
-    const optimizer2Weights = model2.optimizer.getWeights();
+    const optimizer1Weights = await model1.optimizer.getWeights();
+    const optimizer2Weights = await model2.optimizer.getWeights();
     expect(optimizer2Weights.length).toEqual(optimizer1Weights.length);
     for (let i = 0; i < optimizer1Weights.length; ++i) {
       expectTensorsClose(
@@ -1392,8 +1392,8 @@ describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
     expect(model2.optimizer.getConfig()['initialAccumulatorValue'])
         .toEqual(initialAccumulatorValue);
 
-    const optimizer1Weights = model1.optimizer.getWeights();
-    const optimizer2Weights = model2.optimizer.getWeights();
+    const optimizer1Weights = await model1.optimizer.getWeights();
+    const optimizer2Weights = await model2.optimizer.getWeights();
     expect(optimizer2Weights.length).toEqual(optimizer1Weights.length);
     for (let i = 0; i < optimizer1Weights.length; ++i) {
       expectTensorsClose(
@@ -1460,8 +1460,8 @@ describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
     expect(model2.optimizer.getConfig()['beta1']).toEqual(beta1);
     expect(model2.optimizer.getConfig()['beta2']).toEqual(beta2);
 
-    const optimizer1Weights = model1.optimizer.getWeights();
-    const optimizer2Weights = model2.optimizer.getWeights();
+    const optimizer1Weights = await model1.optimizer.getWeights();
+    const optimizer2Weights = await model2.optimizer.getWeights();
     expect(optimizer2Weights.length).toEqual(optimizer1Weights.length);
     for (let i = 0; i < optimizer1Weights.length; ++i) {
       expectTensorsClose(
@@ -1522,8 +1522,8 @@ describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
         io.fromMemory(modelTopology, weightSpecs, weightData));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(1e-3);
 
-    const optimizer1Weights = model1.optimizer.getWeights();
-    const optimizer2Weights = model2.optimizer.getWeights();
+    const optimizer1Weights = await model1.optimizer.getWeights();
+    const optimizer2Weights = await model2.optimizer.getWeights();
     expect(optimizer2Weights.length).toEqual(optimizer1Weights.length);
     for (let i = 0; i < optimizer1Weights.length; ++i) {
       expectTensorsClose(
@@ -1585,8 +1585,8 @@ describeMathCPUAndGPU('Saving & loading model with optimizer', () => {
         io.fromMemory(modelTopology, weightSpecs, weightData));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
 
-    const optimizer1Weights = model1.optimizer.getWeights();
-    const optimizer2Weights = model2.optimizer.getWeights();
+    const optimizer1Weights = await model1.optimizer.getWeights();
+    const optimizer2Weights = await model2.optimizer.getWeights();
     expect(optimizer2Weights.length).toEqual(optimizer1Weights.length);
     for (let i = 0; i < optimizer1Weights.length; ++i) {
       expectTensorsClose(

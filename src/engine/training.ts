@@ -1761,7 +1761,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     if (includeOptimizer === true && this.optimizer != null) {
       const weightType = 'optimizer';
       const {data, specs} =
-          await io.encodeWeights(this.optimizer.getWeights(), weightType);
+          await io.encodeWeights(await this.optimizer.getWeights(), weightType);
       weightDataAndSpecs.specs.push(...specs);
       weightDataAndSpecs.data =
           io.concatenateArrayBuffers([weightDataAndSpecs.data, data]);
