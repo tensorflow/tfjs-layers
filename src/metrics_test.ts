@@ -279,8 +279,8 @@ describeMathCPUAndGPU('recall metric', () => {
 
 describeMathCPUAndGPU('topKCategoricalAccuracy metrics', () => {
   it('2D, last dimension = 3, k=3', () => {
-    const trueVals = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
-    const predVals = tensor2d([[0, 1, 0], [1, 0, 0]]);
+    const trueVals = tensor2d([[0, 1, 0], [1, 0, 0]]);
+    const predVals = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
     const k = 3;
     const accuracy =
         tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
@@ -289,8 +289,8 @@ describeMathCPUAndGPU('topKCategoricalAccuracy metrics', () => {
   });
 
   it('2D, last dimension = 3, k=2', () => {
-    const trueVals = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
-    const predVals = tensor2d([[0, 1, 0], [1, 0, 0]]);
+    const trueVals = tensor2d([[0, 1, 0], [1, 0, 0]]);
+    const predVals = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
     const k = 2;
     const accuracy =
         tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
@@ -299,8 +299,8 @@ describeMathCPUAndGPU('topKCategoricalAccuracy metrics', () => {
   });
 
   it('2D, last dimension = 3, k=1', () => {
-    const trueVals = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
-    const predVals = tensor2d([[0, 1, 0], [1, 0, 0]]);
+    const trueVals = tensor2d([[0, 1, 0], [1, 0, 0]]);
+    const predVals = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
     const k = 1;
     const accuracy =
         tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
