@@ -250,9 +250,8 @@ export function sparseCategoricalAccuracy(
  */
 export function topKCategoricalAccuracy(
   yTrue: Tensor, yPred: Tensor, k = 5): Tensor {
-  return tidy(
-    () => K.cast(
-      tfc.inTopK(yPred, tfc.argMax(yTrue, -1), k), 'float32')
+  return tidy(() =>
+    tfc.inTopK(yPred, tfc.argMax(yTrue, -1), k).asType('float32')
   );
 }
 
@@ -275,10 +274,8 @@ export function topKCategoricalAccuracy(
  */
 export function sparseTopKCategoricalAccuracy(
     yTrue: Tensor, yPred: Tensor, k = 5): Tensor {
-  return tidy(
-    () => K.cast(
-      tfc.inTopK(yPred, K.cast(K.flatten(yTrue), 'int32'), k), 'float32'
-    )
+  return tidy(() =>
+    tfc.inTopK(yPred, K.flatten(yTrue).asType('float32'), k).asType('float32')
   );
 }
 
