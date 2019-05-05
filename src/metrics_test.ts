@@ -285,7 +285,7 @@ describeMathCPUAndGPU('topKCategoricalAccuracy metrics', () => {
     const accuracy =
       tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
     expect(accuracy.dtype).toEqual('float32');
-    expectTensorsClose(accuracy.toBool(), tensor1d([1, 1], 'bool'));
+    expect(Array.from(accuracy.dataSync())).toEqual([1, 1]);
   });
 
   it('2D, last dimension = 3, k=2', () => {
@@ -295,7 +295,7 @@ describeMathCPUAndGPU('topKCategoricalAccuracy metrics', () => {
     const accuracy =
       tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
     expect(accuracy.dtype).toEqual('float32');
-    expectTensorsClose(accuracy.toBool(),  tensor1d([1, 0], 'bool'));
+    expect(Array.from(accuracy.dataSync())).toEqual([1, 0]);
   });
 
   it('2D, last dimension = 3, k=1', () => {
@@ -305,7 +305,7 @@ describeMathCPUAndGPU('topKCategoricalAccuracy metrics', () => {
     const accuracy =
       tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
     expect(accuracy.dtype).toEqual('float32');
-    expectTensorsClose(accuracy.toBool(),  tensor1d([0, 0], 'bool'));
+    expect(Array.from(accuracy.dataSync())).toEqual([0, 0]);
   });
 });
 
@@ -317,7 +317,7 @@ describeMathCPUAndGPU('sparseTopKCategoricalAccuracy metrics', () => {
     const accuracy =
       tfl.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
     expect(accuracy.dtype).toEqual('float32');
-    expectTensorsClose(accuracy.toBool(), tensor1d([1, 1], 'bool'));
+    expect(Array.from(accuracy.dataSync())).toEqual([1, 1]);
   });
 
   it('1D yTrue, 2D yPred, k = 2', () => {
@@ -327,7 +327,7 @@ describeMathCPUAndGPU('sparseTopKCategoricalAccuracy metrics', () => {
     const accuracy =
       tfl.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
     expect(accuracy.dtype).toEqual('float32');
-    expectTensorsClose(accuracy.toBool(), tensor1d([1, 0], 'bool'));
+    expect(Array.from(accuracy.dataSync())).toEqual([1, 0]);
   });
 
   it('1D yTrue, 2D yPred, k = 1', () => {
@@ -337,7 +337,7 @@ describeMathCPUAndGPU('sparseTopKCategoricalAccuracy metrics', () => {
     const accuracy =
       tfl.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
     expect(accuracy.dtype).toEqual('float32');
-    expectTensorsClose(accuracy.toBool(), tensor1d([0, 0], 'bool'));
+    expect(Array.from(accuracy.dataSync())).toEqual([0, 0]);
   });
 });
 
