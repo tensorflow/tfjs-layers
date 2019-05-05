@@ -250,9 +250,9 @@ export function sparseCategoricalAccuracy(
  */
 export function topKCategoricalAccuracy(
   yTrue: Tensor, yPred: Tensor, k = 5): Tensor {
-  return tidy(() =>
-    tfc.inTopK(yPred, tfc.argMax(yTrue, -1), k).asType('float32')
-  );
+  return tidy(() => {
+    return tfc.inTopK(yPred, tfc.argMax(yTrue, -1), k).asType('float32');
+  });
 }
 
 /**
@@ -274,9 +274,10 @@ export function topKCategoricalAccuracy(
  */
 export function sparseTopKCategoricalAccuracy(
     yTrue: Tensor, yPred: Tensor, k = 5): Tensor {
-  return tidy(() =>
-    tfc.inTopK(yPred, K.flatten(yTrue).asType('float32'), k).asType('float32')
-  );
+  return tidy(() => {
+    return tfc.inTopK(yPred, K.flatten(yTrue).asType('float32'), k)
+        .asType('float32');
+  });
 }
 
 // Aliases.

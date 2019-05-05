@@ -283,7 +283,7 @@ describeMathCPUAndGPU('topKCategoricalAccuracy metrics', () => {
     const predVals = tensor2d([[0, 1, 0], [1, 0, 0]]);
     const k = 3;
     const accuracy =
-      tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
+        tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
     expect(accuracy.dtype).toEqual('float32');
     expect(Array.from(accuracy.dataSync())).toEqual([1, 1]);
   });
@@ -293,7 +293,7 @@ describeMathCPUAndGPU('topKCategoricalAccuracy metrics', () => {
     const predVals = tensor2d([[0, 1, 0], [1, 0, 0]]);
     const k = 2;
     const accuracy =
-      tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
+        tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
     expect(accuracy.dtype).toEqual('float32');
     expect(Array.from(accuracy.dataSync())).toEqual([1, 0]);
   });
@@ -303,7 +303,7 @@ describeMathCPUAndGPU('topKCategoricalAccuracy metrics', () => {
     const predVals = tensor2d([[0, 1, 0], [1, 0, 0]]);
     const k = 1;
     const accuracy =
-      tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
+        tfl.metrics.topKCategoricalAccuracy(trueVals, predVals, k);
     expect(accuracy.dtype).toEqual('float32');
     expect(Array.from(accuracy.dataSync())).toEqual([0, 0]);
   });
@@ -315,7 +315,7 @@ describeMathCPUAndGPU('sparseTopKCategoricalAccuracy metrics', () => {
     const yPred = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
     const k = 3;
     const accuracy =
-      tfl.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
+        tfl.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
     expect(accuracy.dtype).toEqual('float32');
     expect(Array.from(accuracy.dataSync())).toEqual([1, 1]);
   });
@@ -325,7 +325,7 @@ describeMathCPUAndGPU('sparseTopKCategoricalAccuracy metrics', () => {
     const yPred = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
     const k = 2;
     const accuracy =
-      tfl.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
+        tfl.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
     expect(accuracy.dtype).toEqual('float32');
     expect(Array.from(accuracy.dataSync())).toEqual([1, 0]);
   });
@@ -335,7 +335,7 @@ describeMathCPUAndGPU('sparseTopKCategoricalAccuracy metrics', () => {
     const yPred = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
     const k = 1;
     const accuracy =
-      tfl.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
+        tfl.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
     expect(accuracy.dtype).toEqual('float32');
     expect(Array.from(accuracy.dataSync())).toEqual([0, 0]);
   });
