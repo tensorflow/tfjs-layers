@@ -232,7 +232,7 @@ export function sparseCategoricalAccuracy(
 }
 
 /**
- * top-k categorical accuracy metric function.
+ * Top K categorical accuracy metric function.
  *
  * ```Example:
  * const yTrue = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
@@ -257,7 +257,7 @@ export function topKCategoricalAccuracy(
 }
 
 /**
- * top-k sparse categorical accuracy metric function.
+ * Top K sparse categorical accuracy metric function.
  *
  * ```Example:
  * const yTrue = tensor1d([1, 0]);
