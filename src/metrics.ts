@@ -235,8 +235,8 @@ export function sparseCategoricalAccuracy(
  * Top K categorical accuracy metric function.
  *
  * ```Example:
- * const yTrue = tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
- * const yPred = tensor2d([[0, 1, 0], [1, 0, 0]]);
+ * const yTrue = tf.tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
+ * const yPred = tf.tensor2d([[0, 1, 0], [1, 0, 0]]);
  * const k = 2;
  * const accuracy = tf.metrics.topKCategoricalAccuracy(yTrue, yPred, k);
  * accuracy.print();
@@ -260,8 +260,8 @@ export function topKCategoricalAccuracy(
  * Top K sparse categorical accuracy metric function.
  *
  * ```Example:
- * const yTrue = tensor1d([1, 0]);
- * const yPred = tensor2d([[0, 1, 0], [1, 0, 0]]);
+ * const yTrue = tf.tensor1d([1, 0]);
+ * const yPred = tf.tensor2d([[0, 1, 0], [1, 0, 0]]);
  * const k = 2;
  * const accuracy = tf.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
  * accuracy.print();
