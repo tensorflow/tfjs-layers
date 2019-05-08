@@ -25,9 +25,9 @@ import {LossOrMetricFn} from './types';
  *
  * `yTrue` and `yPred` can have 0-1 values. Example:
  * ```js
- * const x = tensor2d([[1, 1, 1, 1], [0, 0, 0, 0]], [2, 4]);
- * const y = tensor2d([[1, 0, 1, 0], [0, 0, 0, 1]], [2, 4]);
- * const accuracy = tfl.metrics.binaryAccuracy(x, y);
+ * const x = tf.tensor2d([[1, 1, 1, 1], [0, 0, 0, 0]], [2, 4]);
+ * const y = tf.tensor2d([[1, 0, 1, 0], [0, 0, 0, 1]], [2, 4]);
+ * const accuracy = tf.metrics.binaryAccuracy(x, y);
  * accuracy.print();
  * ```
  *
@@ -37,8 +37,8 @@ import {LossOrMetricFn} from './types';
  * )
  * Example:
  * ```js
- * const x = tensor1d([1, 1, 1, 1, 0, 0, 0, 0]);
- * const y = tensor1d([0.2, 0.4, 0.6, 0.8, 0.2, 0.3, 0.4, 0.7]);
+ * const x = tf.tensor1d([1, 1, 1, 1, 0, 0, 0, 0]);
+ * const y = tf.tensor1d([0.2, 0.4, 0.6, 0.8, 0.2, 0.3, 0.4, 0.7]);
  * const accuracy = tf.metrics.binaryAccuracy(x, y);
  * accuracy.print();
  * ```
@@ -47,6 +47,7 @@ import {LossOrMetricFn} from './types';
  * @param yPred Binary Tensor of prediction.
  * @return Accuracy Tensor.
  */
+/** @doc { docsForwardAlias: '_binaryAccuracy'} */
 export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const threshold = tfc.mul(.5, tfc.onesLike(yPred));
@@ -60,8 +61,8 @@ export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  *
  * Example:
  * ```js
- * const x = tensor2d([[0, 0, 0, 1], [0, 0, 0, 1]]);
- * const y = tensor2d([[0.1, 0.8, 0.05, 0.05], [0.1, 0.05, 0.05, 0.8]]);
+ * const x = tf.tensor2d([[0, 0, 0, 1], [0, 0, 0, 1]]);
+ * const y = tf.tensor2d([[0.1, 0.8, 0.05, 0.05], [0.1, 0.05, 0.05, 0.8]]);
  * const accuracy = tf.metrics.categoricalAccuracy(x, y);
  * accuracy.print();
  * ```
@@ -71,6 +72,7 @@ export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  *   same categories as in `yTrue`.
  * @return Accuracy Tensor.
  */
+/** @doc { docsForwardAlias: '_categoricalAccuracy'} */
 export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(
       () => K.cast(
@@ -100,21 +102,21 @@ function falsePositives(yTrue: Tensor, yPred: Tensor): Tensor {
  *
  * Example:
  * ```js
- * const x = tensor2d(
+ * const x = tf.tensor2d(
  *    [
  *      [0, 0, 0, 1],
  *      [0, 1, 0, 0],
- *      [0, 0, 0, 1].
+ *      [0, 0, 0, 1],
  *      [1, 0, 0, 0],
  *      [0, 0, 1, 0]
  *    ]
  * );
  *
- * const y = tensor2d(
+ * const y = tf.tensor2d(
  *    [
  *      [0, 0, 1, 0],
  *      [0, 1, 0, 0],
- *      [0, 0, 0, 1].
+ *      [0, 0, 0, 1],
  *      [0, 1, 0, 0],
  *      [0, 1, 0, 0]
  *    ]
@@ -128,6 +130,7 @@ function falsePositives(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred The predicted values. Expected to be contain only 0-1 values.
  * @return Precision Tensor.
  */
+/** @doc { docsForwardAlias: '_precision'} */
 export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const tp = truePositives(yTrue, yPred);
@@ -145,21 +148,21 @@ export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
  *
  * Example:
  * ```js
- * const x = tensor2d(
+ * const x = tf.tensor2d(
  *    [
  *      [0, 0, 0, 1],
  *      [0, 1, 0, 0],
- *      [0, 0, 0, 1].
+ *      [0, 0, 0, 1],
  *      [1, 0, 0, 0],
  *      [0, 0, 1, 0]
  *    ]
  * );
  *
- * const y = tensor2d(
+ * const y = tf.tensor2d(
  *    [
  *      [0, 0, 1, 0],
  *      [0, 1, 0, 0],
- *      [0, 0, 0, 1].
+ *      [0, 0, 0, 1],
  *      [0, 1, 0, 0],
  *      [0, 1, 0, 0]
  *    ]
@@ -173,6 +176,7 @@ export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred The predicted values. Expected to be contain only 0-1 values.
  * @return Recall Tensor.
  */
+/** @doc { docsForwardAlias: '_recall'} */
 export function recall(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const tp = truePositives(yTrue, yPred);
@@ -190,8 +194,8 @@ export function recall(yTrue: Tensor, yPred: Tensor): Tensor {
  *
  * Example:
  * ```js
- * const x = tensor2d([[0], [1], [1], [1]]);
- * const y = tensor2d([[0], [0], [0.5], [1]]);
+ * const x = tf.tensor2d([[0], [1], [1], [1]]);
+ * const y = tf.tensor2d([[0], [0], [0.5], [1]]);
  * const crossentropy = tf.metrics.binaryCrossentropy(x, y);
  * crossentropy.print();
  * ```
@@ -200,6 +204,7 @@ export function recall(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred Binary Tensor of prediction, probabilities for the `1` case.
  * @return Accuracy Tensor.
  */
+/** @doc { docsForwardAlias: '_binaryCrossentropy'} */
 export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
   return lossBinaryCrossentropy(yTrue, yPred);
 }
@@ -207,9 +212,10 @@ export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
 /**
  * Sparse categorical accuracy metric function.
  *
- * ```Example:
- * const yTrue = tensor1d([1, 1, 2, 2, 0]);
- * const yPred = tensor2d(
+ * Example:
+ * ```js
+ * const yTrue = tf.tensor1d([1, 1, 2, 2, 0]);
+ * const yPred = tf.tensor2d(
  *      [[0, 1, 0], [1, 0, 0], [0, 0.4, 0.6], [0, 0.6, 0.4], [0.7, 0.3, 0]]);
  * const crossentropy = tf.metrics.sparseCategoricalAccuracy(yTrue, yPred);
  * crossentropy.print();
@@ -219,6 +225,7 @@ export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred Predicted probabilities or logits.
  * @returns Accuracy tensor.
  */
+/** @doc { docsForwardAlias: '_sparseCategoricalAccuracy'} */
 export function sparseCategoricalAccuracy(
     yTrue: Tensor, yPred: Tensor): Tensor {
   if (yTrue.rank === yPred.rank) {
