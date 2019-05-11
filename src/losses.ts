@@ -51,7 +51,6 @@ export function l2Normalize(x: Tensor, axis?: number): Tensor {
  * @param yPred Prediction Tensor.
  * @return Mean squared error Tensor.
  */
-/** @doc { docsForwardAlias: '_meanSquaredError'} */
 export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => tfc.mean(K.square(tfc.sub(yPred, yTrue)), -1));
 }
@@ -74,7 +73,6 @@ export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred Prediction Tensor.
  * @return Mean absolute error Tensor.
  */
-/** @doc { docsForwardAlias: '_meanAbsoluteError'} */
 export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => tfc.mean(tfc.abs(tfc.sub(yPred, yTrue)), -1));
 }
@@ -95,7 +93,6 @@ export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred Prediction Tensor.
  * @return Mean absolute percentage error Tensor.
  */
-/** @doc { docsForwardAlias: '_meanAbsolutePercentageError'} */
 export function meanAbsolutePercentageError(
     yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
@@ -167,7 +164,6 @@ export function logcosh(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yTrue A tensor of the same shape as `output`.
  * @param yPred A tensor resulting from a softmax.
  */
-/** @doc { docsForwardAlias: '_categoricalCrossentropy'} */
 export function categoricalCrossentropy(
     target: Tensor, output: Tensor, fromLogits = false): Tensor {
   return tidy(() => {
@@ -193,7 +189,6 @@ export function categoricalCrossentropy(
  * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
  *   a tensor of logits.
  */
-/** @doc { docsForwardAlias: '_sparseCategoricalCrossentropy'} */
 export function sparseCategoricalCrossentropy(
     target: Tensor, output: Tensor): Tensor {
   return tidy(() => {
@@ -294,7 +289,6 @@ export function poisson(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred Prediction Tensor.
  * @return Cosine proximity Tensor.
  */
-/** @doc { docsForwardAlias: '_cosineProximity'} */
 export function cosineProximity(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const trueNormalized = l2Normalize(yTrue, -1);

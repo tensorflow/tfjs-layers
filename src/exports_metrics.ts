@@ -16,7 +16,7 @@ import * as metrics from './metrics';
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_binaryAccuracy'
+ *   useDocsFrom: 'binaryAccuracy'
  * }
  */
 export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -27,7 +27,7 @@ export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_binaryCrossentropy'
+ *   useDocsFrom: 'binaryCrossentropy'
  * }
  */
 export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -38,7 +38,7 @@ export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_sparseCategoricalAccuracy'
+ *   useDocsFrom: 'sparseCategoricalAccuracy'
  * }
  */
 export function sparseCategoricalAccuracy(
@@ -50,7 +50,7 @@ export function sparseCategoricalAccuracy(
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_categoricalAccuracy'
+ *   useDocsFrom: 'categoricalAccuracy'
  * }
  */
 export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -61,7 +61,7 @@ export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_categoricalCrossentropy'
+ *   useDocsFrom: 'categoricalCrossentropy'
  * }
  */
 export function categoricalCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -72,7 +72,7 @@ export function categoricalCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_precision'
+ *   useDocsFrom: 'precision'
  * }
  */
 export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -83,7 +83,7 @@ export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_recall'
+ *   useDocsFrom: 'recall'
  * }
  */
 export function recall(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -94,7 +94,7 @@ export function recall(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_cosineProximity'
+ *   useDocsFrom: 'cosineProximity'
  * }
  */
 export function cosineProximity(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -105,7 +105,7 @@ export function cosineProximity(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_meanAbsoluteError'
+ *   useDocsFrom: 'meanAbsoluteError'
  * }
  */
 export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -116,7 +116,7 @@ export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_meanAbsolutePercentageError'
+ *   useDocsFrom: 'meanAbsolutePercentageError'
  * }
  */
 export function meanAbsolutePercentageError(
@@ -136,7 +136,7 @@ export function mape(yTrue: Tensor, yPred: Tensor): Tensor {
  * @doc {
  *   heading: 'Metrics',
  *   namespace: 'metrics',
- *   useDocsFrom: '_meanSquaredError'
+ *   useDocsFrom: 'meanSquaredError'
  * }
  */
 export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {

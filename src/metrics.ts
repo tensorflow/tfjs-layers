@@ -47,7 +47,6 @@ import {LossOrMetricFn} from './types';
  * @param yPred Binary Tensor of prediction.
  * @return Accuracy Tensor.
  */
-/** @doc { docsForwardAlias: '_binaryAccuracy'} */
 export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const threshold = tfc.mul(.5, tfc.onesLike(yPred));
@@ -72,7 +71,6 @@ export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
  *   same categories as in `yTrue`.
  * @return Accuracy Tensor.
  */
-/** @doc { docsForwardAlias: '_categoricalAccuracy'} */
 export function categoricalAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(
       () => K.cast(
@@ -130,7 +128,6 @@ function falsePositives(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred The predicted values. Expected to be contain only 0-1 values.
  * @return Precision Tensor.
  */
-/** @doc { docsForwardAlias: '_precision'} */
 export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const tp = truePositives(yTrue, yPred);
@@ -176,7 +173,6 @@ export function precision(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred The predicted values. Expected to be contain only 0-1 values.
  * @return Recall Tensor.
  */
-/** @doc { docsForwardAlias: '_recall'} */
 export function recall(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const tp = truePositives(yTrue, yPred);
@@ -204,7 +200,6 @@ export function recall(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred Binary Tensor of prediction, probabilities for the `1` case.
  * @return Accuracy Tensor.
  */
-/** @doc { docsForwardAlias: '_binaryCrossentropy'} */
 export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
   return lossBinaryCrossentropy(yTrue, yPred);
 }
@@ -225,7 +220,6 @@ export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
  * @param yPred Predicted probabilities or logits.
  * @returns Accuracy tensor.
  */
-/** @doc { docsForwardAlias: '_sparseCategoricalAccuracy'} */
 export function sparseCategoricalAccuracy(
     yTrue: Tensor, yPred: Tensor): Tensor {
   if (yTrue.rank === yPred.rank) {
