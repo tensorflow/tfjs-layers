@@ -202,7 +202,7 @@ export class LogSoftmax extends Activation {
    * @throws ValueError: In case `dim(x) < 2`.
    */
   apply(x: Tensor, axis: number = (-1)): Tensor {
-    return tfc.logsoftmax(x, axis);
+    return tfc.logSoftmax(x, axis);
   }
 }
 serialization.registerClass(LogSoftmax);
