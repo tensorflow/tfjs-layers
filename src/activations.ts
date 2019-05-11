@@ -10,10 +10,10 @@
 
 // Layer activation functions
 import * as tfc from '@tensorflow/tfjs-core';
-import { serialization, Tensor, tidy } from '@tensorflow/tfjs-core';
+import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
 import * as K from './backend/tfjs_backend';
-import { ActivationIdentifier } from './keras_format/activation_config';
-import { deserializeKerasObject } from './utils/generic_utils';
+import {ActivationIdentifier} from './keras_format/activation_config';
+import {deserializeKerasObject} from './utils/generic_utils';
 
 /**
  * Base class for Activations.
@@ -215,12 +215,12 @@ export function deserializeActivation(
   config: serialization.ConfigDict,
   customObjects: serialization.ConfigDict = {}): Activation {
   return deserializeKerasObject(
-    config, serialization.SerializationMap.getMap().classNameMap,
-    customObjects, 'activation');
+     config, serialization.SerializationMap.getMap().classNameMap,
+     customObjects, 'activation');
 }
 
-export function getActivation(identifier: ActivationIdentifier |
-  serialization.ConfigDict | Activation): Activation {
+export function getActivation(identifier: ActivationIdentifier|
+                              serialization.ConfigDict|Activation): Activation {
   if (identifier == null) {
     const config: serialization.ConfigDict = {};
     config['className'] = 'linear';
