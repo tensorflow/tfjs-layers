@@ -282,7 +282,7 @@ describeMathCPUAndGPU('logsoftmax activation', () => {
   });
   it('1D all equal', () => {
     const initX = tensor1d([-1, -1, -1, -1]);
-    const expectedVals = tensor1d([1.386, 1.386, 1.386, 1.386]);
+    const expectedVals = tensor1d([-1.386, -1.386, -1.386, -1.386]);
     expectTensorsClose(logsoftmax(initX), expectedVals);
   });
   it('2D', () => {
