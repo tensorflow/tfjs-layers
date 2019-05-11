@@ -273,37 +273,32 @@ describeMathCPUAndGPU('softmax activation', () => {
 describeMathCPUAndGPU('logsoftmax activation', () => {
   const logsoftmax = new LogSoftmax().apply;
   // Setup: Array with initial values.
-  // Execute: Softmax on the last dimension.
+  // Execute: logSoftmax on the last dimension.
   // Expect: Output array matches size and approximate expected values.
   it('1D', () => {
-    const initVals = new Float32Array([0, 1, 3, 9]);
-    const expectedVals = new Float32Array([-9.003, -8.003, -6.003, -0.003]);
-    const initX = tensor1d(initVals);
-    expectTensorsClose(logsoftmax(initX), tensor1d(expectedVals));
+    const initX = tensor1d([0, 1, 3, 9]);
+    const expectedVals = tensor1d([-9.003, -8.003, -6.003, -0.003]);
+    expectTensorsClose(logsoftmax(initX), expectedVals);
   });
   it('1D all equal', () => {
-    const initVals = new Float32Array([-1, -1, -1, -1]);
-    const expectedVals = new Float32Array([1.386, 1.386, 1.386, 1.386]);
-    const initX = tensor1d(initVals);
-    expectTensorsClose(logsoftmax(initX), tensor1d(expectedVals));
+    const initX = tensor1d([-1, -1, -1, -1]);
+    const expectedVals = tensor1d([1.386, 1.386, 1.386, 1.386]);
+    expectTensorsClose(logsoftmax(initX), expectedVals);
   });
   it('2D', () => {
-    const initVals = new Float32Array([0, 1, 3, 9, 0, 1, 3, 9]);
-    const expectedVals = new Float32Array(
-       [-9.003, -8.003, -6.003, -0.003, -9.003, -8.003, -6.003, -0.003]);
-    const initX = tensor2d(initVals, [2, 4]);
-    expectTensorsClose(logsoftmax(initX), tensor2d(expectedVals, [2, 4]));
+    const initX = tensor2d([[0, 1, 3, 9,], [0, 1, 3, 9]]);
+    const expectedVals = tensor2d(
+       [[-9.003, -8.003, -6.003, -0.003], [-9.003, -8.003, -6.003, -0.003]]);
+    expectTensorsClose(logsoftmax(initX), expectedVals);
   });
   it('3D', () => {
-    const initVals = new Float32Array([0, 1, 3, 9, 0, 1, 3, 9]);
-    const expectedVals = new Float32Array(
-       [-9.003, -8.003, -6.003, -0.003, -9.003, -8.003, -6.003, -0.003]);
-    const initX = tensor3d(initVals, [1, 2, 4]);
-    expectTensorsClose(logsoftmax(initX), tensor3d(expectedVals, [1, 2, 4]));
+    const initX = tensor3d([[[0, 1, 3, 9,], [0, 1, 3, 9]]]);
+    const expectedVals = tensor3d(
+       [[[-9.003, -8.003, -6.003, -0.003], [-9.003, -8.003, -6.003, -0.003]]]);
+    expectTensorsClose(logsoftmax(initX), expectedVals);
   });
   it('Does not leak', () => {
-    const initVals = new Float32Array([0, 1, 3, 9]);
-    const initX = tensor1d(initVals);
+    const initX = tensor1d([0, 1, 3, 9]);
     expectNoLeakedTensors(() => logsoftmax(initX), 1);
   });
 });

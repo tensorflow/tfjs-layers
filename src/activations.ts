@@ -188,9 +188,10 @@ serialization.registerClass(Softmax);
  */
 export class LogSoftmax extends Activation {
   /** @nocollapse */
-  static readonly className = 'logsoftmax';
+  static readonly className = 'logSoftmax';
   /**
-   * Calculate the activation function.
+   * Calculate the activation function of log softmax:
+   * log( exp(x_i) / sum(exp(x)) )
    *
    * @param x Tensor.
    * @param axis Integer, axis along which the softmax normalization is applied.
