@@ -212,11 +212,11 @@ export function serializeActivation(activation: Activation): string {
 }
 
 export function deserializeActivation(
-  config: serialization.ConfigDict,
-  customObjects: serialization.ConfigDict = {}): Activation {
+      config: serialization.ConfigDict,
+      customObjects: serialization.ConfigDict = {}): Activation {
   return deserializeKerasObject(
-     config, serialization.SerializationMap.getMap().classNameMap,
-     customObjects, 'activation');
+      config, serialization.SerializationMap.getMap().classNameMap,
+      customObjects, 'activation');
 }
 
 export function getActivation(identifier: ActivationIdentifier|

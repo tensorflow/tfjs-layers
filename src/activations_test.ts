@@ -67,7 +67,7 @@ describeMathCPUAndGPU('selu activation', () => {
   const scale = 1.0507009873554804934193349852946;
 
   const expectedVals =
-     initVals.map(x => scale * (x < 0 ? (alpha * (Math.exp(x) - 1)) : x));
+      initVals.map(x => scale * (x < 0 ? (alpha * (Math.exp(x) - 1)) : x));
   const selu = new Selu().apply;
 
   it('1D', () => {
@@ -252,14 +252,14 @@ describeMathCPUAndGPU('softmax activation', () => {
   it('2D', () => {
     const initVals = new Float32Array([0, 1, 3, 9, 0, 1, 3, 9]);
     const expectedVals = new Float32Array(
-       [0.000, 0.000, 0.002, 0.997, 0.000, 0.000, 0.002, 0.997]);
+        [0.000, 0.000, 0.002, 0.997, 0.000, 0.000, 0.002, 0.997]);
     const initX = tensor2d(initVals, [2, 4]);
     expectTensorsClose(softmax(initX), tensor2d(expectedVals, [2, 4]));
   });
   it('3D', () => {
     const initVals = new Float32Array([0, 1, 3, 9, 0, 1, 3, 9]);
     const expectedVals = new Float32Array(
-       [0.000, 0.000, 0.002, 0.997, 0.000, 0.000, 0.002, 0.997]);
+        [0.000, 0.000, 0.002, 0.997, 0.000, 0.000, 0.002, 0.997]);
     const initX = tensor3d(initVals, [1, 2, 4]);
     expectTensorsClose(softmax(initX), tensor3d(expectedVals, [1, 2, 4]));
   });
