@@ -16,7 +16,7 @@
  * =============================================================================
  */
 import * as tfc from '@tensorflow/tfjs-core';
-import {parseAndEvaluatedSnippets} from '@tensorflow/tfjs-core/scripts/test_snippets/util';
+import {parseAndEvaluateSnippets} from '@tensorflow/tfjs-core/scripts/test_snippets/util';
 
 import * as tfl from '../src/index';
 
@@ -25,4 +25,4 @@ const tf = {
   ...tfc
 };
 
-parseAndEvaluatedSnippets(tf);
+parseAndEvaluateSnippets(tf);

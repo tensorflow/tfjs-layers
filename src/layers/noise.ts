@@ -26,27 +26,6 @@ export declare interface GaussianNoiseArgs extends LayerArgs {
   stddev: number;
 }
 
-/**
- * Apply additive zero-centered Gaussian noise.
- *
- * As it is a regularization layer, it is only active at training time.
- *
- * This is useful to mitigate overfitting
- * (you could see it as a form of random data augmentation).
- * Gaussian Noise (GS) is a natural choice as corruption process
- * for real valued inputs.
- *
- * # Arguments
- *     stddev: float, standard deviation of the noise distribution.
- *
- * # Input shape
- *         Arbitrary. Use the keyword argument `input_shape`
- *         (tuple of integers, does not include the samples axis)
- *         when using this layer as the first layer in a model.
- *
- * # Output shape
- *         Same shape as input.
- */
 export class GaussianNoise extends Layer {
   static className = 'GaussianNoise';
   readonly stddev: number;
@@ -88,29 +67,6 @@ export declare interface GaussianDropoutArgs extends LayerArgs {
   rate: number;
 }
 
-/**
- * Apply multiplicative 1-centered Gaussian noise.
- *
- * As it is a regularization layer, it is only active at training time.
- *
- * # Arguments
- *     rate: float, drop probability (as with `Dropout`).
- *        The multiplicative noise will have
- *        standard deviation `sqrt(rate / (1 - rate))`.
- *
- * # Input shape
- *     Arbitrary. Use the keyword argument `input_shape`
- *     (tuple of integers, does not include the samples axis)
- *     when using this layer as the first layer in a model.
- *
- * # Output shape
- *     Same shape as input.
- *
- * # References
- *     - [Dropout: A Simple Way to Prevent Neural Networks from Overfitting](
- *        http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf)
- *
- */
 export class GaussianDropout extends Layer {
   static className = 'GaussianDropout';
   readonly rate: number;
@@ -159,36 +115,6 @@ export declare interface AlphaDropoutArgs extends LayerArgs {
   noiseShape?: Shape;
 }
 
-/**
- * Applies Alpha Dropout to the input.
- *
- * As it is a regularization layer, it is only active at training time.
- *
- * Alpha Dropout is a `Dropout` that keeps mean and variance of inputs
- * to their original values, in order to ensure the self-normalizing property
- * even after this dropout.
- * Alpha Dropout fits well to Scaled Exponential Linear Units
- * by randomly setting activations to the negative saturation value.
- *
- * # Arguments
- *    rate: float, drop probability (as with `Dropout`).
- *        The multiplicative noise will have
- *        standard deviation `sqrt(rate / (1 - rate))`.
- *    noise_shape: A 1-D `Tensor` of type `int32`, representing the
- *         shape for randomly generated keep/drop flags.
- *
- *
- * # Input shape
- *         Arbitrary. Use the keyword argument `input_shape`
- *         (tuple of integers, does not include the samples axis)
- *         when using this layer as the first layer in a model.
- *
- * # Output shape
- *         Same shape as input.
- *
- * # References
- *     - [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515)
- */
 export class AlphaDropout extends Layer {
   static className = 'AlphaDropout';
   readonly rate: number;

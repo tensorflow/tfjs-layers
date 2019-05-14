@@ -11,8 +11,9 @@
   "jsdelivr": "dist/tf-layers.min.js",
   "unpkg": "dist/tf-layers.min.js",
   "devDependencies": {
-    "@tensorflow/tfjs-core": "1.2.0",
+    "@tensorflow/tfjs-core": "1.1.2",
     "@types/jasmine": "~2.5.53",
+    "@types/node": "~9.6.0",
     "clang-format": "~1.2.2",
     "http-server": "~0.10.0",
     "jasmine-core": "~3.1.0",
@@ -47,6 +48,7 @@
     "tfjs2keras-js": "./scripts/tfjs2keras-js.sh",
     "tfjs2keras-py": "./scripts/tfjs2keras-py.sh",
     "test-ci": "./scripts/test-ci.sh",
+    "test-snippets": "ts-node --ignore=false ./scripts/test_snippets.ts",
     "run-browserstack": "karma start --browsers='bs_firefox_mac,bs_chrome_mac' --singleRun --reporters='dots,karma-typescript'",
     "lint": "tslint -p . -t verbose"
   },
