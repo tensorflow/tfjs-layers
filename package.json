@@ -47,7 +47,7 @@
     "tfjs2keras-js": "./scripts/tfjs2keras-js.sh",
     "tfjs2keras-py": "./scripts/tfjs2keras-py.sh",
     "test-ci": "./scripts/test-ci.sh",
-    "test-snippets": "./node_modules/.bin/ts-node --ignore=false ./scripts/test_snippets.ts",
+    "test-snippets": "ts-node --version && ts-node --ignore=false ./scripts/test_snippets.ts",
     "run-browserstack": "karma start --browsers='bs_firefox_mac,bs_chrome_mac' --singleRun --reporters='dots,karma-typescript'",
     "lint": "tslint -p . -t verbose"
   },
