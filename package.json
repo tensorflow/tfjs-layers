@@ -11,7 +11,7 @@
   "jsdelivr": "dist/tf-layers.min.js",
   "unpkg": "dist/tf-layers.min.js",
   "devDependencies": {
-    "@tensorflow/tfjs-core": "1.1.2",
+    "@tensorflow/tfjs-core": "1.2.0",
     "@types/jasmine": "~2.5.53",
     "@types/node": "~9.6.0",
     "clang-format": "~1.2.2",
