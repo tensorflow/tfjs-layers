@@ -17,8 +17,8 @@
     "noUnusedParameters": false,
     "pretty": true,
     "noFallthroughCasesInSwitch": true,
-    "allowUnreachableCode": false,
-    "preserveSymlinks": true
+    "allowUnreachableCode": false
   },
-  "include": ["src/"]
+  "include": ["src/"],
+  "exclude": ["node_modules/"]
 }
