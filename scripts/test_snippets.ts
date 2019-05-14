@@ -16,14 +16,15 @@
  * =============================================================================
  */
 import * as tfc from '@tensorflow/tfjs-core';
-// import {parseAndEvaluateSnippets} from
-// '@tensorflow/tfjs-core/scripts/test_snippets/util';
+import {parseAndEvaluateSnippets} from '@tensorflow/tfjs-core/scripts/test_snippets/util';
+import * as fs from 'fs';
 
 import * as tfl from '../src/index';
+
+console.log(fs.readFileSync('./node_modules/ts-node/package.json', 'utf8'));
 
 const tf = {
   ...tfl,
   ...tfc
 };
-console.log(tf);
-// parseAndEvaluateSnippets(tf);
+parseAndEvaluateSnippets(tf);
