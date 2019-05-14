@@ -30,11 +30,6 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.2.tgz#d77f9faa027cadad9c912cd47f4f8b07b0fb0864"
   integrity sha512-53ElVDSnZeFUUFIYzI8WLQ25IhWzb6vbddNp8UHlXQyU0ET2RhV5zg0NfubzU7iNMh5bBXb0htCzfvrSVNgzaQ==
 
-"@types/node@~9.6.0":
-  version "9.6.48"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-9.6.48.tgz#06e765bda1fef91b075c58d540207e8b37dbdc1f"
-  integrity sha512-velR2CyDrHC1WFheHr5Jm25mdCMs0BXJRp6u0zf8PF9yeOy4Xff5sJeusWS7xOmhAoezlSq8LJ0+9M5H7YkTdw==
-
 "@types/seedrandom@2.4.27":
   version "2.4.27"
   resolved "https://registry.yarnpkg.com/@types/seedrandom/-/seedrandom-2.4.27.tgz#9db563937dd86915f69092bc43259d2f48578e41"
