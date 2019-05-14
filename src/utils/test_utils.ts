@@ -12,7 +12,7 @@
  * Testing utilities.
  */
 
-import {memory, Tensor, test_util} from '@tensorflow/tfjs-core';
+import {memory, Tensor, test_util, util} from '@tensorflow/tfjs-core';
 import {ALL_ENVS, describeWithFlags, registerTestEnv} from '@tensorflow/tfjs-core/dist/jasmine_util';
 import {ValueError} from '../errors';
 
@@ -43,7 +43,22 @@ export function expectTensorsClose(
     throw new ValueError(
         'Second argument to expectTensorsClose() is not defined.');
   }
-  test_util.expectArraysClose(actual, expected, epsilon);
+  if (actual instanceof Tensor && expected instanceof Tensor) {
+    if (actual.dtype !== expected.dtype) {
+      throw new Error(
+          `Data types do not match. Actual: '${actual.dtype}'. ` +
+          `Expected: '${expected.dtype}'`);
+    }
+    if (!util.arraysEqual(actual.shape, expected.shape)) {
+      throw new Error(
+          `Shapes do not match. Actual: [${actual.shape}]. ` +
+          `Expected: [${expected.shape}].`);
+    }
+  }
+  const actualData = actual instanceof Tensor ? actual.dataSync() : actual;
+  const expectedData =
+      expected instanceof Tensor ? expected.dataSync() : expected;
+  test_util.expectArraysClose(actualData, expectedData, epsilon);
 }
 
 /**
@@ -78,9 +93,10 @@ export function describeMathCPUAndGPU(testName: string, tests: () => void) {
  * @param tests
  */
 export function describeMathCPU(testName: string, tests: () => void) {
-  describeWithFlags(testName, {activeBackend: 'cpu'}, () => {
-    tests();
-  });
+  describeWithFlags(
+      testName, {predicate: testEnv => testEnv.backendName === 'cpu'}, () => {
+        tests();
+      });
 }
 
 /**
@@ -89,9 +105,10 @@ export function describeMathCPU(testName: string, tests: () => void) {
  * @param tests
  */
 export function describeMathGPU(testName: string, tests: () => void) {
-  describeWithFlags(testName, {activeBackend: 'webgl'}, () => {
-    tests();
-  });
+  describeWithFlags(
+      testName, {predicate: testEnv => testEnv.backendName === 'webgl'}, () => {
+        tests();
+      });
 }
 
 /**
