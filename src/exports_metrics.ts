@@ -69,24 +69,48 @@ export function categoricalCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
 }
 
 /**
- * @doc {
- *   heading: 'Metrics',
- *   namespace: 'metrics',
- *   useDocsFrom: 'topKCategoricalAccuracy'
- * }
+ * Top K categorical accuracy metric function.
+ *
+ * Example:
+ * ```js
+ * const yTrue = tf.tensor2d([[0.3, 0.2, 0.1], [0.1, 0.2, 0.7]]);
+ * const yPred = tf.tensor2d([[0, 1, 0], [1, 0, 0]]);
+ * const k = 2;
+ * const accuracy = tf.metrics.topKCategoricalAccuracy(yTrue, yPred, k);
+ * accuracy.print();
+ * ```
+ *
+ * @param yTrue True values.
+ * @param yPred Predicted values.
+ * @param k Optional Number of top elements to look at for computing metrics,
+ *    default to 5.
+ * @returns Accuracy tensor.
  */
+/** @doc {heading: 'Metrics', namespace: 'metrics'} */
 export function topKCategoricalAccuracy(
   yTrue: Tensor, yPred: Tensor, k?: number): Tensor {
   return metrics.topKCategoricalAccuracy(yTrue, yPred, k);
 }
 
 /**
- * @doc {
- *   heading: 'Metrics',
- *   namespace: 'metrics',
- *   useDocsFrom: 'sparseTopKCategoricalAccuracy'
- * }
+ * Top K sparse categorical accuracy metric function.
+ *
+ * Example:
+ * ```js
+ * const yTrue = tf.tensor1d([1, 0]);
+ * const yPred = tf.tensor2d([[0, 1, 0], [1, 0, 0]]);
+ * const k = 2;
+ * const accuracy = tf.metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
+ * accuracy.print();
+ * ```
+ *
+ * @param yTrue True labels: indices.
+ * @param yPred Predicted values.
+ * @param k Optional Number of top elements to look at for computing metrics,
+ *    default to 5.
+ * @returns Accuracy tensor.
  */
+/** @doc {heading: 'Metrics', namespace: 'metrics'} */
 export function sparseTopKCategoricalAccuracy(
   yTrue: Tensor, yPred: Tensor, k?: number): Tensor {
   return metrics.sparseTopKCategoricalAccuracy(yTrue, yPred, k);
