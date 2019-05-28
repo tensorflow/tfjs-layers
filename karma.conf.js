@@ -48,13 +48,6 @@ module.exports = function(config) {
     reportSlowerThan: 500,
     browserNoActivityTimeout: 30000,
     customLaunchers: {
-      bs_chrome_mac: {
-        base: 'BrowserStack',
-        browser: 'chrome',
-        browser_version: 'latest',
-        os: 'OS X',
-        os_version: 'High Sierra'
-      },
       bs_firefox_mac: {
         base: 'BrowserStack',
         browser: 'firefox',
