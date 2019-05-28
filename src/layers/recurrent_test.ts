@@ -2817,13 +2817,11 @@ describeMathCPU('Stacked RNN serialization', () => {
     model.add(rnn);
     const xs = tfc.ones([1, 3, 4]).mul(0.1);
     const ys = model.predict(xs) as Tensor;
-    ys.print();
 
     const modelJSON = model.toJSON(null, false);
     const modelPrime =
         await tfl.models.modelFromJSON({modelTopology: modelJSON});
     const ysPrime = modelPrime.predict(xs) as Tensor;
-    ysPrime.print();
     expectTensorsClose(ysPrime, ys);
   });
 });
