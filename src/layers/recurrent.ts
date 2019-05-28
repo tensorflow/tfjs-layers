@@ -30,7 +30,6 @@ import {assertPositiveInteger} from '../utils/generic_utils';
 import * as math_utils from '../utils/math_utils';
 import {getExactlyOneShape, getExactlyOneTensor, isArrayOfShapes} from '../utils/types_utils';
 import {batchGetValue, batchSetValue, LayerVariable} from '../variables';
-
 import {deserialize} from './serialization';
 
 /**
@@ -897,9 +896,9 @@ export class RNN extends Layer {
 
   /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
-    cls: serialization.SerializableConstructor<T>,
-    config: serialization.ConfigDict,
-    customObjects = {} as serialization.ConfigDict): T {
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict,
+      customObjects = {} as serialization.ConfigDict): T {
     const cellConfig = config['cell'] as serialization.ConfigDict;
     const cell = deserialize(cellConfig, customObjects) as RNNCell;
     return new cls(Object.assign(config, {cell}));
@@ -1426,8 +1425,8 @@ export class SimpleRNN extends RNN {
 
   /** @nocollapse */
   static fromConfig<T extends serialization.Serializable>(
-    cls: serialization.SerializableConstructor<T>,
-    config: serialization.ConfigDict): T {
+      cls: serialization.SerializableConstructor<T>,
+      config: serialization.ConfigDict): T {
     return new cls(config);
   }
 }
