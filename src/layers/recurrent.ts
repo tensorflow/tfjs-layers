@@ -894,6 +894,16 @@ export class RNN extends Layer {
     Object.assign(config, baseConfig);
     return config;
   }
+
+  /** @nocollapse */
+  static fromConfig<T extends serialization.Serializable>(
+    cls: serialization.SerializableConstructor<T>,
+    config: serialization.ConfigDict,
+    customObjects = {} as serialization.ConfigDict): T {
+    const cellConfig = config['cell'] as serialization.ConfigDict;
+    const cell = deserialize(cellConfig, customObjects) as RNNCell;
+    return new cls(Object.assign(config, {cell}));
+  }
 }
 serialization.registerClass(RNN);
 
@@ -1412,6 +1422,13 @@ export class SimpleRNN extends RNN {
     delete baseConfig['cell'];
     Object.assign(config, baseConfig);
     return config;
+  }
+
+  /** @nocollapse */
+  static fromConfig<T extends serialization.Serializable>(
+    cls: serialization.SerializableConstructor<T>,
+    config: serialization.ConfigDict): T {
+    return new cls(config);
   }
 }
 serialization.registerClass(SimpleRNN);
@@ -2457,7 +2474,7 @@ export class StackedRNNCells extends RNNCell {
     const cellConfigs: serialization.ConfigDict[] = [];
     for (const cell of this.cells) {
       cellConfigs.push({
-        'className': this.getClassName(),
+        'className': cell.getClassName(),
         'config': cell.getConfig(),
       });
     }
