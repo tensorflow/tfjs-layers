@@ -14,7 +14,7 @@ steps:
   entrypoint: 'yarn'
   id: 'tfjs2keras-js'
   args: ['tfjs2keras-js']
-  waitFor: [test-browser']
+  waitFor: ['test-browser']
 - name: 'python:2'
   entrypoint: 'bash'
   id: 'tfjs2keras-py'
