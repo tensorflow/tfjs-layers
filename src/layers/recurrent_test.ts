@@ -2793,38 +2793,38 @@ describeMathCPU('StackedRNNCells Symbolic', () => {
   });
 });
 
-describeMathCPU('Stacked RNN serialization', () => {
-  it('StackedRNNCells', async () => {
-    const model = tfl.sequential();
-    model.add(tfl.layers.dense({
-      units: 1,
-      inputShape: [3, 4],
-      kernelInitializer: 'ones'
-    }));
-    const cells = [
-      tfl.layers.lstmCell({
-        units: 5,
-        kernelInitializer: 'ones',
-        recurrentInitializer: 'ones'
-      }),
-      tfl.layers.lstmCell({
-        units: 6,
-        kernelInitializer: 'ones',
-        recurrentInitializer: 'ones'
-      })
-    ];
-    const rnn = tfl.layers.rnn({cell: cells, returnSequences: true});
-    model.add(rnn);
-    const xs = tfc.ones([1, 3, 4]).mul(0.1);
-    const ys = model.predict(xs) as Tensor;
+// describeMathCPU('Stacked RNN serialization', () => {
+//   it('StackedRNNCells', async () => {
+//     const model = tfl.sequential();
+//     model.add(tfl.layers.dense({
+//       units: 1,
+//       inputShape: [3, 4],
+//       kernelInitializer: 'ones'
+//     }));
+//     const cells = [
+//       tfl.layers.lstmCell({
+//         units: 5,
+//         kernelInitializer: 'ones',
+//         recurrentInitializer: 'ones'
+//       }),
+//       tfl.layers.lstmCell({
+//         units: 6,
+//         kernelInitializer: 'ones',
+//         recurrentInitializer: 'ones'
+//       })
+//     ];
+//     const rnn = tfl.layers.rnn({cell: cells, returnSequences: true});
+//     model.add(rnn);
+//     const xs = tfc.ones([1, 3, 4]).mul(0.1);
+//     const ys = model.predict(xs) as Tensor;
 
-    const modelJSON = model.toJSON(null, false);
-    const modelPrime =
-        await tfl.models.modelFromJSON({modelTopology: modelJSON});
-    const ysPrime = modelPrime.predict(xs) as Tensor;
-    expectTensorsClose(ysPrime, ys);
-  });
-});
+//     const modelJSON = model.toJSON(null, false);
+//     const modelPrime =
+//         await tfl.models.modelFromJSON({modelTopology: modelJSON});
+//     const ysPrime = modelPrime.predict(xs) as Tensor;
+//     expectTensorsClose(ysPrime, ys);
+//   });
+// });
 
 describeMathGPU('StackedRNNCells Tensor', () => {
   // The golden values for assertion below can be obtained with the following
