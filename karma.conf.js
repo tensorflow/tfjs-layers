@@ -53,7 +53,7 @@ module.exports = function(config) {
         browser: 'firefox',
         browser_version: '67.0',
         os: 'OS X',
-        os_version: 'High Sierra'
+        os_version: 'Mojave'
       },
       chrome_with_swift_shader: {
         base: 'Chrome',
