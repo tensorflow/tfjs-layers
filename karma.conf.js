@@ -51,7 +51,7 @@ module.exports = function(config) {
       bs_firefox_mac: {
         base: 'BrowserStack',
         browser: 'firefox',
-        browser_version: 'latest',
+        browser_version: '67.0',
         os: 'OS X',
         os_version: 'High Sierra'
       },
