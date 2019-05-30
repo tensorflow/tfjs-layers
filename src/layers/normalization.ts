@@ -442,8 +442,73 @@ export class BatchNormalization extends Layer {
 }
 serialization.registerClass(BatchNormalization);
 
+export declare interface LayerNormalizationLayerArgs extends LayerArgs {
+  /**
+   * The integer axis that should be normalized (typically the features axis).
+   * Defaults to -1.
+   *
+   * For instance, after a `Conv2D` layer with `data_format="channels_first"`,
+   * set `axis=1` in `batchNormalization`.
+   */
+  axis?: number;
+
+  /**
+   * Small float added to the variance to avoid dividing by zero. Defaults to
+   * 1e-3.
+   */
+  epsilon?: number;
+
+  /**
+   * If `true`, add offset of `beta` to normalized tensor.
+   * If `false`, `beta` is ignored.
+   * Defaults to `true`.
+   */
+  center?: boolean;
+
+  /**
+   * If `true`, multiply by `gamma`.
+   * If `false`, `gamma` is not used.
+   * When the next layer is linear (also e.g. `nn.relu`),
+   * this can be disabled since the scaling will be done by the next layer.
+   * Defaults to `true`.
+   */
+  scale?: boolean;
+
+  /**
+   * Initializer for the beta weight.
+   *  Defaults to 'zeros'.
+   */
+  betaInitializer?: InitializerIdentifier|Initializer;
+
+  /**
+   * Initializer for the gamma weight.
+   *  Defaults to `ones`.
+   */
+  gammaInitializer?: InitializerIdentifier|Initializer;
+
+  /**
+   * Constraint for the beta weight.
+   */
+  betaConstraint?: ConstraintIdentifier|Constraint;
+
+  /**
+   * Constraint for gamma weight.
+   */
+  gammaConstraint?: ConstraintIdentifier|Constraint;
+
+  /**
+   * Regularizer for the beta weight.
+   */
+  betaRegularizer?: RegularizerIdentifier|Regularizer;
+
+  /**
+   * Regularizer for the gamma weight.
+   */
+  gammaRegularizer?: RegularizerIdentifier|Regularizer;
+}
+
 /**
- * Layer normalization layer (Ba and Jimmy, 2016).
+ * Layer normalization layer (Ba, Kiros and Hinton, 2016).
  *
  * Normalize the activations of the previous layer for each given example in a
  * batch independently, rather than across a batch like Batch Normalization.
@@ -465,24 +530,19 @@ export class LayerNormalization extends Layer {
   /** @nocollapse */
   static className = 'LayerNormalization';
   private readonly axis: number;
-  private readonly momentum: number;
   private readonly epsilon: number;
   private readonly center: boolean;
   private readonly scale: boolean;
   private readonly betaInitializer: Initializer;
   private readonly gammaInitializer: Initializer;
-  private readonly movingMeanInitializer: Initializer;
-  private readonly movingVarianceInitializer: Initializer;
   private readonly betaConstraint: Constraint;
   private readonly gammaConstraint: Constraint;
   private readonly betaRegularizer: Regularizer;
   private readonly gammaRegularizer: Regularizer;
   private gamma: LayerVariable;
   private beta: LayerVariable;
-  private movingMean: LayerVariable;
-  private movingVariance: LayerVariable;
 
-  constructor(args?: BatchNormalizationLayerArgs) {
+  constructor(args?: LayerNormalizationLayerArgs) {
     if (args == null) {
       args = {};
     }
@@ -490,16 +550,11 @@ export class LayerNormalization extends Layer {
 
     this.supportsMasking = true;
     this.axis = args.axis == null ? -1 : args.axis;
-    this.momentum = args.momentum == null ? 0.99 : args.momentum;
     this.epsilon = args.epsilon == null ? 1e-3 : args.epsilon;
     this.center = args.center == null ? true : args.center;
     this.scale = args.scale == null ? true : args.scale;
     this.betaInitializer = getInitializer(args.betaInitializer || 'zeros');
     this.gammaInitializer = getInitializer(args.gammaInitializer || 'ones');
-    this.movingMeanInitializer =
-        getInitializer(args.movingMeanInitializer || 'zeros');
-    this.movingVarianceInitializer =
-        getInitializer(args.movingVarianceInitializer || 'ones');
     this.betaConstraint = getConstraint(args.betaConstraint);
     this.gammaConstraint = getConstraint(args.gammaConstraint);
     this.betaRegularizer = getRegularizer(args.betaRegularizer);
@@ -516,8 +571,6 @@ export class LayerNormalization extends Layer {
           `the layer received an input with shape ` +
           `${JSON.stringify(inputShape)}.`);
     }
-    this.inputSpec =
-        [new InputSpec({ndim: inputShape.length, axes: {[axis]: dim}})];
     const shape = [dim];
     if (this.scale) {
       this.gamma = this.addWeight(
@@ -529,11 +582,6 @@ export class LayerNormalization extends Layer {
           'beta', shape, null, this.betaInitializer, this.betaRegularizer, true,
           this.betaConstraint);
     }
-    this.movingMean = this.addWeight(
-        'moving_mean', shape, null, this.movingMeanInitializer, null, false);
-    this.movingVariance = this.addWeight(
-        'moving_variance', shape, null, this.movingVarianceInitializer, null,
-        false);
     this.built = true;
   }
 
@@ -544,84 +592,34 @@ export class LayerNormalization extends Layer {
       const inputShape = input.shape;
       const ndim = inputShape.length;
       const reductionAxes = math_utils.range(0, ndim);
+      const meanAndVariance = tfc.moments(x, reductionAxes);
+      const mean = meanAndVariance.mean;
+      const variance = meanAndVariance.variance;
       const axis = this.axis >= 0 ? this.axis : (this.axis + ndim);
       const broadcastShape = generic_utils.pyListRepeat(1, ndim);
       broadcastShape[axis] = inputShape[axis];
 
-      const sortedReductionAxes = reductionAxes.slice();
-      sortedReductionAxes.sort();
-      const needsBroadcasting = !util.arraysEqual(
-          sortedReductionAxes, math_utils.range(0, ndim).slice(0, ndim));
+      const broadcastBeta =
+          this.center ? this.beta.read().reshape(broadcastShape) : null;
+      const broadcastGamma =
+          this.scale ? this.gamma.read().reshape(broadcastShape) : null;
 
-      const normalizeInference: () => Tensor = () => {
-        if (needsBroadcasting) {
-          const broadcastMovingMean =
-              this.movingMean.read().reshape(broadcastShape);
-          const broadcastMovingVariance =
-              this.movingVariance.read().reshape(broadcastShape);
-          const broadcastBeta =
-              this.center ? this.beta.read().reshape(broadcastShape) : null;
-          const broadcastGamma =
-              this.scale ? this.gamma.read().reshape(broadcastShape) : null;
-          return batchNormalization(
-              input, broadcastMovingMean, broadcastMovingVariance,
-              broadcastBeta, broadcastGamma, this.epsilon);
-        } else {
-          return batchNormalization(
-              input, this.movingMean.read(), this.movingVariance.read(),
-              this.beta == null ? null : this.beta.read(),
-              this.gamma == null ? null : this.gamma.read(), this.epsilon);
-        }Variance.read().reshape(broadcastShape);
-          const broadcastBeta =
-              this.center ?
-      };
+      const normed = batchNormalization(
+          input, mean, variance, broadcastBeta,
+          broadcastGamma, this.epsilon);
 
-      if (!training) {
-        return normalizeInference();
-      }
-
-      const [normedTraining, mean, variance] = normalizeBatchInTraining(
-          input, this.gamma.read(), this.beta.read(), reductionAxes,
-          this.epsilon);
-
-      const doMovingAverage =
-          (variable: LayerVariable, value: Tensor, momentum: number): void => {
-            tfc.tidy(() => {
-              const decay = 1 - momentum;
-              const origValue = variable.read();
-              const updateDelta = origValue.sub(value).mul(decay);
-              variable.write(origValue.sub(updateDelta));
-            });
-          };
-
-      // Perform updates to moving mean and moving variance for training.
-      // Porting Note: In PyKeras, these updates to `movingMean` and
-      //   `movingAverage` are done as a deferred Graph, added to the `Layer`'s
-      //   `update`s using the `add_update()` method. Here we do it imperatively
-      //   and encapsulate the updates in a function that is invoked
-      //   immediately.
-      const updateMovingMeanAndVariance = () => {
-        doMovingAverage(this.movingMean, mean, this.momentum);
-        doMovingAverage(this.movingVariance, variance, this.momentum);
-      };
-      updateMovingMeanAndVariance();
-
-      return normedTraining;
+      return normed;
     });
   }
 
   getConfig(): serialization.ConfigDict {
     const config: serialization.ConfigDict = {
       axis: this.axis,
-      momentum: this.momentum,
       epsilon: this.epsilon,
       center: this.center,
       scale: this.scale,
       betaInitializer: serializeInitializer(this.betaInitializer),
       gammaInitializer: serializeInitializer(this.gammaInitializer),
-      movingMeanInitializer: serializeInitializer(this.movingMeanInitializer),
-      movingVarianceInitializer:
-          serializeInitializer(this.movingVarianceInitializer),
       betaRegularizer: serializeRegularizer(this.betaRegularizer),
       gammaRegularizer: serializeRegularizer(this.gammaRegularizer),
       betaConstraint: serializeConstraint(this.betaConstraint),

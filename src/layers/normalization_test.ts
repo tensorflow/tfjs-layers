@@ -675,3 +675,358 @@ describeMathCPUAndGPU('BatchNormalization Layers: Tensor', () => {
     expectTensorsClose(movingVarianceValue, [1.3161889, 1.1835222], 1e-5);
   });
 });
+
+describeMathCPU('LayerNormalization Layers: Symbolic', () => {
+  const validInputShapes = [[4, 6], [2, 3, 4], [2, 3, 4, 5]];
+  for (const inputShape of validInputShapes) {
+    const testTitle = `shape=${JSON.stringify(inputShape)}`;
+    it(testTitle, () => {
+      const x = new SymbolicTensor('float32', inputShape, null, [], null);
+      const layer = tfl.layers.layerNormalization({});
+      const y = layer.apply(x) as SymbolicTensor;
+      expect(y.dtype).toEqual(x.dtype);
+      expect(y.shape).toEqual(x.shape);
+    });
+  }
+
+  it('Undetermined dim axis leads to ValueError', () => {
+    const x = new SymbolicTensor('float32', [null, 2, 3], null, [], null);
+    const layer = tfl.layers.layerNormalization({axis: 0});
+    expect(() => layer.apply(x))
+        .toThrowError(
+            /Axis 0 of input tensor should have a defined dimension.*/);
+  });
+
+  it('layerNormalization constructor works without arg', () => {
+    const layer = tfl.layers.layerNormalization();
+    expect(layer.getConfig().axis).toEqual(-1);
+  });
+});
+
+describeMathCPUAndGPU('LayerNormalization Layers: Tensor', () => {
+  const dimensions = [2, 3, 4];
+  const axisValues = [0, -1];
+
+  for (const dim of dimensions) {
+    for (const axis of axisValues) {
+      const testTitle = `Inference, ${dim}D, axis=${axis}`;
+      it(testTitle, () => {
+        const layer = tfl.layers.layerNormalization({axis});
+        let x: Tensor;
+        if (dim === 2) {
+          x = tensor2d([[1, 2], [3, 4]], [2, 2]);
+        } else if (dim === 3) {
+          x = tensor3d([[[1, 2], [3, 4]], [[-1, -2], [-3, -4]]], [2, 2, 2]);
+        } else if (dim === 4) {
+          x = tensor4d(
+              [
+                [[[1, 2], [3, 4]], [[-1, -2], [-3, -4]]],
+                [[[-1, -2], [-3, -4]], [[1, 2], [3, 4]]]
+              ],
+              [2, 2, 2, 2]);
+        }
+        const y = layer.apply(x, {training: false}) as Tensor;
+        expectTensorsClose(y, x, 0.01);
+      });
+    }
+  }
+
+  it('no center', () => {
+    const layer = tfl.layers.layerNormalization({center: false, axis: 0});
+    const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
+    expectTensorsClose(layer.apply(x) as Tensor, x, 0.01);
+    expect(layer.getWeights().length).toEqual(1);
+    // Firt weight is gamma.
+    expectTensorsClose(layer.getWeights()[0], onesLike(layer.getWeights()[0]));
+  });
+
+  it('no scale', () => {
+    const layer = tfl.layers.layerNormalization({scale: false, axis: 0});
+    const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
+    expectTensorsClose(layer.apply(x) as Tensor, x, 0.01);
+    expect(layer.getWeights().length).toEqual(1);
+    // Firt weight is beta.
+    expectTensorsClose(layer.getWeights()[0], zerosLike(layer.getWeights()[0]));
+  });
+
+  it('no center, no scale', () => {
+    const layer = tfl.layers.layerNormalization({scale: false, center: false});
+    const x = tensor2d([[1, 2], [3, 4]], [2, 2]);
+    expectTensorsClose(layer.apply(x) as Tensor, x, 0.01);
+    expect(layer.getWeights().length).toEqual(0);
+  });
+
+  // Use the following Python code to get the reference values for assertion:
+  // ```python
+  // from tensorflow import keras
+  // import tensorflow as tf
+  // import numpy as np
+  //
+  // layer1 = tf.keras.layers.experimental.LayerNormalization(input_shape=(4,))
+  // model = keras.Sequential([layer1])
+  //
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs = np.array(
+  //     [[1, 2, 3, 4], [2, 4, 6, 8], [12, 11, 10, 9]], dtype=np.float32)
+  // ys = np.zeros([3, 4])
+  // print(layer1.get_weights())
+  // history = model.fit(xs, ys, epochs=2, batch_size=3)
+  // print(history.history)
+  // print(layer1.get_weights())
+  // ```
+  it('Fit: 2D, BatchNorm Layer Only', async () => {
+    const layer1 = tfl.layers.layerNormalization({inputShape: [4]});
+    const model = tfl.sequential({layers: [layer1]});
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xs1 = tensor2d([[1, 2, 3, 4], [2, 4, 6, 8], [12, 11, 10, 9]], [3, 4]);
+    const ys = zeros([3, 4]);
+    const history = await model.fit(xs1, ys, {epochs: 2, batchSize: 3});
+    expect(history.history['loss'][0]).toBeCloseTo(0.9999998211860657);
+    expect(history.history['loss'][1]).toBeCloseTo(0.9982497096061707);
+    const gammaValue = layer1.getWeights()[0];
+    expectTensorsClose(
+        gammaValue, [0.9982009, 0.9998, 0.9998, 0.9982009]);
+    const betaValue = layer1.getWeights()[1];
+    expectTensorsClose(
+        betaValue,
+        [0.0004469, 0.00014903, -0.00014903, -0.0004469]);
+  });
+
+  // Use the following Python code to get the reference values for
+  // assertion:
+  // ```python
+  // from tensorflow import keras
+  // import tensorflow as tf
+  // import numpy as np
+  //
+  //
+  // layer1 = keras.layers.Dense(
+  //     4, kernel_initializer='ones', use_bias=False, input_shape=(4,))
+  // layer2 = tf.keras.layers.experimental.LayerNormalization()
+  // layer3 = keras.layers.Dense(1, kernel_initializer='ones',
+  //                             use_bias=False)
+  // model = keras.Sequential([layer1, layer2, layer3])
+  //
+  // optimizer = keras.optimizers.SGD(lr=0.1)
+  // model.compile(loss='mean_squared_error', optimizer=optimizer)
+  //
+  // xs = np.array([[1, 2, 3, 4], [2, 4, 6, 8], [12, 11, 10, 9]],
+  //                 dtype=np.float32)
+  // ys = np.zeros([3, 1])
+  // history = model.fit(xs, ys, epochs=3, batch_size=3)
+  //
+  // print(history.history)
+  // print(layer1.get_weights())
+  // print(layer2.get_weights())
+  // print(layer3.get_weights())
+  // ```
+  it('Fit: 2D, BatchNorm Layer between two Dense Layers', async () => {
+    const layer1 = tfl.layers.dense(
+        {units: 4, kernelInitializer: 'ones', useBias: false, inputShape: [4]});
+    const layer2 = tfl.layers.layerNormalization({inputShape: [4]});
+    const layer3 =
+        tfl.layers.dense({units: 1, kernelInitializer: 'ones', useBias: false});
+    const model = tfl.sequential({layers: [layer1, layer2, layer3]});
+
+    const optimizer = train.sgd(0.1);
+    model.compile({loss: 'meanSquaredError', optimizer});
+
+    const xs1 = tensor2d([[1, 2, 3, 4], [2, 4, 6, 8], [12, 11, 10, 9]], [3, 4]);
+    const ys = zeros([3, 1]);
+    const history = await model.fit(xs1, ys, {epochs: 3, batchSize: 3});
+    expect(history.history['loss'][0]).toBeCloseTo(0.0);
+    expect(history.history['loss'][1]).toBeCloseTo(0.0);
+    expect(history.history['loss'][2]).toBeCloseTo(0.0);
+    const dense1KernelValue = layer1.getWeights()[0];
+    expectTensorsClose(
+        dense1KernelValue,
+        tensor2d(
+            [
+            [1.0, 1.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0, 1.0],
+            [1.0, 1.0, 1.0, 1.0]
+            ],
+            [4, 4]));
+    const gammaValue = layer2.getWeights()[0];
+    expectTensorsClose(
+        gammaValue, [1.0, 1.0, 1.0, 1.0]);
+    const betaValue = layer2.getWeights()[1];
+    expectTensorsClose(
+        betaValue,
+        [0.0, 0.0, 0.0, 0.0]);
+    const dense2KernelValue = layer3.getWeights()[0];
+    expectTensorsClose(
+        dense2KernelValue,
+        tensor2d(
+            [[1.0], [1.0], [1.0], [1.0]],
+            [4, 1]));
+  });
+
+  // Python reference code:
+  // ```python
+  // from tensorflow import keras
+  // import tensorflow as tf
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Conv2D(
+  //     4,
+  //     2,
+  //     kernel_initializer='ones',
+  //     bias_initializer='zeros',
+  //     input_shape=[5, 5, 1]))
+  // model.add(tf.keras.layers.experimental.LayerNormalization())
+  // model.add(keras.layers.Flatten())
+  // model.add(keras.layers.Dense(
+  //     1,
+  //     kernel_initializer='ones',
+  //     bias_initializer='zeros'))
+  //
+  // model.compile(loss='mse', optimizer='sgd')
+  //
+  // xs = np.arange(2 * 5 * 5 * 1).reshape([2, 5, 5, 1])
+  // ys = np.array([[0], [1]])
+  // h = model.fit(xs, ys, epochs=3)
+  // print(h.history)
+
+  // ```
+  it('Fit: Wtih conv2d layer', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.conv2d({
+      filters: 4,
+      kernelSize: 2,
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros',
+      inputShape: [5, 5, 1]
+    }));
+    model.add(tfl.layers.layerNormalization());
+    model.add(tfl.layers.flatten());
+    model.add(tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xsData = [];
+    for (let i = 0; i < 2 * 5 * 5 * 1; ++i) {
+      xsData.push(i);
+    }
+    const xs = tensor4d(xsData, [2, 5, 5, 1]);
+    const ys = tensor2d([0, 1], [2, 1]);
+
+    const history = await model.fit(xs, ys, {epochs: 2});
+    expect(history.history['loss'][0]).toBeCloseTo(0.5000038146972656);
+    expect(history.history['loss'][1]).toBeCloseTo(0.5969201326370239);
+  });
+
+  // Reference Python code:
+  // ```python
+  // from tensorflow import keras
+  // import tensorflow as tf
+  // import numpy as np
+  //
+  // model = keras.Sequential()
+  // model.add(keras.layers.Conv2DTranspose(
+  //     4,
+  //     2,
+  //     kernel_initializer='ones',
+  //     bias_initializer='zeros',
+  //     input_shape=[5, 5, 1]))
+  // model.add(tf.keras.layers.experimental.LayerNormalization())
+  // model.add(keras.layers.Flatten())
+  // model.add(keras.layers.Dense(
+  //     1,
+  //     kernel_initializer='ones',
+  //     bias_initializer='zeros'))
+  //
+  // model.compile(loss='mse', optimizer='sgd')
+  //
+  // xs = np.arange(2 * 5 * 5 * 1).reshape([2, 5, 5, 1]).astype(np.float32)
+  // xs = (xs - 25.0) / 100.0
+  // ys = np.array([[0], [1]])
+  //
+  // print(model.layers[1].get_weights())
+  // h = model.fit(xs, ys, epochs=2)
+  // print(h.history)
+  // print(model.layers[1].get_weights())
+  // ```
+  it('Fit: Wtih conv2dTranspose layer', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.conv2dTranspose({
+      filters: 4,
+      kernelSize: 2,
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros',
+      inputShape: [5, 5, 1]
+    }));
+    model.add(tfl.layers.layerNormalization());
+    model.add(tfl.layers.flatten());
+    model.add(tfl.layers.dense({
+      units: 1,
+      kernelInitializer: 'ones',
+      biasInitializer: 'zeros'
+    }));
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xsData = [];
+    for (let i = 0; i < 2 * 5 * 5 * 1; ++i) {
+      xsData.push(i);
+    }
+    const xs =
+        (tensor4d(xsData, [2, 5, 5, 1]).sub(scalar(25))).div(scalar(100));
+    const ys = tensor2d([0, 1], [2, 1]);
+
+    const h = await model.fit(xs, ys, {epochs: 2});
+    expect(h.history.loss[0]).toBeCloseTo(0.49997735023498535);
+    expect(h.history.loss[1]).toBeCloseTo(23.026676177978516);
+    const weights = model.layers[1].getWeights();
+    expect(weights.length).toEqual(2);
+    expectTensorsClose(
+        weights[0],
+        [0.9997897, 0.9997897, 0.9997897, 0.9997897]);
+    expectTensorsClose(
+        weights[1],
+        [-0.30798724, -0.30798724, -0.30798724, -0.30798724]);
+  });
+
+  // Use the following Python code to get the reference values for assertion:
+  // ```python
+  // from tensorflow import keras
+  // import tensorflow as tf
+  // import numpy as np
+  //
+  // layer1 = tf.keras.layers.experimental.LayerNormalization(input_shape=[2, 2])
+  // model = keras.Sequential([layer1])
+  //
+  // model.compile(loss='mean_squared_error', optimizer='sgd')
+  //
+  // xs = np.array(
+  //     [[[1, 2], [3, 4]], [[2, 4], [6, 8]], [[12, 11], [10, 9]]],
+  //     dtype=np.float32)
+  // ys = np.zeros([3, 2, 2], dtype=np.float32)
+  // print(layer1.get_weights())
+  // history = model.fit(xs, ys, epochs=2, batch_size=3)
+  // print(history.history)
+  // print(layer1.get_weights())
+  // ```
+  it('Fit: 3D, BatchNorm Layer Only', async () => {
+    const layer1 = tfl.layers.layerNormalization({inputShape: [2, 2]});
+    const model = tfl.sequential({layers: [layer1]});
+    model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+
+    const xs1 = tensor3d(
+        [[[1, 2], [3, 4]], [[2, 4], [6, 8]], [[12, 11], [10, 9]]], [3, 2, 2]);
+    const ys = zeros([3, 2, 2]);
+    const history = await model.fit(xs1, ys, {epochs: 2, batchSize: 3});
+    expect(history.history['loss'][0]).toBeCloseTo(0.9999998211860657);
+    expect(history.history['loss'][1]).toBeCloseTo(0.9979565739631653);
+    const gammaValue = layer1.getWeights()[0];
+    expectTensorsClose(gammaValue, [0.99800104, 0.99800104]);
+    const betaValue = layer1.getWeights()[1];
+    expectTensorsClose(betaValue, [0.00029784, -0.00029784]);
+  });
+});
