@@ -775,7 +775,7 @@ describeMathCPUAndGPU('LayerNormalization Layers: Tensor', () => {
   // print(history.history)
   // print(layer1.get_weights())
   // ```
-  it('Fit: 2D, BatchNorm Layer Only', async () => {
+  it('Fit: 2D, LayerNorm Layer Only', async () => {
     const layer1 = tfl.layers.layerNormalization({inputShape: [4]});
     const model = tfl.sequential({layers: [layer1]});
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
@@ -822,7 +822,7 @@ describeMathCPUAndGPU('LayerNormalization Layers: Tensor', () => {
   // print(layer2.get_weights())
   // print(layer3.get_weights())
   // ```
-  it('Fit: 2D, BatchNorm Layer between two Dense Layers', async () => {
+  it('Fit: 2D, LayerNorm Layer between two Dense Layers', async () => {
     const layer1 = tfl.layers.dense(
         {units: 4, kernelInitializer: 'ones', useBias: false, inputShape: [4]});
     const layer2 = tfl.layers.layerNormalization({inputShape: [4]});
@@ -1013,7 +1013,7 @@ describeMathCPUAndGPU('LayerNormalization Layers: Tensor', () => {
   // print(history.history)
   // print(layer1.get_weights())
   // ```
-  it('Fit: 3D, BatchNorm Layer Only', async () => {
+  it('Fit: 3D, LayerNorm Layer Only', async () => {
     const layer1 = tfl.layers.layerNormalization({inputShape: [2, 2]});
     const model = tfl.sequential({layers: [layer1]});
     model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
