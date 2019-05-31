@@ -13,6 +13,7 @@
 import {DataType, serialization, util} from '@tensorflow/tfjs-core';
 
 import {AssertionError, ValueError} from '../errors';
+import {LossOrMetricFn} from '../types';
 // tslint:enable
 
 /**
@@ -497,4 +498,21 @@ export function debounce<T>(
     return lastResult;
   };
   return f2;
+}
+
+/**
+ * Return the function name before minification with the provided function.
+ *
+ * Note: Function name may change during minification, for example,
+ * metric function `meanSquaredError` will be changed to 'meanSquaredError$1',
+ * this util function prune the suffix '$1', and return 'meanSquaredError'.
+ *
+ * @param fn loss function or metric function.
+ */
+export function getLossOrMetricFnName(fn: LossOrMetricFn): string {
+  if (fn != null) {
+    return ((fn as Function).name).split('$')[0];
+  } else {
+    return '';
+  }
 }

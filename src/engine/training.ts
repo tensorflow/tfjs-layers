@@ -21,7 +21,7 @@ import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LossOrMetricFn} from '../types';
-import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_utils';
+import {count, pyListRepeat, singletonOrArray, unique, getLossOrMetricFnName} from '../utils/generic_utils';
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
@@ -334,7 +334,8 @@ function checkInputData(
 
 /**
  * Maps metric functions to model outputs.
- * @param metrics An `Array` or dict (`Object`) of metric functions.
+ * @param metrics An shortcut strings name, metric function, `Array` or dict
+ *   (`Object`) of metric functions.
  * @param outputNames An `Array` of the names of model outputs.
  * @returns An `Array` (one entry per model output) of `Array` of metric
  *   functions. For instance, if the model has 2 outputs, and for the first
@@ -342,33 +343,46 @@ function checkInputData(
  *   and just `binaryAccuracy` for the second output, the `Array` would look
  *   like:
  *     `[[binaryAccuracy, binaryCrossentropy],  [binaryAccuracy]]`
- * @throws TypeError: if `null` or `undefined` value is provided.
+ * @throws TypeError: incompatible metrics format.
  */
-function collectMetrics(
-    metrics: string[]|{[outputName: string]: string | string[]},
-    outputNames: string[]): string[][] {
+export function collectMetrics(
+    metrics: string|LossOrMetricFn|Array<string|LossOrMetricFn>|
+        {[outputName: string]: string|LossOrMetricFn}, outputNames: string[]
+): Array<Array<string|LossOrMetricFn>> {
   if (metrics == null || Array.isArray(metrics) && metrics.length === 0) {
     return outputNames.map(name => []);
   }
-  if (Array.isArray(metrics)) {
-    // We then apply all metrics to all outputs.
-    return outputNames.map(name => metrics);
-  } else if (metrics != null) {
-    // In this case, metrics is a dict.
-    const nestedMetrics: string[][] = [];
-    for (const name of outputNames) {
-      let outputMetrics: string|string[] =
-          metrics.hasOwnProperty(name) ? metrics[name] : [];
-      if (!Array.isArray(outputMetrics)) {
-        outputMetrics = [outputMetrics];
-      }
-      nestedMetrics.push(outputMetrics as string[]);
-    }
-    return nestedMetrics;
+
+  let wrappedMetrics: Array<string|LossOrMetricFn>|
+      {[outputName: string]: string|LossOrMetricFn};
+  if (typeof metrics === 'string' || typeof metrics === 'function') {
+    wrappedMetrics = [metrics];
+  } else if (Array.isArray(metrics) || typeof metrics === 'object') {
+    wrappedMetrics = metrics as Array<string|LossOrMetricFn>|
+        {[outputName: string]: string}|{[outputName: string]: LossOrMetricFn};
   } else {
     throw new TypeError(
-        'Type of metrics argument not understood. Expected an Array or ' +
-        'Object, found: ' + metrics);
+        'Type of metrics argument not understood. Expected an string,' +
+        'function, Array, or Object, found: ' + metrics);
+  }
+
+  if (Array.isArray(wrappedMetrics)) {
+    // We then apply all metrics to all outputs.
+    return outputNames.map(name =>
+        wrappedMetrics as Array<string|LossOrMetricFn>);
+  } else {
+    // In this case, metrics is a dict.
+    const nestedMetrics: Array<Array<string|LossOrMetricFn>> = [];
+    for (const name of outputNames) {
+      let outputMetrics: string|LossOrMetricFn|
+          Array<string|LossOrMetricFn> =
+          wrappedMetrics.hasOwnProperty(name) ? wrappedMetrics[name] : [];
+      if (!Array.isArray(outputMetrics)) {
+        outputMetrics = [outputMetrics as string|LossOrMetricFn];
+      }
+      nestedMetrics.push(outputMetrics as Array<string|LossOrMetricFn>);
+    }
+    return nestedMetrics;
   }
 }
 
@@ -422,7 +436,8 @@ export interface ModelCompileArgs {
    * To specify different metrics for different outputs of a multi-output
    * model, you could also pass a dictionary.
    */
-  metrics?: string[]|{[outputName: string]: string};
+  metrics?: string|LossOrMetricFn|Array<string|LossOrMetricFn>|
+      {[outputName: string]: string|LossOrMetricFn};
 
   // TODO(cais): Add lossWeights, sampleWeightMode, weightedMetrics, and
   //   targetTensors.
@@ -469,7 +484,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   protected stopTraining_: boolean;
   protected isTraining: boolean;
 
-  metrics: string[]|{[outputName: string]: string};
+  metrics: string|LossOrMetricFn|Array<string|LossOrMetricFn>|
+      {[outputName: string]: string|LossOrMetricFn};
   metricsNames: string[];
   // Porting Note: `metrics_tensors` in PyKeras is a symbolic tensor. But given
   //   the imperative nature of tfjs-core, `metricsTensors` is a
@@ -675,7 +691,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
         // TODO(cais): Add weights and outputWeightedMetrics.
 
         // TODO(cais): Add optional arg `weights` to the following function.
-        const handleMetrics = (metrics: string[]) => {
+        const handleMetrics = (metrics: Array<string|LossOrMetricFn>) => {
           const metricNamePrefix = '';
           let metricName: string;
           let accFn: LossOrMetricFn;
@@ -683,7 +699,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           //  TODO(cais): Use 'weights_' for weighted metrics.
 
           for (const metric of metrics) {
-            if (['accuracy', 'acc', 'crossentropy', 'ce'].indexOf(metric) !==
+            if (typeof metric === 'string' &&
+                ['accuracy', 'acc', 'crossentropy', 'ce'].indexOf(metric) !==
                 -1) {
               const outputShape = this.internalOutputShapes[i];
 
@@ -726,7 +743,12 @@ export class LayersModel extends Container implements tfc.InferenceModel {
               const metricFn = Metrics.get(metric);
               // TODO(cais): Add weighting actually.
               weightedMetricFn = metricFn;
-              metricName = metricNamePrefix + metric;
+              if (typeof metric === 'string') { // use shortcut strings name
+                metricName = metricNamePrefix + metric;
+              } else { // use function name
+                metricName = metricNamePrefix +
+                    getLossOrMetricFnName(metricFn);
+              }
             }
 
             // TODO(cais): Add weighting and masking to metricResult.

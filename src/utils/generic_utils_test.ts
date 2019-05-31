@@ -8,8 +8,8 @@
  * =============================================================================
  */
 
-import {util} from '@tensorflow/tfjs-core';
-
+import {util, Tensor, tensor} from '@tensorflow/tfjs-core';
+import {LossOrMetricFn} from '../types';
 import * as utils from './generic_utils';
 
 describe('pyListRepeat() ', () => {
@@ -285,5 +285,27 @@ describe('debouce', () => {
     }
     // Expect f to be called 2 times (between timestamps 4 and 2, and 8 and 4).
     expect(numCalls).toBe(2);
+  });
+});
+
+describe('getLossOrMetricFnName', () => {
+  it('get function name without minification', async () => {
+    const fakeMetricsFunction: LossOrMetricFn =
+        (yTrue: Tensor, yPred: Tensor) => tensor([1]) as Tensor;
+    const fnName = utils.getLossOrMetricFnName(fakeMetricsFunction);
+    expect(fnName).toEqual('fakeMetricsFunction');
+  });
+
+  it('get minified function name', async () => {
+    // original name is 'fakeMetricsFunction'
+    const fakeMetricsFunction$1: LossOrMetricFn =
+        (yTrue: Tensor, yPred: Tensor) => tensor([1]) as Tensor;
+    const fnName = utils.getLossOrMetricFnName(fakeMetricsFunction$1);
+    expect(fnName).toEqual('fakeMetricsFunction');
+  });
+
+  it('accept null', async () => {
+    const fnName = utils.getLossOrMetricFnName(null);
+    expect(fnName).toEqual('');
   });
 });
