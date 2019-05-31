@@ -587,12 +587,11 @@ export class LayerNormalization extends Layer {
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     return tidy(() => {
-      const training = kwargs['training'] == null ? false : kwargs['training'];
       const input = getExactlyOneTensor(inputs);
       const inputShape = input.shape;
       const ndim = inputShape.length;
       const reductionAxes = math_utils.range(0, ndim);
-      const meanAndVariance = tfc.moments(x, reductionAxes);
+      const meanAndVariance = tfc.moments(input, reductionAxes);
       const mean = meanAndVariance.mean;
       const variance = meanAndVariance.variance;
       const axis = this.axis >= 0 ? this.axis : (this.axis + ndim);
