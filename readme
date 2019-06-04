@@ -1,0 +1,15 @@
+implements the square and log activation method in JS
+the two activation method in python Code
+
+def square(x):
+    return K.square(x)
+
+
+def log(x):
+    return K.log(K.clip(x, min_value=1e-7, max_value=10000))
+
+
+modified in three files
+1. tfjs-layers/src/activation.ts
+2. tfjs-layers/src/exports_layers.ts
+3. tfjs-layers/src/layers/advanced_activations.ts
