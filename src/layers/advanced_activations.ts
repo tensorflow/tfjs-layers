@@ -15,6 +15,7 @@
 import {clipByValue, elu, leakyRelu, prelu, relu, serialization, Tensor} from '@tensorflow/tfjs-core';
 
 import {Softmax as softmaxActivation} from '../activations';
+import {getScalar} from '../backend/state';
 import {cast} from '../backend/tfjs_backend';
 import {Constraint, getConstraint, serializeConstraint} from '../constraints';
 import {InputSpec, Layer, LayerArgs} from '../engine/topology';
@@ -348,6 +349,7 @@ export class ThresholdedReLU extends Layer {
   /** @nocollapse */
   static className = 'ThresholdedReLU';
   readonly theta: number;
+  private readonly thetaTensor: Tensor;
 
   readonly DEFAULT_THETA = 1.0;
 
@@ -358,11 +360,12 @@ export class ThresholdedReLU extends Layer {
     }
 
     this.theta = args.theta == null ? this.DEFAULT_THETA : args.theta;
+    this.thetaTensor = getScalar(this.theta);
   }
 
   call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
     const x = getExactlyOneTensor(inputs);
-    return x.mul(cast(x.greater(this.theta), 'float32'));
+    return x.mul(cast(x.greater(this.thetaTensor), 'float32'));
   }
 
   computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
@@ -429,3 +432,78 @@ export class Softmax extends Layer {
   }
 }
 serialization.registerClass(Softmax);
+
+
+
+export class Square extends Layer {
+    /** @nocollapse */
+    static className = 'square';
+    // maxValue: number;
+
+    constructor(args?: LayerArgs) {
+        super(args == null ? {} : args);
+        this.supportsMasking = true;
+        // if (args != null) {
+        //     this.maxValue = args.maxValue;
+        // }
+    }
+
+    call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+        inputs = getExactlyOneTensor(inputs);
+        let output = inputs*inputs;
+        // if (this.maxValue != null) {
+        //     output = clipByValue(output, 0, this.maxValue);
+        // }
+        return output;
+    }
+
+    computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
+        return inputShape;
+    }
+
+    getConfig(): serialization.ConfigDict {
+        const config: serialization.ConfigDict = {maxValue: this.maxValue};
+        const baseConfig = super.getConfig();
+        Object.assign(config, baseConfig);
+        return config;
+    }
+}
+serialization.registerClass(Square);
+
+
+export class Log extends Layer {
+    /** @nocollapse */
+    static className = 'log';
+    readonly DEFAULT_minValue = 1e-7;
+    readonly DEFAULT_maxValue = 10000;
+
+    constructor(args?:LayerArgs) {
+        super(args == null ? {} : args);
+        this.supportsMasking = true;
+        this.minValue = DEFAULT_minValue;
+        this.maxValue = DEFAULT_maxValue;
+
+
+    }
+
+    call(inputs: Tensor|Tensor[], kwargs: Kwargs): Tensor|Tensor[] {
+        inputs = getExactlyOneTensor(inputs);
+        let output = Math.log(inputs);
+        if (this.maxValue != null) {
+            output = clipByValue(output, this.minValue, this.maxValue);
+        }
+        return output;
+    }
+
+    computeOutputShape(inputShape: Shape|Shape[]): Shape|Shape[] {
+        return inputShape;
+    }
+
+    getConfig(): serialization.ConfigDict {
+        const config: serialization.ConfigDict = {minValue: this.minValue,maxValue: this.maxValue};
+        const baseConfig = super.getConfig();
+        Object.assign(config, baseConfig);
+        return config;
+    }
+}
+serialization.registerClass(Log);

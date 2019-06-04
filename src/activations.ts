@@ -11,6 +11,7 @@
 // Layer activation functions
 import * as tfc from '@tensorflow/tfjs-core';
 import {serialization, Tensor, tidy} from '@tensorflow/tfjs-core';
+import {getScalar} from './backend/state';
 import * as K from './backend/tfjs_backend';
 import {ActivationIdentifier} from './keras_format/activation_config';
 import {deserializeKerasObject} from './utils/generic_utils';
@@ -84,7 +85,7 @@ export class Relu6 extends Activation {
   /** @nocollapse */
   static readonly className = 'relu6';
   apply(x: Tensor): Tensor {
-    return tidy(() => tfc.minimum(6.0, tfc.relu(x)));
+    return tidy(() => tfc.minimum(getScalar(6.0), tfc.relu(x)));
   }
 }
 serialization.registerClass(Relu6);
@@ -183,38 +184,61 @@ export class Softmax extends Activation {
 }
 serialization.registerClass(Softmax);
 
-/**
- * Log softmax activation function
- */
-export class LogSoftmax extends Activation {
-  /** @nocollapse */
-  static readonly className = 'logSoftmax';
-  /**
-   * Calculate the activation function of log softmax:
-   * log( exp(x_i) / sum(exp(x)) )
-   *
-   * @param x Tensor.
-   * @param axis Integer, axis along which the softmax normalization is applied.
-   * Invalid if < 2, as softmax across 1 (the batch dimension) is assumed to be
-   * an error.
-   *
-   * @returns a Tensor of the same shape as x
-   *
-   * @throws ValueError: In case `dim(x) < 2`.
-   */
-  apply(x: Tensor, axis: number = (-1)): Tensor {
-    return tfc.logSoftmax(x, axis);
-  }
+
+
+
+export class Square extends Activation {
+    /** @nocollapse */
+    static readonly className = 'square';
+    /**
+     * Calculate the activation function.
+     *
+     * @param x Tensor.
+     * @param axis Integer, axis along which the softmax normalization is applied.
+     * Invalid if < 2, as softmax across 1 (the batch dimension) is assumed to be
+     * an error.
+     *
+     * @returns a Tensor of the same shape as x
+     *
+     * @throws ValueError: In case `dim(x) < 2`.
+     */
+    apply(x: Tensor): Tensor {
+        return tfc.square(x);
+    }
 }
-serialization.registerClass(LogSoftmax);
+serialization.registerClass(Square);
+
+
+export class Log extends Activation {
+    /** @nocollapse */
+    static readonly className = 'log';
+    /**
+     * Calculate the activation function.
+     *
+     * @param x Tensor.
+     * @param axis Integer, axis along which the softmax normalization is applied.
+     * Invalid if < 2, as softmax across 1 (the batch dimension) is assumed to be
+     * an error.
+     *
+     * @returns a Tensor of the same shape as x
+     *
+     * @throws ValueError: In case `dim(x) < 2`.
+     */
+    apply(x: Tensor): Tensor {
+        return tfc.log(x);
+    }
+}
+serialization.registerClass(Log);
+
+
 
 export function serializeActivation(activation: Activation): string {
   return activation.getClassName();
 }
 
 export function deserializeActivation(
-   config: serialization.ConfigDict,
-   customObjects: serialization.ConfigDict = {}): Activation {
+    config: serialization.ConfigDict,
+    customObjects: serialization.ConfigDict = {}): Activation {
   return deserializeKerasObject(
       config, serialization.SerializationMap.getMap().classNameMap,
       customObjects, 'activation');
@@ -224,14 +248,14 @@ export function getActivation(identifier: ActivationIdentifier|
                               serialization.ConfigDict|Activation): Activation {
   if (identifier == null) {
     const config: serialization.ConfigDict = {};
-    config['className'] = 'linear';
-    config['config'] = {};
+    config.className = 'linear';
+    config.config = {};
     return deserializeActivation(config);
   }
   if (typeof identifier === 'string') {
     const config: serialization.ConfigDict = {};
-    config['className'] = identifier;
-    config['config'] = {};
+    config.className = identifier;
+    config.config = {};
     return deserializeActivation(config);
   } else if (identifier instanceof Activation) {
     return identifier;
