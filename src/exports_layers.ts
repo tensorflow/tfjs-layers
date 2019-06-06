@@ -19,7 +19,7 @@ import {Embedding, EmbeddingLayerArgs} from './layers/embeddings';
 import {Add, Average, Concatenate, ConcatenateLayerArgs, Dot, DotLayerArgs, Maximum, Minimum, Multiply} from './layers/merge';
 import {BatchNormalization, BatchNormalizationLayerArgs} from './layers/normalization';
 import {ZeroPadding2D, ZeroPadding2DLayerArgs} from './layers/padding';
-import {AveragePooling1D, AveragePooling2D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerArgs, MaxPooling1D, MaxPooling2D, Pooling1DLayerArgs, Pooling2DLayerArgs} from './layers/pooling';
+import {AveragePooling1D, AveragePooling2D, AveragePooling3D, GlobalAveragePooling1D, GlobalAveragePooling2D, GlobalMaxPooling1D, GlobalMaxPooling2D, GlobalPooling2DLayerArgs, MaxPooling1D, MaxPooling2D, MaxPooling3D, Pooling1DLayerArgs, Pooling2DLayerArgs, Pooling3DLayerArgs} from './layers/pooling';
 import {GRU, GRUCell, GRUCellLayerArgs, GRULayerArgs, LSTM, LSTMCell, LSTMCellLayerArgs, LSTMLayerArgs, RNN, RNNCell, RNNLayerArgs, SimpleRNN, SimpleRNNCell, SimpleRNNCellLayerArgs, SimpleRNNLayerArgs, StackedRNNCells, StackedRNNCellsArgs} from './layers/recurrent';
 import {Bidirectional, BidirectionalLayerArgs, TimeDistributed, WrapperLayerArgs} from './layers/wrappers';
 import {GaussianNoiseArgs, GaussianNoise, GaussianDropoutArgs, GaussianDropout, AlphaDropoutArgs, AlphaDropout} from './layers/noise';
@@ -474,6 +474,26 @@ export function avgPooling2d(args: Pooling2DLayerArgs): Layer {
  *   heading: 'Layers',
  *   subheading: 'Pooling',
  *   namespace: 'layers',
+ *   useDocsFrom: 'AveragePooling3D'
+ * }
+ */
+export function averagePooling3d(args: Pooling3DLayerArgs): Layer {
+  return new AveragePooling3D(args);
+}
+export function avgPool3d(args: Pooling3DLayerArgs): Layer {
+  return averagePooling3d(args);
+}
+// For backwards compatibility.
+// See https://github.com/tensorflow/tfjs/issues/152
+export function avgPooling3d(args: Pooling3DLayerArgs): Layer {
+  return averagePooling3d(args);
+}
+
+/**
+ * @doc {
+ *   heading: 'Layers',
+ *   subheading: 'Pooling',
+ *   namespace: 'layers',
  *   useDocsFrom: 'GlobalAveragePooling1D'
  * }
  */
@@ -539,6 +559,18 @@ export function maxPooling1d(args: Pooling1DLayerArgs): Layer {
  */
 export function maxPooling2d(args: Pooling2DLayerArgs): Layer {
   return new MaxPooling2D(args);
+}
+
+/**
+ * @doc {
+ *   heading: 'Layers',
+ *   subheading: 'Pooling',
+ *   namespace: 'layers',
+ *   useDocsFrom: 'MaxPooling3D'
+ * }
+ */
+export function maxPooling3d(args: Pooling3DLayerArgs): Layer {
+  return new MaxPooling3D(args);
 }
 
 // Recurrent Layers.
