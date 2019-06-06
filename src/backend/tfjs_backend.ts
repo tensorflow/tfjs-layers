@@ -660,8 +660,8 @@ export function softsign(x: Tensor): Tensor {
  * @param x input tensor.
  * @param level fraction of the entries in the tensor that will be set to 0.
  * @param noiseShape shape of randomly generated keep/drop flags, must be
- *   broadcastable to the shape of `x`. Optional
- * @param seed random seed to ensure determinism. Optional
+ *   broadcastable to the shape of `x`. Optional.
+ * @param seed random seed to ensure determinism. Optional.
  * @returns Result of the dropout operation.
  */
 export function dropout(
