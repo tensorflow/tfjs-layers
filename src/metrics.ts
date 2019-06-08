@@ -253,21 +253,22 @@ export const sparseCategoricalCrossentropy = sparseCategoricalCrossentropyLoss;
 
 // TODO(cais, nielsene): Add serialize().
 
+export const metricsMap: {[functionName: string]: LossOrMetricFn} = {
+  binaryAccuracy,
+  categoricalAccuracy,
+  precision,
+  categoricalCrossentropy,
+  sparseCategoricalCrossentropy,
+  mse,
+  MSE,
+  mae,
+  MAE,
+  mape,
+  MAPE,
+  cosine
+};
+
 export function get(identifier: string|LossOrMetricFn): LossOrMetricFn {
-  const metricsMap: {[functionName: string]: LossOrMetricFn} = {
-    binaryAccuracy,
-    categoricalAccuracy,
-    precision,
-    categoricalCrossentropy,
-    sparseCategoricalCrossentropy,
-    mse,
-    MSE,
-    mae,
-    MAE,
-    mape,
-    MAPE,
-    cosine,
-  };
   if (typeof identifier === 'string' && identifier in metricsMap) {
     return metricsMap[identifier];
   } else if (typeof identifier !== 'string' && identifier != null) {
