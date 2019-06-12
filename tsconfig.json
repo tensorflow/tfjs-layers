@@ -17,8 +17,7 @@
     "noUnusedParameters": false,
     "pretty": true,
     "noFallthroughCasesInSwitch": true,
-    "allowUnreachableCode": false,
-    "preserveSymlinks": true
+    "allowUnreachableCode": false
   },
   "include": ["src/"]
 }
