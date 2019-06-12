@@ -588,9 +588,10 @@ export function repeatVector(args: RepeatVectorLayerArgs): Layer {
  * ```
  *
  * Input shape:
- *   Arbitrary: although all dimensions in the input shape must be fixed.
- *     Use the ReshapeLayerConfig field `input_shape` when using this layer
- *     as the first layer in a model.
+ *   Arbitrary, although all dimensions in the input shape must be fixed.
+ *   Use the configuration `inputShape` when using this layer as the
+ *   first layer in a model.
+ *
  *
  * Output shape:
  *   [batchSize, targetShape[0], targetShape[1], ...,
@@ -609,7 +610,7 @@ export function reshape(args: ReshapeLayerArgs): Layer {
  * Example:
  *
  * ```js
- * const model = tf.sequential();
+ * const model = tf.Sequential();
  * model.add(tf.layers.permute({
  *   dims: [2, 1],
  *   inputShape: [10, 64]
@@ -621,7 +622,7 @@ export function reshape(args: ReshapeLayerArgs): Layer {
  *
  * Input shape:
  *   Arbitrary. Use the configuration field `inputShape` when using this
- *   layer as othe first layer in a model.
+ *   layer as the first layer in a model.
  *
  * Output shape:
  *   Same rank as the input shape, but with the dimensions re-ordered (i.e.,
@@ -1404,28 +1405,29 @@ export function gaussianNoise(args: GaussianNoiseArgs): GaussianNoise {
  *
  * As it is a regularization layer, it is only active at training time.
  *
- * # Arguments
- *     rate: float, drop probability (as with `Dropout`).
- *        The multiplicative noise will have
- *        standard deviation `sqrt(rate / (1 - rate))`.
+ * Arguments:
+ *   - `rate`: float, drop probability (as with `Dropout`).
+ *     The multiplicative noise will have
+ *     standard deviation `sqrt(rate / (1 - rate))`.
  *
- * # Input shape
- *     Arbitrary. Use the keyword argument `input_shape`
- *     (tuple of integers, does not include the samples axis)
- *     when using this layer as the first layer in a model.
+ * Input shape:
+ *   Arbitrary. Use the keyword argument `inputShape`
+ *   (tuple of integers, does not include the samples axis)
+ *   when using this layer as the first layer in a model.
  *
- * # Output shape
- *     Same shape as input.
+ * Output shape:
+ *   Same shape as input.
  *
- * # References
- *     - [Dropout: A Simple Way to Prevent Neural Networks from Overfitting](
- *        http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf)
+ * References:
+ *   - [Dropout: A Simple Way to Prevent Neural Networks from Overfitting](
+ *      http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf)
  *
  */
 /** @doc {heading: 'Layers', subheading: 'Noise', namespace: 'layers'} */
 export function gaussianDropout(args: GaussianDropoutArgs): GaussianDropout {
   return new GaussianDropout(args);
 }
+
 
 /**
  * Applies Alpha Dropout to the input.
@@ -1438,24 +1440,23 @@ export function gaussianDropout(args: GaussianDropoutArgs): GaussianDropout {
  * Alpha Dropout fits well to Scaled Exponential Linear Units
  * by randomly setting activations to the negative saturation value.
  *
- * # Arguments
- *    rate: float, drop probability (as with `Dropout`).
- *        The multiplicative noise will have
- *        standard deviation `sqrt(rate / (1 - rate))`.
- *    noise_shape: A 1-D `Tensor` of type `int32`, representing the
- *         shape for randomly generated keep/drop flags.
+ * Arguments:
+ *   - `rate`: float, drop probability (as with `Dropout`).
+ *     The multiplicative noise will have
+ *     standard deviation `sqrt(rate / (1 - rate))`.
+ *   - `noise_shape`: A 1-D `Tensor` of type `int32`, representing the
+ *     shape for randomly generated keep/drop flags.
  *
+ * Input shape:
+ *   Arbitrary. Use the keyword argument `inputShape`
+ *   (tuple of integers, does not include the samples axis)
+ *   when using this layer as the first layer in a model.
  *
- * # Input shape
- *         Arbitrary. Use the keyword argument `input_shape`
- *         (tuple of integers, does not include the samples axis)
- *         when using this layer as the first layer in a model.
+ * Output shape:
+ *   Same shape as input.
  *
- * # Output shape
- *         Same shape as input.
- *
- * # References
- *     - [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515)
+ * References:
+ *   - [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515)
  */
 /** @doc {heading: 'Layers', subheading: 'Noise', namespace: 'layers'} */
 export function alphaDropout(args: AlphaDropoutArgs): AlphaDropout {
@@ -1472,16 +1473,16 @@ export function alphaDropout(args: AlphaDropoutArgs): AlphaDropout {
  * If any downstream layer does not support masking yet receives such
  * an input mask, an exception will be raised.
  *
- * # Arguments
- *     maskValue: Either None or mask value to skip.
+ * Arguments:
+ *   - `maskValue`: Either None or mask value to skip.
  *
- * # Input shape
- *     Arbitrary. Use the keyword argument `input_shape`
- *     (tuple of integers, does not include the samples axis)
- *     when using this layer as the first layer in a model.
+ * Input shape:
+ *   Arbitrary. Use the keyword argument `inputShape`
+ *   (tuple of integers, does not include the samples axis)
+ *   when using this layer as the first layer in a model.
  *
- * # Output shape
- *     Same shape as input.
+ * Output shape:
+ *   Same shape as input.
  */
 /** @doc {heading: 'Layers', subheading: 'Mask', namespace: 'layers'} */
 export function masking(args?: MaskingArgs): Layer {
