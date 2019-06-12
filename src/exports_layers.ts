@@ -610,7 +610,7 @@ export function reshape(args: ReshapeLayerArgs): Layer {
  * Example:
  *
  * ```js
- * const model = tf.Sequential();
+ * const model = tf.sequential();
  * model.add(tf.layers.permute({
  *   dims: [2, 1],
  *   inputShape: [10, 64]

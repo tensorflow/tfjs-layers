@@ -26,31 +26,8 @@ export declare interface GaussianNoiseArgs extends LayerArgs {
   stddev: number;
 }
 
-<<<<<<< HEAD
-== == ===
-    /**
-     * Apply additive zero-centered Gaussian noise.
-     *
-     * As it is a regularization layer, it is only active at training time.
-     *
-     * This is useful to mitigate overfitting
-     * (you could see it as a form of random data augmentation).
-     * Gaussian Noise (GS) is a natural choice as corruption process
-     * for real valued inputs.
-     *
-     * Arguments:
-     *   - `stddev`: float, standard deviation of the noise distribution.
-     *
-     * Input shape:
-     *   Arbitrary. Use the keyword argument `inputShape`
-     *   (tuple of integers, does not include the samples axis)
-     *   when using this layer as the first layer in a model.
-     *
-     * Output shape:
-     *   Same shape as input.
-     */
->>>>>>> origin
-    export class GaussianNoise extends Layer {
+
+export class GaussianNoise extends Layer {
   static className = 'GaussianNoise';
   readonly stddev: number;
 
