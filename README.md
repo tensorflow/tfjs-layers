@@ -66,7 +66,6 @@ For example, in Python, save your Keras model using
 [tensorflowjs](https://pypi.org/project/tensorflowjs/),
 which can be installed using `pip install tensorflowjs`.
 
-
 ```python
 import tensorflowjs as tfjs
 
