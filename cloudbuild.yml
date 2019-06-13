@@ -24,7 +24,7 @@ steps:
   entrypoint: 'yarn'
   args: ['test-snippets']
   id: 'test-snippets'
-  waitFor: ['yarn']
+  waitFor: ['yarn', 'tfjs2keras-py']
 secrets:
 - kmsKeyName: projects/learnjs-174218/locations/global/keyRings/tfjs/cryptoKeys/enc
   secretEnv:
