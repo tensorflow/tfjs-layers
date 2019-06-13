@@ -20,11 +20,6 @@ steps:
   id: 'tfjs2keras-py'
   args: ['-c', './scripts/tfjs2keras-py.sh --stable && ./scripts/tfjs2keras-py.sh --stable --tfkeras && ./scripts/tfjs2keras-py.sh --dev --tfkeras']
   waitFor: ['tfjs2keras-js']
-- name: 'node:10'
-  entrypoint: 'yarn'
-  args: ['test-snippets']
-  id: 'test-snippets'
-  waitFor: ['yarn', 'tfjs2keras-py']
 secrets:
 - kmsKeyName: projects/learnjs-174218/locations/global/keyRings/tfjs/cryptoKeys/enc
   secretEnv:
