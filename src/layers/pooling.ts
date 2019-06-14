@@ -532,25 +532,6 @@ export abstract class Pooling3D extends Layer {
   }
 }
 
-/**
- * Max pooling operation for 3D data.
- *
- * Input shape
- *   - If `dataFormat === channelsLast`:
- *       5D tensor with shape:
- *       `[batchSize, depths, rows, cols, channels]`
- *   - If `dataFormat === channelsFirst`:
- *      5D tensor with shape:
- *       `[batchSize, channels, depths, rows, cols]`
- *
- * Output shape
- *   - If `dataFormat=channelsLast`:
- *       5D tensor with shape:
- *       `[batchSize, pooledDepths, pooledRows, pooledCols, channels]`
- *   - If `dataFormat=channelsFirst`:
- *       5D tensor with shape:
- *       `[batchSize, channels, pooledDepths, pooledRows, pooledCols]`
- */
 export class MaxPooling3D extends Pooling3D {
   /** @nocollapse */
   static className = 'MaxPooling3D';
@@ -570,25 +551,6 @@ export class MaxPooling3D extends Pooling3D {
 }
 serialization.registerClass(MaxPooling3D);
 
-/**
- * Average pooling operation for 3D data.
- *
- * Input shape
- *   - If `dataFormat === channelsLast`:
- *       5D tensor with shape:
- *       `[batchSize, depths, rows, cols, channels]`
- *   - If `dataFormat === channelsFirst`:
- *      4D tensor with shape:
- *       `[batchSize, channels, depths, rows, cols]`
- *
- * Output shape
- *   - If `dataFormat=channelsLast`:
- *       5D tensor with shape:
- *       `[batchSize, pooledDepths, pooledRows, pooledCols, channels]`
- *   - If `dataFormat=channelsFirst`:
- *       5D tensor with shape:
- *       `[batchSize, channels, pooledDepths, pooledRows, pooledCols]`
- */
 export class AveragePooling3D extends Pooling3D {
   /** @nocollapse */
   static className = 'AveragePooling3D';

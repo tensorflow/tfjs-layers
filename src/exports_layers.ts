@@ -919,13 +919,25 @@ export function avgPooling2d(args: Pooling2DLayerArgs): Layer {
 }
 
 /**
- * @doc {
- *   heading: 'Layers',
- *   subheading: 'Pooling',
- *   namespace: 'layers',
- *   useDocsFrom: 'AveragePooling3D'
- * }
+ * Average pooling operation for 3D data.
+ *
+ * Input shape
+ *   - If `dataFormat === channelsLast`:
+ *       5D tensor with shape:
+ *       `[batchSize, depths, rows, cols, channels]`
+ *   - If `dataFormat === channelsFirst`:
+ *      4D tensor with shape:
+ *       `[batchSize, channels, depths, rows, cols]`
+ *
+ * Output shape
+ *   - If `dataFormat=channelsLast`:
+ *       5D tensor with shape:
+ *       `[batchSize, pooledDepths, pooledRows, pooledCols, channels]`
+ *   - If `dataFormat=channelsFirst`:
+ *       5D tensor with shape:
+ *       `[batchSize, channels, pooledDepths, pooledRows, pooledCols]`
  */
+/** @doc {heading: 'Layers', subheading: 'Pooling', namespace: 'layers'} */
 export function averagePooling3d(args: Pooling3DLayerArgs): Layer {
   return new AveragePooling3D(args);
 }
@@ -1033,13 +1045,25 @@ export function maxPooling2d(args: Pooling2DLayerArgs): Layer {
 }
 
 /**
- * @doc {
- *   heading: 'Layers',
- *   subheading: 'Pooling',
- *   namespace: 'layers',
- *   useDocsFrom: 'MaxPooling3D'
- * }
+ * Max pooling operation for 3D data.
+ *
+ * Input shape
+ *   - If `dataFormat === channelsLast`:
+ *       5D tensor with shape:
+ *       `[batchSize, depths, rows, cols, channels]`
+ *   - If `dataFormat === channelsFirst`:
+ *      5D tensor with shape:
+ *       `[batchSize, channels, depths, rows, cols]`
+ *
+ * Output shape
+ *   - If `dataFormat=channelsLast`:
+ *       5D tensor with shape:
+ *       `[batchSize, pooledDepths, pooledRows, pooledCols, channels]`
+ *   - If `dataFormat=channelsFirst`:
+ *       5D tensor with shape:
+ *       `[batchSize, channels, pooledDepths, pooledRows, pooledCols]`
  */
+/** @doc {heading: 'Layers', subheading: 'Pooling', namespace: 'layers'} */
 export function maxPooling3d(args: Pooling3DLayerArgs): Layer {
   return new MaxPooling3D(args);
 }
