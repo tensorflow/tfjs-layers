@@ -52,40 +52,66 @@ describeMathCPUAndGPU('Dropout Layer', () => {
     const inputShape = [2, 3, 4];
     const trainingValues = [false, true];
     const dropoutRates = [0, 0.5];
-    const noiseShapes = [null, inputShape];
-    // TODO(cais): test non-default noiseShapes once they are supported.
+    const noiseShapes = [null, inputShape, [2, 3, 1]];
+    const seeds = [undefined, 23];
 
     for (const training of trainingValues) {
       for (const rate of dropoutRates) {
         for (const noiseShape of noiseShapes) {
-          const testTitle = `training=${training}, dropoutRate=${rate}, ` +
-              `noiseShape=${JSON.stringify(noiseShape)}`;
-          it(testTitle, () => {
-            const x = ones(inputShape);
-            const dropoutLayer = tfl.layers.dropout({rate, noiseShape});
-            const y = dropoutLayer.apply(x, {training}) as Tensor;
-            expect(x.dtype).toEqual(y.dtype);
-            expect(x.shape).toEqual(y.shape);
-            const xValue = x.dataSync();
-            const yValue = y.dataSync();
-            let nKept = 0;
-            for (let i = 0; i < xValue.length; ++i) {
-              if (yValue[i] !== 0) {
-                nKept++;
-                if (training) {
-                  expect(yValue[i]).toBeCloseTo(1 / (1 - rate));
-                } else {
-                  expect(yValue[i]).toBeCloseTo(1);
+          for (const seed of seeds) {
+            const testTitle = `training=${training}, dropoutRate=${rate}, ` +
+                `noiseShape=${JSON.stringify(noiseShape)}, seed=${seed}`;
+            it(testTitle, () => {
+              const x = ones(inputShape);
+              const dropoutLayer = tfl.layers.dropout({rate, noiseShape, seed});
+              const y = dropoutLayer.apply(x, {training}) as Tensor;
+              expect(x.dtype).toEqual(y.dtype);
+              expect(x.shape).toEqual(y.shape);
+              const xValue = x.dataSync();
+              const yValue = y.dataSync();
+              let nKept = 0;
+              if (noiseShape === noiseShapes[2]) { // customized noiseShape
+                for (let i = 0; i < x.shape[0]; ++i) {
+                  for (let j = 0; j < x.shape[1]; ++j) {
+                    const maskedValue =
+                        yValue[i * x.shape[1] * x.shape[2] + j * x.shape[2]];
+                    for (let k = 0; k < x.shape[2]; ++k) {
+                      const indice =
+                          i * x.shape[1] * x.shape[2] + j * x.shape[2] + k;
+                      if (training) {
+                        if (maskedValue === 0) {
+                          expect(yValue[indice]).toEqual(0);
+                        } else {
+                          nKept++;
+                          expect(yValue[indice]).toBeCloseTo(1 / (1 - rate));
+                        }
+                      } else {
+                        nKept++;
+                        expect(yValue[indice]).toEqual(1);
+                      }
+                    }
+                  }
+                }
+              } else { // default noiseShape
+                for (let i = 0; i < xValue.length; ++i) {
+                  if (yValue[i] !== 0) {
+                    nKept++;
+                    if (training) {
+                      expect(yValue[i]).toBeCloseTo(1 / (1 - rate));
+                    } else {
+                      expect(yValue[i]).toBeCloseTo(1);
+                    }
+                  }
                 }
               }
-            }
-            const numel = K.countParams(x);
-            if (rate === 0 || !training) {
-              expect(nKept).toEqual(numel);
-            } else {
-              expect(nKept).toBeLessThan(numel);
-            }
-          });
+              const numel = K.countParams(x);
+              if (rate === 0 || !training) {
+                expect(nKept).toEqual(numel);
+              } else {
+                expect(nKept).toBeLessThan(numel);
+              }
+            });
+          }
         }
       }
     }
