@@ -26,27 +26,7 @@ export declare interface GaussianNoiseArgs extends LayerArgs {
   stddev: number;
 }
 
-/**
- * Apply additive zero-centered Gaussian noise.
- *
- * As it is a regularization layer, it is only active at training time.
- *
- * This is useful to mitigate overfitting
- * (you could see it as a form of random data augmentation).
- * Gaussian Noise (GS) is a natural choice as corruption process
- * for real valued inputs.
- *
- * # Arguments
- *     stddev: float, standard deviation of the noise distribution.
- *
- * # Input shape
- *         Arbitrary. Use the keyword argument `input_shape`
- *         (tuple of integers, does not include the samples axis)
- *         when using this layer as the first layer in a model.
- *
- * # Output shape
- *         Same shape as input.
- */
+
 export class GaussianNoise extends Layer {
   static className = 'GaussianNoise';
   readonly stddev: number;
@@ -88,29 +68,6 @@ export declare interface GaussianDropoutArgs extends LayerArgs {
   rate: number;
 }
 
-/**
- * Apply multiplicative 1-centered Gaussian noise.
- *
- * As it is a regularization layer, it is only active at training time.
- *
- * # Arguments
- *     rate: float, drop probability (as with `Dropout`).
- *        The multiplicative noise will have
- *        standard deviation `sqrt(rate / (1 - rate))`.
- *
- * # Input shape
- *     Arbitrary. Use the keyword argument `input_shape`
- *     (tuple of integers, does not include the samples axis)
- *     when using this layer as the first layer in a model.
- *
- * # Output shape
- *     Same shape as input.
- *
- * # References
- *     - [Dropout: A Simple Way to Prevent Neural Networks from Overfitting](
- *        http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf)
- *
- */
 export class GaussianDropout extends Layer {
   static className = 'GaussianDropout';
   readonly rate: number;
@@ -139,7 +96,7 @@ export class GaussianDropout extends Layer {
       if (this.rate > 0 && this.rate < 1) {
         const noised = () => {
           const stddev = Math.sqrt(this.rate / (1 - this.rate));
-          return K.dot(input, K.randomNormal(input.shape, 1, stddev));
+          return input.mul(K.randomNormal(input.shape, 1, stddev));
         };
         return K.inTrainPhase(noised, () => input, kwargs['training'] || false);
       }
@@ -170,24 +127,23 @@ export declare interface AlphaDropoutArgs extends LayerArgs {
  * Alpha Dropout fits well to Scaled Exponential Linear Units
  * by randomly setting activations to the negative saturation value.
  *
- * # Arguments
- *    rate: float, drop probability (as with `Dropout`).
- *        The multiplicative noise will have
- *        standard deviation `sqrt(rate / (1 - rate))`.
- *    noise_shape: A 1-D `Tensor` of type `int32`, representing the
- *         shape for randomly generated keep/drop flags.
+ * Arguments:
+ *   - `rate`: float, drop probability (as with `Dropout`).
+ *     The multiplicative noise will have
+ *     standard deviation `sqrt(rate / (1 - rate))`.
+ *   - `noise_shape`: A 1-D `Tensor` of type `int32`, representing the
+ *     shape for randomly generated keep/drop flags.
  *
+ * Input shape:
+ *   Arbitrary. Use the keyword argument `inputShape`
+ *   (tuple of integers, does not include the samples axis)
+ *   when using this layer as the first layer in a model.
  *
- * # Input shape
- *         Arbitrary. Use the keyword argument `input_shape`
- *         (tuple of integers, does not include the samples axis)
- *         when using this layer as the first layer in a model.
+ * Output shape:
+ *   Same shape as input.
  *
- * # Output shape
- *         Same shape as input.
- *
- * # References
- *     - [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515)
+ * References:
+ *   - [Self-Normalizing Neural Networks](https://arxiv.org/abs/1706.02515)
  */
 export class AlphaDropout extends Layer {
   static className = 'AlphaDropout';
@@ -238,7 +194,7 @@ export class AlphaDropout extends Layer {
           const b = -a * alphaP * this.rate;
 
           // Apply mask.
-          const x = K.dot(input, keptIdx).add(keptIdx.add(-1).mul(alphaP));
+          const x = input.mul(keptIdx).add(keptIdx.add(-1).mul(alphaP));
 
           return x.mul(a).add(b);
         };
