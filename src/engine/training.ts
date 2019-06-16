@@ -22,7 +22,6 @@ import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LossOrMetricFn} from '../types';
 import {count, pyListRepeat, singletonOrArray, unique} from '../utils/generic_utils';
-import {getLossOrMetricFnName} from '../utils/metric_utils';
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
 import {LayerVariable} from '../variables';
@@ -744,7 +743,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
               const metricFn = Metrics.get(metric);
               // TODO(cais): Add weighting actually.
               weightedMetricFn = metricFn;
-              metricName = metricNamePrefix + getLossOrMetricFnName(metric);
+              metricName =
+                  metricNamePrefix + Metrics.getLossOrMetricFnName(metric);
             }
 
             // TODO(cais): Add weighting and masking to metricResult.
