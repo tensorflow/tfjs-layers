@@ -166,26 +166,23 @@ export function getLossOrMetricName(fn: string|LossOrMetricFn): string {
   if (typeof fn === 'string') {
     return fn;
   } else {
-    let foundFnName = false;
-    let fnName = '';
+    let fnName;
     for (const key of Object.keys(lossesMap)) {
       if (lossesMap[key] === fn) {
-        foundFnName = true;
         fnName = key;
         break;
       }
     }
-    if (foundFnName) {
+    if (fnName !== undefined) {
       return fnName;
     }
     for (const key of Object.keys(metricsMap)) {
       if (metricsMap[key] === fn) {
-        foundFnName = true;
         fnName = key;
         break;
       }
     }
-    if (foundFnName) {
+    if (fnName !== undefined) {
       return fnName;
     }
     return (fn as Function).name;
