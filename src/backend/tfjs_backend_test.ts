@@ -753,17 +753,12 @@ describeMathCPUAndGPU('dropout', () => {
     const xValue = x.dataSync();
     const yValue = y.dataSync();
     let nKept = 0;
-    for (let i = 0; i < xValue.length; ++i) {
-      if (yValue[i] !== 0) {
-        nKept++;
-        expect(yValue[i]).toBeCloseTo(1 / (1 - level) * xValue[i]);
-      }
-    }
     for (let i = 0; i < x.shape[0]; i++) {
       const maskedValue = yValue[i * x.shape[1]];
       for (let j = 0; j < x.shape[1]; j++) {
         const indice = i * x.shape[1] + j;
         if (maskedValue !== 0) {
+          nKept++;
           expect(yValue[indice]).toBeCloseTo(1 / (1 - level) * xValue[indice]);
         } else {
           expect(yValue[indice]).toEqual(0);
