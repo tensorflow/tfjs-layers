@@ -70,7 +70,7 @@ describeMathCPUAndGPU('Dropout Layer', () => {
               const xValue = x.dataSync();
               const yValue = y.dataSync();
               let nKept = 0;
-              if (noiseShape === noiseShapes[2]) { // customized noiseShape
+              if (noiseShape === noiseShapes[2]) {  // customized noiseShape
                 for (let i = 0; i < x.shape[0]; ++i) {
                   for (let j = 0; j < x.shape[1]; ++j) {
                     const maskedValue =
@@ -92,7 +92,7 @@ describeMathCPUAndGPU('Dropout Layer', () => {
                     }
                   }
                 }
-              } else { // default noiseShape
+              } else {  // default noiseShape
                 for (let i = 0; i < xValue.length; ++i) {
                   if (yValue[i] !== 0) {
                     nKept++;
