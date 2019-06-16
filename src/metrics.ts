@@ -14,12 +14,13 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {Tensor, tidy} from '@tensorflow/tfjs-core';
+
 import * as K from './backend/tfjs_backend';
 import {NotImplementedError, ValueError} from './errors';
 import {categoricalCrossentropy as categoricalCrossentropyLoss, cosineProximity, meanAbsoluteError, meanAbsolutePercentageError, meanSquaredError, sparseCategoricalCrossentropy as sparseCategoricalCrossentropyLoss} from './losses';
 import {binaryCrossentropy as lossBinaryCrossentropy} from './losses';
-import {LossOrMetricFn} from './types';
 import {lossesMap} from './losses';
+import {LossOrMetricFn} from './types';
 import * as util from './utils/generic_utils';
 
 export function binaryAccuracy(yTrue: Tensor, yPred: Tensor): Tensor {
@@ -159,10 +160,7 @@ export function get(identifier: string|LossOrMetricFn): LossOrMetricFn {
  * @returns Loss or Metric name in string.
  */
 export function getLossOrMetricName(fn: string|LossOrMetricFn): string {
-  util.assert(
-      fn !== null,
-      `Unknown LossOrMetricFn ${fn}`
-  );
+  util.assert(fn !== null, `Unknown LossOrMetricFn ${fn}`);
   if (typeof fn === 'string') {
     return fn;
   } else {

@@ -347,19 +347,19 @@ function checkInputData(
  */
 export function collectMetrics(
     metrics: string|LossOrMetricFn|Array<string|LossOrMetricFn>|
-        {[outputName: string]: string|LossOrMetricFn}, outputNames: string[]
-): Array<Array<string|LossOrMetricFn>> {
+    {[outputName: string]: string | LossOrMetricFn},
+    outputNames: string[]): Array<Array<string|LossOrMetricFn>> {
   if (metrics == null || Array.isArray(metrics) && metrics.length === 0) {
     return outputNames.map(name => []);
   }
 
   let wrappedMetrics: Array<string|LossOrMetricFn>|
-      {[outputName: string]: string|LossOrMetricFn};
+      {[outputName: string]: string | LossOrMetricFn};
   if (typeof metrics === 'string' || typeof metrics === 'function') {
     wrappedMetrics = [metrics];
   } else if (Array.isArray(metrics) || typeof metrics === 'object') {
     wrappedMetrics = metrics as Array<string|LossOrMetricFn>|
-        {[outputName: string]: string}|{[outputName: string]: LossOrMetricFn};
+        {[outputName: string]: string} | {[outputName: string]: LossOrMetricFn};
   } else {
     throw new TypeError(
         'Type of metrics argument not understood. Expected an string,' +
@@ -368,17 +368,16 @@ export function collectMetrics(
 
   if (Array.isArray(wrappedMetrics)) {
     // We then apply all metrics to all outputs.
-    return outputNames.map(name =>
-        wrappedMetrics as Array<string|LossOrMetricFn>);
+    return outputNames.map(
+        name => wrappedMetrics as Array<string|LossOrMetricFn>);
   } else {
     // In this case, metrics is a dict.
     const nestedMetrics: Array<Array<string|LossOrMetricFn>> = [];
     for (const name of outputNames) {
-      let outputMetrics: string|LossOrMetricFn|
-          Array<string|LossOrMetricFn> =
+      let outputMetrics: string|LossOrMetricFn|Array<string|LossOrMetricFn> =
           wrappedMetrics.hasOwnProperty(name) ? wrappedMetrics[name] : [];
       if (!Array.isArray(outputMetrics)) {
-        outputMetrics = [outputMetrics as string|LossOrMetricFn];
+        outputMetrics = [outputMetrics as string | LossOrMetricFn];
       }
       nestedMetrics.push(outputMetrics as Array<string|LossOrMetricFn>);
     }
@@ -437,7 +436,7 @@ export interface ModelCompileArgs {
    * model, you could also pass a dictionary.
    */
   metrics?: string|LossOrMetricFn|Array<string|LossOrMetricFn>|
-      {[outputName: string]: string|LossOrMetricFn};
+      {[outputName: string]: string | LossOrMetricFn};
 
   // TODO(cais): Add lossWeights, sampleWeightMode, weightedMetrics, and
   //   targetTensors.
@@ -485,7 +484,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   protected isTraining: boolean;
 
   metrics: string|LossOrMetricFn|Array<string|LossOrMetricFn>|
-      {[outputName: string]: string|LossOrMetricFn};
+      {[outputName: string]: string | LossOrMetricFn};
   metricsNames: string[];
   // Porting Note: `metrics_tensors` in PyKeras is a symbolic tensor. But given
   //   the imperative nature of tfjs-core, `metricsTensors` is a
@@ -701,7 +700,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           for (const metric of metrics) {
             if (typeof metric === 'string' &&
                 ['accuracy', 'acc', 'crossentropy', 'ce'].indexOf(metric) !==
-                -1) {
+                    -1) {
               const outputShape = this.internalOutputShapes[i];
 
               if (outputShape[outputShape.length - 1] === 1 ||
