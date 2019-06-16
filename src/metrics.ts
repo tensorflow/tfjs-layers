@@ -151,7 +151,7 @@ export function get(identifier: string|LossOrMetricFn): LossOrMetricFn {
  *   return key of the map.
  *   - If the function relative to multiple keys,
  *     return the first found key as the function name.
- *   - If the function exsits in both lossesMap and metricsMap,
+ *   - If the function exists in both lossesMap and metricsMap,
  *     search lossesMap first.
  * If the function is not included in metricsMap or lossesMap,
  *   return the function name.
