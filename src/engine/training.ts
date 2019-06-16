@@ -744,7 +744,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
               // TODO(cais): Add weighting actually.
               weightedMetricFn = metricFn;
               metricName =
-                  metricNamePrefix + Metrics.getLossOrMetricFnName(metric);
+                  metricNamePrefix + Metrics.getLossOrMetricName(metric);
             }
 
             // TODO(cais): Add weighting and masking to metricResult.

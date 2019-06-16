@@ -158,7 +158,7 @@ export function get(identifier: string|LossOrMetricFn): LossOrMetricFn {
  * @param fn loss function, metric function, or short cut name.
  * @returns Loss or Metric name in string.
  */
-export function getLossOrMetricFnName(fn: string|LossOrMetricFn): string {
+export function getLossOrMetricName(fn: string|LossOrMetricFn): string {
   util.assert(
       fn !== null,
       `Unknown LossOrMetricFn ${fn}`

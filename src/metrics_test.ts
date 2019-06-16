@@ -15,7 +15,7 @@
 import {scalar, tensor1d, tensor2d, Tensor, tensor} from '@tensorflow/tfjs-core';
 
 import * as tfl from './index';
-import {binaryAccuracy, categoricalAccuracy, get, getLossOrMetricFnName} from './metrics';
+import {binaryAccuracy, categoricalAccuracy, get, getLossOrMetricName} from './metrics';
 import {describeMathCPUAndGPU, expectTensorsClose} from './utils/test_utils';
 import {LossOrMetricFn} from './types';
 
@@ -294,19 +294,19 @@ describe('metrics.get', () => {
   });
 });
 
-describe('getLossOrMetricFnName', () => {
+describe('getLossOrMetricName', () => {
   it('string short cut name', async () => {
-    const fnName = getLossOrMetricFnName('meanSquaredError');
+    const fnName = getLossOrMetricName('meanSquaredError');
     expect(fnName).toEqual('meanSquaredError');
   });
   
   it('function included in losses map', async () => {
-    const fnName = getLossOrMetricFnName(tfl.metrics.meanSquaredError);
+    const fnName = getLossOrMetricName(tfl.metrics.meanSquaredError);
     expect(fnName).toEqual('meanSquaredError');
   });
   
   it('function included in metrics map', async () => {
-    const fnName = getLossOrMetricFnName(tfl.metrics.categoricalAccuracy);
+    const fnName = getLossOrMetricName(tfl.metrics.categoricalAccuracy);
     expect(fnName).toEqual('categoricalAccuracy');
   });
   
@@ -314,11 +314,11 @@ describe('getLossOrMetricFnName', () => {
       async () => {
         const fakeMetric: LossOrMetricFn =
             (yTrue: Tensor, yPred: Tensor) => tensor([1]) as Tensor;
-        const fnName = getLossOrMetricFnName(fakeMetric);
+        const fnName = getLossOrMetricName(fakeMetric);
         expect(fnName).toEqual('fakeMetric');
       });
   
   it('throws null', async () => {
-    expect(() => getLossOrMetricFnName(null)).toThrowError();
+    expect(() => getLossOrMetricName(null)).toThrowError();
   });
 });
