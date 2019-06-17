@@ -494,10 +494,10 @@ export abstract class Pooling3D extends Layer {
         this.dataFormat === 'channelsFirst' ? inputShape[4] : inputShape[3];
     depths = convOutputLength(
         depths, this.poolSize[0], this.padding, this.strides[0]);
-    rows = convOutputLength(
-        rows, this.poolSize[1], this.padding, this.strides[1]);
-    cols = convOutputLength(
-        cols, this.poolSize[2], this.padding, this.strides[2]);
+    rows =
+        convOutputLength(rows, this.poolSize[1], this.padding, this.strides[1]);
+    cols =
+        convOutputLength(cols, this.poolSize[2], this.padding, this.strides[2]);
     if (this.dataFormat === 'channelsFirst') {
       return [inputShape[0], inputShape[1], depths, rows, cols];
     } else {
