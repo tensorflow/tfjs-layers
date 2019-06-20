@@ -243,7 +243,7 @@ export async function loadLayersModelInternal(
     options = {};
   }
   if (typeof pathOrIOHandler === 'string') {
-    const handlers = io.getLoadHandlers(pathOrIOHandler);
+    const handlers = io.getLoadHandlers(pathOrIOHandler, options.onProgress);
     if (handlers.length === 0) {
       // For backward compatibility: if no load handler can be found,
       // assume it is a relative http path.
@@ -965,7 +965,7 @@ export class Sequential extends LayersModel {
    *   information collected during training.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes'}
+   * @doc {heading: 'Models', subheading: 'Classes', ignoreCI: true}
    */
   async fitDataset<T>(dataset: Dataset<T>, args: ModelFitDatasetArgs<T>):
       Promise<History> {

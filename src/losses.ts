@@ -34,64 +34,14 @@ export function l2Normalize(x: Tensor, axis?: number): Tensor {
   });
 }
 
-/**
- * Loss or metric function: Mean squared error.
- *
- * ```js
- * const yTrue = tf.tensor2d([[0, 1], [3, 4]]);
- * const yPred = tf.tensor2d([[0, 1], [-3, -4]]);
- * const mse = tf.metrics.meanSquaredError(yTrue, yPred);
- * mse.print();
- * ```
- *
- * Aliases: `tf.metrics.MSE`, `tf.metrics.mse`.
- *
- * @param yTrue Truth Tensor.
- * @param yPred Prediction Tensor.
- * @return Mean squared error Tensor.
- */
 export function meanSquaredError(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => tfc.mean(K.square(tfc.sub(yPred, yTrue)), -1));
 }
 
-/**
- * Loss or metric function: Mean absolute error.
- *
- * Mathematically, mean absolute error is defined as:
- *   `mean(abs(yPred - yTrue))`,
- * wherein the `mean` is applied over feature dimensions.
- *
- * ```js
- * const yTrue = tf.tensor2d([[0, 1], [0, 0], [2, 3]]);
- * const yPred = tf.tensor2d([[0, 1], [0, 1], [-2, -3]]);
- * const mse = tf.metrics.meanAbsoluteError(yTrue, yPred);
- * mse.print();
- * ```
- *
- * @param yTrue Truth Tensor.
- * @param yPred Prediction Tensor.
- * @return Mean absolute error Tensor.
- */
 export function meanAbsoluteError(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => tfc.mean(tfc.abs(tfc.sub(yPred, yTrue)), -1));
 }
 
-/**
- * Loss or metric function: Mean absolute percentage error.
- *
- * ```js
- * const yTrue = tf.tensor2d([[0, 1], [10, 20]]);
- * const yPred = tf.tensor2d([[0, 1], [11, 24]]);
- * const mse = tf.metrics.meanAbsolutePercentageError(yTrue, yPred);
- * mse.print();
- * ```
- *
- * Aliases: `tf.metrics.MAPE`, `tf.metrics.mape`.
- *
- * @param yTrue Truth Tensor.
- * @param yPred Prediction Tensor.
- * @return Mean absolute percentage error Tensor.
- */
 export function meanAbsolutePercentageError(
     yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
@@ -157,15 +107,6 @@ export function logcosh(yTrue: Tensor, yPred: Tensor): Tensor {
   });
 }
 
-/**
- * Categorical crossentropy between an output tensor and a target tensor.
- *
- * @param target A tensor of the same shape as `output`.
- * @param output A tensor resulting from a softmax (unless `fromLogits` is
- *  `true`, in which case `output` is expected to be the logits).
- * @param fromLogits Boolean, whether `output` is the result of a softmax, or is
- *   a tensor of logits.
- */
 export function categoricalCrossentropy(
     target: Tensor, output: Tensor, fromLogits = false): Tensor {
   return tidy(() => {
@@ -272,25 +213,6 @@ export function poisson(yTrue: Tensor, yPred: Tensor): Tensor {
   });
 }
 
-/**
- * Loss or metric function: Cosine proximity.
- *
- * Mathematically, cosine proximity is defined as:
- *   `-sum(l2Normalize(yTrue) * l2Normalize(yPred))`,
- * wherein `l2Normalize()` normalizes the L2 norm of the input to 1 and `*`
- * represents element-wise multiplication.
- *
- * ```js
- * const yTrue = tf.tensor2d([[1, 0], [1, 0]]);
- * const yPred = tf.tensor2d([[1 / Math.sqrt(2), 1 / Math.sqrt(2)], [0, 1]]);
- * const proximity = tf.metrics.cosineProximity(yTrue, yPred);
- * proximity.print();
- * ```
- *
- * @param yTrue Truth Tensor.
- * @param yPred Prediction Tensor.
- * @return Cosine proximity Tensor.
- */
 export function cosineProximity(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     const trueNormalized = l2Normalize(yTrue, -1);
@@ -314,36 +236,26 @@ export const cosine = cosineProximity;
 
 // TODO(michaelterry): Add deserialize() function.
 
+export const lossesMap: {[functionName: string]: LossOrMetricFn} = {
+  meanSquaredError,
+  meanAbsoluteError,
+  meanAbsolutePercentageError,
+  meanSquaredLogarithmicError,
+  squaredHinge,
+  hinge,
+  categoricalHinge,
+  logcosh,
+  categoricalCrossentropy,
+  sparseCategoricalCrossentropy,
+  binaryCrossentropy,
+  kullbackLeiblerDivergence,
+  poisson,
+  cosineProximity
+};
+
 // Porting note: This diverges from the PyKeras implementation and may need to
 // change based on (de)serialization requirements.
 export function get(identifierOrFn: string|LossOrMetricFn): LossOrMetricFn {
-  const lossesMap: {[functionName: string]: LossOrMetricFn} = {
-    mean_squared_error: meanSquaredError,
-    meanSquaredError,
-    mean_absolute_error: meanAbsoluteError,
-    meanAbsoluteError,
-    mean_absolute_percentage_error: meanAbsolutePercentageError,
-    meanAbsolutePercentageError,
-    mean_squared_logarithmic_error: meanSquaredLogarithmicError,
-    meanSquaredLogarithmicError,
-    squared_hinge: squaredHinge,
-    squaredHinge,
-    hinge,
-    categorical_hinge: categoricalHinge,
-    categoricalHinge,
-    logcosh,
-    categorical_crossentropy: categoricalCrossentropy,
-    categoricalCrossentropy,
-    sparse_categorical_crossentropy: sparseCategoricalCrossentropy,
-    sparseCategoricalCrossentropy,
-    binary_crossentropy: binaryCrossentropy,
-    binaryCrossentropy,
-    kullback_leibler_divergence: kullbackLeiblerDivergence,
-    kullbackLeiblerDivergence,
-    poisson,
-    cosine_proximity: cosineProximity,
-    cosineProximity
-  };
   if (typeof identifierOrFn === 'string') {
     if (identifierOrFn in lossesMap) {
       return lossesMap[identifierOrFn];

@@ -12,6 +12,7 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {io, ModelPredictConfig as ModelPredictArgs, NamedTensorMap, Optimizer, Scalar, scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
+
 import * as K from '../backend/tfjs_backend';
 import {History, ModelLoggingVerbosity} from '../base_callbacks';
 import {nameScope} from '../common';
@@ -19,24 +20,25 @@ import {NotImplementedError, RuntimeError, ValueError} from '../errors';
 import {Shape} from '../keras_format/common';
 import {LossIdentifier} from '../keras_format/loss_config';
 import {OptimizerSerialization} from '../keras_format/optimizer_config';
-import {TrainingConfig, MetricsIdentifier} from '../keras_format/training_config';
+import {MetricsIdentifier, TrainingConfig} from '../keras_format/training_config';
+import {deserialize} from '../layers/serialization';
 import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LossOrMetricFn} from '../types';
-import {count, pyListRepeat, singletonOrArray, toSnakeCase, unique} from '../utils/generic_utils';
+import {count, pyListRepeat, singletonOrArray, toCamelCase, toSnakeCase, unique} from '../utils/generic_utils';
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
+import {convertPythonicToTs} from '../utils/serialization_utils';
 import {LayerVariable} from '../variables';
 import {version} from '../version';
+
 import {Container, ContainerArgs} from './container';
 import {Dataset} from './dataset_stub';
 import {execute, FeedDict} from './executor';
 import {DisposeResult, SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
-import { deserialize } from '../layers/serialization';
-import { convertPythonicToTs } from '../utils/serialization_utils';
 
 // TODO(cais): Deduplicate with tfjs-core?
 export interface NamedTensor {
@@ -345,7 +347,8 @@ function checkInputData(
 
 /**
  * Maps metric functions to model outputs.
- * @param metrics An `Array` or dict (`Object`) of metric functions.
+ * @param metrics An shortcut strings name, metric function, `Array` or dict
+ *   (`Object`) of metric functions.
  * @param outputNames An `Array` of the names of model outputs.
  * @returns An `Array` (one entry per model output) of `Array` of metric
  *   functions. For instance, if the model has 2 outputs, and for the first
@@ -353,33 +356,45 @@ function checkInputData(
  *   and just `binaryAccuracy` for the second output, the `Array` would look
  *   like:
  *     `[[binaryAccuracy, binaryCrossentropy],  [binaryAccuracy]]`
- * @throws TypeError: if `null` or `undefined` value is provided.
+ * @throws TypeError: incompatible metrics format.
  */
-function collectMetrics(
-    metrics: string[]|{[outputName: string]: string | string[]},
-    outputNames: string[]): string[][] {
+export function collectMetrics(
+    metrics: string|LossOrMetricFn|Array<string|LossOrMetricFn>|
+    {[outputName: string]: string | LossOrMetricFn},
+    outputNames: string[]): Array<Array<string|LossOrMetricFn>> {
   if (metrics == null || Array.isArray(metrics) && metrics.length === 0) {
     return outputNames.map(name => []);
   }
-  if (Array.isArray(metrics)) {
-    // We then apply all metrics to all outputs.
-    return outputNames.map(name => metrics);
-  } else if (metrics != null) {
-    // In this case, metrics is a dict.
-    const nestedMetrics: string[][] = [];
-    for (const name of outputNames) {
-      let outputMetrics: string|string[] =
-          metrics.hasOwnProperty(name) ? metrics[name] : [];
-      if (!Array.isArray(outputMetrics)) {
-        outputMetrics = [outputMetrics];
-      }
-      nestedMetrics.push(outputMetrics as string[]);
-    }
-    return nestedMetrics;
+
+  let wrappedMetrics: Array<string|LossOrMetricFn>|
+      {[outputName: string]: string | LossOrMetricFn};
+  if (typeof metrics === 'string' || typeof metrics === 'function') {
+    wrappedMetrics = [metrics];
+  } else if (Array.isArray(metrics) || typeof metrics === 'object') {
+    wrappedMetrics = metrics as Array<string|LossOrMetricFn>|
+        {[outputName: string]: string} | {[outputName: string]: LossOrMetricFn};
   } else {
     throw new TypeError(
-        'Type of metrics argument not understood. Expected an Array or ' +
-        'Object, found: ' + metrics);
+        'Type of metrics argument not understood. Expected an string,' +
+        'function, Array, or Object, found: ' + metrics);
+  }
+
+  if (Array.isArray(wrappedMetrics)) {
+    // We then apply all metrics to all outputs.
+    return outputNames.map(
+        name => wrappedMetrics as Array<string|LossOrMetricFn>);
+  } else {
+    // In this case, metrics is a dict.
+    const nestedMetrics: Array<Array<string|LossOrMetricFn>> = [];
+    for (const name of outputNames) {
+      let outputMetrics: string|LossOrMetricFn|Array<string|LossOrMetricFn> =
+          wrappedMetrics.hasOwnProperty(name) ? wrappedMetrics[name] : [];
+      if (!Array.isArray(outputMetrics)) {
+        outputMetrics = [outputMetrics as string | LossOrMetricFn];
+      }
+      nestedMetrics.push(outputMetrics as Array<string|LossOrMetricFn>);
+    }
+    return nestedMetrics;
   }
 }
 
@@ -433,7 +448,8 @@ export interface ModelCompileArgs {
    * To specify different metrics for different outputs of a multi-output
    * model, you could also pass a dictionary.
    */
-  metrics?: string[]|{[outputName: string]: string};
+  metrics?: string|LossOrMetricFn|Array<string|LossOrMetricFn>|
+      {[outputName: string]: string | LossOrMetricFn};
 
   // TODO(cais): Add lossWeights, sampleWeightMode, weightedMetrics, and
   //   targetTensors.
@@ -480,7 +496,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   protected stopTraining_: boolean;
   protected isTraining: boolean;
 
-  metrics: string[]|{[outputName: string]: string};
+  metrics: string|LossOrMetricFn|Array<string|LossOrMetricFn>|
+      {[outputName: string]: string | LossOrMetricFn};
   metricsNames: string[];
   // Porting Note: `metrics_tensors` in PyKeras is a symbolic tensor. But given
   //   the imperative nature of tfjs-core, `metricsTensors` is a
@@ -686,7 +703,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
         // TODO(cais): Add weights and outputWeightedMetrics.
 
         // TODO(cais): Add optional arg `weights` to the following function.
-        const handleMetrics = (metrics: string[]) => {
+        const handleMetrics = (metrics: Array<string|LossOrMetricFn>) => {
           const metricNamePrefix = '';
           let metricName: string;
           let accFn: LossOrMetricFn;
@@ -694,8 +711,9 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           //  TODO(cais): Use 'weights_' for weighted metrics.
 
           for (const metric of metrics) {
-            if (['accuracy', 'acc', 'crossentropy', 'ce'].indexOf(metric) !==
-                -1) {
+            if (typeof metric === 'string' &&
+                ['accuracy', 'acc', 'crossentropy', 'ce'].indexOf(metric) !==
+                    -1) {
               const outputShape = this.internalOutputShapes[i];
 
               if (outputShape[outputShape.length - 1] === 1 ||
@@ -737,7 +755,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
               const metricFn = Metrics.get(metric);
               // TODO(cais): Add weighting actually.
               weightedMetricFn = metricFn;
-              metricName = metricNamePrefix + metric;
+              metricName =
+                  metricNamePrefix + Metrics.getLossOrMetricName(metric);
             }
 
             // TODO(cais): Add weighting and masking to metricResult.
@@ -1501,10 +1520,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
         // Optionally skip non-trainable weights.
         continue;
       }
-      namedWeights.push({
-        name: weights[i].originalName,
-        tensor: weightValues[i]
-      });
+      namedWeights.push(
+          {name: weights[i].originalName, tensor: weightValues[i]});
     }
     return namedWeights;
   }
@@ -1570,10 +1587,10 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     return result;
   }
 
-  private getLossIdentifiers():
-       LossIdentifier|LossIdentifier[]|{[outputName: string]: LossIdentifier} {
-    let lossNames:
-        LossIdentifier|LossIdentifier[]|{[outputName: string]: LossIdentifier};
+  private getLossIdentifiers(): LossIdentifier|LossIdentifier[]|
+      {[outputName: string]: LossIdentifier} {
+    let lossNames: LossIdentifier|LossIdentifier[]|
+        {[outputName: string]: LossIdentifier};
     if (typeof this.loss === 'string') {
       lossNames = toSnakeCase(this.loss) as LossIdentifier;
     } else if (Array.isArray(this.loss)) {
@@ -1598,15 +1615,20 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     return lossNames;
   }
 
-  private getMetricIdentifiers():
-      MetricsIdentifier[]|{[key: string]: MetricsIdentifier} {
-    if (Array.isArray(this.metrics)) {
-      return this.metrics.map(metric => toSnakeCase(metric));
+  private getMetricIdentifiers(): MetricsIdentifier[]|
+      {[key: string]: MetricsIdentifier} {
+    if (typeof this.metrics === 'string' ||
+        typeof this.metrics === 'function') {
+      return [toSnakeCase(Metrics.getLossOrMetricName(this.metrics))];
+    } else if (Array.isArray(this.metrics)) {
+      return this.metrics.map(
+          metric => toSnakeCase(Metrics.getLossOrMetricName(metric)));
     } else {
       const metricsIdentifiers: {[key: string]: MetricsIdentifier} = {};
       for (const key in this.metrics) {
         metricsIdentifiers[key] =
-            toSnakeCase(this.metrics[key]) as MetricsIdentifier;
+            toSnakeCase(Metrics.getLossOrMetricName(this.metrics[key])) as
+            MetricsIdentifier;
       }
       return metricsIdentifiers;
     }
@@ -1637,16 +1659,33 @@ export class LayersModel extends Container implements tfc.InferenceModel {
       throw new Error('Loading sample_weight_mode is not supported yet.');
     }
 
-    const tsConfig =
-        convertPythonicToTs(trainingConfig.optimizer_config) as
+    const tsConfig = convertPythonicToTs(trainingConfig.optimizer_config) as
         serialization.ConfigDict;
     const optimizer = deserialize(tsConfig) as Optimizer;
 
-    this.compile({
-      loss: trainingConfig.loss,
-      metrics: trainingConfig.metrics,
-      optimizer
-    });
+    let loss;
+    if (typeof trainingConfig.loss === 'string') {
+      loss = toCamelCase(trainingConfig.loss);
+    } else if (Array.isArray(trainingConfig.loss)) {
+      loss = trainingConfig.loss.map(lossEntry => toCamelCase(lossEntry));
+    } else if (trainingConfig.loss != null) {
+      loss = Object.assign({}, trainingConfig.loss);
+      for (const key in loss) {
+        loss[key] = toCamelCase(loss[key]) as LossIdentifier;
+      }
+    }
+
+    let metrics;
+    if (Array.isArray(trainingConfig.metrics)) {
+      metrics = trainingConfig.metrics.map(metric => toCamelCase(metric));
+    } else if (trainingConfig.metrics != null) {
+      metrics = Object.assign({}, trainingConfig.metrics);
+      for (const key in metrics) {
+        metrics[key] = toCamelCase(metrics[key]);
+      }
+    }
+
+    this.compile({loss, metrics, optimizer});
   }
 
   /**
@@ -1729,7 +1768,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    *   topology and weight values.
    */
   /**
-   * @doc {heading: 'Models', subheading: 'Classes'}
+   * @doc {heading: 'Models', subheading: 'Classes', ignoreCI: true}
    */
   async save(handlerOrURL: io.IOHandler|string, config?: io.SaveConfig):
       Promise<io.SaveResult> {
