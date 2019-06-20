@@ -330,17 +330,14 @@ export async function loadLayersModelFromIOHandler(
 }
 
 function decodeModelAndOptimizerWeights(
-  buffer: ArrayBuffer, specs: io.WeightsManifestEntry[]):
-  {modelWeights: NamedTensorMap, optimizerWeights: NamedTensor[]} {
+    buffer: ArrayBuffer, specs: io.WeightsManifestEntry[]):
+    {modelWeights: NamedTensorMap, optimizerWeights: NamedTensor[]} {
   const name2Tensor = io.decodeWeights(buffer, specs);
   const modelWeights: NamedTensorMap = {};
   const optimizerWeights: NamedTensor[] = [];
   specs.forEach(spec => {
     if (spec.group === 'optimizer') {
-      optimizerWeights.push({
-        name: spec.name,
-        tensor: name2Tensor[spec.name]
-      });
+      optimizerWeights.push({name: spec.name, tensor: name2Tensor[spec.name]});
     } else {
       modelWeights[spec.name] = name2Tensor[spec.name];
     }
