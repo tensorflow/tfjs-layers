@@ -372,10 +372,8 @@ export declare interface LayerArgs {
   dtype?: DataType;
   /** Name for this layer. */
   name?: string;
-  /** Whether this layer is trainable. Defaults to true. */
+  /** Whether the weights of this layer are updatable by `fit`. Defaults to true.  */
   trainable?: boolean;
-  /** Whether the weights of this layer are updatable by `fit`. */
-  updatable?: boolean;
   /**
    * Initial weight values of the layer.
    */
@@ -414,7 +412,6 @@ export abstract class Layer extends serialization.Serializable {
   supportsMasking: boolean;
   /** Whether the layer weights will be updated during training. */
   protected trainable_: boolean;
-  updatable: boolean;
   batchInputShape: Shape;
   dtype: DataType;
   initialWeights: Tensor[];
@@ -482,7 +479,6 @@ export abstract class Layer extends serialization.Serializable {
     this.name = name;
 
     this.trainable_ = args.trainable == null ? true : args.trainable;
-    this.updatable = args.updatable == null ? true : args.updatable;
 
     if (args.inputShape != null || args.batchInputShape != null) {
       /*
