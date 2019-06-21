@@ -1795,31 +1795,28 @@ export class LayersModel extends Container implements tfc.InferenceModel {
 
     const returnString = false;
     const unusedArg: {} = null;
-    let modelConfig = this.toJSON(unusedArg, returnString);
+    const modelConfig = this.toJSON(unusedArg, returnString);
+    const modelArtifacts: io.ModelArtifacts = {
+      modelTopology: modelConfig,
+      format: LAYERS_MODEL_FORMAT_NAME,
+      generatedBy: `TensorFlow.js tfjs-layers v${version}`,
+      convertedBy: null,
+    };
 
     const includeOptimizer = config == null ? false : config.includeOptimizer;
-    if (includeOptimizer === true && this.optimizer != null) {
+    if (includeOptimizer && this.optimizer != null) {
+      modelArtifacts.trainingConfig = this.getTrainingConfig();
       const weightType = 'optimizer';
       const {data, specs} =
           await io.encodeWeights(await this.optimizer.getWeights(), weightType);
       weightDataAndSpecs.specs.push(...specs);
       weightDataAndSpecs.data =
           io.concatenateArrayBuffers([weightDataAndSpecs.data, data]);
-
-      modelConfig = {'model_config': modelConfig};
-      modelConfig['training_config'] = this.getTrainingConfig();
     }
 
-    // TODO(cais): This ought to include training_config.
-
-    return handlerOrURL.save({
-      modelTopology: modelConfig,
-      weightData: weightDataAndSpecs.data,
-      weightSpecs: weightDataAndSpecs.specs,
-      format: LAYERS_MODEL_FORMAT_NAME,
-      generatedBy: `TensorFlow.js tfjs-layers v${version}`,
-      convertedBy: null,
-    });
+    modelArtifacts.weightData = weightDataAndSpecs.data;
+    modelArtifacts.weightSpecs = weightDataAndSpecs.specs;
+    return handlerOrURL.save(modelArtifacts);
   }
 }
 serialization.registerClass(LayersModel);

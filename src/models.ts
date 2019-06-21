@@ -284,7 +284,6 @@ export async function loadLayersModelFromIOHandler(
   }
   const artifacts = await handler.load();
   let modelTopology = artifacts.modelTopology as PyJsonDict;
-  const trainingConfig = modelTopology['training_config'] as TrainingConfig;
   if (modelTopology['model_config'] != null) {
     modelTopology = modelTopology['model_config'] as PyJsonDict;
   }
@@ -301,6 +300,8 @@ export async function loadLayersModelFromIOHandler(
       deserialize(
           convertPythonicToTs(modelTopology) as serialization.ConfigDict,
           customObjects, fastWeightInit) as LayersModel;
+
+  const trainingConfig = artifacts.trainingConfig as TrainingConfig;
   if (trainingConfig != null) {
     model.loadTrainingConfig(trainingConfig);
   }
