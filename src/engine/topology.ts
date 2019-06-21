@@ -372,7 +372,10 @@ export declare interface LayerArgs {
   dtype?: DataType;
   /** Name for this layer. */
   name?: string;
-  /** Whether the weights of this layer are updatable by `fit`. Defaults to true.  */
+  /**
+   * Whether the weights of this layer are updatable by `fit`.
+   * Defaults to true.
+   */
   trainable?: boolean;
   /**
    * Initial weight values of the layer.
