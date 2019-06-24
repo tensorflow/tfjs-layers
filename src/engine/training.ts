@@ -1124,7 +1124,9 @@ export class LayersModel extends Container implements tfc.InferenceModel {
 
   protected standardizeUserData(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
-      y: Tensor|Tensor[]|{[inputName: string]: Tensor}, checkBatchAxis = true,
+      y: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      classWeight?: {[classIndex: number]: number}|number[],
+      checkBatchAxis = true,
       batchSize?: number): [Tensor[], Tensor[], Tensor[]] {
     // TODO(cais): Add sampleWeight, classWeight
     if (this.optimizer_ == null) {

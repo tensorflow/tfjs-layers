@@ -96,7 +96,8 @@ export interface ModelFitArgs {
    * class during training. This can be useful to tell the model to "pay more
    * attention" to samples from an under-represented class.
    */
-  classWeight?: {[classIndex: string]: number};
+  // TODO(cais): Doc string needs to be updated.
+  classWeight?: number[]|number[][]|{[outputName: string]: number[]};
 
   /**
    * Optional array of the same length as x, containing
