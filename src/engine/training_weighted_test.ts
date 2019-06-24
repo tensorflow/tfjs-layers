@@ -29,6 +29,7 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   //     kernel_initializer='zeros',
   //     activation='softmax'))
   // model.compile(loss='categorical_crossentropy',
+  //               metrics=['acc'],
   //               optimizer=tf.keras.optimizers.SGD(1.0))
   // model.summary()
   //
@@ -51,7 +52,7 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   //           }])
   // print(model.get_weights()[0])
   // ```
-  it('One output, multi-class, one-hot encoding', async () => {
+  fit('One output, multi-class, one-hot encoding', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
@@ -61,6 +62,7 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     }));
     model.compile({
       loss: 'categoricalCrossentropy',
+      metrics: ['acc'],
       optimizer: train.sgd(1)
     });
 
@@ -81,6 +83,9 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     // if there is no class weighting.
     expect(history.history.loss[0]).toBeCloseTo(4.3944);
     expect(history.history.loss[1]).toBeCloseTo(5.3727);
+    expect(history.history.acc.length).toEqual(2);
+    expect(history.history.acc[0]).toBeCloseTo(0.3333);
+    expect(history.history.acc[1]).toBeCloseTo(0.6667);
   });
 
   it('One output, multi-class, sparse encoding', async () => {
@@ -207,7 +212,7 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   //               1: 0.9
   //           }])
   // ```
-  it('Two outputs, classWeight as array' , async () => {
+  fit('Two outputs, classWeight as array' , async () => {
     const inp = tfl.input({shape: [2]});
     const y1 = tfl.layers.dense({
       units: 3,
@@ -257,6 +262,5 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   // TODO(cais): classWeight as dict missing key.
   // TODO(cais): classWeight with a null element.
   // TODO(cais): fitDataset with classWeight.
-  // TODO(cais): Metrics.
   // TODO(cais): Validation data.
 });

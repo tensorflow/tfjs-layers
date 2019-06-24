@@ -634,7 +634,6 @@ export class LayersModel extends Container implements tfc.InferenceModel {
       this.feedLossFns.push(this.lossFunctions[i]);
     }
 
-    // TODO(cais): Add logic for weighted losses.
     // TODO(cais): Add logic for output masks.
     // TODO(cais): Add logic for sample weights.
     const skipTargetIndices: number[] = [];
@@ -1332,11 +1331,16 @@ export class LayersModel extends Container implements tfc.InferenceModel {
         // Compute the metrics.
         // TODO(cais): These should probably be calculated outside
         //   totalLossFunction to benefit speed?
+        if (this.metricsTensors.length > 0) {
+          console.log(this.metricsTensors, this.metricsNames);  // DEBUG
+        }
         for (let i = 0; i < this.metricsTensors.length; ++i) {
           const metric = this.metricsTensors[i][0];
           const outputIndex = this.metricsTensors[i][1];
           let metricValues = metric(targets[outputIndex], outputs[outputIndex]);
-          if (sampleWeights[outputIndex] != null) {
+          if (sampleWeights[outputIndex] != null &&
+              (this.metricsNames[i] === 'loss' ||
+               this.metricsNames[i].endsWith('_loss'))) {
             metricValues =
                 computeWeightedLoss(metricValues, sampleWeights[outputIndex]);
           }
