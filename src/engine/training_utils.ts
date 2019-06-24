@@ -79,14 +79,12 @@ export async function standardizeWeights(
     sampleWeight?: Tensor,
     classWeight?: ClassWeight,
     sampleWeightMode?: 'temporal'): Promise<Tensor> {
-  // TODO(cais): Test for memory leak. DO NOT SUBMIT.
   if (sampleWeight != null || sampleWeightMode != null) {
     throw new Error('Support sampleWeight is not implemented yet');
   }
 
   if (classWeight != null) {
     // Apply class weights per sample.
-    console.log(`100: ${memory().numTensors}`);  // DEBUG
     const yClasses: Tensor1D = tidy(() => {
       if (y.shape.length === 1) {
         // Assume class indices.
