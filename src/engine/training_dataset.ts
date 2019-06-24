@@ -415,6 +415,7 @@ export async function fitDataset<T>(
           await callbackList.onBatchBegin(batchIndex, batchLogs);
 
           // Train on batch.
+          // TODO(cais): Add classWeight. DO NOT SUBMIT.
           const outs = trainFunction(xsAndYs);
           tfc.dispose(xsAndYs);
           for (let i = 0; i < outLabels.length; ++i) {

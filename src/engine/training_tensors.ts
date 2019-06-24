@@ -489,10 +489,6 @@ export async function fitTensors(
     }
 
     const ins = inputs.concat(targets).concat(sampleWeights);
-    // console.log(
-    //     `inputs.length=${inputs.length}; ` +
-    //     `targets.length=${targets.length}; ` +
-    //     `sampleWeights=${sampleWeights}`);  // DEBUG
 
     model.checkTrainableWeightsConsistency();
 

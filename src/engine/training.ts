@@ -1285,7 +1285,6 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    */
   protected makeTrainFunction(): (data: Tensor[]) => Scalar[] {
     return (data: Tensor[]) => {
-      const losses: Tensor[] = [];
       const lossValues: Scalar[] = [];
 
       const inputs = data.slice(0, this.inputs.length);
@@ -1318,7 +1317,6 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           if (sampleWeights[i] != null) {
             loss = computeWeightedLoss(loss, sampleWeights[i]);
           }
-          losses.push(loss);
 
           // TODO(cais): push Scalar instead.
           const meanLoss = tfc.mean(loss) as Scalar;
@@ -1337,14 +1335,15 @@ export class LayersModel extends Container implements tfc.InferenceModel {
         for (let i = 0; i < this.metricsTensors.length; ++i) {
           const metric = this.metricsTensors[i][0];
           const outputIndex = this.metricsTensors[i][1];
-          // TODO(cais): Replace K.mean() with a proper weighting
-          // function.
-          const meanMetric =
-              tfc.mean(metric(targets[outputIndex], outputs[outputIndex])) as
-              Scalar;
-          tfc.keep(meanMetric);
+          let metricValues = metric(targets[outputIndex], outputs[outputIndex]);
+          if (sampleWeights[outputIndex] != null) {
+            metricValues =
+                computeWeightedLoss(metricValues, sampleWeights[outputIndex]);
+          }
+          const weightedMetric = tfc.mean(metricValues) as Scalar;
+          tfc.keep(weightedMetric);
           // TODO(cais): Use a scope() instead, to avoid ownership.
-          metricsValues.push(meanMetric);
+          metricsValues.push(weightedMetric);
         }
 
         totalLoss = tfc.mean(totalLoss);
