@@ -32,7 +32,7 @@ import {execute, FeedDict} from './executor';
 import {DisposeResult, SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
-import { ClassWeight } from './training_utils';
+import {ClassWeight, standardizeClassWeights, standardizeWeights, ClassWeightMap} from './training_utils';
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
@@ -828,10 +828,9 @@ export class LayersModel extends Container implements tfc.InferenceModel {
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
     // Validate user data.
-    const classWeights: ClassWeight = null;
     const checkBatchAxis = true;
-    const standardizedOuts = this.standardizeUserData(
-        x, y, classWeights, checkBatchAxis, batchSize);
+    const standardizedOuts = this.standardizeUserDataXY(
+        x, y, checkBatchAxis, batchSize);
     try {
       // TODO(cais): If uses `useLearningPhase`, set the corresponding element
       // of the input to 0.
@@ -1126,13 +1125,11 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     return this.predictLoop(x, x.shape[0]);
   }
 
-  // TODO(cais): Add doc string.
-  protected standardizeUserData(
-      x: Tensor|Tensor[]|{[inputName: string]: Tensor},
-      y: Tensor|Tensor[]|{[inputName: string]: Tensor},
-      classWeight?: {[classIndex: number]: number}|number[],
-      checkBatchAxis = true,
-      batchSize?: number): [Tensor[], Tensor[], Tensor[]] {
+  protected standardizeUserDataXY(
+    x: Tensor|Tensor[]|{[inputName: string]: Tensor},
+    y: Tensor|Tensor[]|{[inputName: string]: Tensor},
+    checkBatchAxis = true,
+    batchSize?: number): [Tensor[], Tensor[]] {
     // TODO(cais): Add sampleWeight, classWeight
     if (this.optimizer_ == null) {
       throw new RuntimeError(
@@ -1168,12 +1165,37 @@ export class LayersModel extends Container implements tfc.InferenceModel {
             `${batchSize}. Found: ${x[0].shape[0]} sample(s).`);
       }
     }
+    return [x, y];
+  }
 
-    // TODO(cais): Hook this up with classWeights.
-    const sampleWeight: Tensor[] = null;
+  // TODO(cais): Add doc string.
+  protected async standardizeUserData(
+      x: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      y: Tensor|Tensor[]|{[inputName: string]: Tensor},
+      sampleWeight?: Tensor|Tensor[]|{[outputName: string]: Tensor},
+      classWeight?: ClassWeight|ClassWeight[]|ClassWeightMap,
+      checkBatchAxis = true,
+      batchSize?: number): Promise<[Tensor[], Tensor[], Tensor[]]> {
+    const [standardXs, standardYs] =
+        this.standardizeUserDataXY(x, y, checkBatchAxis, batchSize);
+    // TODO(cais): Handle sampleWeights.
+    if (sampleWeight != null) {
+      throw new Error('sample weight is not supported yet.');
+    }
+
+    let standardSampleWeights: Tensor[] = null;
+    if (classWeight != null) {
+      const classWeights =
+          standardizeClassWeights(classWeight, this.outputNames);
+      standardSampleWeights = [];
+      for (let i = 0; i < classWeights.length; ++i) {
+        standardSampleWeights.push(
+            await standardizeWeights(standardYs[i], null, classWeights[i]));
+      }
+    }
 
     // TODO(cais): Deal with the case of model.stateful == true.
-    return [x, y, sampleWeight];
+    return [standardXs, standardYs, standardSampleWeights];
   }
 
   /**
@@ -1482,9 +1504,9 @@ export class LayersModel extends Container implements tfc.InferenceModel {
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|
       {[inputName: string]: Tensor}): Promise<number|number[]> {
-    // TODO(cais): Support sampleWeight and classWeight.
+    // TODO(cais): Support sampleWeight and classWeight. DO NOT SUBMIT.
     // TODO(cais): Support Dataset objects.
-    const standardizeOut = this.standardizeUserData(x, y);
+    const standardizeOut = await this.standardizeUserData(x, y);
     const inputs = standardizeOut[0];
     const targets = standardizeOut[1];
     const trainFunction = this.makeTrainFunction();

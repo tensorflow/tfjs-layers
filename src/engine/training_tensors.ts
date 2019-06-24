@@ -424,14 +424,14 @@ export async function fitTensors(
     checkBatchSize(batchSize);
 
     // Validate user data.
-    // TODO(cais): Add sampleWeight and  classWeight.
+    // TODO(cais): Support sampleWeight.
+    const checkBatchAxis = false;
     const standardizedOuts =
-        model.standardizeUserData(
-            x, y, false, batchSize) as [Tensor[], Tensor[]];
+        await model.standardizeUserData(
+            x, y, args.sampleWeight, args.classWeight, checkBatchAxis,
+            batchSize) as [Tensor[], Tensor[], Tensor[]];
     inputs = standardizedOuts[0];
     targets = standardizedOuts[1];
-    // TODO(cais): Make use of sampleWeights in standardizedOuts[2] when
-    //   available.
 
     // Prepare validation data.
     let doValidation = false;
@@ -452,9 +452,12 @@ export async function fitTensors(
             `${args.validationData} is invalid.`);
       }
 
-      const valStandardized = model.standardizeUserData(
-                                  inputValX, inputValY, true,
-                                  batchSize) as [Tensor[], Tensor[], Tensor[]];
+      const checkBatchAxis = true;
+      const valStandardized = await model.standardizeUserData(
+            inputValX, inputValY, args.sampleWeight,
+            args.classWeight, checkBatchAxis, batchSize) as
+            [Tensor[], Tensor[], Tensor[]];
+      // TODO(cais): Add sampleWeights and classWeights. DO NOT SUBMIT.
       valX = valStandardized[0];
       valY = valStandardized[1];
       // TODO(cais): Use validation sample weights in valStandardized[2]
