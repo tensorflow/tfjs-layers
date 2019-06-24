@@ -33,6 +33,7 @@ import {DisposeResult, SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
 import {ClassWeight, standardizeClassWeights, standardizeWeights, ClassWeightMap} from './training_utils';
+import { computeWeightedLoss } from '@tensorflow/tfjs-core/dist/ops/loss_ops';
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
@@ -1290,6 +1291,9 @@ export class LayersModel extends Container implements tfc.InferenceModel {
       const inputs = data.slice(0, this.inputs.length);
       const targets = data.slice(
           this.inputs.length, this.inputs.length + this.outputs.length);
+      const sampleWeights = data.slice(
+          this.inputs.length + this.outputs.length,
+          this.inputs.length + this.outputs.length * 2);
 
       const metricsValues: Scalar[] = [];
 
@@ -1310,8 +1314,12 @@ export class LayersModel extends Container implements tfc.InferenceModel {
         let totalLoss: Tensor;
         for (let i = 0; i < this.lossFunctions.length; ++i) {
           const lossFunction = this.lossFunctions[i];
-          const loss = lossFunction(targets[i], outputs[i]);
+          let loss = lossFunction(targets[i], outputs[i]);
+          if (sampleWeights[i] != null) {
+            loss = computeWeightedLoss(loss, sampleWeights[i]);
+          }
           losses.push(loss);
+
           // TODO(cais): push Scalar instead.
           const meanLoss = tfc.mean(loss) as Scalar;
           // TODO(cais): Use a scope() instead, to avoid ownership.

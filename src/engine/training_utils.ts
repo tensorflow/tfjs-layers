@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {dispose, Tensor, Tensor1D, tensor1d, tidy} from '@tensorflow/tfjs-core';
+import {dispose, mul, Tensor, Tensor1D, tensor1d, tidy} from '@tensorflow/tfjs-core';
 
 export type ClassWeight = {[classIndex: number]: number};
 export type ClassWeightMap = {[outputName: string]: ClassWeight};
@@ -128,4 +128,8 @@ export async function standardizeWeights(
   } else {
     return null;
   }
+}
+
+export function computedWeightsLoss(losses: Tensor, sampleWeights: Tensor) {
+  return mul(losses, sampleWeights);
 }

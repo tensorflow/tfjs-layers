@@ -432,6 +432,7 @@ export async function fitTensors(
             batchSize) as [Tensor[], Tensor[], Tensor[]];
     inputs = standardizedOuts[0];
     targets = standardizedOuts[1];
+    const sampleWeights = standardizedOuts[2];
 
     // Prepare validation data.
     let doValidation = false;
@@ -457,7 +458,7 @@ export async function fitTensors(
             inputValX, inputValY, args.sampleWeight,
             args.classWeight, checkBatchAxis, batchSize) as
             [Tensor[], Tensor[], Tensor[]];
-      // TODO(cais): Add sampleWeights and classWeights. DO NOT SUBMIT.
+      // TODO(cais): Add sampleWeight. DO NOT SUBMIT.
       valX = valStandardized[0];
       valY = valStandardized[1];
       // TODO(cais): Use validation sample weights in valStandardized[2]
@@ -487,7 +488,11 @@ export async function fitTensors(
       // TODO(cais): Add useLearningPhase.
     }
 
-    const ins = inputs.concat(targets);
+    const ins = inputs.concat(targets).concat(sampleWeights);
+    // console.log(
+    //     `inputs.length=${inputs.length}; ` +
+    //     `targets.length=${targets.length}; ` +
+    //     `sampleWeights=${sampleWeights}`);  // DEBUG
 
     model.checkTrainableWeightsConsistency();
 
