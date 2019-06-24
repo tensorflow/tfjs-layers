@@ -32,6 +32,7 @@ import {execute, FeedDict} from './executor';
 import {DisposeResult, SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
+import { ClassWeight } from './training_utils';
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
@@ -827,7 +828,10 @@ export class LayersModel extends Container implements tfc.InferenceModel {
 
     // TODO(cais): Standardize `config.sampleWeights` as well.
     // Validate user data.
-    const standardizedOuts = this.standardizeUserData(x, y, true, batchSize);
+    const classWeights: ClassWeight = null;
+    const checkBatchAxis = true;
+    const standardizedOuts = this.standardizeUserData(
+        x, y, classWeights, checkBatchAxis, batchSize);
     try {
       // TODO(cais): If uses `useLearningPhase`, set the corresponding element
       // of the input to 0.
@@ -1122,6 +1126,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     return this.predictLoop(x, x.shape[0]);
   }
 
+  // TODO(cais): Add doc string.
   protected standardizeUserData(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
@@ -1163,8 +1168,12 @@ export class LayersModel extends Container implements tfc.InferenceModel {
             `${batchSize}. Found: ${x[0].shape[0]} sample(s).`);
       }
     }
+
+    // TODO(cais): Hook this up with classWeights.
+    const sampleWeight: Tensor[] = null;
+
     // TODO(cais): Deal with the case of model.stateful == true.
-    return [x, y, null];
+    return [x, y, sampleWeight];
   }
 
   /**

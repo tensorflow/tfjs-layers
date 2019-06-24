@@ -20,6 +20,7 @@ import {BaseCallback, configureCallbacks, CustomCallbackArgs, History, ModelLogg
 import {NotImplementedError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 import {range} from '../utils/math_utils';
+import {ClassWeight} from './training_utils';
 
 /**
  * Interface configuration model training based on data as `tf.Tensor`s.
@@ -97,7 +98,7 @@ export interface ModelFitArgs {
    * attention" to samples from an under-represented class.
    */
   // TODO(cais): Doc string needs to be updated.
-  classWeight?: number[]|number[][]|{[outputName: string]: number[]};
+  classWeight?: ClassWeight|ClassWeight[]|{[outputName: string]: ClassWeight};
 
   /**
    * Optional array of the same length as x, containing
