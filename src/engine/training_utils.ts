@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {dispose, Tensor, Tensor1D, tensor1d, tidy} from '@tensorflow/tfjs-core';
+import {dispose, Tensor, Tensor1D, tensor1d, tidy, memory} from '@tensorflow/tfjs-core';
 
 export type ClassWeight = {[classIndex: number]: number};
 export type ClassWeightMap = {[outputName: string]: ClassWeight};
@@ -41,11 +41,18 @@ function standardizeSampleOrClassWeights(
   } else if (typeof xWeight === 'object' && Object.keys(xWeight).length > 0 &&
              typeof (xWeight as ClassWeightMap)[Object.keys(xWeight)[0]]
                  === 'object') {
-    return outputNames.map(
-        outputName => (xWeight as ClassWeightMap)[outputName]);
+    const output: ClassWeight[] = [];
+    outputNames.forEach(outputName => {
+      if (outputName in xWeight) {
+        output.push((xWeight as ClassWeightMap)[outputName]);
+      } else {
+        output.push(null) ;
+      }
+    });
+    return output;
   } else {
     throw new Error(
-        `The model has multiple ${numOutputs} outputs, ` +
+        `The model has multiple (${numOutputs}) outputs, ` +
         `so ${weightType} must be either an array with ` +
         `${numOutputs} elements or an object with ${outputNames} keys. ` +
         `Provided ${weightType} not understood: ${JSON.stringify(xWeight)}`);
@@ -79,10 +86,11 @@ export async function standardizeWeights(
 
   if (classWeight != null) {
     // Apply class weights per sample.
+    console.log(`100: ${memory().numTensors}`);  // DEBUG
     const yClasses: Tensor1D = tidy(() => {
       if (y.shape.length === 1) {
         // Assume class indices.
-        return y as Tensor1D;
+        return y.clone() as Tensor1D;
       } else if (y.shape.length === 2) {
         if (y.shape[1] > 1) {
           // Assume one-hot encoding of classes.
@@ -95,7 +103,7 @@ export async function standardizeWeights(
           throw new Error(
               `Encountered unexpected last-dimension size (${y.shape[1]}) ` +
               `during handling of class weights. The size is expected to be ` +
-              `>= 1.`)
+              `>= 1.`);
         }
       } else {
         throw new Error(
@@ -110,7 +118,7 @@ export async function standardizeWeights(
     yClassIndices.forEach(classIndex => {
       if (classWeight[classIndex] == null) {
         throw new Error(
-            `classWeight must contain all classes in the training batch. ` +
+            `classWeight must contain all classes in the training data. ` +
             `The class ${classIndex} exists in the data but not in ` +
             `classWeight`);
       } else {
