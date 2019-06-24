@@ -11,9 +11,10 @@
 import {dispose, Tensor, Tensor1D, tensor1d, tidy} from '@tensorflow/tfjs-core';
 
 export type ClassWeight = {[classIndex: number]: number};
+export type ClassWeightMap = {[outputName: string]: ClassWeight};
 
 function standardizeSampleOrClassWeights(
-    xWeight: ClassWeight|ClassWeight[]|{[outputName: string]: ClassWeight},
+    xWeight: ClassWeight|ClassWeight[]|ClassWeightMap,
     outputNames: string[],
     weightType: 'sampleWeight'|'classWeight'): ClassWeight[] {
   const numOutputs = outputNames.length;
@@ -24,7 +25,7 @@ function standardizeSampleOrClassWeights(
     if (Array.isArray(xWeight) && xWeight.length === 1) {
       return xWeight as ClassWeight[];
     } else if (typeof xWeight === 'object' && outputNames[0] in xWeight) {
-      return [xWeight[outputNames[0]]];
+      return [(xWeight as ClassWeightMap)[outputNames[0]]];
     } else {
       return [xWeight as ClassWeight];
     }
@@ -37,8 +38,11 @@ function standardizeSampleOrClassWeights(
           `Make sure a set of weights is provided for each model output.`);
     }
     return xWeight as ClassWeight[];
-  } else if (typeof xWeight === 'object') {
-    return outputNames.map(outputName => xWeight[outputName]);
+  } else if (typeof xWeight === 'object' && Object.keys(xWeight).length > 0 &&
+             typeof (xWeight as ClassWeightMap)[Object.keys(xWeight)[0]]
+                 === 'object') {
+    return outputNames.map(
+        outputName => (xWeight as ClassWeightMap)[outputName]);
   } else {
     throw new Error(
         `The model has multiple ${numOutputs} outputs, ` +
@@ -49,14 +53,14 @@ function standardizeSampleOrClassWeights(
 }
 
 export function standardizeClassWeights(
-    classWeight: number[]|number[][]|{[outputName: string]: number[]},
+    classWeight: ClassWeight|ClassWeight[]|ClassWeightMap,
     outputNames: string[]): ClassWeight[] {
   return standardizeSampleOrClassWeights(
       classWeight, outputNames, 'classWeight');
 }
 
 export function standardizeSampleWeights(
-    classWeight: number[]|number[][]|{[outputName: string]: number[]},
+    classWeight: ClassWeight|ClassWeight[]|ClassWeightMap,
     outputNames: string[]): ClassWeight[] {
   return standardizeSampleOrClassWeights(
       classWeight, outputNames, 'sampleWeight');
@@ -80,13 +84,18 @@ export async function standardizeWeights(
         // Assume class indices.
         return y as Tensor1D;
       } else if (y.shape.length === 2) {
-
         if (y.shape[1] > 1) {
           // Assume one-hot encoding of classes.
           const axis = 1;
           return y.argMax(axis);
         } else if (y.shape[1] === 1) {
+          // Class indiex.
           return y.reshape([y.shape[0]]);
+        } else {
+          throw new Error(
+              `Encountered unexpected last-dimension size (${y.shape[1]}) ` +
+              `during handling of class weights. The size is expected to be ` +
+              `>= 1.`)
         }
       } else {
         throw new Error(
