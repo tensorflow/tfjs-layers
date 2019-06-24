@@ -8,7 +8,7 @@
  * =============================================================================
  */
 
-import {dispose, Tensor, Tensor1D, tensor1d, tidy, memory} from '@tensorflow/tfjs-core';
+import {dispose, Tensor, Tensor1D, tensor1d, tidy} from '@tensorflow/tfjs-core';
 
 export type ClassWeight = {[classIndex: number]: number};
 export type ClassWeightMap = {[outputName: string]: ClassWeight};
