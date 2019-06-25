@@ -419,6 +419,7 @@ export async function fitTensors(
   let inputValY: Tensor|Tensor[];
   let valX: Tensor|Tensor[];
   let valY: Tensor|Tensor[];
+  let sampleWeights: Tensor[];
   try {
     const batchSize = args.batchSize == null ? 32 : args.batchSize;
     checkBatchSize(batchSize);
@@ -432,7 +433,7 @@ export async function fitTensors(
             batchSize) as [Tensor[], Tensor[], Tensor[]];
     inputs = standardizedOuts[0];
     targets = standardizedOuts[1];
-    const sampleWeights = standardizedOuts[2];
+    sampleWeights = standardizedOuts[2];
 
     // Prepare validation data.
     let doValidation = false;
@@ -533,6 +534,9 @@ export async function fitTensors(
     disposeNewTensors(targets, y);
     disposeNewTensors(valX as Tensor[], inputValX);
     disposeNewTensors(valY as Tensor[], inputValY);
+    if (sampleWeights != null) {
+      tfc.dispose(sampleWeights);
+    }
   }
   // TODO(cais): Add value to outLabels.
 }

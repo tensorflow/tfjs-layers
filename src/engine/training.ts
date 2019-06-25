@@ -32,8 +32,7 @@ import {execute, FeedDict} from './executor';
 import {DisposeResult, SymbolicTensor} from './topology';
 import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './training_dataset';
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
-import {ClassWeight, standardizeClassWeights, standardizeWeights, ClassWeightMap} from './training_utils';
-import { computeWeightedLoss } from '@tensorflow/tfjs-core/dist/ops/loss_ops';
+import {ClassWeight, ClassWeightMap, computeWeightedLoss, standardizeClassWeights, standardizeWeights} from './training_utils';
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.

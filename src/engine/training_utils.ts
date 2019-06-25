@@ -130,6 +130,6 @@ export async function standardizeWeights(
   }
 }
 
-export function computedWeightsLoss(losses: Tensor, sampleWeights: Tensor) {
+export function computeWeightedLoss(losses: Tensor, sampleWeights: Tensor) {
   return mul(losses, sampleWeights);
 }
