@@ -73,7 +73,19 @@ export function standardizeSampleWeights(
       classWeight, outputNames, 'sampleWeight');
 }
 
-// TODO(cais): Doc string.
+/**
+ * Standardize by-sample and/or by-class weights for training.
+ *
+ * Note that this function operates on one model output at a time. For a model
+ * with multiple outputs, you must call this function multiple times.
+ *
+ * @param y The target tensor that the by-sample and/or by-class weight is for.
+ * @param sampleWeight By-sample weights.
+ * @param classWeight By-class weights.
+ * @param sampleWeightMode The mode for the sample weights.
+ * @return A Promise of weight tensor, of which the size of the first dimension
+ *   matches that of `y`.
+ */
 export async function standardizeWeights(
     y: Tensor,
     sampleWeight?: Tensor,
@@ -130,6 +142,7 @@ export async function standardizeWeights(
   }
 }
 
+/** Weight loss by samples. */
 export function computeWeightedLoss(losses: Tensor, sampleWeights: Tensor) {
   return mul(losses, sampleWeights);
 }
