@@ -1167,7 +1167,6 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     return [x, y];
   }
 
-  // TODO(cais): Add doc string.
   protected async standardizeUserData(
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|{[inputName: string]: Tensor},
