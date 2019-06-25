@@ -88,6 +88,95 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     expect(history.history.acc[1]).toBeCloseTo(0.6667);
   });
 
+  it('One output, multi-class, one-hot encoding, validationData', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 3,
+      inputShape: [2],
+      kernelInitializer: 'zeros',
+      activation: 'softmax'
+    }));
+    model.compile({
+      loss: 'categoricalCrossentropy',
+      metrics: ['acc'],
+      optimizer: train.sgd(1)
+    });
+
+    const xs = tensor2d([[0, 1], [0, 2], [1, 10], [1, 20], [2, -10], [2, -20]]);
+    const ys = tensor2d([
+        [1, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+        [0, 0, 1]]);
+    const history = await model.fit(xs, ys, {
+      epochs: 2,
+      classWeight: [{0: 1, 1: 10, 2: 1}],
+      validationData: [xs, ys]
+    });
+    expect(history.history.loss.length).toEqual(2);
+    // These loss values are different than what the values would be
+    // if there is no class weighting.
+    expect(history.history.loss[0]).toBeCloseTo(4.3944);
+    expect(history.history.loss[1]).toBeCloseTo(5.3727);
+    expect(history.history.acc.length).toEqual(2);
+    expect(history.history.acc[0]).toBeCloseTo(0.3333);
+    expect(history.history.acc[1]).toBeCloseTo(0.6667);
+
+    expect(history.history.val_loss.length).toEqual(2);
+    expect(history.history.val_loss[0]).toBeCloseTo(5.3727);
+    expect(history.history.val_loss[1]).toBeCloseTo(5.3727);
+    expect(history.history.val_acc.length).toEqual(2);
+    expect(history.history.val_acc[0]).toBeCloseTo(0.6667);
+    expect(history.history.val_acc[1]).toBeCloseTo(0.6667);
+  });
+
+  it('One output, multi-class, one-hot encoding, validationSplit', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 3,
+      inputShape: [2],
+      kernelInitializer: 'zeros',
+      activation: 'softmax'
+    }));
+    model.compile({
+      loss: 'categoricalCrossentropy',
+      metrics: ['acc'],
+      optimizer: train.sgd(1)
+    });
+
+    const xs = tensor2d([[0, 1], [0, 2], [1, 10], [1, 20], [2, -10], [2, -20]]);
+    const ys = tensor2d([
+        [1, 0, 0],
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+        [0, 0, 1]]);
+    const history = await model.fit(xs, ys, {
+      epochs: 2,
+      classWeight: [{0: 1, 1: 10, 2: 1}],
+      validationSplit: 0.5
+    });
+
+    expect(history.history.loss.length).toEqual(2);
+    // These loss values are different than what the values would be
+    // if there is no class weighting.
+    expect(history.history.loss[0]).toBeCloseTo(4.3944);
+    expect(history.history.loss[1]).toBeCloseTo(10.7454);
+    expect(history.history.acc.length).toEqual(2);
+    expect(history.history.acc[0]).toBeCloseTo(0.6667);
+    expect(history.history.acc[1]).toBeCloseTo(0.3333);
+
+    expect(history.history.val_loss.length).toEqual(2);
+    expect(history.history.val_loss[0]).toBeCloseTo(2.9903e-05);
+    expect(history.history.val_loss[1]).toBeCloseTo(2.9903e-05);
+    expect(history.history.val_acc.length).toEqual(2);
+    expect(history.history.val_acc[0]).toBeCloseTo(1);
+    expect(history.history.val_acc[1]).toBeCloseTo(1);
+  });
+
   it('One output, multi-class, sparse encoding', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
@@ -262,5 +351,4 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   // TODO(cais): classWeight as dict missing key.
   // TODO(cais): classWeight with a null element.
   // TODO(cais): fitDataset with classWeight.
-  // TODO(cais): Validation data.
 });
