@@ -10,13 +10,13 @@
 
 /** Unit tests for training with {sample, class} weights. */
 
-import {memory, ones, tensor2d, train, zeros} from '@tensorflow/tfjs-core';
+import {memory, ones, Tensor, tensor2d, train, zeros} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';
 
 import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
 import {FakeNumericDataset} from './dataset_fakes';
-import {ClassWeight} from './training_utils';
+import {ClassWeight, ClassWeightMap} from './training_utils';
 
 describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   // Reference Python code:
@@ -754,8 +754,6 @@ describeMathCPUAndGPU('LayersModel.fitDataset() with classWeight', () => {
     const numTensors1 = memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
 
-    console.log(history.history);  // DEBUG
-
     // The loss and acc values are different if no classWeight is used.
     expect(history.history.loss.length).toEqual(2);
     expect(history.history.loss[0]).toBeCloseTo(0.0693);
@@ -772,5 +770,139 @@ describeMathCPUAndGPU('LayersModel.fitDataset() with classWeight', () => {
     expect(history.history.val_acc.length).toEqual(2);
     expect(history.history.val_acc[0]).toBeCloseTo(0.5);
     expect(history.history.val_acc[1]).toBeCloseTo(0.5);
+  });
+
+  // Reference Python code:
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // batch_size = 8
+  // num_batches = 3
+  // epochs = 2
+  //
+  // xs = np.ones([batch_size * num_batches * epochs, 1])
+  // ys1 = np.concatenate([
+  //     np.zeros([int(batch_size * num_batches * epochs / 2), 1]),
+  //     np.ones([int(batch_size * num_batches * epochs / 2), 1])],
+  //     axis=0)
+  // ys2 = np.concatenate([
+  //     np.ones([int(batch_size * num_batches * epochs / 2), 1]),
+  //     np.zeros([int(batch_size * num_batches * epochs / 2), 1])],
+  //     axis=0)
+  //
+  // dataset = tf.data.Dataset.from_tensor_slices(
+  //     (xs, {'out1': ys1, 'out2': ys2})).batch(batch_size)
+  //
+  // inp = tf.keras.Input(shape=[1])
+  // out1 = tf.keras.layers.Dense(
+  //     1,
+  //     input_shape=[1],
+  //     activation='sigmoid',
+  //     kernel_initializer='zeros',
+  //     name='out1')(inp)
+  // out2 = tf.keras.layers.Dense(
+  //     1,
+  //     input_shape=[1],
+  //     activation='sigmoid',
+  //     kernel_initializer='zeros',
+  //     name='out2')(inp)
+  //
+  // model = tf.keras.Model(inp, [out1, out2])
+  // model.compile(
+  //     loss=['binary_crossentropy', 'binary_crossentropy'],
+  //     optimizer='sgd')
+  //
+  // history = model.fit(
+  //     dataset,
+  //     steps_per_epoch=num_batches,
+  //     epochs=epochs,
+  //     class_weight=[{0: 0.1, 1: 2}, {0: 5, 1: 0.5}])
+  // print(history.history)
+  // ```
+  it('Two outputs, binary crossentropy, acc metric', async () => {
+    const inp = tfl.input({shape: [1]});
+    const out1 = tfl.layers.dense({
+      units: 1,
+      inputShape: [1],
+      kernelInitializer: 'zeros',
+      activation: 'sigmoid'
+    }).apply(inp) as tfl.SymbolicTensor;
+    const out2 = tfl.layers.dense({
+      units: 1,
+      inputShape: [1],
+      kernelInitializer: 'zeros',
+      activation: 'sigmoid'
+    }).apply(inp) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: inp, outputs: [out1, out2]});
+    model.compile({
+      loss: ['binaryCrossentropy', 'binaryCrossentropy'],
+      optimizer: 'sgd'
+    });
+
+    const batchSize = 8;
+    const batchesPerEpoch = 3;
+    const epochs = 2;
+    const xTensorsFunc = () =>
+        [ones([batchSize, 1]), ones([batchSize, 1]),
+         ones([batchSize, 1]), ones([batchSize, 1]),
+         ones([batchSize, 1]), ones([batchSize, 1])];
+    const yTensorsFunc = () => {
+      const output: {[name: string]: Tensor[]} = {};
+      output[model.outputNames[0]] = [
+        zeros([batchSize, 1]), zeros([batchSize, 1]),
+        zeros([batchSize, 1]), ones([batchSize, 1]),
+        ones([batchSize, 1]), ones([batchSize, 1])
+      ];
+      output[model.outputNames[1]] = [
+        ones([batchSize, 1]), ones([batchSize, 1]),
+        ones([batchSize, 1]), zeros([batchSize, 1]),
+        zeros([batchSize, 1]), zeros([batchSize, 1])
+      ];
+      return output;
+    };
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: {
+        [model.outputNames[0]]: [1],
+        [model.outputNames[1]]: [1]
+      },
+      batchSize,
+      numBatches: batchesPerEpoch * epochs,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    const classWeight: ClassWeightMap = {
+      [model.outputNames[0]]: {0: 0.1, 1: 2},
+      [model.outputNames[1]]: {0: 5, 1: 0.5}
+    };
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1, classWeight});
+    // model.setWeights([zeros([1, 1]), zeros([1])]);
+
+    const numTensors0 = memory().numTensors;
+    const history =
+        await model.fitDataset(dataset, {batchesPerEpoch, epochs, classWeight});
+    const numTensors1 = memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+
+    // The loss and acc values are different if no classWeight is used.
+    const totalLoss = history.history.loss;
+    expect(totalLoss.length).toEqual(2);
+    expect(totalLoss[0]).toBeCloseTo(0.4146);
+    expect(totalLoss[1]).toBeCloseTo(4.7882);
+
+    const loss0 = history.history[`${model.outputNames[0]}_loss`];
+    expect(loss0.length).toEqual(2);
+    expect(loss0[0]).toBeCloseTo(0.0693);
+    expect(loss0[1]).toBeCloseTo(1.3695);
+
+    const loss1 = history.history[`${model.outputNames[1]}_loss`];
+    expect(loss1.length).toEqual(2);
+    expect(loss1[0]).toBeCloseTo(0.3453);
+    expect(loss1[1]).toBeCloseTo(3.4158);
   });
 });

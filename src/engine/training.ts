@@ -1512,7 +1512,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
       x: Tensor|Tensor[]|{[inputName: string]: Tensor},
       y: Tensor|Tensor[]|
       {[inputName: string]: Tensor}): Promise<number|number[]> {
-    // TODO(cais): Support sampleWeight and classWeight. DO NOT SUBMIT.
+    // TODO(cais): Support sampleWeight and classWeight.
     // TODO(cais): Support Dataset objects.
     const standardizeOut = await this.standardizeUserData(x, y);
     const inputs = standardizeOut[0];
