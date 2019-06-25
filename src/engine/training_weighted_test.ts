@@ -10,11 +10,13 @@
 
 /** Unit tests for training with {sample, class} weights. */
 
-import {memory, tensor2d, train} from '@tensorflow/tfjs-core';
+import {memory, ones, tensor2d, train, zeros} from '@tensorflow/tfjs-core';
 
 import * as tfl from '../index';
 
 import {describeMathCPUAndGPU, expectTensorsClose} from '../utils/test_utils';
+import {FakeNumericDataset} from './dataset_fakes';
+import {ClassWeight} from './training_utils';
 
 describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   // Reference Python code:
@@ -565,5 +567,210 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     expect(history.history[lossKey1][0]).toBeCloseTo(0.4390);
     expect(history.history[lossKey1][1]).toBeCloseTo(0.2333);
     expect(history.history[lossKey1][2]).toBeCloseTo(0.2297);
+  });
+});
+
+describeMathCPUAndGPU('LayersModel.fitDataset() with classWeight', () => {
+  // Reference Python code:
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // batch_size = 8
+  // num_batches = 3
+  // epochs = 2
+  //
+  // xs = np.ones([batch_size * num_batches * epochs, 1])
+  // ys = np.concatenate([
+  //     np.zeros([int(batch_size * num_batches * epochs / 2), 1]),
+  //     np.ones([int(batch_size * num_batches * epochs / 2), 1])],
+  //     axis=0)
+  //
+  // dataset = tf.data.Dataset.from_tensor_slices(
+  //     (xs, ys)).batch(batch_size)
+  //
+  // model = tf.keras.Sequential()
+  // model.add(tf.keras.layers.Dense(
+  //     1,
+  //     input_shape=[1],
+  //     activation='sigmoid',
+  //     kernel_initializer='zeros'))
+  // model.compile(loss='binary_crossentropy',
+  //               metrics=['acc'],
+  //               optimizer='sgd')
+  //
+  // history = model.fit(
+  //     dataset,
+  //     steps_per_epoch=num_batches,
+  //     epochs=epochs,
+  //     class_weight={0: 0.1, 1: 2})
+  // print(history.history)
+  // ```
+  it('One output, binary crossentropy, acc metric', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 1,
+      inputShape: [1],
+      kernelInitializer: 'zeros',
+      activation: 'sigmoid'
+    }));
+    model.compile({
+      loss: 'binaryCrossentropy',
+      metrics: ['acc'],
+      optimizer: 'sgd'
+    });
+
+    const batchSize = 8;
+    const batchesPerEpoch = 3;
+    const epochs = 2;
+    const xTensorsFunc = () =>
+        [ones([batchSize, 1]), ones([batchSize, 1]),
+        ones([batchSize, 1]), ones([batchSize, 1]),
+        ones([batchSize, 1]), ones([batchSize, 1])];
+    const yTensorsFunc = () =>
+        [zeros([batchSize, 1]), zeros([batchSize, 1]),
+         zeros([batchSize, 1]), ones([batchSize, 1]),
+         ones([batchSize, 1]), ones([batchSize, 1])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: batchesPerEpoch * epochs,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    const classWeight: ClassWeight = {0: 0.1, 1: 2};
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {batchesPerEpoch, epochs: 1, classWeight});
+    model.setWeights([zeros([1, 1]), zeros([1])]);
+
+    const numTensors0 = memory().numTensors;
+    const history =
+        await model.fitDataset(dataset, {batchesPerEpoch, epochs, classWeight});
+    const numTensors1 = memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+
+    // The loss and acc values are different if no classWeight is used.
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(0.0693);
+    expect(history.history.loss[1]).toBeCloseTo(1.3695);
+
+    expect(history.history.acc.length).toEqual(2);
+    expect(history.history.acc[0]).toBeCloseTo(1);
+    expect(history.history.acc[1]).toBeCloseTo(0.6667);
+  });
+
+  // Reference Python code:
+  // ```py
+  // import numpy as np
+  // import tensorflow as tf
+  //
+  // batch_size = 8
+  // num_batches = 3
+  // epochs = 2
+  //
+  // xs = np.ones([batch_size * num_batches * epochs, 1])
+  // ys = np.concatenate([
+  //     np.zeros([int(batch_size * num_batches * epochs / 2), 1]),
+  //     np.ones([int(batch_size * num_batches * epochs / 2), 1])],
+  //     axis=0)
+  //
+  // dataset = tf.data.Dataset.from_tensor_slices(
+  //     (xs, ys)).batch(batch_size)
+  //
+  // model = tf.keras.Sequential()
+  // model.add(tf.keras.layers.Dense(
+  //     1,
+  //     input_shape=[1],
+  //     activation='sigmoid',
+  //     kernel_initializer='zeros'))
+  // model.compile(loss='binary_crossentropy',
+  //               metrics=['acc'],
+  //               optimizer='sgd')
+  //
+  // history = model.fit(
+  //     dataset,
+  //     steps_per_epoch=num_batches,
+  //     epochs=epochs,
+  //     class_weight={0: 0.1, 1: 2})
+  // print(history.history)
+  // ```
+  it('One output, binary crossentropy，validation', async () => {
+    const model = tfl.sequential();
+    model.add(tfl.layers.dense({
+      units: 1,
+      inputShape: [1],
+      kernelInitializer: 'zeros',
+      activation: 'sigmoid'
+    }));
+    model.compile({
+      loss: 'binaryCrossentropy',
+      metrics: ['acc'],
+      optimizer: 'sgd'
+    });
+
+    const batchSize = 8;
+    const batchesPerEpoch = 3;
+    const epochs = 2;
+    const xTensorsFunc = () =>
+        [ones([batchSize, 1]), ones([batchSize, 1]),
+        ones([batchSize, 1]), ones([batchSize, 1]),
+        ones([batchSize, 1]), ones([batchSize, 1])];
+    const yTensorsFunc = () =>
+        [zeros([batchSize, 1]), zeros([batchSize, 1]),
+         zeros([batchSize, 1]), ones([batchSize, 1]),
+         ones([batchSize, 1]), ones([batchSize, 1])];
+    const dataset = new FakeNumericDataset({
+      xShape: [1],
+      yShape: [1],
+      batchSize,
+      numBatches: batchesPerEpoch * epochs,
+      xTensorsFunc,
+      yTensorsFunc
+    });
+
+    const classWeight: ClassWeight = {0: 0.1, 1: 2};
+
+    // Do a burn-in call to account for initialization of cached tensors (for
+    // the memory-leak check below).
+    await model.fitDataset(dataset, {
+      batchesPerEpoch,
+      epochs: 1,
+      classWeight,
+      validationData: dataset
+    });
+    model.setWeights([zeros([1, 1]), zeros([1])]);
+
+    const numTensors0 = memory().numTensors;
+    const history = await model.fitDataset(dataset, {
+      batchesPerEpoch,
+      epochs,
+      classWeight,
+      validationData: dataset
+    });
+    const numTensors1 = memory().numTensors;
+    expect(numTensors1).toEqual(numTensors0);
+
+    console.log(history.history);  // DEBUG
+
+    // The loss and acc values are different if no classWeight is used.
+    expect(history.history.loss.length).toEqual(2);
+    expect(history.history.loss[0]).toBeCloseTo(0.0693);
+    expect(history.history.loss[1]).toBeCloseTo(1.3695);
+
+    expect(history.history.acc.length).toEqual(2);
+    expect(history.history.acc[0]).toBeCloseTo(1);
+    expect(history.history.acc[1]).toBeCloseTo(0.6667);
+
+    expect(history.history.val_loss.length).toEqual(2);
+    expect(history.history.val_loss[0]).toBeCloseTo(0.693148);
+    expect(history.history.val_loss[1]).toBeCloseTo(0.693546);
+
+    expect(history.history.val_acc.length).toEqual(2);
+    expect(history.history.val_acc[0]).toBeCloseTo(0.5);
+    expect(history.history.val_acc[1]).toBeCloseTo(0.5);
   });
 });

@@ -20,7 +20,7 @@ import {BaseCallback, configureCallbacks, CustomCallbackArgs, History, ModelLogg
 import {NotImplementedError, ValueError} from '../errors';
 import {disposeTensorsInLogs, UnresolvedLogs} from '../logs';
 import {range} from '../utils/math_utils';
-import {ClassWeight} from './training_utils';
+import {ClassWeight, ClassWeightMap} from './training_utils';
 
 /**
  * Interface configuration model training based on data as `tf.Tensor`s.
@@ -92,13 +92,17 @@ export interface ModelFitArgs {
   shuffle?: boolean;
 
   /**
-   * Optional dictionary mapping class indices (integers) to
+   * Optional object mapping class indices (integers) to
    * a weight (float) to apply to the model's loss for the samples from this
    * class during training. This can be useful to tell the model to "pay more
    * attention" to samples from an under-represented class.
+   *
+   * If the model has multiple outputs, a class weight can be specified for
+   * each of the outputs by setting this field an array of weight object
+   * or a object that maps model output names (e.g., `model.outputNames[0]`)
+   * to weight objects.
    */
-  // TODO(cais): Doc string needs to be updated.
-  classWeight?: ClassWeight|ClassWeight[]|{[outputName: string]: ClassWeight};
+  classWeight?: ClassWeight|ClassWeight[]|ClassWeightMap;
 
   /**
    * Optional array of the same length as x, containing
