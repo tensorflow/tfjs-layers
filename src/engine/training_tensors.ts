@@ -456,15 +456,14 @@ export async function fitTensors(
 
       const checkBatchAxis = true;
       const valStandardized = await model.standardizeUserData(
-            inputValX, inputValY, args.sampleWeight,
-            args.classWeight, checkBatchAxis, batchSize) as
-            [Tensor[], Tensor[], Tensor[]];
-      // TODO(cais): Add sampleWeight. DO NOT SUBMIT.
+            inputValX,
+            inputValY,
+            null,  /** Unused sample weights. */
+            null,  /** Unused class weights. */
+            checkBatchAxis,
+            batchSize) as [Tensor[], Tensor[], Tensor[]];
       valX = valStandardized[0];
       valY = valStandardized[1];
-      // TODO(cais): Use validation sample weights in valStandardized[2]
-      // once
-      //   it becomes available.
       valIns = valX.concat(valY);
       // TODO(cais): Add useLearningPhase data properly.
     } else if (
