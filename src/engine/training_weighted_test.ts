@@ -52,7 +52,7 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   //           }])
   // print(model.get_weights()[0])
   // ```
-  fit('One output, multi-class, one-hot encoding', async () => {
+  it('One output, multi-class, one-hot encoding', async () => {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
       units: 3,
@@ -212,7 +212,7 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   //               1: 0.9
   //           }])
   // ```
-  fit('Two outputs, classWeight as array' , async () => {
+  it('Two outputs, classWeight as array' , async () => {
     const inp = tfl.input({shape: [2]});
     const y1 = tfl.layers.dense({
       units: 3,
