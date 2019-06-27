@@ -203,10 +203,7 @@ function standardizeDataIteratorOutput(
     // Type `model` as `any` here to avoid circular dependency w/
     // training.ts.
     // tslint:disable-next-line:no-any
-    model: any, iteratorOut: {}): {
-      xs: tfc.Tensor[],
-      ys: tfc.Tensor[]
-    } {
+    model: any, iteratorOut: {}): {xs: tfc.Tensor[], ys: tfc.Tensor[]} {
   let xs: TensorOrArrayOrMap;
   let ys: TensorOrArrayOrMap;
 
@@ -259,10 +256,7 @@ function standardizeDataIteratorOutput(
             `expected  ${batchSize} based on input ${model.inputNames[0]}.`);
   }
 
-  return {
-    xs: flattenedXs,
-    ys: flattenedYs
-  };
+  return {xs: flattenedXs, ys: flattenedYs};
 }
 
 function flattenTensorOrArrayOrMap(
@@ -436,7 +430,6 @@ export async function fitDataset<T>(
             const standardClassWeights =
                 standardizeClassWeights(args.classWeight, model.outputNames);
             for (let i = 0; i < standardClassWeights.length; ++i) {
-
               sampleWeights.push(await standardizeWeights(
                   ys[i], null, standardClassWeights[i]));
             }

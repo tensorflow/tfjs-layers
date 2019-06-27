@@ -69,18 +69,11 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     });
 
     const xs = tensor2d([[0, 1], [0, 2], [1, 10], [1, 20], [2, -10], [2, -20]]);
-    const ys = tensor2d([
-        [1, 0, 0],
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-        [0, 0, 1]]);
+    const ys = tensor2d(
+        [[1, 0, 0], [1, 0, 0], [0, 1, 0], [0, 1, 0], [0, 0, 1], [0, 0, 1]]);
     const numTensors0 = memory().numTensors;
-    const history = await model.fit(xs, ys, {
-      epochs: 2,
-      classWeight: [{0: 1, 1: 10, 2: 1}]
-    });
+    const history = await model.fit(
+        xs, ys, {epochs: 2, classWeight: [{0: 1, 1: 10, 2: 1}]});
     expect(memory().numTensors).toEqual(numTensors0);  // Assert no memory leak.
     expect(history.history.loss.length).toEqual(2);
     // These loss values are different than what the values would be
@@ -107,13 +100,8 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     });
 
     const xs = tensor2d([[0, 1], [0, 2], [1, 10], [1, 20], [2, -10], [2, -20]]);
-    const ys = tensor2d([
-        [1, 0, 0],
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-        [0, 0, 1]]);
+    const ys = tensor2d(
+        [[1, 0, 0], [1, 0, 0], [0, 1, 0], [0, 1, 0], [0, 0, 1], [0, 0, 1]]);
     const numTensors0 = memory().numTensors;
     const history = await model.fit(xs, ys, {
       epochs: 2,
@@ -147,13 +135,8 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     });
 
     const xs = tensor2d([[0, 1], [0, 2], [1, 10], [1, 20], [2, -10], [2, -20]]);
-    const ys = tensor2d([
-        [1, 0, 0],
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-        [0, 0, 1]]);
+    const ys = tensor2d(
+        [[1, 0, 0], [1, 0, 0], [0, 1, 0], [0, 1, 0], [0, 0, 1], [0, 0, 1]]);
     const numTensors0 = memory().numTensors;
     const history = await model.fit(xs, ys, {
       epochs: 2,
@@ -193,19 +176,12 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     });
 
     const xs = tensor2d([[0, 1], [0, 2], [1, 10], [1, 20], [2, -10], [2, -20]]);
-    const ys = tensor2d([
-        [1, 0, 0],
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, 1, 0],
-        [0, 0, 1],
-        [0, 0, 1]]);
+    const ys = tensor2d(
+        [[1, 0, 0], [1, 0, 0], [0, 1, 0], [0, 1, 0], [0, 0, 1], [0, 0, 1]]);
     const numTensors0 = memory().numTensors;
-    const history = await model.fit(xs, ys, {
-      epochs: 2,
-      classWeight: [{0: 1, 1: 10, 2: 1}],
-      validationSplit: 0.5
-    });
+    const history = await model.fit(
+        xs, ys,
+        {epochs: 2, classWeight: [{0: 1, 1: 10, 2: 1}], validationSplit: 0.5});
     expect(memory().numTensors).toEqual(numTensors0);  // Assert no memory leak.
     expect(history.history.loss.length).toEqual(2);
     // These loss values are different than what the values would be
@@ -232,18 +208,14 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
       kernelInitializer: 'zeros',
       activation: 'softmax'
     }));
-    model.compile({
-      loss: 'sparseCategoricalCrossentropy',
-      optimizer: train.sgd(1)
-    });
+    model.compile(
+        {loss: 'sparseCategoricalCrossentropy', optimizer: train.sgd(1)});
 
     const xs = tensor2d([[0, 1], [0, 2], [1, 10], [1, 20], [2, -10], [2, -20]]);
     const ys = tensor2d([[0], [0], [1], [1], [2], [2]]);
     const numTensors0 = memory().numTensors;
-    const history = await model.fit(xs, ys, {
-      epochs: 2,
-      classWeight: {0: 1, 1: 10, 2: 1}
-    });
+    const history =
+        await model.fit(xs, ys, {epochs: 2, classWeight: {0: 1, 1: 10, 2: 1}});
     expect(memory().numTensors).toEqual(numTensors0);  // Assert no memory leak.
     expect(history.history.loss.length).toEqual(2);
     // These loss values are different than what the values would be
@@ -289,18 +261,13 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
       kernelInitializer: 'zeros',
       activation: 'sigmoid'
     }));
-    model.compile({
-      loss: 'binaryCrossentropy',
-      optimizer: train.sgd(1)
-    });
+    model.compile({loss: 'binaryCrossentropy', optimizer: train.sgd(1)});
 
     const xs = tensor2d([[0, 1], [0, 2], [1, 10], [1, 20]]);
     const ys = tensor2d([[0], [0], [1], [1]]);
     const numTensors0 = memory().numTensors;
-    const history = await model.fit(xs, ys, {
-      epochs: 2,
-      classWeight: [{0: 0.1, 1: 0.9}]
-    });
+    const history =
+        await model.fit(xs, ys, {epochs: 2, classWeight: [{0: 0.1, 1: 0.9}]});
     expect(memory().numTensors).toEqual(numTensors0);  // Assert no memory leak.
     expect(history.history.loss.length).toEqual(2);
     // These loss values are different than what the values would be
@@ -352,24 +319,25 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
   //               1: 0.9
   //           }])
   // ```
-  it('Two outputs, classWeight as array' , async () => {
+  it('Two outputs, classWeight as array', async () => {
     const inp = tfl.input({shape: [2]});
-    const y1 = tfl.layers.dense({
-      units: 3,
-      inputShape: [2],
-      kernelInitializer: 'zeros',
-      activation: 'softmax'
-    }).apply(inp) as tfl.SymbolicTensor;
-    const y2 = tfl.layers.dense({
-      units: 1,
-      inputShape: [2],
-      kernelInitializer: 'zeros',
-      activation: 'sigmoid'
-    }).apply(inp) as tfl.SymbolicTensor;
-    const model = tfl.model({
-      inputs: inp,
-      outputs: [y1, y2]
-    });
+    const y1 = tfl.layers
+                   .dense({
+                     units: 3,
+                     inputShape: [2],
+                     kernelInitializer: 'zeros',
+                     activation: 'softmax'
+                   })
+                   .apply(inp) as tfl.SymbolicTensor;
+    const y2 = tfl.layers
+                   .dense({
+                     units: 1,
+                     inputShape: [2],
+                     kernelInitializer: 'zeros',
+                     activation: 'sigmoid'
+                   })
+                   .apply(inp) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: inp, outputs: [y1, y2]});
     model.compile({
       loss: ['sparseCategoricalCrossentropy', 'binaryCrossentropy'],
       optimizer: train.sgd(1)
@@ -380,10 +348,9 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     const y2s = tensor2d([[0], [0], [1], [1], [1], [1]]);
 
     const numTensors0 = memory().numTensors;
-    const history = await model.fit(xs, [y1s, y2s], {
-      epochs: 3,
-      classWeight: [{0: 0.1, 1: 0.2, 2: 0.7}, {0: 0.1, 1: 0.9}]
-    });
+    const history = await model.fit(
+        xs, [y1s, y2s],
+        {epochs: 3, classWeight: [{0: 0.1, 1: 0.2, 2: 0.7}, {0: 0.1, 1: 0.9}]});
     expect(memory().numTensors).toEqual(numTensors0);  // Assert no memory leak.
     expect(history.history.loss.length).toEqual(3);
     expect(history.history.loss[0]).toBeCloseTo(0.8052);
@@ -401,24 +368,25 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     expect(history.history[lossKey1][2]).toBeCloseTo(0.2297);
   });
 
-  it('Two outputs, classWeight as array, one being null' , async () => {
+  it('Two outputs, classWeight as array, one being null', async () => {
     const inp = tfl.input({shape: [2]});
-    const y1 = tfl.layers.dense({
-      units: 3,
-      inputShape: [2],
-      kernelInitializer: 'zeros',
-      activation: 'softmax'
-    }).apply(inp) as tfl.SymbolicTensor;
-    const y2 = tfl.layers.dense({
-      units: 1,
-      inputShape: [2],
-      kernelInitializer: 'zeros',
-      activation: 'sigmoid'
-    }).apply(inp) as tfl.SymbolicTensor;
-    const model = tfl.model({
-      inputs: inp,
-      outputs: [y1, y2]
-    });
+    const y1 = tfl.layers
+                   .dense({
+                     units: 3,
+                     inputShape: [2],
+                     kernelInitializer: 'zeros',
+                     activation: 'softmax'
+                   })
+                   .apply(inp) as tfl.SymbolicTensor;
+    const y2 = tfl.layers
+                   .dense({
+                     units: 1,
+                     inputShape: [2],
+                     kernelInitializer: 'zeros',
+                     activation: 'sigmoid'
+                   })
+                   .apply(inp) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: inp, outputs: [y1, y2]});
     model.compile({
       loss: ['sparseCategoricalCrossentropy', 'binaryCrossentropy'],
       optimizer: train.sgd(1)
@@ -429,15 +397,13 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     const y2s = tensor2d([[0], [0], [1], [1], [1], [1]]);
 
     const numTensors0 = memory().numTensors;
-    const history = await model.fit(xs, [y1s, y2s], {
-      epochs: 3,
-      classWeight: [null, {0: 0.1, 1: 0.9}],
-      shuffle: false
-    });
+    const history = await model.fit(
+        xs, [y1s, y2s],
+        {epochs: 3, classWeight: [null, {0: 0.1, 1: 0.9}], shuffle: false});
     expect(memory().numTensors).toEqual(numTensors0);  // Assert no memory leak.
     // Note that the following values don't match results from Python,
     // which is a bug in Python TensorFlow / tf.keras. But the final
-    // kernel value does match Python results.
+    // kernel value does match Python results. (See b/136123157).
     expect(history.history.loss.length).toEqual(3);
     expect(history.history.loss[0]).toBeCloseTo(1.5376);
     expect(history.history.loss[1]).toBeCloseTo(3.1466);
@@ -452,30 +418,31 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     expect(history.history[lossKey1][0]).toBeCloseTo(0.4390);
     expect(history.history[lossKey1][1]).toBeCloseTo(0.2333);
     expect(history.history[lossKey1][2]).toBeCloseTo(0.2298);
-    expectTensorsClose(
-        model.getWeights()[0],
-        tensor2d([[-0.3333333, -0.03197281, 0.3653062],
-                  [-2.0025878, 1.9823718, 0.02021614]]));
+    expectTensorsClose(model.getWeights()[0], tensor2d([
+                         [-0.3333333, -0.03197281, 0.3653062],
+                         [-2.0025878, 1.9823718, 0.02021614]
+                       ]));
   });
 
-  it('Two outputs, classWeight as map, one output no weighting' , async () => {
+  it('Two outputs, classWeight as map, one output no weighting', async () => {
     const inp = tfl.input({shape: [2]});
-    const y1 = tfl.layers.dense({
-      units: 3,
-      inputShape: [2],
-      kernelInitializer: 'zeros',
-      activation: 'softmax'
-    }).apply(inp) as tfl.SymbolicTensor;
-    const y2 = tfl.layers.dense({
-      units: 1,
-      inputShape: [2],
-      kernelInitializer: 'zeros',
-      activation: 'sigmoid'
-    }).apply(inp) as tfl.SymbolicTensor;
-    const model = tfl.model({
-      inputs: inp,
-      outputs: [y1, y2]
-    });
+    const y1 = tfl.layers
+                   .dense({
+                     units: 3,
+                     inputShape: [2],
+                     kernelInitializer: 'zeros',
+                     activation: 'softmax'
+                   })
+                   .apply(inp) as tfl.SymbolicTensor;
+    const y2 = tfl.layers
+                   .dense({
+                     units: 1,
+                     inputShape: [2],
+                     kernelInitializer: 'zeros',
+                     activation: 'sigmoid'
+                   })
+                   .apply(inp) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: inp, outputs: [y1, y2]});
     model.compile({
       loss: ['sparseCategoricalCrossentropy', 'binaryCrossentropy'],
       optimizer: train.sgd(1)
@@ -511,30 +478,31 @@ describeMathCPUAndGPU('LayersModel.fit() with classWeight', () => {
     expect(history.history[lossKey1][0]).toBeCloseTo(0.4390);
     expect(history.history[lossKey1][1]).toBeCloseTo(0.2333);
     expect(history.history[lossKey1][2]).toBeCloseTo(0.2298);
-    expectTensorsClose(
-        model.getWeights()[0],
-        tensor2d([[-0.3333333, -0.03197281, 0.3653062],
-                  [-2.0025878, 1.9823718, 0.02021614]]));
+    expectTensorsClose(model.getWeights()[0], tensor2d([
+                         [-0.3333333, -0.03197281, 0.3653062],
+                         [-2.0025878, 1.9823718, 0.02021614]
+                       ]));
   });
 
-  it('Two outputs, classWeight as map' , async () => {
+  it('Two outputs, classWeight as map', async () => {
     const inp = tfl.input({shape: [2]});
-    const y1 = tfl.layers.dense({
-      units: 3,
-      inputShape: [2],
-      kernelInitializer: 'zeros',
-      activation: 'softmax'
-    }).apply(inp) as tfl.SymbolicTensor;
-    const y2 = tfl.layers.dense({
-      units: 1,
-      inputShape: [2],
-      kernelInitializer: 'zeros',
-      activation: 'sigmoid'
-    }).apply(inp) as tfl.SymbolicTensor;
-    const model = tfl.model({
-      inputs: inp,
-      outputs: [y1, y2]
-    });
+    const y1 = tfl.layers
+                   .dense({
+                     units: 3,
+                     inputShape: [2],
+                     kernelInitializer: 'zeros',
+                     activation: 'softmax'
+                   })
+                   .apply(inp) as tfl.SymbolicTensor;
+    const y2 = tfl.layers
+                   .dense({
+                     units: 1,
+                     inputShape: [2],
+                     kernelInitializer: 'zeros',
+                     activation: 'sigmoid'
+                   })
+                   .apply(inp) as tfl.SymbolicTensor;
+    const model = tfl.model({inputs: inp, outputs: [y1, y2]});
     model.compile({
       loss: ['sparseCategoricalCrossentropy', 'binaryCrossentropy'],
       optimizer: train.sgd(1)
@@ -614,23 +582,18 @@ describeMathCPUAndGPU('LayersModel.fitDataset() with classWeight', () => {
       kernelInitializer: 'zeros',
       activation: 'sigmoid'
     }));
-    model.compile({
-      loss: 'binaryCrossentropy',
-      metrics: ['acc'],
-      optimizer: 'sgd'
-    });
+    model.compile(
+        {loss: 'binaryCrossentropy', metrics: ['acc'], optimizer: 'sgd'});
 
     const batchSize = 8;
     const batchesPerEpoch = 3;
     const epochs = 2;
     const xTensorsFunc = () =>
-        [ones([batchSize, 1]), ones([batchSize, 1]),
-        ones([batchSize, 1]), ones([batchSize, 1]),
-        ones([batchSize, 1]), ones([batchSize, 1])];
+        [ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1]),
+         ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1])];
     const yTensorsFunc = () =>
-        [zeros([batchSize, 1]), zeros([batchSize, 1]),
-         zeros([batchSize, 1]), ones([batchSize, 1]),
-         ones([batchSize, 1]), ones([batchSize, 1])];
+        [zeros([batchSize, 1]), zeros([batchSize, 1]), zeros([batchSize, 1]),
+         ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1])];
     const dataset = new FakeNumericDataset({
       xShape: [1],
       yShape: [1],
@@ -706,23 +669,18 @@ describeMathCPUAndGPU('LayersModel.fitDataset() with classWeight', () => {
       kernelInitializer: 'zeros',
       activation: 'sigmoid'
     }));
-    model.compile({
-      loss: 'binaryCrossentropy',
-      metrics: ['acc'],
-      optimizer: 'sgd'
-    });
+    model.compile(
+        {loss: 'binaryCrossentropy', metrics: ['acc'], optimizer: 'sgd'});
 
     const batchSize = 8;
     const batchesPerEpoch = 3;
     const epochs = 2;
     const xTensorsFunc = () =>
-        [ones([batchSize, 1]), ones([batchSize, 1]),
-        ones([batchSize, 1]), ones([batchSize, 1]),
-        ones([batchSize, 1]), ones([batchSize, 1])];
+        [ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1]),
+         ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1])];
     const yTensorsFunc = () =>
-        [zeros([batchSize, 1]), zeros([batchSize, 1]),
-         zeros([batchSize, 1]), ones([batchSize, 1]),
-         ones([batchSize, 1]), ones([batchSize, 1])];
+        [zeros([batchSize, 1]), zeros([batchSize, 1]), zeros([batchSize, 1]),
+         ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1])];
     const dataset = new FakeNumericDataset({
       xShape: [1],
       yShape: [1],
@@ -736,21 +694,15 @@ describeMathCPUAndGPU('LayersModel.fitDataset() with classWeight', () => {
 
     // Do a burn-in call to account for initialization of cached tensors (for
     // the memory-leak check below).
-    await model.fitDataset(dataset, {
-      batchesPerEpoch,
-      epochs: 1,
-      classWeight,
-      validationData: dataset
-    });
+    await model.fitDataset(
+        dataset,
+        {batchesPerEpoch, epochs: 1, classWeight, validationData: dataset});
     model.setWeights([zeros([1, 1]), zeros([1])]);
 
     const numTensors0 = memory().numTensors;
-    const history = await model.fitDataset(dataset, {
-      batchesPerEpoch,
-      epochs,
-      classWeight,
-      validationData: dataset
-    });
+    const history = await model.fitDataset(
+        dataset,
+        {batchesPerEpoch, epochs, classWeight, validationData: dataset});
     const numTensors1 = memory().numTensors;
     expect(numTensors1).toEqual(numTensors0);
 
@@ -822,51 +774,47 @@ describeMathCPUAndGPU('LayersModel.fitDataset() with classWeight', () => {
   // ```
   it('Two outputs, binary crossentropy, acc metric', async () => {
     const inp = tfl.input({shape: [1]});
-    const out1 = tfl.layers.dense({
-      units: 1,
-      inputShape: [1],
-      kernelInitializer: 'zeros',
-      activation: 'sigmoid'
-    }).apply(inp) as tfl.SymbolicTensor;
-    const out2 = tfl.layers.dense({
-      units: 1,
-      inputShape: [1],
-      kernelInitializer: 'zeros',
-      activation: 'sigmoid'
-    }).apply(inp) as tfl.SymbolicTensor;
+    const out1 = tfl.layers
+                     .dense({
+                       units: 1,
+                       inputShape: [1],
+                       kernelInitializer: 'zeros',
+                       activation: 'sigmoid'
+                     })
+                     .apply(inp) as tfl.SymbolicTensor;
+    const out2 = tfl.layers
+                     .dense({
+                       units: 1,
+                       inputShape: [1],
+                       kernelInitializer: 'zeros',
+                       activation: 'sigmoid'
+                     })
+                     .apply(inp) as tfl.SymbolicTensor;
     const model = tfl.model({inputs: inp, outputs: [out1, out2]});
-    model.compile({
-      loss: ['binaryCrossentropy', 'binaryCrossentropy'],
-      optimizer: 'sgd'
-    });
+    model.compile(
+        {loss: ['binaryCrossentropy', 'binaryCrossentropy'], optimizer: 'sgd'});
 
     const batchSize = 8;
     const batchesPerEpoch = 3;
     const epochs = 2;
     const xTensorsFunc = () =>
-        [ones([batchSize, 1]), ones([batchSize, 1]),
-         ones([batchSize, 1]), ones([batchSize, 1]),
-         ones([batchSize, 1]), ones([batchSize, 1])];
+        [ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1]),
+         ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1])];
     const yTensorsFunc = () => {
       const output: {[name: string]: Tensor[]} = {};
       output[model.outputNames[0]] = [
-        zeros([batchSize, 1]), zeros([batchSize, 1]),
-        zeros([batchSize, 1]), ones([batchSize, 1]),
-        ones([batchSize, 1]), ones([batchSize, 1])
+        zeros([batchSize, 1]), zeros([batchSize, 1]), zeros([batchSize, 1]),
+        ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1])
       ];
       output[model.outputNames[1]] = [
-        ones([batchSize, 1]), ones([batchSize, 1]),
-        ones([batchSize, 1]), zeros([batchSize, 1]),
-        zeros([batchSize, 1]), zeros([batchSize, 1])
+        ones([batchSize, 1]), ones([batchSize, 1]), ones([batchSize, 1]),
+        zeros([batchSize, 1]), zeros([batchSize, 1]), zeros([batchSize, 1])
       ];
       return output;
     };
     const dataset = new FakeNumericDataset({
       xShape: [1],
-      yShape: {
-        [model.outputNames[0]]: [1],
-        [model.outputNames[1]]: [1]
-      },
+      yShape: {[model.outputNames[0]]: [1], [model.outputNames[1]]: [1]},
       batchSize,
       numBatches: batchesPerEpoch * epochs,
       xTensorsFunc,
