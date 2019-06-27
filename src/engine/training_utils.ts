@@ -111,6 +111,8 @@ export function standardizeSampleWeights(
  * with multiple outputs, you must call this function multiple times.
  *
  * @param y The target tensor that the by-sample and/or by-class weight is for.
+ *     The values of y are assumed to encode the classes, either directly
+ *     as an integer index, or as one-hot encoding.
  * @param sampleWeight By-sample weights.
  * @param classWeight By-class weights: an object mapping class indices
  *     (integers) to a weight (float) to apply to the model's loss for the
@@ -118,12 +120,14 @@ export function standardizeSampleWeights(
  *     model to "pay more attention" to samples from an under-represented class.
  * @param sampleWeightMode The mode for the sample weights.
  * @return A Promise of weight tensor, of which the size of the first dimension
- *   matches that of `y`.
+ *     matches that of `y`.
  */
 export async function standardizeWeights(
     y: Tensor, sampleWeight?: Tensor, classWeight?: ClassWeight,
     sampleWeightMode?: 'temporal'): Promise<Tensor> {
   if (sampleWeight != null || sampleWeightMode != null) {
+    // TODO(cais): Once 'temporal' mode is implemented, document it in the doc
+    // string.
     throw new Error('Support sampleWeight is not implemented yet');
   }
 
@@ -182,6 +186,5 @@ export async function standardizeWeights(
  * @returns Tensor of the same shape as`losses`.
  */
 export function computeWeightedLoss(losses: Tensor, sampleWeights: Tensor) {
-  console.log(losses.shape, sampleWeights.shape);  // DEBUG
   return mul(losses, sampleWeights);
 }
