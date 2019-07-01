@@ -319,7 +319,7 @@ export async function loadLayersModelFromIOHandler(
         artifacts.weightData, artifacts.weightSpecs);
     model.loadWeights(modelWeights, strict);
 
-    if (trainingConfig != null && optimizerWeights.length > 0) {
+    if (model.optimizer != null && optimizerWeights.length > 0) {
       await model.optimizer.setWeights(optimizerWeights);
     }
 

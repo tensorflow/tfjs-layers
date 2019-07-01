@@ -1643,7 +1643,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           LossIdentifier[];
     } else {
       const outputNames = Object.keys(this.loss);
-      lossNames = this.loss as {[outputName: string]: LossIdentifier};
+      lossNames = Object.assign(
+          {}, this.loss as {[outputName: string]: LossIdentifier});
       for (const outputName of outputNames) {
         if (typeof lossNames[outputName] !== 'string') {
           throw new Error('Serialization of non-string loss is not supported.');
@@ -1685,7 +1686,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     };
     // TODO(cais): Add weight_metrics when they are supported.
     // TODO(cais): Add sample_weight_mode when it's supported.
-    // TODO(cais): Add loss_weights when it's support.
+    // TODO(cais): Add loss_weights when it's supported.
   }
 
   loadTrainingConfig(trainingConfig: TrainingConfig) {
@@ -1709,9 +1710,9 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     } else if (Array.isArray(trainingConfig.loss)) {
       loss = trainingConfig.loss.map(lossEntry => toCamelCase(lossEntry));
     } else if (trainingConfig.loss != null) {
-      loss = Object.assign({}, trainingConfig.loss);
-      for (const key in loss) {
-        loss[key] = toCamelCase(loss[key]) as LossIdentifier;
+      loss = {} as {[outputName: string]: LossIdentifier};
+      for (const key in trainingConfig.loss) {
+        loss[key] = toCamelCase(trainingConfig.loss[key]) as LossIdentifier;
       }
     }
 
@@ -1719,9 +1720,10 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     if (Array.isArray(trainingConfig.metrics)) {
       metrics = trainingConfig.metrics.map(metric => toCamelCase(metric));
     } else if (trainingConfig.metrics != null) {
-      metrics = Object.assign({}, trainingConfig.metrics);
-      for (const key in metrics) {
-        metrics[key] = toCamelCase(metrics[key]);
+      metrics = {} as {[outputName: string]: MetricsIdentifier};
+      for (const key in trainingConfig.metrics) {
+        metrics[key] = toCamelCase(trainingConfig.metrics[key]) as
+            MetricsIdentifier;
       }
     }
 
@@ -1830,8 +1832,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           'provided does not have the `save` attribute defined.');
     }
 
-    const namedWeights = this.getNamedWeights(config);
-    const weightDataAndSpecs = await io.encodeWeights(namedWeights);
+    const weightDataAndSpecs =
+        await io.encodeWeights(this.getNamedWeights(config));
 
     const returnString = false;
     const unusedArg: {} = null;
@@ -1847,11 +1849,11 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     if (includeOptimizer && this.optimizer != null) {
       modelArtifacts.trainingConfig = this.getTrainingConfig();
       const weightType = 'optimizer';
-      const {data, specs} =
+      const {data: optimizerWeightData, specs: optimizerWeightSpecs} =
           await io.encodeWeights(await this.optimizer.getWeights(), weightType);
-      weightDataAndSpecs.specs.push(...specs);
-      weightDataAndSpecs.data =
-          io.concatenateArrayBuffers([weightDataAndSpecs.data, data]);
+      weightDataAndSpecs.specs.push(...optimizerWeightSpecs);
+      weightDataAndSpecs.data = io.concatenateArrayBuffers(
+          [weightDataAndSpecs.data, optimizerWeightData]);
     }
 
     modelArtifacts.weightData = weightDataAndSpecs.data;
