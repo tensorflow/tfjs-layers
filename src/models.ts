@@ -11,13 +11,14 @@
 /* Original source keras/models.py */
 
 import {dispose, io, NamedTensorMap, Optimizer, Scalar, serialization, Tensor, util} from '@tensorflow/tfjs-core';
+import {NamedTensor} from '@tensorflow/tfjs-core/dist/tensor_types';
 
 import {getUid} from './backend/state';
 import {History} from './base_callbacks';
 import {Dataset} from './engine/dataset_stub';
 import {Input} from './engine/input_layer';
 import {getSourceInputs, Layer, Node, SymbolicTensor} from './engine/topology';
-import {LayersModel, ModelCompileArgs, ModelEvaluateArgs, NamedTensor} from './engine/training';
+import {LayersModel, ModelCompileArgs, ModelEvaluateArgs} from './engine/training';
 import {ModelEvaluateDatasetArgs, ModelFitDatasetArgs} from './engine/training_dataset';
 import {ModelFitArgs} from './engine/training_tensors';
 import {NotImplementedError, RuntimeError, ValueError} from './errors';

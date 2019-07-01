@@ -12,6 +12,7 @@
 
 import * as tfc from '@tensorflow/tfjs-core';
 import {io, ModelPredictConfig as ModelPredictArgs, NamedTensorMap, Optimizer, Scalar, scalar, serialization, Tensor, Tensor1D, tensor1d, util} from '@tensorflow/tfjs-core';
+import {NamedTensor} from '@tensorflow/tfjs-core/dist/tensor_types';
 
 import * as K from '../backend/tfjs_backend';
 import {History, ModelLoggingVerbosity} from '../base_callbacks';
@@ -41,11 +42,6 @@ import {evaluateDataset, fitDataset, ModelEvaluateDatasetArgs, ModelFitDatasetAr
 import {checkBatchSize, disposeNewTensors, ensureTensorsRank2OrHigher, fitTensors, makeBatches, ModelFitArgs, sliceArrays, sliceArraysByIndices} from './training_tensors';
 import {ClassWeight, ClassWeightMap, computeWeightedLoss, standardizeClassWeights, standardizeWeights} from './training_utils';
 
-// TODO(cais): Deduplicate with tfjs-core?
-export interface NamedTensor {
-  name: string;
-  tensor: Tensor;
-}
 
 /**
  * Helper function for polymorphic input data: 1. singleton Tensor.
@@ -1549,7 +1545,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    * @returns A `NamedTensorMap` mapping original weight names (i.e.,
    *   non-uniqueified weight names) to their values.
    */
-  protected getNamedWeights(config?: io.SaveConfig): NamedTensor[] {
+  protected getNamedWeights(config?: io.SaveConfig): NamedTensor [] {
     const namedWeights: NamedTensor[] = [];
 
     const trainableOnly = config != null && config.trainableOnly;
@@ -1643,14 +1639,16 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           LossIdentifier[];
     } else {
       const outputNames = Object.keys(this.loss);
-      lossNames = Object.assign(
-          {}, this.loss as {[outputName: string]: LossIdentifier});
+      lossNames = {} as {[outputName: string]: LossIdentifier};
+      const losses = this.loss as {[outputName: string]: LossOrMetricFn|string};
       for (const outputName of outputNames) {
-        if (typeof lossNames[outputName] !== 'string') {
+        if (typeof losses[outputName] === 'string') {
+          lossNames[outputName] =
+              toSnakeCase(losses[outputName] as string) as LossIdentifier;
+        } else {
           throw new Error('Serialization of non-string loss is not supported.');
         }
-        lossNames[outputName] =
-            toSnakeCase(lossNames[outputName]) as LossIdentifier;
+
       }
     }
     return lossNames;
