@@ -251,7 +251,7 @@ describeMathCPUAndGPU('sigmoidCrossEntropyWithLogits', () => {
     const expected = tfc.add(
         tfc.mul(target, tfc.neg(tfc.log(sigmoidX))),
         tfc.mul(targetComplement, tfc.neg(tfc.log(sigmoidXComplement))));
-    const result = losses.sigmoidCrossEntropyWithLogits(target, x);
+    const result = losses.sigmoidCrossentropyWithLogits(target, x);
     expectTensorsClose(result, expected);
   });
 
@@ -281,7 +281,7 @@ describeMathCPUAndGPU('sigmoidCrossEntropyWithLogits', () => {
         [[-10, -10, -10], [-5, -5, -5], [0, 0, 0], [0.5, 0.5, 0.5], [2, 2, 2]]);
     const labels = tensor2d(
         [[0, 0.5, 1], [0, 0.5, 1], [0, 0.5, 1], [0, 0.5, 1], [0, 0.5, 1]]);
-    const outputs = losses.sigmoidCrossEntropyWithLogits(labels, logits);
+    const outputs = losses.sigmoidCrossentropyWithLogits(labels, logits);
     expectTensorsClose(outputs, tensor2d([
                          [4.5398901e-05, 5.0000453e+00, 1.0000046e+01],
                          [6.7153485e-03, 2.5067153e+00, 5.0067153e+00],
@@ -426,7 +426,7 @@ describeMathCPUAndGPU('l2Normalize', () => {
     const result = losses.l2Normalize(x);
     expectTensorsClose(result, x);
   });
-  
+
   it('normalizes casts int32 as float32.', () => {
     const x = tensor2d([[1, 2], [3, 4]], [2, 2], 'int32');
     const norm = Math.sqrt(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4);
@@ -435,12 +435,11 @@ describeMathCPUAndGPU('l2Normalize', () => {
     const result = losses.l2Normalize(x);
     expectTensorsClose(result, expected);
   });
-  
+
   it('normalizes casts bool as float32.', () => {
     const x = tensor2d([[1, 1]], [1, 2], 'bool');
     const norm = Math.sqrt(1 * 1 + 1 * 1);
-    const expected =
-        tensor2d([[1 / norm, 1 / norm]], [1, 2]);
+    const expected = tensor2d([[1 / norm, 1 / norm]], [1, 2]);
     const result = losses.l2Normalize(x);
     expectTensorsClose(result, expected);
   });

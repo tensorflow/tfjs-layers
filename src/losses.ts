@@ -167,7 +167,7 @@ export function sparseCategoricalCrossentropy(
  * @param labels The labels.
  * @param logits The logits.
  */
-export function sigmoidCrossEntropyWithLogits(
+export function sigmoidCrossentropyWithLogits(
     labels: Tensor, logits: Tensor): Tensor {
   if (!util.arraysEqual(labels.shape, logits.shape)) {
     throw new ValueError(
@@ -187,12 +187,16 @@ export function sigmoidCrossEntropyWithLogits(
   });
 }
 
+// TODO(bileschi): This symbol was misspelled, but as it is part of the public
+// 1.x.x API it must remain until tfjs 2.0.0
+export const sigmoidCrossEntropyWithLogits = sigmoidCrossentropyWithLogits;
+
 export function binaryCrossentropy(yTrue: Tensor, yPred: Tensor): Tensor {
   return tidy(() => {
     let y: Tensor;
     y = tfc.clipByValue(yPred, epsilon(), 1 - epsilon());
     y = tfc.log(tfc.div(y, tfc.sub(1, y)));
-    return tfc.mean(sigmoidCrossEntropyWithLogits(yTrue, y), -1);
+    return tfc.mean(sigmoidCrossentropyWithLogits(yTrue, y), -1);
   });
 }
 
@@ -264,7 +268,7 @@ export function get(identifierOrFn: string|LossOrMetricFn): LossOrMetricFn {
     if (identifierOrFn.toLowerCase().includes('softmaxcrossentropy')) {
       errMsg = `Unknown loss ${identifierOrFn}. ` +
           'Use "categoricalCrossentropy" as the string name for ' +
-          'tf.losses.softmaxCrossEntropy';
+          'tf.losses.softmaxCrossentropy';
     }
     throw new ValueError(errMsg);
   } else {
