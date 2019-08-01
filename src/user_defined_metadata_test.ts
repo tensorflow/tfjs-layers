@@ -33,7 +33,6 @@ describe('plainObjectCheck', () => {
   });
   it('Complex objects lead to false', () => {
     const assertObject = false;
-    // `undefined` is not valid JSON.
     expect(plainObjectCheck(new Date(), assertObject)).toEqual(false);
     expect(plainObjectCheck(new Float32Array([1, 2]), assertObject))
         .toEqual(false);
@@ -42,7 +41,6 @@ describe('plainObjectCheck', () => {
     expect(plainObjectCheck(zeros([2, 3]))).toEqual(false);
   });
   it('POJOs lead to true', () => {
-    // `undefined` is not valid JSON.
     expect(plainObjectCheck({})).toEqual(true);
     expect(plainObjectCheck({
       'key1': 'foo',
@@ -60,7 +58,6 @@ describe('plainObjectCheck', () => {
     })).toEqual(true);
   });
   it('POJOs with bad values lead to false', () => {
-    // `undefined` is not valid JSON.
     expect(plainObjectCheck({
       'key1': new Date(),
       'key2': 1337
@@ -81,7 +78,6 @@ describe('plainObjectCheck', () => {
     })).toEqual(false);
   });
   it('Arrays of POJO lead to false', () => {
-    // `undefined` is not valid JSON.
     expect(plainObjectCheck([])).toEqual(false);
     expect(plainObjectCheck([{}, {}])).toEqual(false);
     expect(plainObjectCheck([{

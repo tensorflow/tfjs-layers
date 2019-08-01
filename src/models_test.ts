@@ -557,10 +557,8 @@ describeMathCPU('loadLayersModel from URL', () => {
                           }));
       };
 
-  // const isModelConfigNestedValues = [false, true];
-  // const pathPrefixes = ['.', './', './model-home', './model-home/'];
-  const isModelConfigNestedValues = [false];
-  const pathPrefixes = ['.'];
+  const isModelConfigNestedValues = [false, true];
+  const pathPrefixes = ['.', './', './model-home', './model-home/'];
   for (const isModelConfigNested of isModelConfigNestedValues) {
     for (const pathPrefix of pathPrefixes) {
       it(`pathPrefix=${pathPrefix}`, done => {
@@ -699,7 +697,6 @@ describeMathCPU('loadLayersModel from URL', () => {
               ones([32, 32], 'float32').dataSync() as Float32Array,
               {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
         } else if (path === 'model/weight_1') {
-          console.log('Responding to model/weights_1');
           resolve(new Response(
               zeros([32], 'float32').dataSync() as Float32Array,
               {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));

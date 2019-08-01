@@ -65,7 +65,6 @@ export function plainObjectCheck(x: any, assertObject = true): boolean {
     // Note: typeof `null` is 'object', and `null` is valid in JSON.
     return !assertObject;
   } else if (typeof x === 'object') {
-    // console.log('typeof x is object');  // DEBUG
     if (Object.getPrototypeOf(x) === Object.prototype) {
       const keys = Object.keys(x);
       for (const key of keys) {
@@ -73,7 +72,6 @@ export function plainObjectCheck(x: any, assertObject = true): boolean {
           // JSON keys must be strings.
           return false;
         }
-        // console.log(`key = ${key}`);  // DEBUG
         // Recursive call.
         if (!plainObjectCheck(x[key], false /* assertObject */)) {
           return false;
@@ -85,7 +83,6 @@ export function plainObjectCheck(x: any, assertObject = true): boolean {
     } else {
       if (Array.isArray(x)) {
         for (const item of x) {
-          // console.log(`item = ${item}`);  // DEBUG
           // Recursive call.
           if (!plainObjectCheck(item, false /* assertObject */)) {
             return false;
