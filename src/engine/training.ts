@@ -27,6 +27,7 @@ import * as losses from '../losses';
 import * as Metrics from '../metrics';
 import * as optimizers from '../optimizers';
 import {LossOrMetricFn} from '../types';
+import {checkUserDefinedMetadata} from '../user_defined_metadata';
 import {count, pyListRepeat, singletonOrArray, toCamelCase, toSnakeCase, unique} from '../utils/generic_utils';
 import {printSummary} from '../utils/layer_utils';
 import {range} from '../utils/math_utils';
@@ -1858,7 +1859,9 @@ export class LayersModel extends Container implements tfc.InferenceModel {
     }
 
     if (this.userDefinedMetadata != null) {
-      checkUserDefinedMetadata(this.userDefinedMetadata, this.name);
+      // Check serialized size of user-defined metadata.
+      const checkSize = true;
+      checkUserDefinedMetadata(this.userDefinedMetadata, this.name, checkSize);
       modelArtifacts.userDefinedMetadata = this.userDefinedMetadata;
     }
 
@@ -1876,6 +1879,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    * @param setUserDefinedMetadata
    */
   setUserDefinedMetadata(userDefinedMetadata: {}): void {
+    checkUserDefinedMetadata(userDefinedMetadata, this.name);
     this.userDefinedMetadata = userDefinedMetadata;
   }
 
@@ -1883,7 +1887,7 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    * Get user-defined metadata.
    *
    * The metadata is supplied via one of the two routes:
-   *   1. By calling `setuserDefinedMetadata()`.
+   *   1. By calling `setUserDefinedMetadata()`.
    *   2. Loaded during model loading (if the model is constructed)
    *      by `tf.loadLayersModel()`.
    *
@@ -1895,33 +1899,3 @@ export class LayersModel extends Container implements tfc.InferenceModel {
   }
 }
 serialization.registerClass(LayersModel);
-
-// Maximum recommended serialized size for user-defined metadata.
-// Beyond this limit, a warning message will be printed during model loading and
-// saving.
-export const MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH = 1 * 1024 * 1024;
-
-// TODO(cais): Unit test and doc string.
-export function checkUserDefinedMetadata(
-    userDefinedMetadata: {}, modelName: string): void {
-  if (typeof userDefinedMetadata !== 'object' ||
-      Array.isArray(userDefinedMetadata)) {
-    throw new Error('User-defined metadata is expected to be a JSON object.');
-  }
-
-  try {
-    const out = JSON.stringify(userDefinedMetadata);
-    if (out.length > MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH) {
-      console.warn(
-          `User-defined metadata of model "${modelName}" is too large in ` +
-          `size (length=${out.length} when serialized). It is not ` +
-          `recommended to store such large objects in user-defined metadata.` +
-          `Please make sure its serialized length is <= ` +
-          `${MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH}`);
-    }
-  } catch (err) {
-    throw new Error(
-        `User-defined metadata is not JSON-stringifiable, due to error:\n` +
-        `${err.message}`);
-  }
-}
