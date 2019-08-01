@@ -12,7 +12,7 @@ import {io, zeros} from '@tensorflow/tfjs-core';
 
 import * as tfl from './index';
 import {Sequential} from './models';
-import {plainObjectCheck} from './user_defined_metadata';
+import {plainObjectCheck, MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH} from './user_defined_metadata';
 
 describe('plainObjectCheck', () => {
   it('Primitives under assertObject = default true', () => {
@@ -137,7 +137,7 @@ describe('Save and load model with metadata', () => {
           .toEqual(userDefinedMetadata);
     });
   }
-  for (const modelType in ['sequential', 'functional']) {
+  for (const modelType of ['sequential', 'functional']) {
     it(`Invalid user metadata leads to error: ${modelType}`, async () => {
       const model = modelType === 'sequential' ?
           createSequentialModelForTest() : createFunctionalModelForTest();
@@ -150,6 +150,40 @@ describe('Save and load model with metadata', () => {
       expect(() => model.setUserDefinedMetadata(
           {'foo': zeros([2, 3]), 'outputLabels': ['foo', 'bar', 'baz']}))
           .toThrowError(/is expected to be a JSON object, but is not/);
+      expect(() => model.setUserDefinedMetadata(undefined))
+          .toThrowError(/is expected to be a JSON object, but is not/);
+      expect(() => model.setUserDefinedMetadata(null))
+          .toThrowError(/is expected to be a JSON object, but is not/);
+      expect(() => model.setUserDefinedMetadata('foo'))
+          .toThrowError(/is expected to be a JSON object, but is not/);
+      expect(() => model.setUserDefinedMetadata(1337))
+          .toThrowError(/is expected to be a JSON object, but is not/);
     });
   }
+  for (const modelType of ['sequential', 'functional']) {
+    it(`Large metadata size leads to warning: ${modelType}`, async () => {
+      const warningMessages: string[] = [];
+      spyOn(console, 'warn').and.callFake((message: string) => {
+        warningMessages.push(message);
+      });
+      const largeMetadata: {} = {
+        'metadata': 'x'.repeat(MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH)
+      };
+      const model = modelType === 'sequential' ?
+          createSequentialModelForTest() : createFunctionalModelForTest();
+      model.setUserDefinedMetadata(largeMetadata);
+      await model.save(
+          io.withSaveHandler(async (artifacts: io.ModelArtifacts) => {
+            return {modelArtifactsInfo: null};
+          }));
+      expect(warningMessages.length).toEqual(1);
+      expect(warningMessages).toMatch(/is too large in size/);
+    });
+  }
+  it('MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH value', () => {
+    expect(MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH).toBeGreaterThan(0);
+    expect(Number.isInteger(MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH))
+        .toEqual(true);
+
+  });
 });

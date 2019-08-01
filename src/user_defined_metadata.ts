@@ -40,9 +40,9 @@ export function checkUserDefinedMetadata(
       console.warn(
           `User-defined metadata of model "${modelName}" is too large in ` +
           `size (length=${out.length} when serialized). It is not ` +
-          `recommended to store such large objects in user-defined metadata.` +
+          `recommended to store such large objects in user-defined metadata. ` +
           `Please make sure its serialized length is <= ` +
-          `${MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH}`);
+          `${MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH}.`);
     }
   }
 }
