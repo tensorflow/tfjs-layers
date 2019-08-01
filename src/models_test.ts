@@ -551,23 +551,28 @@ describeMathCPU('loadLayersModel from URL', () => {
            {[filename: string]: Float32Array|Int32Array|ArrayBuffer}) => {
         spyOn(util, 'fetch')
             .and.callFake((path: string) => new Promise(resolve => {
+                            console.warn('In fake fetch');  // DEBUG
                             resolve(new Response(fileBufferMap[path], {
                               'headers': {'Content-Type': OCTET_STREAM_TYPE}
                             }));
                           }));
       };
 
-  const isModelConfigNestedValues = [false, true];
-  const pathPrefixes = ['.', './', './model-home', './model-home/'];
+  // const isModelConfigNestedValues = [false, true];
+  // const pathPrefixes = ['.', './', './model-home', './model-home/'];
+  const isModelConfigNestedValues = [false];
+  const pathPrefixes = ['.'];
   for (const isModelConfigNested of isModelConfigNestedValues) {
     for (const pathPrefix of pathPrefixes) {
       it(`pathPrefix=${pathPrefix}`, done => {
+        console.log('=== BEGIN ===');
         const path0 = pathPrefix.endsWith('/') ? `${pathPrefix}weight_0` :
                                                  `${pathPrefix}/weight_0`;
         const path1 = pathPrefix.endsWith('/') ? `${pathPrefix}weight_1` :
                                                  `${pathPrefix}/weight_1`;
         const fileBufferMap:
             {[filename: string]: Float32Array|Int32Array|ArrayBuffer} = {};
+        console.log(`path0 = ${path0}; path1 = ${path1}`);  // DEBUG
         fileBufferMap[path0] =
             ones([32, 32], 'float32').dataSync() as Float32Array;
         fileBufferMap[path1] = ones([32], 'float32').dataSync() as Float32Array;
@@ -593,6 +598,7 @@ describeMathCPU('loadLayersModel from URL', () => {
             }],
           }
         ];
+        console.log('=== 100 ===');
         // JSON.parse and stringify to deep copy fakeSequentialModel.
         let modelTopology =
             JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
@@ -602,8 +608,10 @@ describeMathCPU('loadLayersModel from URL', () => {
           // `model_config`, but also other data, such as training.
           modelTopology = {'model_config': modelTopology};
         }
+        console.log('=== 200 ===');
         modelFromJSON({modelTopology, weightsManifest, pathPrefix})
             .then(model => {
+              console.log('=== 300 ===');
               expectTensorsClose(
                   model.weights[0].read(), ones([32, 32], 'float32'));
               expectTensorsClose(
@@ -684,6 +692,7 @@ describeMathCPU('loadLayersModel from URL', () => {
     ];
 
     spyOn(util, 'fetch').and.callFake((path: string) => {
+      console.log('In spy fetch');  // DEBUG
       return new Promise((resolve, reject) => {
         if (path === 'model/model.json') {
           resolve(new Response(
@@ -693,10 +702,15 @@ describeMathCPU('loadLayersModel from URL', () => {
               }),
               {'headers': {'Content-Type': JSON_TYPE}}));
         } else if (path === 'model/weight_0') {
+          console.log('Responding to model/weights_0');  // DEBUG
+          const response0ByteLength = (
+              ones([32, 32], 'float32').dataSync() as Float32Array).byteLength;
+          console.log(`response0ByteLength = ${response0ByteLength}`);  // DEBUG
           resolve(new Response(
               ones([32, 32], 'float32').dataSync() as Float32Array,
               {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
         } else if (path === 'model/weight_1') {
+          console.log('Responding to model/weights_1');
           resolve(new Response(
               zeros([32], 'float32').dataSync() as Float32Array,
               {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
@@ -1237,7 +1251,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual('mean_squared_error');
 
@@ -1254,8 +1267,7 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     expect(weightData.byteLength).toEqual(4 * 8 + 4 * 1 + 4);
 
     // Load the model back, with the optimizer.
-    const model2 = await tfl.loadLayersModel(
-        io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
 
     const optimizer1Weights = await model1.optimizer.getWeights();
@@ -1295,7 +1307,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual('mean_squared_error');
 
@@ -1317,8 +1328,7 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     expect(weightData.byteLength).toEqual(4 + 4 * 8 * 3 + 4 * 1 * 3);
 
     // Load the model back, with the optimizer.
-    const model2 = await tfl.loadLayersModel(
-        io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
     expect(model2.optimizer.getConfig()['decay']).toEqual(decay);
 
@@ -1358,7 +1368,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual('mean_squared_error');
 
@@ -1380,8 +1389,7 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     expect(weightData.byteLength).toEqual(4 + 4 * 8 * 3 + 4 * 1 * 3);
 
     // Load the model back, with the optimizer.
-    const model2 = await tfl.loadLayersModel(
-        io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
 
     const optimizer1Weights = await model1.optimizer.getWeights();
@@ -1421,7 +1429,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual('mean_squared_error');
 
@@ -1441,8 +1448,7 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     expect(weightData.byteLength).toEqual(4 + 4 * 8 * 2 + 4 * 1 * 2);
 
     // Load the model back, with the optimizer.
-    const model2 = await tfl.loadLayersModel(
-        io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
     expect(model2.optimizer.getConfig()['initialAccumulatorValue'])
         .toEqual(initialAccumulatorValue);
@@ -1485,7 +1491,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual('mean_squared_error');
 
@@ -1507,8 +1512,7 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     expect(weightData.byteLength).toEqual(4 + 4 * 8 * 3 + 4 * 1 * 3);
 
     // Load the model back, with the optimizer.
-    const model2 = await tfl.loadLayersModel(
-        io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
     expect(model2.optimizer.getConfig()['beta1']).toEqual(beta1);
     expect(model2.optimizer.getConfig()['beta2']).toEqual(beta2);
@@ -1547,7 +1551,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual('mean_squared_error');
 
@@ -1569,8 +1572,7 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     expect(weightData.byteLength).toEqual(4 + 4 * 8 * 3 + 4 * 1 * 3);
 
     // Load the model back, with the optimizer.
-    const model2 = await tfl.loadLayersModel(
-        io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(1e-3);
 
     const optimizer1Weights = await model1.optimizer.getWeights();
@@ -1610,7 +1612,6 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual('mean_squared_error');
 
@@ -1630,8 +1631,7 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
     expect(weightData.byteLength).toEqual(4 + 4 * 8 * 2 + 4 * 1 * 2);
 
     // Load the model back, with the optimizer.
-    const model2 = await tfl.loadLayersModel(
-        io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
     expect(model2.optimizer.getConfig()['learningRate']).toEqual(learningRate);
 
     const optimizer1Weights = await model1.optimizer.getWeights();
@@ -1675,15 +1675,11 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual('categorical_crossentropy');
     expect(trainingConfig['metrics']).toEqual(['acc']);
 
-    const weightSpecs = savedArtifacts.weightSpecs;
-    const weightData = savedArtifacts.weightData;
-    const model2 = await tfl.loadLayersModel(
-      io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
     h = await model2.fit(xs, ys, {epochs: 1});
     expect(h.history.loss.length).toEqual(1);
     expect(h.history.loss[0]).toBeCloseTo(1.086648);
@@ -1711,15 +1707,11 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual('categorical_crossentropy');
     expect(trainingConfig['metrics']).toEqual(['acc']);
 
-    const weightSpecs = savedArtifacts.weightSpecs;
-    const weightData = savedArtifacts.weightData;
-    const model2 = await tfl.loadLayersModel(
-      io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
 
     const xs = ones([4, 8]);
     const ys = tensor2d([[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]]);
@@ -1769,16 +1761,12 @@ describeMathCPUAndGPU('Saving+loading model with optimizer', () => {
           return null;
         }), {includeOptimizer: true});
 
-    const modelTopology = savedArtifacts.modelTopology as ConfigDict;
     const trainingConfig = savedArtifacts.trainingConfig;
     expect(trainingConfig['loss']).toEqual(
         ['categorical_crossentropy', 'binary_crossentropy']);
     expect(trainingConfig['metrics']).toEqual(['acc']);
 
-    const weightSpecs = savedArtifacts.weightSpecs;
-    const weightData = savedArtifacts.weightData;
-    const model2 = await tfl.loadLayersModel(
-      io.fromMemory(modelTopology, weightSpecs, weightData, trainingConfig));
+    const model2 = await tfl.loadLayersModel(io.fromMemory(savedArtifacts));
 
     h = await model2.fit(xs, [ys1, ys2], {epochs: 1});
     expect(h.history.loss.length).toEqual(1);

@@ -84,9 +84,12 @@ export async function modelFromJSON(
   const model = deserialize(tsConfig, customObjects) as LayersModel;
 
   if (modelAndWeightsConfig.weightsManifest != null) {
+    console.log('modelFromJSON(): loading weights');  // DEBUG
     // Load the weight values keyed by the original tensor names in the model
     // file that was loaded.  These should match the keys of the weight
     // manifest.
+    console.log(`weightsManifest = ${
+        JSON.stringify(modelAndWeightsConfig.weightsManifest)}`);  // DEBUG
     const weightValues =
         await io.loadWeights(
             modelAndWeightsConfig.weightsManifest,
