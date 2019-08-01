@@ -15,28 +15,20 @@ import {Sequential} from './models';
 import {plainObjectCheck, MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH} from './user_defined_metadata';
 
 describe('plainObjectCheck', () => {
-  it('Primitives under assertObject = default true', () => {
-    expect(plainObjectCheck(undefined)).toEqual(false);
-    expect(plainObjectCheck(null)).toEqual(false);
-    expect(plainObjectCheck(true)).toEqual(false);
-    expect(plainObjectCheck(1337)).toEqual(false);
-    expect(plainObjectCheck('foo')).toEqual(false);
-  });
-  it('Primitives under assertObject = false', () => {
-    const assertObject = false;
+  it('Primitives', () => {
     // `undefined` is not valid JSON.
-    expect(plainObjectCheck(undefined, assertObject)).toEqual(false);
-    expect(plainObjectCheck(null, assertObject)).toEqual(true);
-    expect(plainObjectCheck(true, assertObject)).toEqual(true);
-    expect(plainObjectCheck(1337, assertObject)).toEqual(true);
-    expect(plainObjectCheck('foo', assertObject)).toEqual(true);
+    expect(plainObjectCheck(undefined)).toEqual(false);
+    // `null` is valid JSON.
+    expect(plainObjectCheck(null)).toEqual(true);
+    expect(plainObjectCheck(true)).toEqual(true);
+    expect(plainObjectCheck(1337)).toEqual(true);
+    expect(plainObjectCheck('foo')).toEqual(true);
   });
   it('Complex objects lead to false', () => {
-    const assertObject = false;
-    expect(plainObjectCheck(new Date(), assertObject)).toEqual(false);
-    expect(plainObjectCheck(new Float32Array([1, 2]), assertObject))
+    expect(plainObjectCheck(new Date())).toEqual(false);
+    expect(plainObjectCheck(new Float32Array([1, 2])))
         .toEqual(false);
-    expect(plainObjectCheck(new ArrayBuffer(4), assertObject)).toEqual(false);
+    expect(plainObjectCheck(new ArrayBuffer(4))).toEqual(false);
     expect(plainObjectCheck(new Error())).toEqual(false);
     expect(plainObjectCheck(zeros([2, 3]))).toEqual(false);
   });
@@ -57,7 +49,7 @@ describe('plainObjectCheck', () => {
       'key3': false
     })).toEqual(true);
   });
-  it('POJOs with bad values lead to false', () => {
+  it('POJOs with invalid value types lead to false', () => {
     expect(plainObjectCheck({
       'key1': new Date(),
       'key2': 1337
@@ -77,14 +69,14 @@ describe('plainObjectCheck', () => {
       }
     })).toEqual(false);
   });
-  it('Arrays of POJO lead to false', () => {
-    expect(plainObjectCheck([])).toEqual(false);
-    expect(plainObjectCheck([{}, {}])).toEqual(false);
+  it('Arrays of POJO lead to true', () => {
+    expect(plainObjectCheck([])).toEqual(true);
+    expect(plainObjectCheck([{}, {}])).toEqual(true);
     expect(plainObjectCheck([{
       'key1': 'foo',
       'key2': 1337,
       'key3': false
-    }])).toEqual(false);
+    }])).toEqual(true);
     expect(plainObjectCheck([{
       'key1': {
         'key1_1': [1, 3, 3, 7],
@@ -93,7 +85,7 @@ describe('plainObjectCheck', () => {
       },
       'key2': 1337,
       'key3': false
-    }])).toEqual(false);
+    }])).toEqual(true);
   });
 });
 

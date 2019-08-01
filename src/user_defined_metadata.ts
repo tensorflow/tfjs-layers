@@ -29,7 +29,10 @@ export const MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH = 1 * 1024 * 1024;
  */
 export function checkUserDefinedMetadata(
     userDefinedMetadata: {}, modelName: string, checkSize = false): void {
-  if (!plainObjectCheck(userDefinedMetadata)) {
+  if (userDefinedMetadata == null ||
+      typeof userDefinedMetadata !== 'object' ||
+      Object.getPrototypeOf(userDefinedMetadata) !== Object.prototype ||
+      !plainObjectCheck(userDefinedMetadata)) {
     throw new Error(
         'User-defined metadata is expected to be a JSON object, but is not.');
   }
@@ -48,22 +51,20 @@ export function checkUserDefinedMetadata(
 }
 
 /**
- * Check if an input is plain JSON.
+ * Check if an input is plain JSON object or any valid subfield of it.
  *
  * @param x The input to be checked.
  * @param assertObject Whether to assert `x` is a JSON object, i.e., reject
  *   cases of arrays and primitives.
- * @return If `assertObject` is `true`, returns `true` if and only if `x`
- *   is a plain JSON object. If `assertObject` is `false`, returns `true`
- *   if and only if `x` is a plain JSON object, a JSON-valid primitive
- *   including string, number, boolean and null, or an array of the said
- *   types.
+ * @return Returns `true` if and only if `x` is a plain JSON object,
+ *   a JSON-valid primitive including string, number, boolean and null,
+ *   or an array of the said types.
  */
 // tslint:disable-next-line:no-any
-export function plainObjectCheck(x: any, assertObject = true): boolean {
+export function plainObjectCheck(x: any): boolean {
   if (x === null) {
     // Note: typeof `null` is 'object', and `null` is valid in JSON.
-    return !assertObject;
+    return true;
   } else if (typeof x === 'object') {
     if (Object.getPrototypeOf(x) === Object.prototype) {
       const keys = Object.keys(x);
@@ -72,19 +73,15 @@ export function plainObjectCheck(x: any, assertObject = true): boolean {
           // JSON keys must be strings.
           return false;
         }
-        // Recursive call.
-        if (!plainObjectCheck(x[key], false /* assertObject */)) {
+        if (!plainObjectCheck(x[key])) {  // Recursive call.
           return false;
         }
       }
       return true;
-    } else if (assertObject) {
-      return false;
     } else {
       if (Array.isArray(x)) {
         for (const item of x) {
-          // Recursive call.
-          if (!plainObjectCheck(item, false /* assertObject */)) {
+          if (!plainObjectCheck(item)) {  // Recursive call.
             return false;
           }
         }
@@ -93,8 +90,6 @@ export function plainObjectCheck(x: any, assertObject = true): boolean {
         return false;
       }
     }
-  } else if (assertObject) {
-    return false;
   } else {
     const xType = typeof x;
     return xType === 'string' || xType === 'number' || xType === 'boolean';
