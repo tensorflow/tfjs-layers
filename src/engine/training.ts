@@ -1857,6 +1857,11 @@ export class LayersModel extends Container implements tfc.InferenceModel {
           [weightDataAndSpecs.data, optimizerWeightData]);
     }
 
+    if (this.userDefinedMetadata != null) {
+      checkUserDefinedMetadata(this.userDefinedMetadata, this.name);
+      modelArtifacts.userDefinedMetadata = this.userDefinedMetadata;
+    }
+
     modelArtifacts.weightData = weightDataAndSpecs.data;
     modelArtifacts.weightSpecs = weightDataAndSpecs.specs;
     return handlerOrURL.save(modelArtifacts);
@@ -1871,7 +1876,6 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    * @param setUserDefinedMetadata
    */
   setUserDefinedMetadata(userDefinedMetadata: {}): void {
-    checkUserDefinedMetadata(userDefinedMetadata);
     this.userDefinedMetadata = userDefinedMetadata;
   }
 
@@ -1892,18 +1896,19 @@ export class LayersModel extends Container implements tfc.InferenceModel {
 }
 serialization.registerClass(LayersModel);
 
-function checkUserDefinedMetadata(userDefinedMetadata: {}) {
-  if (typeof userDefinedMetadata !== 'object') {
-    throw new Error(
-        'User-defined metadata is expected to be a JSON object, ' +
-        `but received a ${typeof userDefinedMetadata}`);
+// Maximum recommended serialized size for user-defined metadata.
+// Beyond this limit, a warning message will be printed during model loading and
+// saving.
+export const MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH = 1 * 1024 * 1024;
+
+// TODO(cais): Unit test and doc string.
+export function checkUserDefinedMetadata(
+    userDefinedMetadata: {}, modelName: string): void {
+  if (typeof userDefinedMetadata !== 'object' ||
+      Array.isArray(userDefinedMetadata)) {
+    throw new Error('User-defined metadata is expected to be a JSON object.');
   }
-}
 
-const MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH = 1 * 1024 * 1024;
-
-export function serializeUserDefinedMetadata(
-    userDefinedMetadata: {}, modelName: string): string {
   try {
     const out = JSON.stringify(userDefinedMetadata);
     if (out.length > MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH) {
@@ -1914,8 +1919,9 @@ export function serializeUserDefinedMetadata(
           `Please make sure its serialized length is <= ` +
           `${MAX_USER_DEFINED_METADATA_SERIALIZED_LENGTH}`);
     }
-    return out;
   } catch (err) {
-    throw new Error('Failed to serialized user-defined metadata.');
+    throw new Error(
+        `User-defined metadata is not JSON-stringifiable, due to error:\n` +
+        `${err.message}`);
   }
 }

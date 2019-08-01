@@ -595,7 +595,6 @@ describeMathCPU('loadLayersModel from URL', () => {
             }],
           }
         ];
-        console.log('=== 100 ===');
         // JSON.parse and stringify to deep copy fakeSequentialModel.
         let modelTopology =
             JSON.parse(JSON.stringify(fakeSequentialModel)).modelTopology;
@@ -605,10 +604,8 @@ describeMathCPU('loadLayersModel from URL', () => {
           // `model_config`, but also other data, such as training.
           modelTopology = {'model_config': modelTopology};
         }
-        console.log('=== 200 ===');
         modelFromJSON({modelTopology, weightsManifest, pathPrefix})
             .then(model => {
-              console.log('=== 300 ===');
               expectTensorsClose(
                   model.weights[0].read(), ones([32, 32], 'float32'));
               expectTensorsClose(
