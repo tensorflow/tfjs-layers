@@ -551,7 +551,6 @@ describeMathCPU('loadLayersModel from URL', () => {
            {[filename: string]: Float32Array|Int32Array|ArrayBuffer}) => {
         spyOn(util, 'fetch')
             .and.callFake((path: string) => new Promise(resolve => {
-                            console.warn('In fake fetch');  // DEBUG
                             resolve(new Response(fileBufferMap[path], {
                               'headers': {'Content-Type': OCTET_STREAM_TYPE}
                             }));
@@ -565,14 +564,12 @@ describeMathCPU('loadLayersModel from URL', () => {
   for (const isModelConfigNested of isModelConfigNestedValues) {
     for (const pathPrefix of pathPrefixes) {
       it(`pathPrefix=${pathPrefix}`, done => {
-        console.log('=== BEGIN ===');
         const path0 = pathPrefix.endsWith('/') ? `${pathPrefix}weight_0` :
                                                  `${pathPrefix}/weight_0`;
         const path1 = pathPrefix.endsWith('/') ? `${pathPrefix}weight_1` :
                                                  `${pathPrefix}/weight_1`;
         const fileBufferMap:
             {[filename: string]: Float32Array|Int32Array|ArrayBuffer} = {};
-        console.log(`path0 = ${path0}; path1 = ${path1}`);  // DEBUG
         fileBufferMap[path0] =
             ones([32, 32], 'float32').dataSync() as Float32Array;
         fileBufferMap[path1] = ones([32], 'float32').dataSync() as Float32Array;
@@ -692,7 +689,6 @@ describeMathCPU('loadLayersModel from URL', () => {
     ];
 
     spyOn(util, 'fetch').and.callFake((path: string) => {
-      console.log('In spy fetch');  // DEBUG
       return new Promise((resolve, reject) => {
         if (path === 'model/model.json') {
           resolve(new Response(
@@ -702,10 +698,6 @@ describeMathCPU('loadLayersModel from URL', () => {
               }),
               {'headers': {'Content-Type': JSON_TYPE}}));
         } else if (path === 'model/weight_0') {
-          console.log('Responding to model/weights_0');  // DEBUG
-          const response0ByteLength = (
-              ones([32, 32], 'float32').dataSync() as Float32Array).byteLength;
-          console.log(`response0ByteLength = ${response0ByteLength}`);  // DEBUG
           resolve(new Response(
               ones([32, 32], 'float32').dataSync() as Float32Array,
               {'headers': {'Content-Type': OCTET_STREAM_TYPE}}));
