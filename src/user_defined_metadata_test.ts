@@ -90,6 +90,7 @@ describe('plainObjectCheck', () => {
 });
 
 describe('Save and load model with metadata', () => {
+
   function createSequentialModelForTest(): Sequential {
     const model = tfl.sequential();
     model.add(tfl.layers.dense({
@@ -99,6 +100,7 @@ describe('Save and load model with metadata', () => {
     }));
     return model;
   }
+
   function createFunctionalModelForTest(): tfl.LayersModel {
     const input1 = tfl.input({shape: [3]});
     const input2 = tfl.input({shape: [4]});
@@ -110,6 +112,7 @@ describe('Save and load model with metadata', () => {
         tfl.SymbolicTensor;
     return tfl.model({inputs: [input1, input2], outputs: output});
   }
+
   for (const modelType of ['sequential', 'functional']) {
     it(`Valid user-defined metadata round trip: ${modelType}`, async () => {
       const model = modelType === 'sequential' ?
