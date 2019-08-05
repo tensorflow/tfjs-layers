@@ -1122,7 +1122,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    * });
    * model.predictOnBatch(tf.ones([8, 10])).print();
    * ```
-   * @param x: Input samples, as an Tensor
+   * @param x: Input samples, as an Tensor (for models with exactly one
+       input) or an array of Tensors (for models with more than one input).
    * @return Tensor(s) of predictions
    */
   /** @doc {heading: 'Models', subheading: 'Classes'} */
