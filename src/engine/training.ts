@@ -1890,8 +1890,8 @@ export class LayersModel extends Container implements tfc.InferenceModel {
    *
    * The metadata is supplied via one of the two routes:
    *   1. By calling `setUserDefinedMetadata()`.
-   *   2. Loaded during model loading (if the model is constructed)
-   *      by `tf.loadLayersModel()`.
+   *   2. Loaded during model loading (if the model is constructed
+   *      via `tf.loadLayersModel()`.)
    *
    * If no user-defined metadata is available from either of the
    * two routes, this function will return `undefined`.
