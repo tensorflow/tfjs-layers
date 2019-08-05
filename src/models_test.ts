@@ -2090,7 +2090,7 @@ describeMathCPUAndGPU('Sequential', () => {
         model.predictOnBatch(inputBatch) as Tensor, expectedOutput);
   });
 
-  fit('predictOnBatch() works with multi-input model.', () => {
+  it('predictOnBatch() works with multi-input model.', () => {
     const input1 = tfl.input({shape: [3]});
     const input2 = tfl.input({shape: [4]});
     const dense1 = tfl.layers.dense({units: 1, activation: 'sigmoid'});
