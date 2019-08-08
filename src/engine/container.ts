@@ -88,7 +88,6 @@ export abstract class Container extends Layer {
 
     this.supportsMasking = false;
     this.trainable_ = true;
-    this.updatable = true;
 
     // TODO(michaelterry): Initialize perInputLosses/Updates here.
 
@@ -620,7 +619,7 @@ export abstract class Container extends Layer {
    * Util shared between different serialization methods.
    * @returns LayersModel config with Keras version information added.
    */
-  private updatedConfig(): serialization.ConfigDict {
+  protected updatedConfig(): serialization.ConfigDict {
     const theConfig = this.getConfig();
     const modelConfig: serialization.ConfigDict = {};
     modelConfig['className'] = this.getClassName();
