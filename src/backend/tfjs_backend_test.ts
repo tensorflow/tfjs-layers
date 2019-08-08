@@ -776,17 +776,9 @@ describeMathCPUAndGPU('dropout', () => {
     const y = K.dropout(x, level, null, seed);
     expect(y.dtype).toEqual(x.dtype);
     expect(y.shape).toEqual(x.shape);
-    const xValue = x.dataSync();
-    const yValue = y.dataSync();
-    let nKept = 0;
-    for (let i = 0; i < xValue.length; ++i) {
-      if (yValue[i] !== 0) {
-        nKept++;
-        expect(yValue[i]).toBeCloseTo(1 / (1 - level) * xValue[i]);
-      }
-    }
-    const numel = K.countParams(x);
-    expect(nKept).toBeLessThan(numel);
+    const yValuesExpected =
+        [0, 0, 12, 16, 0, 0, 0, 0, 0, 0, 0, 48, 52, 0, 0, 0, 68, 0, 76, 0];
+    expectTensorsClose(y, tensor2d(yValuesExpected, [10, 2]));
   });
 });
 
