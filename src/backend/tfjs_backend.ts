@@ -404,10 +404,14 @@ export function dot(
     // tfc.fused.matMul only fuses certain activation functions. Unsupported
     // activation functions are treated as 'linear' activations, which is
     // equivalent to a no-op.
-    return tfc.fused.matMul(
-        x as Tensor2D, y as Tensor2D, transposeX, transposeY,
-        bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null,
-        fusedActivation);
+    return tfc.fused.matMul({
+      a: x as Tensor2D,
+      b: y as Tensor2D,
+      transposeA: transposeX,
+      transposeB: transposeY,
+      bias: bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null,
+      activation: fusedActivation
+    });
   } else {
     // Reshape x into the analogous 2D Tensor.
     const xFirstDims = x.shape.slice();  // Holds all but the last dim of x.
@@ -437,10 +441,14 @@ export function dot(
     const transposeX = false;
     const transposeY = false;
     return tfc.fused
-        .matMul(
-            x as Tensor2D, y as Tensor2D, transposeX, transposeY,
-            bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null,
-            fusedActivation)
+        .matMul({
+          a: x as Tensor2D,
+          b: y as Tensor2D,
+          transposeA: transposeX,
+          transposeB: transposeY,
+          bias: bias ? reshapeBias(x.rank, bias, imageDataFormat()) : null,
+          activation: fusedActivation
+        })
         .reshape(outputShape);
   }
 }
