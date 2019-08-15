@@ -19,18 +19,6 @@
     node-fetch "~2.1.2"
     seedrandom "2.4.3"
 
-"@tensorflow/tfjs-core@1.2.8":
-  version "1.2.8"
-  resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-core/-/tfjs-core-1.2.8.tgz#d6873b88522f8cf25d34c10afd095866578d7d92"
-  integrity sha512-lWV4vAnXAAmahXpCWBwdGGW9HO6iNw9pUeVYih7pDXeJahMk3OJs6SgjRNhwn+ldsGwRoorR0/RHg0yNLmqWxQ==
-  dependencies:
-    "@types/offscreencanvas" "~2019.3.0"
-    "@types/seedrandom" "2.4.27"
-    "@types/webgl-ext" "0.0.30"
-    "@types/webgl2" "0.0.4"
-    node-fetch "~2.1.2"
-    seedrandom "2.4.3"
-
 "@tensorflow/tfjs-data@1.2.7":
   version "1.2.7"
   resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-data/-/tfjs-data-1.2.7.tgz#06f5315a045ca680e721688e64976a418f43f979"
@@ -44,7 +32,7 @@
   resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-layers/-/tfjs-layers-1.2.7.tgz#4d9ad8966b5f1833ddabd2581c282cd288a69968"
   integrity sha512-qc9qRmJsizRon2HyIKKtWnZOQFMKdaWDeLlHyZUkrOn7YxqjFvxLs9BXsjKR1IuBliOljEe+ZEePDpasUtYLng==
 
-"@tensorflow/tfjs-node@1.1.7":
+"@tensorflow/tfjs-node@1.2.7":
   version "1.2.7"
   resolved "https://registry.yarnpkg.com/@tensorflow/tfjs-node/-/tfjs-node-1.2.7.tgz#da31ca8d4cbeac083511c0f4f5caa88bd0b28ee8"
   integrity sha512-4JhhGcEEjiVzMPmjg7I/zMFYYWAF4oHFOkdN2WLPeb7miaZSr0+xpJwgXbT8fkm3t93YCW1vVJdeX16KZ6urLA==

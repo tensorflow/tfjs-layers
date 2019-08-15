@@ -14,6 +14,10 @@ const tfjsNode = require('@tensorflow/tfjs-node');
 const fs = require('fs');
 const join = require('path').join;
 
+process.on('unhandledRejection', ex => {
+  throw ex;
+});
+
 /**
  * Generate random input(s), get predict() output(s), and save them along with
  * the model.
